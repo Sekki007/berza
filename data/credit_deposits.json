@@ -1,0 +1,11 @@
+[
+    {
+        "id": 1,
+        "user_id": 1,
+        "amount": 500,
+        "status": "rejected",
+        "created_at": "2026-07-23 12:54:26",
+        "confirmed_at": null,
+        "confirmed_by": null
+    }
+]

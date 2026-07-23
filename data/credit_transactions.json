@@ -1,0 +1,12 @@
+[
+    {
+        "id": 1,
+        "user_id": 1,
+        "amount": 1000,
+        "balance_after": 1000,
+        "type": "admin_grant",
+        "note": "test",
+        "ref_id": null,
+        "created_at": "2026-07-23 11:14:37"
+    }
+]

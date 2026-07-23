@@ -1,0 +1,112 @@
+[
+    {
+        "id": 1,
+        "ad_id": 1,
+        "from_user_id": 2,
+        "from_name": "Sead Skrijelj",
+        "from_phone": "",
+        "to_user_id": 1,
+        "body": "Zdravo, da li je iPhone još dostupan?",
+        "created_at": "2026-07-22 12:30:11",
+        "is_read": true
+    },
+    {
+        "id": 2,
+        "ad_id": 1,
+        "from_user_id": 1,
+        "from_name": "Administrator",
+        "from_phone": "",
+        "to_user_id": 2,
+        "body": "Da, dostupan je. Možemo dogovoriti preuzimanje.",
+        "created_at": "2026-07-22 12:35:00",
+        "is_read": true
+    },
+    {
+        "id": 3,
+        "ad_id": 1,
+        "from_user_id": 2,
+        "from_name": "Sead Skrijelj",
+        "from_phone": "",
+        "to_user_id": 1,
+        "body": "Odlično, hvala. Javljam se kad dogovorimo termin.",
+        "created_at": "2026-07-22 12:40:00",
+        "is_read": true
+    },
+    {
+        "id": 4,
+        "ad_id": 1,
+        "from_user_id": 2,
+        "from_name": "Sead Skrijelj",
+        "from_phone": "",
+        "to_user_id": 1,
+        "body": "Jel ovaj oglas jos uvek dostupan",
+        "created_at": "2026-07-22 12:42:33",
+        "is_read": true
+    },
+    {
+        "id": 5,
+        "ad_id": 1,
+        "from_user_id": 1,
+        "from_name": "Administrator",
+        "from_phone": "",
+        "to_user_id": 2,
+        "body": "Da dostupan je",
+        "created_at": "2026-07-22 12:43:02",
+        "is_read": true
+    },
+    {
+        "id": 6,
+        "ad_id": 1,
+        "from_user_id": 1,
+        "from_name": "Administrator",
+        "from_phone": "",
+        "to_user_id": 2,
+        "body": "test",
+        "created_at": "2026-07-22 12:44:59",
+        "is_read": true
+    },
+    {
+        "id": 7,
+        "ad_id": 1,
+        "from_user_id": 1,
+        "from_name": "Administrator",
+        "from_phone": "",
+        "to_user_id": 2,
+        "body": "ejj",
+        "created_at": "2026-07-22 12:48:22",
+        "is_read": true
+    },
+    {
+        "id": 8,
+        "ad_id": 1,
+        "from_user_id": 2,
+        "from_name": "Sead Skrijelj",
+        "from_phone": "",
+        "to_user_id": 1,
+        "body": "ejj",
+        "created_at": "2026-07-22 12:51:42",
+        "is_read": true
+    },
+    {
+        "id": 9,
+        "ad_id": 1,
+        "from_user_id": 1,
+        "from_name": "Administrator",
+        "from_phone": "",
+        "to_user_id": 2,
+        "body": "da",
+        "created_at": "2026-07-22 12:51:56",
+        "is_read": true
+    },
+    {
+        "id": 10,
+        "ad_id": 1,
+        "from_user_id": 1,
+        "from_name": "Administrator",
+        "from_phone": "",
+        "to_user_id": 2,
+        "body": "test",
+        "created_at": "2026-07-22 15:06:45",
+        "is_read": true
+    }
+]

@@ -1,0 +1,42 @@
+[
+    {
+        "id": 1,
+        "user_id": 1,
+        "type": "top_activated",
+        "title": "TOP oglas aktiviran",
+        "body": "Oglas „iPhone 13 Pro Max 256GB” je istaknut na 3 dana.",
+        "link": "\/oglas.php?id=1",
+        "is_read": true,
+        "created_at": "2026-07-23 11:09:06"
+    },
+    {
+        "id": 2,
+        "user_id": 1,
+        "type": "credit_deposit_confirmed",
+        "title": "Krediti su dopunjeni",
+        "body": "Na nalog je dodato 1.000 din. Saldo: 1.000 din.",
+        "link": "\/nalog.php?tab=krediti",
+        "is_read": true,
+        "created_at": "2026-07-23 11:14:37"
+    },
+    {
+        "id": 3,
+        "user_id": 1,
+        "type": "credit_deposit_pending",
+        "title": "Zahtev za uplatu kredita",
+        "body": "Poslao si zahtev za 500 din. Uplati na račun i sačekaj potvrdu admina. Poziv na broj: KR-1",
+        "link": "\/nalog.php?tab=krediti",
+        "is_read": true,
+        "created_at": "2026-07-23 12:54:26"
+    },
+    {
+        "id": 4,
+        "user_id": 1,
+        "type": "credit_deposit_rejected",
+        "title": "Zahtev za uplatu odbijen",
+        "body": "Zahtev #1 (500 din) nije potvrđen. Kontaktiraj podršku ako si uplatio.",
+        "link": "\/nalog.php?tab=krediti",
+        "is_read": true,
+        "created_at": "2026-07-23 12:54:55"
+    }
+]

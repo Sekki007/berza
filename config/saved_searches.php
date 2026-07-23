@@ -1,0 +1,238 @@
+<?php
+
+declare(strict_types=1);
+
+function ensureSavedSearchesFile(): void
+{
+    if (!file_exists(dataPath('saved_searches.json'))) {
+        writeJsonFile('saved_searches.json', []);
+    }
+}
+
+function getAllSavedSearches(): array
+{
+    ensureSavedSearchesFile();
+    return readJsonFile('saved_searches.json');
+}
+
+function getSavedSearchesForUser(int $userId): array
+{
+    $items = array_values(array_filter(
+        getAllSavedSearches(),
+        static fn($s) => (int)($s['user_id'] ?? 0) === $userId
+    ));
+    usort($items, static fn($a, $b) => strcmp((string)($b['created_at'] ?? ''), (string)($a['created_at'] ?? '')));
+    return $items;
+}
+
+function findSavedSearch(int $id): ?array
+{
+    foreach (getAllSavedSearches() as $item) {
+        if ((int)($item['id'] ?? 0) === $id) {
+            return $item;
+        }
+    }
+    return null;
+}
+
+function savedSearchFiltersFromInput(array $input): array
+{
+    $filters = [
+        'q' => trim((string)($input['q'] ?? '')),
+        'brand' => trim((string)($input['brand'] ?? '')),
+        'model' => trim((string)($input['model'] ?? '')),
+        'location' => trim((string)($input['location'] ?? '')),
+        'condition' => trim((string)($input['condition'] ?? '')),
+        'type' => trim((string)($input['type'] ?? '')),
+        'min_price' => trim((string)($input['min_price'] ?? '')),
+        'max_price' => trim((string)($input['max_price'] ?? '')),
+        'category_group' => trim((string)($input['category_group'] ?? '')),
+    ];
+    if (!in_array($filters['type'], ['telefon', 'delovi', 'servis', ''], true)) {
+        $filters['type'] = '';
+    }
+    return array_filter($filters, static fn($v) => $v !== '');
+}
+
+function savedSearchToPublicFilters(array $search): array
+{
+    $f = $search['filters'] ?? [];
+    if (!is_array($f)) {
+        $f = [];
+    }
+    $type = trim((string)($f['type'] ?? ''));
+    return [
+        'q' => trim((string)($f['q'] ?? '')),
+        'brand' => trim((string)($f['brand'] ?? '')),
+        'model' => trim((string)($f['model'] ?? '')),
+        'location' => trim((string)($f['location'] ?? '')),
+        'condition' => trim((string)($f['condition'] ?? '')),
+        'category_group' => trim((string)($f['category_group'] ?? '')),
+        'min_price' => trim((string)($f['min_price'] ?? '')),
+        'max_price' => trim((string)($f['max_price'] ?? '')),
+        'types' => $type !== '' ? [$type] : [],
+        'sort' => 'newest',
+    ];
+}
+
+function savedSearchLabel(array $search): string
+{
+    $name = trim((string)($search['name'] ?? ''));
+    if ($name !== '') {
+        return $name;
+    }
+    $f = $search['filters'] ?? [];
+    $parts = [];
+    foreach (['q', 'brand', 'model', 'location', 'type', 'condition'] as $key) {
+        $v = trim((string)($f[$key] ?? ''));
+        if ($v !== '') {
+            $parts[] = $v;
+        }
+    }
+    $min = trim((string)($f['min_price'] ?? ''));
+    $max = trim((string)($f['max_price'] ?? ''));
+    if ($min !== '' || $max !== '') {
+        $parts[] = trim($min . '–' . $max . ' €', '– ');
+    }
+    return $parts !== [] ? implode(' · ', $parts) : 'Sačuvana pretraga';
+}
+
+function createSavedSearch(int $userId, array $filters, string $name = '', bool $alertEnabled = true): ?array
+{
+    if ($userId <= 0) {
+        return null;
+    }
+    $filters = savedSearchFiltersFromInput($filters);
+    if ($filters === []) {
+        return null;
+    }
+    $existing = getSavedSearchesForUser($userId);
+    if (count($existing) >= 20) {
+        return null;
+    }
+
+    $items = getAllSavedSearches();
+    $maxId = 0;
+    foreach ($items as $item) {
+        $maxId = max($maxId, (int)($item['id'] ?? 0));
+    }
+
+    $matched = getPublicAds(savedSearchToPublicFilters(['filters' => $filters]));
+    $ids = array_map(static fn($a) => (int)($a['id'] ?? 0), array_slice($matched, 0, 50));
+
+    $row = [
+        'id' => $maxId + 1,
+        'user_id' => $userId,
+        'name' => trim($name),
+        'filters' => $filters,
+        'alert_enabled' => $alertEnabled,
+        'last_match_ids' => $ids,
+        'last_checked_at' => date('Y-m-d H:i:s'),
+        'created_at' => date('Y-m-d H:i:s'),
+    ];
+    $items[] = $row;
+    writeJsonFile('saved_searches.json', $items);
+    return $row;
+}
+
+function updateSavedSearch(int $id, int $userId, array $patch): bool
+{
+    $items = getAllSavedSearches();
+    foreach ($items as &$item) {
+        if ((int)($item['id'] ?? 0) !== $id || (int)($item['user_id'] ?? 0) !== $userId) {
+            continue;
+        }
+        if (array_key_exists('name', $patch)) {
+            $item['name'] = trim((string)$patch['name']);
+        }
+        if (array_key_exists('alert_enabled', $patch)) {
+            $item['alert_enabled'] = !empty($patch['alert_enabled']);
+        }
+        if (array_key_exists('filters', $patch) && is_array($patch['filters'])) {
+            $item['filters'] = savedSearchFiltersFromInput($patch['filters']);
+        }
+        writeJsonFile('saved_searches.json', $items);
+        return true;
+    }
+    return false;
+}
+
+function deleteSavedSearch(int $id, int $userId): bool
+{
+    $items = getAllSavedSearches();
+    $before = count($items);
+    $items = array_values(array_filter(
+        $items,
+        static fn($s) => !((int)($s['id'] ?? 0) === $id && (int)($s['user_id'] ?? 0) === $userId)
+    ));
+    if (count($items) === $before) {
+        return false;
+    }
+    writeJsonFile('saved_searches.json', $items);
+    return true;
+}
+
+function processSavedSearchAlerts(bool $force = false): array
+{
+    $result = ['checked' => 0, 'notified' => 0, 'skipped' => false];
+    $statePath = 'saved_search_state.json';
+    $state = readJsonFile($statePath);
+    $lastRun = strtotime((string)($state['last_run'] ?? '')) ?: 0;
+    if (!$force && $lastRun > 0 && (time() - $lastRun) < 900) {
+        $result['skipped'] = true;
+        return $result;
+    }
+
+    $items = getAllSavedSearches();
+    $changed = false;
+
+    foreach ($items as &$search) {
+        if (empty($search['alert_enabled'])) {
+            continue;
+        }
+        $userId = (int)($search['user_id'] ?? 0);
+        if ($userId <= 0) {
+            continue;
+        }
+        $result['checked']++;
+        $matched = getPublicAds(savedSearchToPublicFilters($search));
+        $currentIds = array_map(static fn($a) => (int)($a['id'] ?? 0), $matched);
+        $prevIds = array_map('intval', $search['last_match_ids'] ?? []);
+        $newIds = array_values(array_diff($currentIds, $prevIds));
+
+        if ($newIds !== []) {
+            $titles = [];
+            foreach ($matched as $ad) {
+                if (in_array((int)($ad['id'] ?? 0), $newIds, true)) {
+                    $titles[] = (string)($ad['title'] ?? 'Oglas');
+                }
+                if (count($titles) >= 3) {
+                    break;
+                }
+            }
+            $label = savedSearchLabel($search);
+            $count = count($newIds);
+            $preview = implode(', ', $titles);
+            $query = buildFilterQuery($search['filters'] ?? []);
+            notifyUser(
+                $userId,
+                'saved_search_match',
+                'Nova ponuda za sačuvanu pretragu',
+                ($count === 1 ? '1 novi oglas' : "{$count} novih oglasa") . " za „{$label}”" . ($preview !== '' ? ": {$preview}" : ''),
+                '/index.php' . ($query !== '' ? '?' . $query : '')
+            );
+            $result['notified']++;
+        }
+
+        $search['last_match_ids'] = array_slice($currentIds, 0, 80);
+        $search['last_checked_at'] = date('Y-m-d H:i:s');
+        $changed = true;
+    }
+    unset($search);
+
+    if ($changed) {
+        writeJsonFile('saved_searches.json', $items);
+    }
+    writeJsonFile($statePath, ['last_run' => date('Y-m-d H:i:s'), 'last_result' => $result]);
+    return $result;
+}

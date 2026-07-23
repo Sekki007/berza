@@ -1,0 +1,13 @@
+[
+    {
+        "id": 1,
+        "seller_id": 1,
+        "from_user_id": 2,
+        "vote": "positive",
+        "score": 1,
+        "comment": "Ekstra prodaja",
+        "ad_id": null,
+        "created_at": "2026-07-22 12:29:28",
+        "updated_at": "2026-07-22 12:29:28"
+    }
+]

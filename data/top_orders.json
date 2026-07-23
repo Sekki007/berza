@@ -1,0 +1,14 @@
+[
+    {
+        "id": 1,
+        "user_id": 1,
+        "ad_id": 1,
+        "package_id": "d3",
+        "days": 3,
+        "price": 5,
+        "status": "paid",
+        "created_at": "2026-07-23 11:09:06",
+        "paid_at": "2026-07-23 11:09:06",
+        "auto": true
+    }
+]

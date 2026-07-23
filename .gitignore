@@ -1,0 +1,8 @@
+.env
+vendor/
+node_modules/
+.DS_Store
+Thumbs.db
+/public/uploads/ads/*
+!/public/uploads/ads/.gitkeep
+/data/*_state.json

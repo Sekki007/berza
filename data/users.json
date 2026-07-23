@@ -1,0 +1,27 @@
+[
+    {
+        "id": 1,
+        "username": "admin",
+        "password_hash": "$2y$10$IePWFxxngm51mSE78bxi8.44l4n7pWf.8kmDDHmmcf9WSODhPPZfK",
+        "full_name": "Administrator",
+        "phone": "0601234567",
+        "shop_name": "MobilServis Demo",
+        "shop_bio": "Telefoni, delovi i servis — Novi Pazar i okolina.",
+        "is_admin": true,
+        "created_at": "2026-07-22 11:00:00",
+        "email": "xsekki@gmail.com",
+        "credits": 1000,
+        "email_verify_token": "659b92b03d81669527cbe63ddce42d16b3dd0245948c3014",
+        "email_verify_sent_at": "2026-07-23 13:43:48"
+    },
+    {
+        "id": 2,
+        "username": "Sekki",
+        "password_hash": "$2y$10$9Tmxbf3d.\/WZSpC.EKfi7OTjiROHzeVwZIltQNkF4Pu2fF9xHki\/i",
+        "full_name": "Sead Skrijelj",
+        "phone": "0652660160",
+        "created_at": "2026-07-22 12:28:13",
+        "verified_seller": true,
+        "verified_seller_at": "2026-07-23 13:41:36"
+    }
+]

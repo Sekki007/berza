@@ -1,0 +1,206 @@
+<?php
+/** @var string $activePage */
+/** @var bool $hideMobileBar */
+
+$user = currentUser();
+$site = siteSettings();
+$activePage = $activePage ?? 'oglasi';
+$hideMobileBar = $hideMobileBar ?? false;
+$unreadMessages = ($user && !empty($site['enable_messages'])) ? getUnreadMessageCount((int)$user['id']) : 0;
+$unreadNotifications = $user ? getUnreadNotificationCount((int)$user['id']) : 0;
+$menuDisplayName = '';
+$menuShopLink = '';
+if ($user) {
+    $menuProfile = findUserById((int)$user['id']) ?? $user;
+    $menuDisplayName = (string)(($menuProfile['shop_name'] ?? '') ?: ($menuProfile['full_name'] ?? $user['full_name'] ?? ''));
+    $menuShopLink = shopUrl((string)($menuProfile['username'] ?? $user['username'] ?? ''));
+}
+?>
+    <footer class="footer">
+        <div class="footer-inner">
+            <div class="footer-col">
+                <h4>Korisno</h4>
+                <a href="/index.php">Početna</a>
+                <a href="/kako-radi.php">Kako radi</a>
+                <a href="/login.php">Prijava</a>
+            </div>
+            <div class="footer-col">
+                <h4>Prodavci</h4>
+                <a href="/ad_form.php">Postavite oglas</a>
+                <a href="/register.php">Registracija</a>
+            </div>
+            <div class="footer-col">
+                <h4>Nalog</h4>
+                <a href="/nalog.php">Moj profil</a>
+                <?php if ($user): ?><a href="/nalog.php?tab=obavestenja">Obaveštenja</a><?php endif; ?>
+                <?php if (!empty($site['enable_messages'])): ?><a href="/poruke.php">Poruke</a><?php endif; ?>
+            </div>
+        </div>
+        <div class="container footer-copy"><?= h((string)$site['footer_copyright']) ?></div>
+    </footer>
+
+    <div class="mobile-menu-overlay" data-account-menu-overlay></div>
+    <aside id="mobile-account-menu" class="mobile-account-menu" data-account-menu aria-hidden="true" role="dialog" aria-label="Meni naloga">
+        <div class="mobile-account-menu-handle" aria-hidden="true"></div>
+        <div class="mobile-account-menu-head">
+            <div>
+                <strong><?= $user ? h($menuDisplayName !== '' ? $menuDisplayName : 'Moj nalog') : 'Dobrodošli' ?></strong>
+                <span><?= $user ? '@' . h((string)($user['username'] ?? '')) : 'Prijavi se da upravljaš oglasima' ?></span>
+            </div>
+            <button type="button" class="mobile-account-menu-close" data-close-account-menu aria-label="Zatvori">×</button>
+        </div>
+        <nav class="mobile-account-menu-nav">
+            <?php if ($user): ?>
+                <a href="/nalog.php" class="mobile-account-menu-item">
+                    <span class="mobile-account-menu-icon">👤</span>
+                    <span class="mobile-account-menu-text">
+                        <strong>Moj nalog</strong>
+                        <small>Pregled, statistika, brze akcije</small>
+                    </span>
+                </a>
+                <a href="/nalog.php?tab=oglasi" class="mobile-account-menu-item">
+                    <span class="mobile-account-menu-icon">📋</span>
+                    <span class="mobile-account-menu-text">
+                        <strong>Moji oglasi</strong>
+                        <small>Izmena, produženje, status</small>
+                    </span>
+                </a>
+                <?php if (topPurchaseEnabled()): ?>
+                    <a href="/nalog.php?tab=top" class="mobile-account-menu-item mobile-account-menu-item-accent">
+                        <span class="mobile-account-menu-icon">⭐</span>
+                        <span class="mobile-account-menu-text">
+                            <strong>Kupi TOP isticanje</strong>
+                            <small>Plaća se kreditima</small>
+                        </span>
+                    </a>
+                <?php endif; ?>
+                <?php if (creditsEnabled()): ?>
+                    <a href="/nalog.php?tab=krediti" class="mobile-account-menu-item mobile-account-menu-item-accent">
+                        <span class="mobile-account-menu-icon">💰</span>
+                        <span class="mobile-account-menu-text">
+                            <strong>Krediti</strong>
+                            <small>Saldo: <?= formatCredits(getUserCredits((int)$user['id'])) ?></small>
+                        </span>
+                    </a>
+                <?php endif; ?>
+                <a href="/nalog.php?tab=obavestenja" class="mobile-account-menu-item">
+                    <span class="mobile-account-menu-icon">🔔</span>
+                    <span class="mobile-account-menu-text">
+                        <strong>Obaveštenja</strong>
+                        <small>Istek oglasa i ostalo</small>
+                    </span>
+                    <?= renderUnreadBadge($unreadNotifications) ?>
+                </a>
+                <?php if (!empty($site['enable_messages'])): ?>
+                    <a href="/poruke.php" class="mobile-account-menu-item">
+                        <span class="mobile-account-menu-icon">💬</span>
+                        <span class="mobile-account-menu-text">
+                            <strong>Poruke</strong>
+                            <small>Razgovori sa kupcima</small>
+                        </span>
+                        <?= renderUnreadBadge($unreadMessages) ?>
+                    </a>
+                <?php endif; ?>
+                <?php if (!empty($site['enable_favorites'])): ?>
+                    <a href="/favorites.php" class="mobile-account-menu-item">
+                        <span class="mobile-account-menu-icon">♡</span>
+                        <span class="mobile-account-menu-text">
+                            <strong>Omiljeni</strong>
+                            <small>Sačuvani oglasi</small>
+                        </span>
+                    </a>
+                <?php endif; ?>
+                <a href="<?= h($menuShopLink) ?>" class="mobile-account-menu-item">
+                    <span class="mobile-account-menu-icon">🏪</span>
+                    <span class="mobile-account-menu-text">
+                        <strong>Moj izlog</strong>
+                        <small>Javni profil prodavca</small>
+                    </span>
+                </a>
+                <a href="/nalog.php?tab=profil" class="mobile-account-menu-item">
+                    <span class="mobile-account-menu-icon">✎</span>
+                    <span class="mobile-account-menu-text">
+                        <strong>Profil</strong>
+                        <small>Ime, telefon, email</small>
+                    </span>
+                </a>
+                <a href="/ad_form.php" class="mobile-account-menu-item mobile-account-menu-item-accent">
+                    <span class="mobile-account-menu-icon">＋</span>
+                    <span class="mobile-account-menu-text">
+                        <strong>Novi oglas</strong>
+                        <small>Telefon, deo ili servis</small>
+                    </span>
+                </a>
+                <?php if (isAdmin()): ?>
+                    <a href="/dashboard.php" class="mobile-account-menu-item">
+                        <span class="mobile-account-menu-icon">⚙</span>
+                        <span class="mobile-account-menu-text">
+                            <strong>Admin panel</strong>
+                            <small>Prijave, korisnici, podešavanja</small>
+                        </span>
+                    </a>
+                <?php endif; ?>
+                <a href="/logout.php" class="mobile-account-menu-item mobile-account-menu-item-danger">
+                    <span class="mobile-account-menu-icon">↩</span>
+                    <span class="mobile-account-menu-text">
+                        <strong>Odjava</strong>
+                        <small>Izlaz iz naloga</small>
+                    </span>
+                </a>
+            <?php else: ?>
+                <a href="/login.php" class="mobile-account-menu-item mobile-account-menu-item-accent">
+                    <span class="mobile-account-menu-icon">🔑</span>
+                    <span class="mobile-account-menu-text">
+                        <strong>Prijava</strong>
+                        <small>Uđi u nalog</small>
+                    </span>
+                </a>
+                <?php if (!empty($site['enable_registration'])): ?>
+                    <a href="/register.php" class="mobile-account-menu-item">
+                        <span class="mobile-account-menu-icon">＋</span>
+                        <span class="mobile-account-menu-text">
+                            <strong>Registracija</strong>
+                            <small>Napravi nalog</small>
+                        </span>
+                    </a>
+                <?php endif; ?>
+                <a href="/ad_form.php" class="mobile-account-menu-item">
+                    <span class="mobile-account-menu-icon">📋</span>
+                    <span class="mobile-account-menu-text">
+                        <strong>Postavi oglas</strong>
+                        <small>Potrebna je prijava</small>
+                    </span>
+                </a>
+                <a href="/kako-radi.php" class="mobile-account-menu-item">
+                    <span class="mobile-account-menu-icon">ℹ</span>
+                    <span class="mobile-account-menu-text">
+                        <strong>Kako radi</strong>
+                        <small>Kratko uputstvo</small>
+                    </span>
+                </a>
+            <?php endif; ?>
+        </nav>
+    </aside>
+
+    <?php if (!$hideMobileBar): ?>
+        <nav class="mobile-bar">
+            <a href="/index.php" data-nav="oglasi" class="<?= $activePage === 'oglasi' ? 'active' : '' ?>"><span class="mobile-bar-icon">🏠</span><span>Oglasi</span></a>
+            <a href="/index.php#search" data-nav="pretraga" data-focus-search class="<?= $activePage === 'pretraga' ? 'active' : '' ?>"><span class="mobile-bar-icon">🔎</span><span>Pretraga</span></a>
+            <a href="<?= $user ? '/ad_form.php' : '/login.php' ?>" data-nav="dodaj" class="<?= $activePage === 'dodaj' ? 'active' : '' ?>"><span class="mobile-bar-icon">＋</span><span>Dodaj</span></a>
+            <a href="<?= $user ? '/poruke.php' : '/login.php' ?>" data-nav="poruke" class="nav-with-badge <?= $activePage === 'poruke' ? 'active' : '' ?>"><span class="mobile-bar-icon">💬</span><span>Poruke</span><?= $user ? renderUnreadBadge($unreadMessages) : '' ?></a>
+            <button type="button" data-nav="nalog" data-open-account-menu class="mobile-bar-account nav-with-badge <?= $activePage === 'nalog' ? 'active' : '' ?>" aria-label="Nalog meni" aria-expanded="false" aria-controls="mobile-account-menu">
+                <span class="mobile-bar-icon">👤</span>
+                <span>Nalog</span>
+                <?= $user ? renderUnreadBadge($unreadNotifications) : '' ?>
+            </button>
+        </nav>
+    <?php endif; ?>
+
+    <div class="compare-bar" data-compare-bar <?= count(compareIds()) > 0 ? '' : 'hidden' ?>>
+        <span data-compare-bar-label>Uporedi (<span data-compare-count><?= count(compareIds()) ?></span>)</span>
+        <a class="btn-sm btn-sm-primary" href="/uporedi.php">Otvori</a>
+    </div>
+
+    <script src="/assets/js/app.js"></script>
+</body>
+</html>
