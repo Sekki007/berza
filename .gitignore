@@ -5,4 +5,5 @@ node_modules/
 Thumbs.db
 /public/uploads/ads/*
 !/public/uploads/ads/.gitkeep
+!/public/uploads/ads/seed_*.jpg
 /data/*_state.json
