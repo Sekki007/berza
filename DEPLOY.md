@@ -10,37 +10,42 @@ Ne stavljaј projekat kao `http://IP/mobiberza.rs/` bez dodatnog BASE_PATH (link
 
 ---
 
-## Opcija A — najbolja: domen `mobiberza.rs` → server
+## Nginx (primer — kao na Contabo / VPS)
 
-1. DNS kod registrara: A record `mobiberza.rs` → tvoja server IP
-2. Apache virtual host (primer):
+PHP socket proveri: `ls /run/php/` (npr. `php8.3-fpm.sock`).
 
-```apache
-<VirtualHost *:80>
-    ServerName mobiberza.rs
-    ServerAlias www.mobiberza.rs
-    DocumentRoot /var/www/berza/public
+```nginx
+server {
+    listen 80;
+    server_name berza.duckdns.org;
 
-    <Directory /var/www/berza/public>
-        AllowOverride All
-        Require all granted
-    </Directory>
+    root /var/www/berza/public;
+    index index.php index.html;
 
-    ErrorLog ${APACHE_LOG_DIR}/berza-error.log
-    CustomLog ${APACHE_LOG_DIR}/berza-access.log combined
-</VirtualHost>
+    access_log /var/log/nginx/berza-access.log;
+    error_log  /var/log/nginx/berza-error.log;
+
+    # Pretty URL: /oglas/123-slug  i  /izlog/username
+    rewrite ^/oglas/(\d+)(?:-.*)?/?$ /oglas.php?id=$1 last;
+    rewrite ^/izlog/([^/]+)/?$ /izlog.php?u=$1 last;
+
+    location / {
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+
+    location ~ \.php$ {
+        include snippets/fastcgi-php.conf;
+        fastcgi_pass unix:/run/php/php8.3-fpm.sock;
+    }
+
+    location ~ /\.(?!well-known).* {
+        deny all;
+    }
+}
 ```
 
-3. Kod u `/var/www/berza` (git clone), document root = `public/`
-4. `router.php` nije potreban na Apache-u ako DocumentRoot = `public/`
+Bez ova dva `rewrite` reda, klik na oglas ne otvara detalj (link ide na `/oglas/...` umesto `/oglas.php?id=`).
 
-Opciono HTTPS (certbot):
-
-```bash
-sudo certbot --apache -d mobiberza.rs -d www.mobiberza.rs
-```
-
-Pristup: `https://mobiberza.rs`
 
 ---
 

@@ -75,6 +75,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    if ($action === 'delete_ad') {
+        $adId = (int)($_POST['ad_id'] ?? 0);
+        $ad = $adId > 0 ? getAdById($adId) : null;
+        if (!$ad || !userOwnsAd($ad, $userId)) {
+            setFlash('danger', 'Oglas nije pronađen ili nemaš dozvolu.');
+        } elseif (deleteAdById($adId)) {
+            setFlash('success', 'Oglas je obrisan.');
+        } else {
+            setFlash('danger', 'Brisanje nije uspelo.');
+        }
+        header('Location: /nalog.php?tab=oglasi');
+        exit;
+    }
+
     if ($action === 'buy_top') {
         $adId = (int)($_POST['ad_id'] ?? 0);
         $packageId = trim((string)($_POST['package_id'] ?? ''));
@@ -514,6 +528,11 @@ require __DIR__ . '/partials/layout-start.php';
                                             <input type="hidden" name="action" value="sold">
                                             <input type="hidden" name="ad_id" value="<?= (int)$ad['id'] ?>">
                                             <button type="submit" class="btn-sm"><?= !empty($ad['is_sold']) ? 'Vrati u prodaju' : 'Prodato' ?></button>
+                                        </form>
+                                        <form method="POST" class="inline-form" onsubmit="return confirm('Trajno obrisati ovaj oglas? Ova radnja se ne može poništiti.');">
+                                            <input type="hidden" name="action" value="delete_ad">
+                                            <input type="hidden" name="ad_id" value="<?= (int)$ad['id'] ?>">
+                                            <button type="submit" class="btn-sm btn-sm-danger">Obriši</button>
                                         </form>
                                     </div>
 

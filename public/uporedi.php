@@ -25,7 +25,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!empty($result['full'])) {
         setFlash('danger', 'Možeš uporediti najviše ' . compareMaxAds() . ' oglasa.');
     }
-    $redirect = trim((string)($_POST['redirect'] ?? $_SERVER['HTTP_REFERER'] ?? '/uporedi.php'));
+    $redirect = trim((string)($_POST['redirect'] ?? '/uporedi.php'));
     if ($redirect === '' || !str_starts_with($redirect, '/')) {
         $redirect = '/uporedi.php';
     }

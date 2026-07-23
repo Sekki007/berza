@@ -196,10 +196,10 @@ if ($user) {
         </nav>
     <?php endif; ?>
 
-    <div class="compare-bar" data-compare-bar <?= count(compareIds()) > 0 ? '' : 'hidden' ?>>
+    <a class="compare-bar" href="/uporedi.php" data-compare-bar <?= count(compareIds()) > 0 ? '' : 'hidden' ?>>
         <span data-compare-bar-label>Uporedi (<span data-compare-count><?= count(compareIds()) ?></span>)</span>
-        <a class="btn-sm btn-sm-primary" href="/uporedi.php">Otvori</a>
-    </div>
+        <span class="btn-sm btn-sm-primary">Otvori</span>
+    </a>
 
     <script src="/assets/js/app.js"></script>
 </body>

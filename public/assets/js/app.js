@@ -293,19 +293,42 @@
       }).then(function (r) { return r.json(); }).then(function (data) {
         if (!data || !data.ok) return;
         if (data.full) {
-          alert('Možeš uporediti najviše 3 oglasa.');
+          alert('Možeš uporediti najviše 3 oglasa. Otvori poređenje da ukloniš neki.');
+          window.location.href = '/uporedi.php';
           return;
         }
+        // Dodat u poređenje → odmah na stranicu poređenja
+        if (data.added) {
+          window.location.href = '/uporedi.php';
+          return;
+        }
+        // Uklonjen sa liste — ostani na stranici
         all('[data-compare-toggle="' + adId + '"]').forEach(function (el) {
-          const on = !!data.in_compare;
-          el.classList.toggle('active', on);
-          el.setAttribute('aria-pressed', on ? 'true' : 'false');
+          el.classList.remove('active');
+          el.setAttribute('aria-pressed', 'false');
           if (el.classList.contains('ad-compare-btn') || el.tagName === 'BUTTON') {
-            el.textContent = on ? 'U poređenju' : 'Uporedi';
+            el.textContent = 'Uporedi';
           }
         });
         updateCompareBar(data.count || 0);
-      }).catch(function () {});
+      }).catch(function () {
+        // Fallback bez JS JSON: klasični POST redirect
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/uporedi.php';
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = 'ad_id';
+        input.value = adId;
+        form.appendChild(input);
+        const redir = document.createElement('input');
+        redir.type = 'hidden';
+        redir.name = 'redirect';
+        redir.value = '/uporedi.php';
+        form.appendChild(redir);
+        document.body.appendChild(form);
+        form.submit();
+      });
     });
   }
 

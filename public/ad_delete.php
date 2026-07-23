@@ -3,12 +3,22 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/config/bootstrap.php';
-requireAdmin();
+requireLogin();
 
-$adId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
+$adId = isset($_GET['id']) ? (int)$_GET['id'] : (int)($_POST['id'] ?? 0);
 if ($adId <= 0) {
     setFlash('danger', 'Neispravan ID oglasa.');
-    header('Location: /ads.php');
+    header('Location: ' . (isAdmin() ? '/ads.php' : '/nalog.php?tab=oglasi'));
+    exit;
+}
+
+$ad = getAdById($adId);
+$userId = (int)currentUser()['id'];
+$allowed = $ad && (isAdmin() || userOwnsAd($ad, $userId));
+
+if (!$allowed) {
+    setFlash('danger', 'Oglas nije pronađen ili nemaš dozvolu.');
+    header('Location: ' . (isAdmin() ? '/ads.php' : '/nalog.php?tab=oglasi'));
     exit;
 }
 
@@ -17,5 +27,6 @@ if (deleteAdById($adId)) {
 } else {
     setFlash('danger', 'Oglas nije pronađen.');
 }
-header('Location: /ads.php');
+
+header('Location: ' . (isAdmin() ? '/ads.php' : '/nalog.php?tab=oglasi'));
 exit;
