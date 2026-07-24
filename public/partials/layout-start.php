@@ -43,7 +43,7 @@ $compareCount = count(compareIds());
     <?php endif; ?>
     <meta name="twitter:title" content="<?= h($pageTitle) ?>">
     <meta name="twitter:description" content="<?= h($pageDescription) ?>">
-    <link rel="stylesheet" href="/assets/css/style.css?v=20260724h">
+    <link rel="stylesheet" href="/assets/css/style.css?v=20260724i">
 </head>
 <body class="<?= h($bodyClass) ?>" data-page="<?= h($activePage) ?>" data-unread-messages="<?= (int)$unreadMessages ?>" data-compare-count="<?= (int)$compareCount ?>">
 <?php if (!$minimalHeader): ?>
@@ -94,15 +94,50 @@ $compareCount = count(compareIds());
             <a class="btn-post" href="<?= $user ? '/ad_form.php' : '/login.php' ?>">Postavite oglas</a>
             <div class="header-user">
                 <?php if ($user): ?>
-                    <span><?= h($user['full_name']) ?></span>
-                    <?php if (!empty($site['enable_messages'])): ?>
-                        <a class="nav-with-badge" href="/poruke.php">Poruke<?= renderUnreadBadge($unreadMessages) ?></a>
-                    <?php endif; ?>
-                    <a class="nav-with-badge" href="/nalog.php">Moj nalog<?= renderUnreadBadge($unreadNotifications) ?></a>
-                    <?php if (isAdmin()): ?><a href="/dashboard.php">Admin</a><?php endif; ?>
+                    <span class="header-user-name" title="<?= h((string)$user['full_name']) ?>"><?= h((string)$user['full_name']) ?></span>
+                    <nav class="header-nav" aria-label="Nalog">
+                        <?php if (!empty($site['enable_messages'])): ?>
+                            <a class="header-nav-link nav-with-badge" href="/poruke.php" title="Poruke">
+                                <svg class="header-nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                    <path d="M4 5.5A2.5 2.5 0 0 1 6.5 3h11A2.5 2.5 0 0 1 20 5.5v8A2.5 2.5 0 0 1 17.5 16H9.2L5.4 19.1a.75.75 0 0 1-1.2-.6V5.5Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+                                </svg>
+                                <span class="header-nav-label">Poruke</span>
+                                <?= renderUnreadBadge($unreadMessages) ?>
+                            </a>
+                        <?php endif; ?>
+                        <a class="header-nav-link nav-with-badge" href="/nalog.php" title="Moj nalog">
+                            <svg class="header-nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <circle cx="12" cy="8.2" r="3.2" fill="none" stroke="currentColor" stroke-width="1.7"/>
+                                <path d="M5.5 19.2c1.4-3 3.7-4.5 6.5-4.5s5.1 1.5 6.5 4.5" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                            </svg>
+                            <span class="header-nav-label">Moj nalog</span>
+                            <?= renderUnreadBadge($unreadNotifications) ?>
+                        </a>
+                        <?php if (isAdmin()): ?>
+                            <a class="header-nav-link header-nav-admin" href="/dashboard.php" title="Admin panel">
+                                <svg class="header-nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                    <path d="M12 3.5 19.5 7v4.2c0 4.6-3 7.8-7.5 9.3-4.5-1.5-7.5-4.7-7.5-9.3V7L12 3.5Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/>
+                                    <path d="M9.2 12.1 11 13.9l3.8-3.8" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                                </svg>
+                                <span class="header-nav-label">Admin</span>
+                            </a>
+                        <?php endif; ?>
+                    </nav>
                 <?php else: ?>
-                    <a href="/login.php">Ulogujte se</a>
-                    <?php if (!empty($site['enable_registration'])): ?><a href="/register.php">Registrujte se</a><?php endif; ?>
+                    <nav class="header-nav" aria-label="Prijava">
+                        <a class="header-nav-link" href="/login.php" title="Prijava">
+                            <svg class="header-nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <path d="M10 4H6.5A2.5 2.5 0 0 0 4 6.5v11A2.5 2.5 0 0 0 6.5 20H10" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+                                <path d="M10.5 12H20m0 0-3.2-3.2M20 12l-3.2 3.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
+                            </svg>
+                            <span class="header-nav-label">Prijava</span>
+                        </a>
+                        <?php if (!empty($site['enable_registration'])): ?>
+                            <a class="header-nav-link header-nav-primary" href="/register.php" title="Registracija">
+                                <span class="header-nav-label">Registracija</span>
+                            </a>
+                        <?php endif; ?>
+                    </nav>
                 <?php endif; ?>
             </div>
         </div>
