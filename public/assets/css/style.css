@@ -960,7 +960,7 @@ body.page-detail { background: #f0f0f0; }
 }
 .kp-detail-seller-col,
 .kp-detail-filter-col {
-  display: none !important;
+  display: none;
 }
 .kp-mobile-only { display: block; }
 .kp-seller-heading {
@@ -1348,9 +1348,6 @@ body.kp-lightbox-open {
     overflow: hidden;
     max-width: none;
   }
-  .kp-gallery-slide {
-    aspect-ratio: 1 / 1;
-  }
   .kp-detail-head {
     margin: 12px 0 0;
     border-radius: 12px;
@@ -1368,22 +1365,27 @@ body.kp-lightbox-open {
   .kp-mobile-only { display: none !important; }
   .kp-detail-wrap.main-wrap {
     display: grid !important;
-    grid-template-columns: 220px minmax(0, 1fr) 260px;
+    grid-template-columns: 220px minmax(0, 1fr) 280px;
+    grid-template-areas: "filters main seller";
     gap: 16px;
     align-items: start;
     padding-top: 12px;
+    max-width: 1200px;
   }
+  .kp-detail-filter-col,
   .kp-detail-filter-col.sidebar {
     display: block !important;
-    grid-column: 1;
+    grid-area: filters;
     width: 220px;
+    max-width: 220px;
   }
   .kp-detail-main {
-    grid-column: 2;
+    grid-area: main;
+    width: auto !important;
   }
   .kp-detail-seller-col {
     display: block !important;
-    grid-column: 3;
+    grid-area: seller;
     width: auto;
   }
   .kp-detail-seller-sticky {
@@ -1407,20 +1409,65 @@ body.kp-lightbox-open {
   .kp-detail-filter-col .filter-body {
     padding: 10px 12px;
   }
+  /* Desktop galerija: širi okvir da nema praznog belog prostora */
+  .kp-gallery-slide {
+    aspect-ratio: 4 / 3;
+    max-height: 480px;
+  }
+
+  /* Grid kartice oglasa — naslov/cena vidljivi */
+  .ads-list.view-grid .kp-list-card .kp-list-inner,
+  .ads-list.view-grid .kp-list-card .ad-item-inner {
+    flex-direction: column !important;
+    padding: 0;
+    gap: 0;
+  }
+  .ads-list.view-grid .kp-list-card .kp-list-thumb,
+  .ads-list.view-grid .kp-list-card .ad-thumb {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 160px !important;
+    min-height: 160px !important;
+    border-radius: 0;
+  }
+  .ads-list.view-grid .kp-list-card .kp-list-body,
+  .ads-list.view-grid .kp-list-card .ad-body {
+    display: flex !important;
+    flex-direction: column;
+    gap: 4px;
+    padding: 10px 12px 12px !important;
+    min-height: 72px;
+  }
+  .ads-list.view-grid .kp-list-card .kp-list-title,
+  .ads-list.view-grid .kp-list-card .ad-title {
+    display: -webkit-box !important;
+    font-size: 14px !important;
+    color: #1a6bb5 !important;
+    order: 2;
+  }
+  .ads-list.view-grid .kp-list-card .kp-list-price-row {
+    order: 1;
+    margin-top: 0;
+  }
+  .ads-list.view-grid .kp-list-card .kp-list-price,
+  .ads-list.view-grid .kp-list-card .ad-price {
+    font-size: 16px !important;
+    color: #d32f2f !important;
+  }
+  .ads-list.view-grid .kp-list-card .kp-list-loc,
+  .ads-list.view-grid .kp-list-card .kp-list-stats {
+    display: none;
+  }
 }
 
 @media (min-width: 768px) and (max-width: 1023px) {
   .kp-detail-wrap.main-wrap {
-    grid-template-columns: minmax(0, 1fr) 240px;
+    grid-template-columns: minmax(0, 1fr) 260px;
+    grid-template-areas: "main seller";
   }
+  .kp-detail-filter-col,
   .kp-detail-filter-col.sidebar {
     display: none !important;
-  }
-  .kp-detail-main {
-    grid-column: 1;
-  }
-  .kp-detail-seller-col {
-    grid-column: 2;
   }
 }
 

@@ -102,6 +102,8 @@ $pageImage = $primaryImg ? absoluteUrl($primaryImg) : '';
 $canonicalUrl = absoluteUrl(adUrl($ad));
 $ogType = 'product';
 $inCompare = isInCompare($id);
+$adBrand = (string)($ad['brand'] ?? '');
+$adCategory = (string)($ad['category'] ?? '');
 
 require __DIR__ . '/partials/layout-start.php';
 
@@ -191,34 +193,37 @@ $contactBlock = static function (string $formId = 'poruka') use (
 ?>
 
 <div class="main-wrap kp-detail-wrap" data-ad-id="<?= (int)$id ?>">
-    <aside class="kp-detail-seller-col" aria-label="Prodavac">
-        <div class="kp-detail-seller-sticky">
-            <div class="kp-card kp-seller-heading">
-                <strong>Ko je okačio oglas</strong>
-            </div>
-            <?php $sellerBlock(); ?>
-            <?php $contactBlock('poruka-desktop'); ?>
-            <div class="kp-card kp-detail-browse">
-                <div class="filter-head" style="margin:0 0 10px;">Brza pretraga</div>
-                <a class="kp-browse-link" href="/index.php?type=<?= urlencode($type) ?>"><?= h(adTypeLabel($type)) ?></a>
-                <?php if (!empty($ad['brand'])): ?>
-                    <a class="kp-browse-link" href="/index.php?brand=<?= urlencode((string)$ad['brand']) ?>"><?= h((string)$ad['brand']) ?></a>
+    <aside class="kp-detail-filter-col sidebar" aria-label="Filteri">
+        <form method="GET" action="/index.php" class="filter-box">
+            <div class="filter-head">Filteri</div>
+            <div class="filter-body">
+                <select class="filter-select" name="type">
+                    <option value="">Svi tipovi oglasa</option>
+                    <option value="telefon" <?= $type === 'telefon' ? 'selected' : '' ?>>Telefoni</option>
+                    <option value="delovi" <?= $type === 'delovi' ? 'selected' : '' ?>>Delovi</option>
+                    <option value="servis" <?= $type === 'servis' ? 'selected' : '' ?>>Servisne usluge</option>
+                </select>
+                <?php if ($adBrand !== ''): ?>
+                    <input type="hidden" name="brand" value="<?= h($adBrand) ?>">
                 <?php endif; ?>
                 <?php if ($sellerLocation !== ''): ?>
-                    <a class="kp-browse-link" href="/index.php?location=<?= urlencode($sellerLocation) ?>"><?= h($sellerLocation) ?></a>
+                    <input type="hidden" name="location" value="<?= h($sellerLocation) ?>">
                 <?php endif; ?>
-                <?php if ($sellerUsername !== ''): ?>
-                    <a class="kp-browse-link" href="<?= h(shopUrl($sellerUsername)) ?>">Svi oglasi prodavca</a>
-                <?php endif; ?>
+                <select class="filter-select" name="sort">
+                    <option value="newest">Najnovije</option>
+                    <option value="price_asc">Cena rastuće</option>
+                    <option value="price_desc">Cena opadajuće</option>
+                </select>
+                <button class="filter-apply" type="submit">Prikaži oglase</button>
             </div>
-        </div>
+        </form>
     </aside>
 
     <main class="content kp-detail-main">
         <div class="breadcrumb kp-detail-breadcrumb">
             <a href="/index.php">Početna</a>
-            <?php if (!empty($ad['category'])): ?>
-                › <a href="/index.php?type=<?= urlencode($type) ?>"><?= h((string)$ad['category']) ?></a>
+            <?php if ($adCategory !== ''): ?>
+                › <a href="/index.php?type=<?= urlencode($type) ?>"><?= h($adCategory) ?></a>
             <?php endif; ?>
         </div>
 
@@ -291,11 +296,11 @@ $contactBlock = static function (string $formId = 'poruka') use (
             <?php $sellerBlock(); ?>
         </div>
 
-        <?php if (!empty($ad['category'])): ?>
+        <?php if ($adCategory !== ''): ?>
             <a class="kp-card kp-cat-chip" href="/index.php?type=<?= urlencode($type) ?>">
                 <div>
-                    <span class="kp-cat-name"><?= h((string)$ad['category']) ?></span>
-                    <span class="kp-cat-path"><?= h(adTypeLabel($type)) ?><?= !empty($ad['brand']) ? ' · ' . h((string)$ad['brand']) : '' ?></span>
+                    <span class="kp-cat-name"><?= h($adCategory) ?></span>
+                    <span class="kp-cat-path"><?= h(adTypeLabel($type)) ?><?= $adBrand !== '' ? ' · ' . h($adBrand) : '' ?></span>
                 </div>
                 <span class="kp-cat-chevron">›</span>
             </a>
@@ -311,7 +316,10 @@ $contactBlock = static function (string $formId = 'poruka') use (
             <p style="margin:6px 0 0;font-size:13px;color:#666;line-height:1.45;">Dogovor oko kupovine i plaćanja je između kupca i prodavca. TelefonBerza ne učestvuje u transakciji.</p>
         </div>
 
-        <?php if ($similarAds): ?>
+        <?php
+        $detailAd = $ad;
+        if ($similarAds):
+        ?>
             <div class="kp-card">
                 <h3 class="kp-section-title">Slični oglasi</h3>
                 <div class="ads-list compact-list">
@@ -320,33 +328,33 @@ $contactBlock = static function (string $formId = 'poruka') use (
                     <?php endforeach; ?>
                 </div>
             </div>
-        <?php endif; ?>
+        <?php
+        endif;
+        $ad = $detailAd;
+        ?>
     </main>
 
-    <aside class="kp-detail-filter-col sidebar" aria-label="Filteri">
-        <form method="GET" action="/index.php" class="filter-box">
-            <div class="filter-head">Filteri</div>
-            <div class="filter-body">
-                <select class="filter-select" name="type">
-                    <option value="">Svi tipovi oglasa</option>
-                    <option value="telefon" <?= $type === 'telefon' ? 'selected' : '' ?>>Telefoni</option>
-                    <option value="delovi" <?= $type === 'delovi' ? 'selected' : '' ?>>Delovi</option>
-                    <option value="servis" <?= $type === 'servis' ? 'selected' : '' ?>>Servisne usluge</option>
-                </select>
-                <?php if (!empty($ad['brand'])): ?>
-                    <input type="hidden" name="brand" value="<?= h((string)$ad['brand']) ?>">
+    <aside class="kp-detail-seller-col" aria-label="Prodavac">
+        <div class="kp-detail-seller-sticky">
+            <div class="kp-card kp-seller-heading">
+                <strong>Ko je okačio oglas</strong>
+            </div>
+            <?php $sellerBlock(); ?>
+            <?php $contactBlock('poruka-desktop'); ?>
+            <div class="kp-card kp-detail-browse">
+                <div class="filter-head" style="margin:0 0 10px;">Brza pretraga</div>
+                <a class="kp-browse-link" href="/index.php?type=<?= urlencode($type) ?>"><?= h(adTypeLabel($type)) ?></a>
+                <?php if ($adBrand !== ''): ?>
+                    <a class="kp-browse-link" href="/index.php?brand=<?= urlencode($adBrand) ?>"><?= h($adBrand) ?></a>
                 <?php endif; ?>
                 <?php if ($sellerLocation !== ''): ?>
-                    <input type="hidden" name="location" value="<?= h($sellerLocation) ?>">
+                    <a class="kp-browse-link" href="/index.php?location=<?= urlencode($sellerLocation) ?>"><?= h($sellerLocation) ?></a>
                 <?php endif; ?>
-                <select class="filter-select" name="sort">
-                    <option value="newest">Najnovije</option>
-                    <option value="price_asc">Cena rastuće</option>
-                    <option value="price_desc">Cena opadajuće</option>
-                </select>
-                <button class="filter-apply" type="submit">Prikaži oglase</button>
+                <?php if ($sellerUsername !== ''): ?>
+                    <a class="kp-browse-link" href="<?= h(shopUrl($sellerUsername)) ?>">Svi oglasi prodavca</a>
+                <?php endif; ?>
             </div>
-        </form>
+        </div>
     </aside>
 </div>
 
