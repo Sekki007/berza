@@ -389,21 +389,39 @@ body.account-menu-open{overflow:hidden;}
 .account-menu a{display:block;padding:14px 16px;background:#fff;border:1px solid var(--border);border-radius:4px;margin-bottom:8px;color:var(--text);text-decoration:none;font-weight:bold;}
 
 .account-page { max-width: 920px; }
-.account-hero { display: flex; flex-direction: column; gap: 14px; margin-bottom: 10px; }
-.account-hero-main { display: flex; gap: 12px; align-items: center; }
+.account-hero { display: flex; flex-direction: column; gap: 16px; margin-bottom: 10px; padding: 16px; }
+.account-hero-main { display: flex; gap: 12px; align-items: flex-start; }
 .account-avatar { width: 56px; height: 56px; font-size: 20px; flex-shrink: 0; }
-.account-name { font-size: 20px; margin: 0 0 2px; line-height: 1.25; display: flex; flex-wrap: wrap; align-items: center; gap: 4px 0; }
-.account-name .verified-badge,
-.account-name .business-badge { margin-left: 6px; }
+.account-hero-info { min-width: 0; flex: 1; }
+.account-name-row { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-bottom: 4px; }
+.account-name { font-size: 20px; margin: 0; line-height: 1.25; }
+.account-name-badges { display: inline-flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.account-name-badges .verified-badge,
+.account-name-badges .business-badge { margin-left: 0; }
 .account-username { margin: 0 0 6px; color: var(--text-muted); font-size: 13px; }
-.account-hero-actions { display: flex; flex-direction: column; gap: 8px; }
-.account-hero-primary { width: 100%; }
-.account-hero-secondary { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.account-hero-secondary .btn-message { width: 100%; min-width: 0; padding: 12px 10px; font-size: 14px; }
-.account-hero-secondary .btn-message:only-child,
+.account-rep { font-size: 13px; color: var(--text-muted); }
+.account-hero-actions { display: flex; flex-direction: column; gap: 8px; width: 100%; }
+.account-hero-primary,
+.account-hero-secondary .btn-message {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+.account-hero-secondary {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 8px;
+  width: 100%;
+}
+.account-hero-secondary.has-multi {
+  grid-template-columns: 1fr 1fr;
+}
+.account-hero-secondary .btn-message { padding: 12px 10px; font-size: 14px; }
 .account-hero-secondary .account-hero-promo { grid-column: 1 / -1; }
-.account-hero-actions .btn-call,
-.account-hero-actions .btn-message { display: inline-flex; align-items: center; justify-content: center; text-decoration: none; }
 .account-overview { margin-bottom: 12px; padding: 14px; }
 .account-overview-head {
   display: flex;
@@ -604,14 +622,13 @@ a.account-ov-stat:hover {
 .notif-item a { font-size: 13px; font-weight: bold; }
 
 @media (min-width: 768px) {
-  .account-hero { flex-direction: row; justify-content: space-between; align-items: center; gap: 16px; }
+  .account-hero { flex-direction: row; justify-content: space-between; align-items: center; gap: 20px; padding: 18px; }
   .account-avatar { width: 64px; height: 64px; font-size: 22px; }
   .account-name { font-size: 22px; }
-  .account-hero-actions { flex-direction: column; align-items: stretch; min-width: 200px; }
-  .account-hero-secondary { grid-template-columns: 1fr; }
+  .account-hero-actions { flex-direction: column; align-items: stretch; width: 220px; flex-shrink: 0; }
+  .account-hero-secondary,
+  .account-hero-secondary.has-multi { grid-template-columns: 1fr; }
   .account-hero-secondary .account-hero-promo { grid-column: auto; }
-  .account-hero-actions .btn-call,
-  .account-hero-actions .btn-message { width: 100%; min-width: 0; }
   .account-overview { padding: 16px; }
   .account-ov-stat { min-height: 84px; }
   .account-ov-stat strong { font-size: 30px; }

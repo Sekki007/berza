@@ -303,22 +303,25 @@ require __DIR__ . '/partials/layout-start.php';
 
         <section class="account-hero form-card">
             <div class="account-hero-main">
-                <div class="seller-avatar account-avatar"><?= h($initials) ?></div>
+                <div class="seller-avatar account-avatar" aria-hidden="true"><?= h($initials) ?></div>
                 <div class="account-hero-info">
-                    <h1 class="account-name"><?= h($displayName) ?> <?= renderSellerBadges($profile) ?></h1>
+                    <div class="account-name-row">
+                        <h1 class="account-name"><?= h($displayName) ?></h1>
+                        <div class="account-name-badges"><?= renderSellerBadges($profile) ?></div>
+                    </div>
                     <p class="account-username">@<?= h((string)$profile['username']) ?></p>
                     <div class="account-rep"><?= renderReputation($summary, $shopLink) ?></div>
                 </div>
             </div>
             <div class="account-hero-actions">
                 <a class="btn-call account-hero-primary" href="/ad_form.php">+ Novi oglas</a>
-                <div class="account-hero-secondary">
+                <div class="account-hero-secondary<?= $creditsOn ? ' has-multi' : '' ?>">
                     <a class="btn-message" href="<?= h($shopLink) ?>">Moj izlog</a>
                     <?php if ($creditsOn): ?>
                         <a class="btn-message btn-top-cta" href="?tab=krediti">Krediti: <?= number_format($userCredits, 0, ',', '.') ?></a>
                     <?php endif; ?>
                     <?php if ($topOn): ?>
-                        <a class="btn-message account-hero-promo" href="?tab=top">⭐ TOP</a>
+                        <a class="btn-message account-hero-promo" href="?tab=top">⭐ TOP promocije</a>
                     <?php endif; ?>
                 </div>
             </div>
