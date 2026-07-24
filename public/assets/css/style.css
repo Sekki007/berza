@@ -941,7 +941,8 @@ a.rep-thumb:hover { opacity: 0.85; text-decoration: underline; }
 
 /* ===== KP-style ad detail ===== */
 body.page-detail { background: #f0f0f0; }
-.page-detail .container { max-width: 1100px; }
+.page-detail .main-wrap.kp-detail-wrap { max-width: 1200px; }
+.page-detail .container { max-width: 1200px; }
 .kp-detail-wrap.main-wrap {
   display: block !important;
   flex-direction: column;
@@ -957,6 +958,33 @@ body.page-detail { background: #f0f0f0; }
   min-width: 0;
   flex: none !important;
 }
+.kp-detail-seller-col,
+.kp-detail-filter-col {
+  display: none !important;
+}
+.kp-mobile-only { display: block; }
+.kp-seller-heading {
+  padding-bottom: 10px !important;
+  margin-bottom: 0 !important;
+  border-bottom-left-radius: 0 !important;
+  border-bottom-right-radius: 0 !important;
+  margin-bottom: -1px !important;
+}
+.kp-seller-heading + .kp-seller-card,
+.kp-seller-heading + .kp-card {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+.kp-browse-link {
+  display: block;
+  padding: 8px 0;
+  font-size: 13px;
+  color: #1a6bb5;
+  text-decoration: none;
+  border-bottom: 1px solid #f0f0f0;
+}
+.kp-browse-link:last-child { border-bottom: none; }
+.kp-browse-link:hover { text-decoration: underline; }
 .kp-gallery {
   position: relative;
   display: block !important;
@@ -1318,7 +1346,7 @@ body.kp-lightbox-open {
     margin: 0;
     border-radius: 12px;
     overflow: hidden;
-    max-width: 560px;
+    max-width: none;
   }
   .kp-gallery-slide {
     aspect-ratio: 1 / 1;
@@ -1327,19 +1355,70 @@ body.kp-lightbox-open {
     margin: 12px 0 0;
     border-radius: 12px;
     border: 1px solid #ececec;
-    max-width: 720px;
+    max-width: none;
   }
   .kp-detail-main > .kp-card,
   .kp-detail-main > .kp-card.kp-cat-chip {
-    max-width: 720px;
+    max-width: none;
   }
   .kp-sticky-contact,
   .kp-sticky-contact.sticky-contact,
   .page-detail .sticky-contact { display: none !important; }
   .page-detail { padding-bottom: 24px; }
+  .kp-mobile-only { display: none !important; }
   .kp-detail-wrap.main-wrap {
-    display: block !important;
+    display: grid !important;
+    grid-template-columns: 260px minmax(0, 1fr) 220px;
+    gap: 16px;
+    align-items: start;
     padding-top: 12px;
+  }
+  .kp-detail-seller-col {
+    display: block !important;
+    grid-column: 1;
+    width: auto;
+  }
+  .kp-detail-main {
+    grid-column: 2;
+  }
+  .kp-detail-filter-col.sidebar {
+    display: block !important;
+    grid-column: 3;
+    width: 220px;
+  }
+  .kp-detail-seller-sticky {
+    position: sticky;
+    top: 16px;
+  }
+  .kp-detail-filter-col .filter-box {
+    position: sticky;
+    top: 16px;
+    background: #fff;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    margin-bottom: 0;
+  }
+  .kp-detail-filter-col .filter-head {
+    background: #f8f8f8;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 0;
+  }
+  .kp-detail-filter-col .filter-body {
+    padding: 10px 12px;
+  }
+
+  /* Lista oglasa: filteri desno na desktopu */
+  .main-wrap:not(.kp-detail-wrap) .sidebar { order: 2; }
+  .main-wrap:not(.kp-detail-wrap) .content { order: 1; }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .kp-detail-wrap.main-wrap {
+    grid-template-columns: 240px minmax(0, 1fr);
+  }
+  .kp-detail-filter-col.sidebar {
+    display: none !important;
   }
 }
 
