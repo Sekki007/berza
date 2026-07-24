@@ -6,14 +6,14 @@ require_once dirname(__DIR__) . '/config/bootstrap.php';
 requireAdmin();
 
 $userId = (int)($_GET['id'] ?? $_POST['user_id'] ?? 0);
-$user = $userId > 0 ? findUserById($userId) : null;
-if (!$user) {
+$editUser = $userId > 0 ? findUserById($userId) : null;
+if (!$editUser) {
     setFlash('danger', 'Korisnik nije pronađen.');
     header('Location: /admin_users.php');
     exit;
 }
 
-$isTargetAdmin = !empty($user['is_admin']) || ($user['username'] ?? '') === 'admin';
+$isTargetAdmin = !empty($editUser['is_admin']) || ($editUser['username'] ?? '') === 'admin';
 $formError = '';
 $cities = categoriesConfig()['cities'] ?? [];
 
@@ -43,7 +43,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
     $formError = (string)($result['error'] ?? 'Čuvanje nije uspelo.');
-    $user = array_merge($user, [
+    $editUser = array_merge($editUser, [
         'full_name' => trim((string)($_POST['full_name'] ?? '')),
         'username' => trim((string)($_POST['username'] ?? '')),
         'phone' => trim((string)($_POST['phone'] ?? '')),
@@ -61,9 +61,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     ]);
 }
 
-$accountType = userAccountType($user);
-$bizStatus = userBusinessStatus($user);
-$bizKind = userBusinessKind($user);
+$accountType = userAccountType($editUser);
+$bizStatus = userBusinessStatus($editUser);
+$bizKind = userBusinessKind($editUser);
 
 $pageTitle = 'Izmena korisnika — Admin';
 $activePage = 'nalog';
@@ -77,11 +77,11 @@ require __DIR__ . '/partials/layout-start.php';
     <?php require __DIR__ . '/partials/admin-sidebar.php'; ?>
     <main class="content">
         <div class="breadcrumb"><a href="/dashboard.php">Admin</a> › <a href="/admin_users.php">Korisnici</a> › Izmena</div>
-        <h2 style="font-size:18px;margin-bottom:6px;">Izmena korisnika #<?= (int)$user['id'] ?></h2>
+        <h2 style="font-size:18px;margin-bottom:6px;">Izmena korisnika #<?= (int)$editUser['id'] ?></h2>
         <p class="form-hint" style="margin-bottom:14px;">
-            @<?= h((string)$user['username']) ?>
-            · <a href="<?= h(shopUrl((string)$user['username'])) ?>">Izlog</a>
-            · oglasa: <?= countUserAds((int)$user['id']) ?>
+            @<?= h((string)$editUser['username']) ?>
+            · <a href="<?= h(shopUrl((string)$editUser['username'])) ?>">Izlog</a>
+            · oglasa: <?= countUserAds((int)$editUser['id']) ?>
         </p>
 
         <?php if ($formError !== ''): ?>
@@ -90,40 +90,40 @@ require __DIR__ . '/partials/layout-start.php';
 
         <form method="POST" class="form-card" style="max-width:720px;">
             <?= csrfField() ?>
-            <input type="hidden" name="user_id" value="<?= (int)$user['id'] ?>">
+            <input type="hidden" name="user_id" value="<?= (int)$editUser['id'] ?>">
 
             <h3 style="margin:0 0 12px;font-size:14px;">Osnovno</h3>
             <div class="form-row">
                 <div class="form-group">
                     <label>Ime i prezime *</label>
-                    <input name="full_name" value="<?= h((string)($user['full_name'] ?? '')) ?>" required>
+                    <input name="full_name" value="<?= h((string)($editUser['full_name'] ?? '')) ?>" required>
                 </div>
                 <div class="form-group">
                     <label>Korisničko ime *</label>
-                    <input name="username" value="<?= h((string)($user['username'] ?? '')) ?>" required <?= $isTargetAdmin ? 'readonly' : '' ?>>
+                    <input name="username" value="<?= h((string)($editUser['username'] ?? '')) ?>" required <?= $isTargetAdmin ? 'readonly' : '' ?>>
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-group">
                     <label>Telefon</label>
-                    <input name="phone" value="<?= h((string)($user['phone'] ?? '')) ?>" placeholder="06x…">
+                    <input name="phone" value="<?= h((string)($editUser['phone'] ?? '')) ?>" placeholder="06x…">
                 </div>
                 <div class="form-group">
                     <label>Email</label>
-                    <input type="email" name="email" value="<?= h((string)($user['email'] ?? '')) ?>">
+                    <input type="email" name="email" value="<?= h((string)($editUser['email'] ?? '')) ?>">
                 </div>
             </div>
             <div class="form-row">
                 <div class="form-group">
                     <label>Naziv izloga</label>
-                    <input name="shop_name" value="<?= h((string)($user['shop_name'] ?? '')) ?>">
+                    <input name="shop_name" value="<?= h((string)($editUser['shop_name'] ?? '')) ?>">
                 </div>
                 <div class="form-group">
                     <label>Grad</label>
                     <select name="location">
                         <option value="">—</option>
                         <?php foreach ($cities as $city): ?>
-                            <option value="<?= h($city) ?>" <?= ($user['location'] ?? '') === $city ? 'selected' : '' ?>><?= h($city) ?></option>
+                            <option value="<?= h($city) ?>" <?= ($editUser['location'] ?? '') === $city ? 'selected' : '' ?>><?= h($city) ?></option>
                         <?php endforeach; ?>
                     </select>
                 </div>
@@ -154,7 +154,7 @@ require __DIR__ . '/partials/layout-start.php';
             <div class="form-row">
                 <div class="form-group">
                     <label>PIB</label>
-                    <input name="pib" value="<?= h((string)($user['pib'] ?? '')) ?>" maxlength="9" inputmode="numeric" placeholder="9 cifara">
+                    <input name="pib" value="<?= h((string)($editUser['pib'] ?? '')) ?>" maxlength="9" inputmode="numeric" placeholder="9 cifara">
                 </div>
                 <div class="form-group">
                     <label>Status firme</label>
@@ -170,16 +170,16 @@ require __DIR__ . '/partials/layout-start.php';
             <h3 style="margin:18px 0 12px;font-size:14px;">Status</h3>
             <div class="form-group form-checks">
                 <label class="type-chip" style="min-width:auto;flex:none;">
-                    <input type="checkbox" name="verified_seller" value="1" <?= !empty($user['verified_seller']) ? 'checked' : '' ?>>
+                    <input type="checkbox" name="verified_seller" value="1" <?= !empty($editUser['verified_seller']) ? 'checked' : '' ?>>
                     Proveren prodavac
                 </label>
                 <label class="type-chip" style="min-width:auto;flex:none;">
-                    <input type="checkbox" name="phone_verified" value="1" <?= !empty($user['phone_verified_at']) ? 'checked' : '' ?>>
+                    <input type="checkbox" name="phone_verified" value="1" <?= !empty($editUser['phone_verified_at']) ? 'checked' : '' ?>>
                     Telefon verifikovan
                 </label>
                 <?php if (!$isTargetAdmin): ?>
                     <label class="type-chip" style="min-width:auto;flex:none;">
-                        <input type="checkbox" name="is_blocked" value="1" <?= !empty($user['is_blocked']) ? 'checked' : '' ?>>
+                        <input type="checkbox" name="is_blocked" value="1" <?= !empty($editUser['is_blocked']) ? 'checked' : '' ?>>
                         Blokiran
                     </label>
                 <?php else: ?>
@@ -189,7 +189,7 @@ require __DIR__ . '/partials/layout-start.php';
             <?php if (!$isTargetAdmin): ?>
                 <div class="form-group">
                     <label>Razlog blokade / odbijanja</label>
-                    <input name="blocked_reason" value="<?= h((string)($user['blocked_reason'] ?? $user['business_reject_reason'] ?? '')) ?>">
+                    <input name="blocked_reason" value="<?= h((string)($editUser['blocked_reason'] ?? $editUser['business_reject_reason'] ?? '')) ?>">
                 </div>
             <?php endif; ?>
 
