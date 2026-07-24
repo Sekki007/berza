@@ -1368,23 +1368,23 @@ body.kp-lightbox-open {
   .kp-mobile-only { display: none !important; }
   .kp-detail-wrap.main-wrap {
     display: grid !important;
-    grid-template-columns: 260px minmax(0, 1fr) 220px;
+    grid-template-columns: 220px minmax(0, 1fr) 260px;
     gap: 16px;
     align-items: start;
     padding-top: 12px;
   }
-  .kp-detail-seller-col {
+  .kp-detail-filter-col.sidebar {
     display: block !important;
     grid-column: 1;
-    width: auto;
+    width: 220px;
   }
   .kp-detail-main {
     grid-column: 2;
   }
-  .kp-detail-filter-col.sidebar {
+  .kp-detail-seller-col {
     display: block !important;
     grid-column: 3;
-    width: 220px;
+    width: auto;
   }
   .kp-detail-seller-sticky {
     position: sticky;
@@ -1407,18 +1407,20 @@ body.kp-lightbox-open {
   .kp-detail-filter-col .filter-body {
     padding: 10px 12px;
   }
-
-  /* Lista oglasa: filteri desno na desktopu */
-  .main-wrap:not(.kp-detail-wrap) .sidebar { order: 2; }
-  .main-wrap:not(.kp-detail-wrap) .content { order: 1; }
 }
 
 @media (min-width: 768px) and (max-width: 1023px) {
   .kp-detail-wrap.main-wrap {
-    grid-template-columns: 240px minmax(0, 1fr);
+    grid-template-columns: minmax(0, 1fr) 240px;
   }
   .kp-detail-filter-col.sidebar {
     display: none !important;
+  }
+  .kp-detail-main {
+    grid-column: 1;
+  }
+  .kp-detail-seller-col {
+    grid-column: 2;
   }
 }
 
