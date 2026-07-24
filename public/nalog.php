@@ -957,7 +957,7 @@ require __DIR__ . '/partials/layout-start.php';
                         <div class="form-group">
                             <label>Tip naloga</label>
                             <select name="account_type" id="account-type-select">
-                                <option value="private" <?= $accountType === 'private' ? 'selected' : '' ?>>Privatno lice</option>
+                                <option value="private" <?= $accountType === 'private' ? 'selected' : '' ?>>Fizičko lice</option>
                                 <option value="business" <?= $accountType === 'business' ? 'selected' : '' ?>>Prodavnica / Servis</option>
                             </select>
                         </div>

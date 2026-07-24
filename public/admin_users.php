@@ -141,7 +141,7 @@ require __DIR__ . '/partials/layout-start.php';
                                     <span style="color:var(--text-muted);">Bez zahteva</span>
                                 <?php endif; ?>
                             <?php else: ?>
-                                <span style="color:var(--text-light);">Privatno</span>
+                                <span style="color:var(--text-light);">Fizičko lice</span>
                             <?php endif; ?>
                         </td>
                         <td><?= countUserAds($uid) ?></td>
