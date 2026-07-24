@@ -316,12 +316,15 @@ function updateUserProfile(int $userId, array $data): bool
             $user['notify_email'] = !empty($data['notify_email']);
         }
         writeJsonFile('users.json', $users);
-        $_SESSION['user']['full_name'] = $user['full_name'];
-        if (array_key_exists('email', $user)) {
-            $_SESSION['user']['email'] = $user['email'];
-        }
-        if (array_key_exists('notify_email', $user)) {
-            $_SESSION['user']['notify_email'] = $user['notify_email'];
+        $sessionId = (int)($_SESSION['user']['id'] ?? 0);
+        if ($sessionId === $userId) {
+            $_SESSION['user']['full_name'] = $user['full_name'];
+            if (array_key_exists('email', $user)) {
+                $_SESSION['user']['email'] = $user['email'];
+            }
+            if (array_key_exists('notify_email', $user)) {
+                $_SESSION['user']['notify_email'] = $user['notify_email'];
+            }
         }
         return true;
     }

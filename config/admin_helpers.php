@@ -229,3 +229,160 @@ function requireNotBlocked(): void
         exit;
     }
 }
+
+/**
+ * Admin izmena korisnika.
+ *
+ * @return array{ok:bool,error?:string}
+ */
+function adminUpdateUser(int $userId, array $input): array
+{
+    $user = findUserById($userId);
+    if (!$user) {
+        return ['ok' => false, 'error' => 'Korisnik nije pronađen.'];
+    }
+
+    $isTargetAdmin = !empty($user['is_admin']) || ($user['username'] ?? '') === 'admin';
+    $fullName = trim((string)($input['full_name'] ?? ''));
+    $username = trim((string)($input['username'] ?? ''));
+    $phoneRaw = trim((string)($input['phone'] ?? ''));
+    $email = trim((string)($input['email'] ?? ''));
+    $shopName = trim((string)($input['shop_name'] ?? ''));
+    $location = trim((string)($input['location'] ?? ''));
+    $newPassword = (string)($input['new_password'] ?? '');
+    $accountType = trim((string)($input['account_type'] ?? 'private')) === 'business' ? 'business' : 'private';
+    $businessKind = trim((string)($input['business_kind'] ?? ''));
+    $pibRaw = trim((string)($input['pib'] ?? ''));
+    $businessStatus = trim((string)($input['business_status'] ?? 'none'));
+    $verifiedSeller = !empty($input['verified_seller']);
+    $isBlocked = !empty($input['is_blocked']);
+    $blockedReason = trim((string)($input['blocked_reason'] ?? ''));
+    $phoneVerified = !empty($input['phone_verified']);
+
+    if ($fullName === '') {
+        return ['ok' => false, 'error' => 'Ime i prezime su obavezni.'];
+    }
+    if (mb_strlen($username) < 3) {
+        return ['ok' => false, 'error' => 'Korisničko ime mora imati bar 3 karaktera.'];
+    }
+    if (!preg_match('/^[a-zA-Z0-9._-]+$/', $username)) {
+        return ['ok' => false, 'error' => 'Korisničko ime sme sadržati samo slova, brojeve, . _ -'];
+    }
+    $existingUser = findUserByUsername($username);
+    if ($existingUser && (int)($existingUser['id'] ?? 0) !== $userId) {
+        return ['ok' => false, 'error' => 'Korisničko ime je zauzeto.'];
+    }
+
+    $phone = '';
+    if ($phoneRaw !== '') {
+        $normalized = normalizePhoneRs($phoneRaw);
+        if ($normalized === null) {
+            return ['ok' => false, 'error' => 'Telefon nije validan (koristi srpski broj).'];
+        }
+        $byPhone = findUserByPhone($normalized);
+        if ($byPhone && (int)($byPhone['id'] ?? 0) !== $userId) {
+            return ['ok' => false, 'error' => 'Telefon je već vezan za drugi nalog.'];
+        }
+        $phone = $normalized;
+    }
+
+    if ($email !== '' && !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        return ['ok' => false, 'error' => 'Email nije validan.'];
+    }
+
+    if ($newPassword !== '' && strlen($newPassword) < 6) {
+        return ['ok' => false, 'error' => 'Nova lozinka mora imati bar 6 karaktera.'];
+    }
+
+    if ($accountType === 'business') {
+        if (!in_array($businessKind, ['shop', 'service'], true)) {
+            return ['ok' => false, 'error' => 'Izaberi vrstu firme (Prodavnica / Servis).'];
+        }
+        $pib = $pibRaw !== '' ? normalizePib($pibRaw) : null;
+        if ($pibRaw !== '' && $pib === null) {
+            return ['ok' => false, 'error' => 'PIB mora imati tačno 9 cifara.'];
+        }
+        if (!in_array($businessStatus, ['none', 'pending', 'approved', 'rejected'], true)) {
+            $businessStatus = 'none';
+        }
+    } else {
+        $businessKind = '';
+        $pib = null;
+        $businessStatus = 'none';
+    }
+
+    $ok = updateUserProfile($userId, [
+        'full_name' => $fullName,
+        'phone' => $phone,
+        'email' => $email,
+        'shop_name' => $shopName,
+        'location' => $location,
+        'account_type' => $accountType,
+        'business_kind' => $businessKind,
+        'pib' => $pibRaw,
+    ]);
+    if (!$ok) {
+        return ['ok' => false, 'error' => 'Profil nije sačuvan. Proveri telefon / PIB.'];
+    }
+
+    $patch = [
+        'username' => $username,
+        'verified_seller' => $verifiedSeller,
+        'verified_seller_at' => $verifiedSeller ? date('Y-m-d H:i:s') : null,
+    ];
+
+    if ($accountType === 'business') {
+        $patch['business_status'] = $businessStatus;
+        if ($businessStatus === 'approved') {
+            $patch['business_verified_at'] = date('Y-m-d H:i:s');
+            $patch['business_reject_reason'] = null;
+        } elseif ($businessStatus === 'rejected') {
+            $patch['business_verified_at'] = null;
+            $patch['business_reject_reason'] = $blockedReason !== '' ? $blockedReason : 'Odbijeno od admina.';
+        } elseif ($businessStatus === 'pending') {
+            $patch['business_verified_at'] = null;
+            if (empty($user['business_requested_at'])) {
+                $patch['business_requested_at'] = date('Y-m-d H:i:s');
+            }
+        } else {
+            $patch['business_verified_at'] = null;
+            $patch['business_reject_reason'] = null;
+        }
+    } else {
+        $patch['business_status'] = 'none';
+        $patch['business_verified_at'] = null;
+        $patch['business_requested_at'] = null;
+        $patch['business_reject_reason'] = null;
+        $patch['business_kind'] = '';
+        $patch['pib'] = '';
+    }
+
+    if ($phoneVerified && $phone !== '') {
+        $patch['phone_verified_at'] = date('Y-m-d H:i:s');
+    } elseif (!$phoneVerified) {
+        $patch['phone_verified_at'] = null;
+    }
+
+    if (!$isTargetAdmin) {
+        $patch['is_blocked'] = $isBlocked ? 1 : 0;
+        $patch['blocked_reason'] = $isBlocked ? ($blockedReason !== '' ? $blockedReason : 'Blokiran od administratora') : null;
+        if (!$isBlocked) {
+            $patch['blocked_at'] = null;
+        } elseif (empty($user['blocked_at'])) {
+            $patch['blocked_at'] = date('Y-m-d H:i:s');
+        }
+    }
+
+    if (!patchUser($userId, $patch)) {
+        return ['ok' => false, 'error' => 'Dodatna polja nisu sačuvana.'];
+    }
+
+    if ($newPassword !== '') {
+        if (!updateUserPassword($userId, $newPassword)) {
+            return ['ok' => false, 'error' => 'Lozinka nije promenjena.'];
+        }
+    }
+
+    return ['ok' => true];
+}
+

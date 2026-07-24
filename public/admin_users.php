@@ -159,6 +159,7 @@ require __DIR__ . '/partials/layout-start.php';
                         <td>
                             <?php if (!$isAdminUser): ?>
                                 <div class="admin-actions">
+                                    <a class="btn-sm btn-sm-primary" href="/admin_user_edit.php?id=<?= $uid ?>">Izmeni</a>
                                     <a class="btn-sm" href="<?= h(shopUrl((string)$u['username'])) ?>">Izlog</a>
                                     <?php if ($bizStatus === 'pending' || $bizStatus === 'rejected'): ?>
                                         <form method="POST" style="display:inline;">
@@ -209,7 +210,10 @@ require __DIR__ . '/partials/layout-start.php';
                                     </form>
                                 </div>
                             <?php else: ?>
-                                <span style="font-size:12px;color:var(--text-light);">Zaštićen</span>
+                                <div class="admin-actions">
+                                    <a class="btn-sm btn-sm-primary" href="/admin_user_edit.php?id=<?= $uid ?>">Izmeni</a>
+                                    <span style="font-size:12px;color:var(--text-light);">Zaštićen</span>
+                                </div>
                             <?php endif; ?>
                         </td>
                     </tr>
