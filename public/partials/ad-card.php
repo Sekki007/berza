@@ -12,12 +12,6 @@ $isFav = function_exists('isFavorite') ? isFavorite($adId) : false;
 $favEnabled = !empty(siteSettings()['enable_favorites']);
 $views = (int)($ad['views'] ?? 0);
 $priceOpen = isAdPriceOpen($ad);
-$cardShop = trim((string)($ad['shop_name'] ?? ''));
-$cardSeller = !empty($ad['created_by']) ? findUserById((int)$ad['created_by']) : null;
-$cardShopUrl = $cardSeller ? shopUrl((string)$cardSeller['username']) : '';
-if ($cardShop === '' && $cardSeller) {
-    $cardShop = getSellerShopName($cardSeller);
-}
 ?>
 <article class="ad-item kp-list-card <?= $isSold ? 'is-sold ad-sold' : '' ?> <?= $isHighlighted ? 'ad-highlighted' : '' ?>" data-category="<?= h($type) ?>" data-ad-id="<?= $adId ?>">
     <a href="<?= h($adHref) ?>" class="ad-item-link kp-list-link">
@@ -50,16 +44,6 @@ if ($cardShop === '' && $cardSeller) {
                     <?php if ($isPromoted): ?><span class="kp-list-badge">TOP</span><?php endif; ?>
                 </div>
                 <div class="ad-desktop-extra">
-                    <?php if ($cardShop !== ''): ?>
-                        <?php if ($cardShopUrl !== ''): ?>
-                            <div class="ad-shop">
-                                <span class="ad-shop-link" data-shop-url="<?= h($cardShopUrl) ?>"><?= h($cardShop) ?></span>
-                                <?= $cardSeller ? renderSellerBadges($cardSeller) : '' ?>
-                            </div>
-                        <?php else: ?>
-                            <div class="ad-shop"><?= h($cardShop) ?></div>
-                        <?php endif; ?>
-                    <?php endif; ?>
                     <p class="ad-desc"><?= h((string)($ad['description'] ?? '')) ?></p>
                     <div class="ad-tags">
                         <span class="tag <?= $type === 'telefon' ? 'tag-cat-phone' : ($type === 'delovi' ? 'tag-cat-parts' : 'tag-cat-service') ?>">
