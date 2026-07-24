@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 /**
  * Tokenizuje upit: "iphone 13 beograd" → ['iphone','13','beograd']
+ * Napomena: ključevi moraju ostati stringovi (PHP pretvara "13" u int u array key).
+ *
+ * @return list<string>
  */
 function searchTokens(string $query): array
 {
@@ -14,12 +17,13 @@ function searchTokens(string $query): array
     $parts = preg_split('/[\s,;.\/|+]+/u', $query) ?: [];
     $tokens = [];
     foreach ($parts as $part) {
-        $part = trim($part);
-        if ($part !== '' && mb_strlen($part) >= 1) {
-            $tokens[$part] = true;
+        $part = trim((string)$part);
+        if ($part === '') {
+            continue;
         }
+        $tokens[$part] = $part;
     }
-    return array_keys($tokens);
+    return array_values($tokens);
 }
 
 function adSearchHaystack(array $ad): string
@@ -48,7 +52,10 @@ function scoreAdAgainstTokens(array $ad, array $tokens): int
     $brand = mb_strtolower((string)($ad['brand'] ?? ''));
     $location = mb_strtolower((string)($ad['location'] ?? ''));
     $score = 0;
+    $qJoined = implode(' ', array_map('strval', $tokens));
+
     foreach ($tokens as $token) {
+        $token = (string)$token;
         if ($token === '') {
             continue;
         }
@@ -56,18 +63,26 @@ function scoreAdAgainstTokens(array $ad, array $tokens): int
             return -1;
         }
         if (str_contains($title, $token)) {
-            $score += 8;
+            $score += 10;
         }
         if (str_contains($model, $token)) {
-            $score += 6;
+            $score += 7;
         }
         if (str_contains($brand, $token)) {
-            $score += 4;
+            $score += 5;
         }
         if (str_contains($location, $token)) {
             $score += 3;
         }
         $score += 1;
+    }
+
+    // Bonus ako ceo upit liči na naslov / model
+    if ($qJoined !== '' && str_contains($title, $qJoined)) {
+        $score += 20;
+    }
+    if ($qJoined !== '' && str_contains($model, $qJoined)) {
+        $score += 15;
     }
     if (!empty($ad['is_promoted'])) {
         $score += 2;
@@ -76,14 +91,19 @@ function scoreAdAgainstTokens(array $ad, array $tokens): int
 }
 
 /**
- * Predlozi za autocomplete: modeli, brendovi, gradovi, aktivni oglasi.
+ * Autocomplete: prvo stvarni oglasi iz baze, zatim modeli/brendovi koji postoje u aktivnim oglasima.
+ *
  * @return list<array{type:string,label:string,sub?:string,url:string,price?:string}>
  */
 function searchSuggestions(string $query, int $limit = 8): array
 {
     $query = trim($query);
+    if ($query === '' || mb_strlen($query) < 1) {
+        return [];
+    }
+
     $tokens = searchTokens($query);
-    $settings = siteSettings();
+    $qLower = mb_strtolower($query);
     $out = [];
     $seen = [];
 
@@ -91,7 +111,7 @@ function searchSuggestions(string $query, int $limit = 8): array
         if (count($out) >= $limit) {
             return false;
         }
-        $key = ($item['type'] ?? '') . '|' . ($item['label'] ?? '') . '|' . ($item['url'] ?? '');
+        $key = ($item['type'] ?? '') . '|' . mb_strtolower((string)($item['label'] ?? '')) . '|' . ($item['url'] ?? '');
         if (isset($seen[$key])) {
             return true;
         }
@@ -100,15 +120,66 @@ function searchSuggestions(string $query, int $limit = 8): array
         return count($out) < $limit;
     };
 
-    $qLower = mb_strtolower($query);
-
-    foreach (($settings['brands'] ?? []) as $brand) {
-        if ($qLower !== '' && !str_contains(mb_strtolower((string)$brand), $qLower)) {
+    // 1) Stvarni aktivni oglasi (glavni autocomplete)
+    $ads = getPublicAds(['q' => $query, 'sort' => 'relevance']);
+    $adLimit = min($limit, 6);
+    $adCount = 0;
+    foreach ($ads as $ad) {
+        if ($adCount >= $adLimit) {
+            break;
+        }
+        $title = trim((string)($ad['title'] ?? ''));
+        if ($title === '') {
             continue;
         }
+        $price = formatPrice((float)($ad['price'] ?? 0));
+        $loc = trim((string)($ad['location'] ?? ''));
+        $sub = $price . ($loc !== '' ? ' · ' . $loc : '');
+        if (!$add([
+            'type' => 'ad',
+            'label' => $title,
+            'sub' => $sub,
+            'url' => adUrl($ad),
+            'price' => $price,
+        ])) {
+            return $out;
+        }
+        $adCount++;
+    }
+
+    // 2) Jedinstveni modeli / brendovi koji stvarno postoje u rezultatima (ne ceo katalog)
+    $modelsSeen = [];
+    $brandsSeen = [];
+    foreach ($ads as $ad) {
+        $model = trim((string)($ad['model'] ?? ''));
+        $brand = trim((string)($ad['brand'] ?? ''));
+        if ($model !== '' && !isset($modelsSeen[mb_strtolower($model)])) {
+            if ($qLower === '' || str_contains(mb_strtolower($model), $qLower) || tokensMatchText($tokens, $model)) {
+                $modelsSeen[mb_strtolower($model)] = $model;
+            }
+        }
+        if ($brand !== '' && !isset($brandsSeen[mb_strtolower($brand)])) {
+            if ($qLower === '' || str_contains(mb_strtolower($brand), $qLower) || tokensMatchText($tokens, $brand)) {
+                $brandsSeen[mb_strtolower($brand)] = $brand;
+            }
+        }
+    }
+
+    foreach ($modelsSeen as $model) {
+        if (!$add([
+            'type' => 'model',
+            'label' => $model,
+            'sub' => 'Model u oglasima',
+            'url' => '/index.php?' . http_build_query(['q' => $model]),
+        ])) {
+            return $out;
+        }
+    }
+
+    foreach ($brandsSeen as $brand) {
         if (!$add([
             'type' => 'brand',
-            'label' => (string)$brand,
+            'label' => $brand,
             'sub' => 'Brend',
             'url' => '/index.php?' . http_build_query(['brand' => $brand]),
         ])) {
@@ -116,58 +187,33 @@ function searchSuggestions(string $query, int $limit = 8): array
         }
     }
 
-    foreach (($settings['cities'] ?? []) as $city) {
-        if ($qLower !== '' && !str_contains(mb_strtolower((string)$city), $qLower)) {
-            continue;
-        }
-        if (!$add([
-            'type' => 'city',
-            'label' => (string)$city,
-            'sub' => 'Grad',
-            'url' => '/index.php?' . http_build_query(['location' => $city]),
-        ])) {
-            return $out;
-        }
-    }
-
-    $cfg = categoriesConfig();
-    foreach ($cfg['groups'] ?? [] as $group) {
-        foreach ($group['models'] ?? [] as $model) {
-            if ($qLower !== '' && !str_contains(mb_strtolower((string)$model), $qLower)) {
-                continue;
-            }
-            if (!$add([
-                'type' => 'model',
-                'label' => (string)$model,
-                'sub' => 'Model',
-                'url' => '/index.php?' . http_build_query(['q' => $model]),
-            ])) {
-                return $out;
-            }
-        }
-    }
-
-    $ads = getPublicAds(['q' => $query, 'sort' => 'newest']);
-    foreach (array_slice($ads, 0, $limit) as $ad) {
-        if (!$add([
-            'type' => 'ad',
-            'label' => (string)($ad['title'] ?? 'Oglas'),
-            'sub' => formatPrice((float)($ad['price'] ?? 0)) . ' · ' . (string)($ad['location'] ?? ''),
-            'url' => '/oglas.php?id=' . (int)($ad['id'] ?? 0),
-            'price' => formatPrice((float)($ad['price'] ?? 0)),
-        ])) {
-            return $out;
-        }
-    }
-
-    if ($query !== '' && count($out) < $limit) {
+    // 3) Uvek ponudi "Pretraži: …" kao poslednju opciju ako ima mesta
+    if (count($out) < $limit) {
         $add([
             'type' => 'search',
             'label' => 'Pretraži: ' . $query,
-            'sub' => 'Svi rezultati',
+            'sub' => count($ads) . ' rezultat' . (count($ads) === 1 ? '' : 'a'),
             'url' => '/index.php?' . http_build_query(['q' => $query]),
         ]);
     }
 
     return $out;
+}
+
+/**
+ * @param list<string> $tokens
+ */
+function tokensMatchText(array $tokens, string $text): bool
+{
+    if ($tokens === []) {
+        return false;
+    }
+    $hay = mb_strtolower($text);
+    foreach ($tokens as $token) {
+        $token = (string)$token;
+        if ($token === '' || !str_contains($hay, $token)) {
+            return false;
+        }
+    }
+    return true;
 }

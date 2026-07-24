@@ -490,12 +490,14 @@
     let items = [];
     let active = -1;
     let ctrl = null;
+    let navigated = false;
 
     function hide() {
       box.hidden = true;
       box.innerHTML = '';
       items = [];
       active = -1;
+      navigated = false;
       input.setAttribute('aria-expanded', 'false');
     }
 
@@ -531,14 +533,22 @@
     function fetchSuggest(q) {
       if (ctrl) ctrl.abort();
       ctrl = new AbortController();
-      fetch('/api/search.php?q=' + encodeURIComponent(q) + '&limit=8', { signal: ctrl.signal })
-        .then(function (r) { return r.json(); })
+      fetch('/api/search.php?q=' + encodeURIComponent(q) + '&limit=8', {
+        signal: ctrl.signal,
+        credentials: 'same-origin',
+        headers: { 'Accept': 'application/json' }
+      })
+        .then(function (r) {
+          if (!r.ok) throw new Error('search failed');
+          return r.json();
+        })
         .then(function (data) {
           items = Array.isArray(data.suggestions) ? data.suggestions : [];
-          active = items.length ? 0 : -1;
+          active = -1;
+          navigated = false;
           render();
         })
-        .catch(function () { /* ignore */ });
+        .catch(function () { /* ignore abort/errors */ });
     }
 
     input.addEventListener('input', function () {
@@ -548,22 +558,27 @@
         hide();
         return;
       }
-      timer = setTimeout(function () { fetchSuggest(q); }, 180);
+      timer = setTimeout(function () { fetchSuggest(q); }, 160);
     });
 
     input.addEventListener('keydown', function (e) {
       if (box.hidden || !items.length) return;
       if (e.key === 'ArrowDown') {
         e.preventDefault();
-        active = (active + 1) % items.length;
+        navigated = true;
+        active = active < 0 ? 0 : (active + 1) % items.length;
         render();
       } else if (e.key === 'ArrowUp') {
         e.preventDefault();
-        active = (active - 1 + items.length) % items.length;
+        navigated = true;
+        active = active < 0 ? items.length - 1 : (active - 1 + items.length) % items.length;
         render();
-      } else if (e.key === 'Enter' && active >= 0) {
-        e.preventDefault();
-        go(active);
+      } else if (e.key === 'Enter') {
+        // Enter otvara predlog samo ako je korisnik birao strelicama; inače obična pretraga
+        if (navigated && active >= 0) {
+          e.preventDefault();
+          go(active);
+        }
       } else if (e.key === 'Escape') {
         hide();
       }
