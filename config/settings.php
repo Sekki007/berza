@@ -42,7 +42,8 @@ function defaultSiteSettings(): array
         ],
         'enable_credits' => true,
         'credit_currency_label' => 'din',
-        'eur_rsd_rate' => 117,
+        'eur_rsd_rate' => 117.0,
+        'eur_rsd_auto_nbs' => true,
         'credit_topup_amounts' => [500, 1000, 2000, 5000],
         'credit_payment_info' => "Uplata kredita:\nPrimalac: TelefonBerza\nBroj računa: 160-0000000000000-00\nSvrha: KR-[BROJ] + tvoje korisničko ime\nPrimer: KR-12 marko",
         'ad_renewal_credits' => 200,
@@ -61,9 +62,12 @@ function defaultSiteSettings(): array
     ];
 }
 
-function siteSettings(): array
+function siteSettings(bool $reload = false): array
 {
     static $settings = null;
+    if ($reload) {
+        $settings = null;
+    }
     if ($settings !== null) {
         return $settings;
     }
@@ -77,6 +81,11 @@ function siteSettings(): array
 
     $settings = array_merge($defaults, $stored);
     return $settings;
+}
+
+function clearSiteSettingsCache(): void
+{
+    siteSettings(true);
 }
 
 function saveSiteSettings(array $input): bool
@@ -93,8 +102,12 @@ function saveSiteSettings(array $input): bool
         $value = $input[$key];
         if (is_bool($defaultValue)) {
             $settings[$key] = !empty($value) && (string)$value !== '0';
+        } elseif ($key === 'eur_rsd_rate') {
+            $settings[$key] = max(1.0, (float)$value);
         } elseif (is_int($defaultValue)) {
             $settings[$key] = max(1, (int)$value);
+        } elseif (is_float($defaultValue)) {
+            $settings[$key] = (float)$value;
         } elseif ($key === 'top_packages' && is_array($defaultValue)) {
             $settings[$key] = is_array($value) ? array_values($value) : $defaultValue;
         } elseif ($key === 'credit_topup_amounts' && is_array($defaultValue)) {
@@ -111,6 +124,7 @@ function saveSiteSettings(array $input): bool
     }
 
     writeJsonFile('settings.json', $settings);
+    clearSiteSettingsCache();
     return true;
 }
 

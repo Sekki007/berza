@@ -39,6 +39,23 @@ if (!in_array($tab, $validTabs, true)) {
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     requireCsrf('/admin_settings.php?tab=' . urlencode($tab));
+
+    if (isset($_POST['refresh_nbs_rate'])) {
+        $result = fetchNbsEurRsdRate();
+        if (!empty($result['ok'])) {
+            $rate = (float)$result['rate'];
+            $current = siteSettings();
+            $current['eur_rsd_rate'] = round($rate, 4);
+            $current['eur_rsd_auto_nbs'] = true;
+            saveSiteSettings($current);
+            setFlash('success', 'NBS kurs ažuriran: 1 € = ' . number_format($rate, 4, ',', '.') . ' din (lista ' . (string)$result['date'] . ').');
+        } else {
+            setFlash('danger', 'NBS kurs nije ažuriran: ' . (string)($result['error'] ?? 'greška'));
+        }
+        header('Location: /admin_settings.php?tab=' . urlencode($tab));
+        exit;
+    }
+
     $current = siteSettings();
     $payload = array_merge($current, [
         'site_name' => trim((string)($_POST['site_name'] ?? $current['site_name'])),
@@ -71,6 +88,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'enable_credits' => (string)($_POST['enable_credits'] ?? '0') === '1',
         'credit_currency_label' => trim((string)($_POST['credit_currency_label'] ?? $current['credit_currency_label'] ?? 'din')),
         'eur_rsd_rate' => max(1, (float)($_POST['eur_rsd_rate'] ?? $current['eur_rsd_rate'] ?? 117)),
+        'eur_rsd_auto_nbs' => (string)($_POST['eur_rsd_auto_nbs'] ?? '0') === '1',
         'credit_payment_info' => trim((string)($_POST['credit_payment_info'] ?? $current['credit_payment_info'] ?? '')),
         'credit_topup_amounts' => isset($_POST['credit_topup_amounts_text'])
             ? array_values(array_filter(array_map('intval', parseLines((string)$_POST['credit_topup_amounts_text'])), static fn($n) => $n > 0))
@@ -284,10 +302,30 @@ require __DIR__ . '/partials/layout-start.php';
                         <input name="credit_currency_label" value="<?= h((string)($settings['credit_currency_label'] ?? 'din')) ?>">
                     </div>
                     <div class="form-group">
-                        <label>Kurs EUR → RSD</label>
-                        <input type="number" step="0.01" min="1" name="eur_rsd_rate" value="<?= h((string)($settings['eur_rsd_rate'] ?? 117)) ?>">
-                        <p class="form-hint">Za konverziju na formi i prikaz ≈ din pored cene u €.</p>
+                        <label>Kurs EUR → RSD (rezerva)</label>
+                        <input type="number" step="0.0001" min="1" name="eur_rsd_rate" value="<?= h((string)($settings['eur_rsd_rate'] ?? 117)) ?>">
                     </div>
+                </div>
+                <div class="form-group form-checks">
+                    <input type="hidden" name="eur_rsd_auto_nbs" value="0">
+                    <label class="type-chip" style="min-width:auto;flex:none;">
+                        <input type="checkbox" name="eur_rsd_auto_nbs" value="1" <?= !empty($settings['eur_rsd_auto_nbs']) ? 'checked' : '' ?>>
+                        Automatski vuči srednji kurs NBS (EUR)
+                    </label>
+                </div>
+                <?php
+                $nbsCache = readNbsRateCache();
+                $liveRate = eurRsdRate();
+                ?>
+                <p class="form-hint">
+                    Trenutni kurs u upotrebi: <strong>1 € = <?= h(number_format($liveRate, 4, ',', '.')) ?> din</strong>
+                    <?php if ($nbsCache): ?>
+                        · NBS lista <?= h((string)$nbsCache['date']) ?>
+                        · keš <?= h((string)$nbsCache['fetched_at']) ?>
+                    <?php endif; ?>
+                </p>
+                <div class="form-group">
+                    <button type="submit" name="refresh_nbs_rate" value="1" class="btn-sm">Osveži kurs sa NBS sada</button>
                 </div>
                 <div class="form-group">
                     <label>Iznosi dopune (jedan po liniji)</label>

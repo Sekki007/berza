@@ -8,3 +8,4 @@ Thumbs.db
 !/public/uploads/ads/seed_*.jpg
 /data/*_state.json
 /data/sms_rate_limits.json
+/data/nbs_rate_cache.json

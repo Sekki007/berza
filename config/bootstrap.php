@@ -478,7 +478,15 @@ function isAdPriceOpen(array $ad): bool
 
 function eurRsdRate(): float
 {
-    $rate = (float)(siteSettings()['eur_rsd_rate'] ?? 117);
+    refreshNbsEurRsdRateIfStale(12);
+    $settings = siteSettings();
+    if (!empty($settings['eur_rsd_auto_nbs'])) {
+        $cache = readNbsRateCache();
+        if ($cache && ($cache['rate'] ?? 0) > 0) {
+            return (float)$cache['rate'];
+        }
+    }
+    $rate = (float)($settings['eur_rsd_rate'] ?? 117);
     return $rate > 0 ? $rate : 117.0;
 }
 
@@ -963,6 +971,7 @@ require_once __DIR__ . '/settings.php';
 require_once __DIR__ . '/csrf.php';
 require_once __DIR__ . '/ads_helpers.php';
 require_once __DIR__ . '/ad_form_schema.php';
+require_once __DIR__ . '/nbs_rate.php';
 require_once __DIR__ . '/search.php';
 require_once __DIR__ . '/ratings.php';
 require_once __DIR__ . '/admin_helpers.php';
