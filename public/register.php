@@ -16,56 +16,61 @@ if (empty($site['enable_registration'])) {
     exit;
 }
 
+$form = [
+    'full_name' => '',
+    'username' => '',
+    'phone' => '',
+];
+$formError = '';
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $username = trim((string)($_POST['username'] ?? ''));
     $password = (string)($_POST['password'] ?? '');
     $fullName = trim((string)($_POST['full_name'] ?? ''));
     $phone = trim((string)($_POST['phone'] ?? ''));
 
+    $form = [
+        'full_name' => $fullName,
+        'username' => $username,
+        'phone' => $phone,
+    ];
+
     $normalized = normalizePhoneRs($phone);
     if ($normalized === null || !isAllowedSmsPhone($normalized)) {
-        setFlash('danger', 'Unesi validan srpski mobilni broj (npr. 06x xxx xxxx).');
-        header('Location: /register.php');
-        exit;
-    }
-
-    if (strlen($password) < 6) {
-        setFlash('danger', 'Lozinka mora imati najmanje 6 karaktera.');
-        header('Location: /register.php');
-        exit;
-    }
-
-    if (findUserByPhone($normalized)) {
-        setFlash('danger', 'Ovaj broj telefona je već registrovan.');
-        header('Location: /register.php');
-        exit;
-    }
-
-    $userId = registerUser($username, $password, $fullName, $phone);
-    if ($userId === false) {
-        setFlash('danger', 'Registracija nije uspela. Korisničko ime možda već postoji.');
-        header('Location: /register.php');
-        exit;
-    }
-
-    $_SESSION['pending_phone_verify_user_id'] = $userId;
-
-    if (!smsEnabled()) {
-        patchUser($userId, ['phone_verified_at' => date('Y-m-d H:i:s')]);
-        unset($_SESSION['pending_phone_verify_user_id']);
-        setFlash('success', 'Nalog je kreiran (SMS je isključen — telefon automatski označen kao potvrđen).');
-        header('Location: /login.php');
-        exit;
-    }
-
-    $otp = sendUserOtp($userId, 'phone_verify');
-    if (!empty($otp['ok'])) {
-        setFlash('success', 'Nalog je kreiran. Unesi SMS kod koji smo poslali.');
+        $formError = 'Unesi validan srpski mobilni broj (npr. 06x xxx xxxx).';
+    } elseif (strlen($password) < 6) {
+        $formError = 'Lozinka mora imati najmanje 6 karaktera.';
+    } elseif (mb_strlen($username) < 3) {
+        $formError = 'Korisničko ime mora imati najmanje 3 karaktera.';
+    } elseif (findUserByUsername($username)) {
+        $formError = 'Korisničko ime je zauzeto. Izaberi drugo.';
+    } elseif (findUserByPhone($normalized)) {
+        $formError = 'Ovaj broj telefona je već registrovan.';
     } else {
-        setFlash('danger', 'Nalog je kreiran, ali SMS nije poslat: ' . (string)($otp['error'] ?? 'greška') . '. Možeš zatražiti kod ponovo.');
+        $userId = registerUser($username, $password, $fullName, $phone);
+        if ($userId === false) {
+            $formError = 'Registracija nije uspela. Proveri podatke i pokušaj ponovo.';
+        } else {
+            $_SESSION['pending_phone_verify_user_id'] = $userId;
+
+            if (!smsEnabled()) {
+                patchUser($userId, ['phone_verified_at' => date('Y-m-d H:i:s')]);
+                unset($_SESSION['pending_phone_verify_user_id']);
+                setFlash('success', 'Nalog je kreiran (SMS je isključen — telefon automatski označen kao potvrđen).');
+                header('Location: /login.php');
+                exit;
+            }
+
+            $otp = sendUserOtp($userId, 'phone_verify');
+            if (!empty($otp['ok'])) {
+                setFlash('success', 'Nalog je kreiran. Unesi SMS kod koji smo poslali.');
+            } else {
+                setFlash('danger', 'Nalog je kreiran, ali SMS nije poslat: ' . (string)($otp['error'] ?? 'greška') . '. Možeš zatražiti kod ponovo.');
+            }
+            header('Location: /verify-phone.php');
+            exit;
+        }
     }
-    header('Location: /verify-phone.php');
-    exit;
 }
 
 $pageTitle = 'Registracija — TelefonBerza';
@@ -84,25 +89,31 @@ require __DIR__ . '/partials/layout-start.php';
             <p style="font-size:14px;color:var(--text-muted);margin-bottom:16px;">
                 Poslaćemo SMS kod na tvoj mobilni broj radi potvrde.
             </p>
-            <form method="POST">
+
+            <?php if ($formError !== ''): ?>
+                <p class="form-hint" style="color:#b91c1c;margin-bottom:12px;"><?= h($formError) ?></p>
+            <?php endif; ?>
+
+            <form method="POST" id="register-form" data-register-form novalidate>
                 <div class="form-group">
                     <label>Ime i prezime</label>
-                    <input type="text" name="full_name" required>
+                    <input type="text" name="full_name" required value="<?= h($form['full_name']) ?>">
                 </div>
                 <div class="form-group">
                     <label>Korisničko ime</label>
-                    <input type="text" name="username" required>
+                    <input type="text" name="username" id="register-username" required minlength="3" maxlength="40" autocomplete="username" value="<?= h($form['username']) ?>" data-username-check>
+                    <p class="form-hint" id="username-status" style="margin-top:6px;" aria-live="polite"></p>
                 </div>
                 <div class="form-group">
                     <label>Mobilni telefon</label>
-                    <input type="text" name="phone" required placeholder="06x xxx xxxx">
+                    <input type="text" name="phone" required placeholder="06x xxx xxxx" value="<?= h($form['phone']) ?>">
                     <p class="form-hint" style="margin-top:6px;">Samo srpski mobilni brojevi (+3816…).</p>
                 </div>
                 <div class="form-group">
                     <label>Lozinka</label>
-                    <input type="password" name="password" required minlength="6">
+                    <input type="password" name="password" required minlength="6" autocomplete="new-password">
                 </div>
-                <button class="btn-call" type="submit">Kreiraj nalog</button>
+                <button class="btn-call" type="submit" id="register-submit">Kreiraj nalog</button>
             </form>
             <p style="margin-top:14px;font-size:13px;color:var(--text-muted);">
                 Već imaš nalog? <a href="/login.php">Prijavi se</a>
@@ -110,5 +121,92 @@ require __DIR__ . '/partials/layout-start.php';
         </div>
     </main>
 </div>
+
+<script>
+(function () {
+  var input = document.getElementById('register-username');
+  var statusEl = document.getElementById('username-status');
+  var form = document.getElementById('register-form');
+  var submitBtn = document.getElementById('register-submit');
+  if (!input || !statusEl || !form) return;
+
+  var timer = null;
+  var lastChecked = '';
+  var available = null;
+
+  function setStatus(text, color, isAvailable) {
+    statusEl.textContent = text || '';
+    statusEl.style.color = color || 'var(--text-muted)';
+    available = isAvailable;
+    if (submitBtn) {
+      submitBtn.disabled = isAvailable === false;
+    }
+  }
+
+  function checkUsername() {
+    var value = (input.value || '').trim();
+    if (value === lastChecked && available !== null) return;
+    lastChecked = value;
+
+    if (value.length === 0) {
+      setStatus('', '', null);
+      return;
+    }
+    if (value.length < 3) {
+      setStatus('Korisničko ime mora imati najmanje 3 karaktera.', '#b45309', false);
+      return;
+    }
+
+    setStatus('Proveravam…', 'var(--text-muted)', null);
+
+    fetch('/api/check-username.php?username=' + encodeURIComponent(value), {
+      headers: { 'Accept': 'application/json' },
+      credentials: 'same-origin'
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if ((input.value || '').trim() !== value) return;
+        if (data.available === true) {
+          setStatus(data.message || 'Dostupno.', 'var(--kp-green-dark, #15803d)', true);
+        } else if (data.available === false) {
+          setStatus(data.message || 'Zauzeto.', '#b91c1c', false);
+        } else {
+          setStatus('', '', null);
+        }
+      })
+      .catch(function () {
+        setStatus('Provera trenutno nije dostupna.', '#b45309', null);
+      });
+  }
+
+  input.addEventListener('input', function () {
+    available = null;
+    if (submitBtn) submitBtn.disabled = false;
+    clearTimeout(timer);
+    timer = setTimeout(checkUsername, 350);
+  });
+
+  input.addEventListener('blur', checkUsername);
+
+  form.addEventListener('submit', function (e) {
+    var value = (input.value || '').trim();
+    if (value.length < 3) {
+      e.preventDefault();
+      setStatus('Korisničko ime mora imati najmanje 3 karaktera.', '#b91c1c', false);
+      input.focus();
+      return;
+    }
+    if (available === false) {
+      e.preventDefault();
+      setStatus('Izaberi drugo korisničko ime — ovo je zauzeto.', '#b91c1c', false);
+      input.focus();
+    }
+  });
+
+  if ((input.value || '').trim().length >= 3) {
+    checkUsername();
+  }
+})();
+</script>
 
 <?php require __DIR__ . '/partials/layout-end.php'; ?>

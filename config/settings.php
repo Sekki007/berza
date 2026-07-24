@@ -55,6 +55,8 @@ function defaultSiteSettings(): array
         ],
         'brands' => ['Apple', 'Samsung', 'Xiaomi', 'Google', 'Huawei', 'Ostalo'],
         'conditions' => ['Novo', 'Odlično', 'Polovno', 'Za delove', 'Servisirano'],
+        'sms_template_phone_verify' => 'TelefonBerza kod: {code}. Vazi 10 min.',
+        'sms_template_password_reset' => 'TelefonBerza reset lozinke: {code}. Vazi 10 min.',
     ];
 }
 

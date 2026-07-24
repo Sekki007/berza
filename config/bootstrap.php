@@ -171,6 +171,9 @@ function registerUser(string $username, string $password, string $fullName, stri
     if ($username === '' || $password === '' || $fullName === '') {
         return false;
     }
+    if (mb_strlen($username) < 3) {
+        return false;
+    }
     if (findUserByUsername($username)) {
         return false;
     }

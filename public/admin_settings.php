@@ -32,7 +32,7 @@ function parseTopPackagesPost(): array
 
 $settings = siteSettings();
 $tab = trim((string)($_GET['tab'] ?? 'general'));
-$validTabs = ['general', 'homepage', 'lists', 'features', 'maintenance'];
+$validTabs = ['general', 'homepage', 'lists', 'features', 'sms', 'maintenance'];
 if (!in_array($tab, $validTabs, true)) {
     $tab = 'general';
 }
@@ -80,7 +80,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'cities' => parseLines((string)($_POST['cities'] ?? implode("\n", $current['cities']))),
         'brands' => parseLines((string)($_POST['brands'] ?? implode("\n", $current['brands']))),
         'conditions' => parseLines((string)($_POST['conditions'] ?? implode("\n", $current['conditions']))),
+        'sms_template_phone_verify' => trim((string)($_POST['sms_template_phone_verify'] ?? $current['sms_template_phone_verify'] ?? '')),
+        'sms_template_password_reset' => trim((string)($_POST['sms_template_password_reset'] ?? $current['sms_template_password_reset'] ?? '')),
     ]);
+
+    $defaultsSms = defaultSiteSettings();
+    foreach (['sms_template_phone_verify', 'sms_template_password_reset'] as $smsKey) {
+        $tpl = (string)($payload[$smsKey] ?? '');
+        if ($tpl === '' || !str_contains($tpl, '{code}')) {
+            $payload[$smsKey] = (string)$defaultsSms[$smsKey];
+        } elseif (mb_strlen($tpl) > 160) {
+            $payload[$smsKey] = mb_substr($tpl, 0, 160);
+        }
+    }
 
     saveSiteSettings($payload);
     setFlash('success', 'Podešavanja su sačuvana.');
@@ -108,6 +120,7 @@ require __DIR__ . '/partials/layout-start.php';
             <a href="?tab=homepage" class="<?= $tab === 'homepage' ? 'active' : '' ?>">Početna</a>
             <a href="?tab=lists" class="<?= $tab === 'lists' ? 'active' : '' ?>">Liste</a>
             <a href="?tab=features" class="<?= $tab === 'features' ? 'active' : '' ?>">Funkcije</a>
+            <a href="?tab=sms" class="<?= $tab === 'sms' ? 'active' : '' ?>">SMS</a>
             <a href="?tab=maintenance" class="<?= $tab === 'maintenance' ? 'active' : '' ?>">Održavanje</a>
         </div>
 
@@ -285,6 +298,42 @@ require __DIR__ . '/partials/layout-start.php';
                         <label>Cena plavog isticanja / 7 dana (din)</label>
                         <input type="number" min="0" name="highlight_credits" value="<?= (int)($settings['highlight_credits'] ?? 150) ?>">
                     </div>
+                </div>
+            </div>
+
+            <div class="admin-tab-panel <?= $tab === 'sms' ? 'active' : '' ?>">
+                <h3>SMS poruke (OTP)</h3>
+                <?php
+                $smsOn = smsEnabled();
+                $smsUrl = trim((string)envValue('SMS_GATEWAY_URL', ''));
+                $smsUser = trim((string)envValue('SMS_GATEWAY_USER', ''));
+                $smsConfigured = $smsOn && $smsUrl !== '' && $smsUser !== '' && trim((string)envValue('SMS_GATEWAY_PASS', '')) !== '';
+                ?>
+                <p class="form-hint" style="margin-bottom:14px;">
+                    Status gateway-a:
+                    <?php if ($smsConfigured): ?>
+                        <strong style="color:var(--kp-green-dark);">uključen</strong>
+                        (<?= h($smsUser) ?> @ <?= h(parse_url($smsUrl, PHP_URL_HOST) ?: $smsUrl) ?>)
+                    <?php elseif ($smsOn): ?>
+                        <strong style="color:#b45309;">uključen, ali .env nije kompletan</strong>
+                    <?php else: ?>
+                        <strong style="color:#b91c1c;">isključen</strong> (`SMS_ENABLED` u `.env`)
+                    <?php endif; ?>
+                </p>
+                <p class="form-hint" style="margin-bottom:14px;">
+                    Kredencijali (URL, user, pass) menjaju se samo u <code>.env</code> na serveru — ne ovde.
+                    SMS ide isključivo na srpske mobilne brojeve <code>+3816…</code>.
+                    U tekstu obavezno koristi placeholder <code>{code}</code> (max 160 karaktera).
+                </p>
+                <div class="form-group">
+                    <label>Šablon — verifikacija telefona</label>
+                    <textarea name="sms_template_phone_verify" rows="2" maxlength="160"><?= h((string)($settings['sms_template_phone_verify'] ?? 'TelefonBerza kod: {code}. Vazi 10 min.')) ?></textarea>
+                    <p class="form-hint" style="margin-top:6px;">Primer: <code>TelefonBerza kod: {code}. Vazi 10 min.</code></p>
+                </div>
+                <div class="form-group">
+                    <label>Šablon — reset lozinke</label>
+                    <textarea name="sms_template_password_reset" rows="2" maxlength="160"><?= h((string)($settings['sms_template_password_reset'] ?? 'TelefonBerza reset lozinke: {code}. Vazi 10 min.')) ?></textarea>
+                    <p class="form-hint" style="margin-top:6px;">Primer: <code>TelefonBerza reset lozinke: {code}. Vazi 10 min.</code></p>
                 </div>
             </div>
 

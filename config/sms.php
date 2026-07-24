@@ -204,15 +204,49 @@ function sendSmsRaw(string $phoneE164, string $text): array
 }
 
 /**
- * OTP SMS with fixed template only.
+ * Build OTP SMS body from admin template. Requires {code}. Max 160 chars.
  *
+ * @param 'phone_verify'|'password_reset' $purpose
+ */
+function buildOtpSmsText(string $purpose, string $code): string
+{
+    $defaults = defaultSiteSettings();
+    $settings = function_exists('siteSettings') ? siteSettings() : $defaults;
+
+    $key = $purpose === 'password_reset' ? 'sms_template_password_reset' : 'sms_template_phone_verify';
+    $fallback = (string)($defaults[$key] ?? 'TelefonBerza kod: {code}. Vazi 10 min.');
+    $tpl = trim((string)($settings[$key] ?? $fallback));
+
+    if ($tpl === '' || !str_contains($tpl, '{code}')) {
+        $tpl = $fallback;
+    }
+
+    $text = str_replace('{code}', $code, $tpl);
+    $text = preg_replace('/\{[a-zA-Z0-9_]+\}/', '', $text) ?? $text;
+    $text = trim(preg_replace('/\s+/u', ' ', $text) ?? $text);
+
+    if (mb_strlen($text) > 160) {
+        $text = mb_substr($text, 0, 160);
+    }
+
+    return $text;
+}
+
+/**
+ * OTP SMS from admin template (or default). Only {code} is substituted.
+ *
+ * @param 'phone_verify'|'password_reset' $purpose
  * @return array{ok: bool, error?: string}
  */
-function sendOtpSms(string $phoneE164, string $code): array
+function sendOtpSms(string $phoneE164, string $code, string $purpose = 'phone_verify'): array
 {
     if (!preg_match('/^\d{6}$/', $code)) {
         return ['ok' => false, 'error' => 'Neispravan kod.'];
     }
 
-    return sendSmsRaw($phoneE164, 'TelefonBerza kod: ' . $code . '. Vazi 10 min.');
+    if (!in_array($purpose, ['phone_verify', 'password_reset'], true)) {
+        $purpose = 'phone_verify';
+    }
+
+    return sendSmsRaw($phoneE164, buildOtpSmsText($purpose, $code));
 }

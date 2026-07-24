@@ -67,7 +67,7 @@ function sendUserOtp(int $userId, string $purpose, ?string $phoneOverride = null
         return ['ok' => false, 'error' => 'Nije moguće sačuvati kod.'];
     }
 
-    $sent = sendOtpSms($phone, $code);
+    $sent = sendOtpSms($phone, $code, $purpose);
     if (empty($sent['ok'])) {
         return ['ok' => false, 'error' => (string)($sent['error'] ?? 'SMS nije poslat.')];
     }
