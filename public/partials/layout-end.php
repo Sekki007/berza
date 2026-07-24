@@ -16,27 +16,70 @@ if ($user) {
     $menuShopLink = shopUrl((string)($menuProfile['username'] ?? $user['username'] ?? ''));
 }
 ?>
-    <footer class="footer">
-        <div class="footer-inner">
-            <div class="footer-col">
-                <h4>Korisno</h4>
-                <a href="/index.php">Početna</a>
-                <a href="/kako-radi.php">Kako radi</a>
-                <a href="/login.php">Prijava</a>
+    <footer class="site-footer">
+        <div class="site-footer-inner">
+            <div class="site-footer-brand">
+                <a href="/index.php" class="site-footer-logo">
+                    <span class="logo-telefon"><?= h((string)$site['logo_telefon']) ?></span><span class="logo-berza"><?= h((string)$site['logo_berza']) ?></span>
+                </a>
+                <p class="site-footer-tag"><?= h((string)($site['topbar_text'] ?? 'Mobilni telefoni · Srbija')) ?></p>
+                <?php
+                $footerPhone = trim((string)($site['contact_phone'] ?? ''));
+                $footerEmail = trim((string)($site['contact_email'] ?? ''));
+                if ($footerPhone !== '' || $footerEmail !== ''):
+                ?>
+                    <div class="site-footer-contact">
+                        <?php if ($footerPhone !== ''): ?>
+                            <a href="tel:<?= h(preg_replace('/\s+/', '', $footerPhone) ?? $footerPhone) ?>"><?= h($footerPhone) ?></a>
+                        <?php endif; ?>
+                        <?php if ($footerEmail !== ''): ?>
+                            <a href="mailto:<?= h($footerEmail) ?>"><?= h($footerEmail) ?></a>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
             </div>
-            <div class="footer-col">
-                <h4>Prodavci</h4>
-                <a href="/ad_form.php">Postavite oglas</a>
-                <a href="/register.php">Registracija</a>
-            </div>
-            <div class="footer-col">
-                <h4>Nalog</h4>
-                <a href="/nalog.php">Moj profil</a>
-                <?php if ($user): ?><a href="/nalog.php?tab=obavestenja">Obaveštenja</a><?php endif; ?>
-                <?php if (!empty($site['enable_messages'])): ?><a href="/poruke.php">Poruke</a><?php endif; ?>
+
+            <nav class="site-footer-nav" aria-label="Footer">
+                <div class="site-footer-col">
+                    <h4>Istraži</h4>
+                    <a href="/index.php">Početna</a>
+                    <a href="/index.php?type=telefon">Telefoni</a>
+                    <a href="/index.php?type=delovi">Delovi</a>
+                    <a href="/index.php?type=servis">Servis</a>
+                </div>
+                <div class="site-footer-col">
+                    <h4>Prodaja</h4>
+                    <a href="/ad_form.php">Postavi oglas</a>
+                    <a href="/kako-radi.php">Kako radi</a>
+                    <?php if (empty($user)): ?>
+                        <a href="/register.php">Registracija</a>
+                        <a href="/login.php">Prijava</a>
+                    <?php else: ?>
+                        <a href="/nalog.php?tab=oglasi">Moji oglasi</a>
+                        <?php if (topPurchaseEnabled()): ?><a href="/nalog.php?tab=top">TOP isticanje</a><?php endif; ?>
+                    <?php endif; ?>
+                </div>
+                <div class="site-footer-col">
+                    <h4>Nalog</h4>
+                    <?php if ($user): ?>
+                        <a href="/nalog.php">Moj profil</a>
+                        <?php if (!empty($site['enable_messages'])): ?><a href="/poruke.php">Poruke</a><?php endif; ?>
+                        <?php if (!empty($site['enable_favorites'])): ?><a href="/favorites.php">Omiljeni</a><?php endif; ?>
+                        <a href="/nalog.php?tab=obavestenja">Obaveštenja</a>
+                    <?php else: ?>
+                        <a href="/login.php">Prijava</a>
+                        <a href="/register.php">Napravi nalog</a>
+                        <a href="/kako-radi.php">Pomoć</a>
+                    <?php endif; ?>
+                </div>
+            </nav>
+        </div>
+        <div class="site-footer-bottom">
+            <div class="site-footer-bottom-inner">
+                <span><?= h((string)$site['footer_copyright']) ?></span>
+                <span class="site-footer-meta">Berza telefona i delova</span>
             </div>
         </div>
-        <div class="container footer-copy"><?= h((string)$site['footer_copyright']) ?></div>
     </footer>
 
     <div class="mobile-menu-overlay" data-account-menu-overlay></div>

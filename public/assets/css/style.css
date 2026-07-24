@@ -715,9 +715,29 @@ a.account-ov-stat:hover {
   }
 }
 
-.footer{background:#fff;border-top:1px solid var(--border);padding:20px 0;margin-top:20px;font-size:12px;color:var(--text-muted);}
-.footer-inner{display:grid;grid-template-columns:1fr 1fr;gap:20px;} .footer-col h4{font-size:13px;color:var(--text);margin-bottom:8px;} .footer-col a{display:block;color:var(--text-muted);margin-bottom:4px;text-decoration:none;font-size:12px;}
-.footer-copy{margin-top:16px;padding-top:12px;border-top:1px solid var(--border-light);font-size:11px;color:var(--text-light);}
+.footer,.site-footer{background:#2a2a2a;border-top:3px solid var(--kp-yellow);padding:0;margin-top:28px;font-size:13px;color:#b8b8b8;}
+.site-footer-inner,.footer-inner{max-width:1100px;margin:0 auto;padding:28px 16px 22px;display:grid;grid-template-columns:1fr;gap:28px;}
+.site-footer-brand{max-width:280px;}
+.site-footer-logo{display:inline-flex;align-items:baseline;gap:2px;text-decoration:none;margin-bottom:8px;}
+.site-footer-logo .logo-telefon{font-size:22px;font-weight:bold;color:#6fcf7f;}
+.site-footer-logo .logo-berza{font-size:22px;font-weight:bold;color:#fff;}
+.site-footer-logo:hover{text-decoration:none;opacity:.92;}
+.site-footer-tag{margin:0;font-size:13px;line-height:1.45;color:#9a9a9a;}
+.site-footer-contact{display:flex;flex-direction:column;gap:6px;margin-top:14px;}
+.site-footer-contact a{color:#ddd;text-decoration:none;font-size:13px;}
+.site-footer-contact a:hover{color:var(--kp-yellow);text-decoration:none;}
+.site-footer-nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:20px 16px;}
+.site-footer-col h4,.footer-col h4{margin:0 0 10px;font-size:12px;font-weight:bold;letter-spacing:.04em;text-transform:uppercase;color:#fff;}
+.site-footer-col a,.footer-col a{display:block;color:#b8b8b8;margin:0 0 8px;text-decoration:none;font-size:13px;line-height:1.3;}
+.site-footer-col a:hover,.footer-col a:hover{color:#fff;text-decoration:none;}
+.site-footer-bottom{border-top:1px solid rgba(255,255,255,.08);background:#222;}
+.site-footer-bottom-inner,.footer-copy{max-width:1100px;margin:0 auto;padding:14px 16px;display:flex;flex-wrap:wrap;gap:8px 16px;justify-content:space-between;align-items:center;font-size:12px;color:#888;}
+.site-footer-meta{color:#666;}
+body.page-chat .footer,body.page-chat .site-footer{display:none;}
+@media (min-width:720px){
+  .site-footer-inner,.footer-inner{grid-template-columns:1.1fr 1.6fr;gap:40px;padding:36px 16px 28px;align-items:start;}
+  .site-footer-nav{grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;}
+}
 .mobile-bar{display:flex;position:fixed;bottom:0;left:0;right:0;background:#fff;border-top:2px solid var(--kp-yellow);z-index:50;padding-bottom:var(--safe-bottom);}
 .mobile-bar a{flex:1;text-align:center;padding:8px 4px 10px;font-size:10px;color:var(--text-muted);text-decoration:none;display:flex;flex-direction:column;align-items:center;gap:3px;}
 .mobile-bar a.active{color:var(--kp-green-dark);font-weight:bold;} .mobile-bar-icon{font-size:18px;line-height:1;}
@@ -736,7 +756,7 @@ a.account-ov-stat:hover {
   .ads-list.view-grid .ad-thumb{width:100%;height:160px;min-height:160px;border-right:none;border-bottom:1px solid var(--border-light);}
   .ads-list.view-grid .ad-item-inner{flex-direction:column;}
   .detail-layout{display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:start;} .detail-main-img{height:420px;border-bottom:none;} .detail-sidebar .kp-seller-box{position:sticky;top:80px;} .sticky-contact{display:none;}
-  .form-type-select{grid-template-columns:repeat(3,1fr);} .photo-upload{grid-template-columns:repeat(4,1fr);} .footer-inner{grid-template-columns:repeat(3,1fr);} .mobile-bar{display:none;}
+  .form-type-select{grid-template-columns:repeat(3,1fr);} .photo-upload{grid-template-columns:repeat(4,1fr);} .mobile-bar{display:none;}
 }
 @media (max-width: 767px) {
   body.page-detail {
@@ -886,7 +906,8 @@ a.account-ov-stat:hover {
     padding-bottom: 0;
   }
   body.page-chat .mobile-bar { display: none; }
-  body.page-chat .footer { display: none; }
+  body.page-chat .footer,
+  body.page-chat .site-footer { display: none; }
   body.page-chat .main-wrap {
     padding-bottom: 0;
     min-height: calc(100dvh - 70px);
