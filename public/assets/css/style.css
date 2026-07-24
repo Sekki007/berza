@@ -407,15 +407,12 @@ body.account-menu-open{overflow:hidden;}
   .ads-list.view-grid .ad-thumb{width:100%;height:160px;min-height:160px;border-right:none;border-bottom:1px solid var(--border-light);}
   .ads-list.view-grid .ad-item-inner{flex-direction:column;}
   .detail-layout{display:grid;grid-template-columns:1fr 320px;gap:16px;align-items:start;} .detail-main-img{height:420px;border-bottom:none;} .detail-sidebar .kp-seller-box{position:sticky;top:80px;} .sticky-contact{display:none;}
-  .kp-gallery{display:flex;gap:10px;padding:12px;} .kp-thumbs{flex-direction:column;padding:0;overflow-y:auto;overflow-x:hidden;max-height:420px;width:72px;flex-shrink:0;}
-  .kp-thumbs .detail-thumb{width:64px;height:64px;} .kp-gallery .detail-main-img{flex:1;border:none;border-radius:4px;}
   .form-type-select{grid-template-columns:repeat(3,1fr);} .photo-upload{grid-template-columns:repeat(4,1fr);} .footer-inner{grid-template-columns:repeat(3,1fr);} .mobile-bar{display:none;}
 }
 @media (max-width: 767px) {
   body.page-detail {
     padding-bottom: calc(var(--mobile-bar-h) + var(--sticky-contact-h) + var(--safe-bottom) + 12px);
   }
-  .kp-gallery .kp-thumbs { flex-direction: row; width: auto; max-height: none; }
   #poruka { scroll-margin-top: 88px; scroll-margin-bottom: 160px; }
 
   .form-row { grid-template-columns: 1fr !important; }
@@ -946,19 +943,36 @@ a.rep-thumb:hover { opacity: 0.85; text-decoration: underline; }
 body.page-detail { background: #f0f0f0; }
 .page-detail .container { max-width: 1100px; }
 .kp-detail-wrap.main-wrap {
-  display: block;
+  display: block !important;
+  flex-direction: column;
   padding-top: 0;
+  width: 100%;
+  max-width: 1100px;
+  box-sizing: border-box;
 }
-.kp-detail-main { min-width: 0; }
+.kp-detail-main {
+  display: block !important;
+  width: 100% !important;
+  max-width: 100%;
+  min-width: 0;
+  flex: none !important;
+}
 .kp-gallery {
   position: relative;
+  display: block !important;
+  width: 100%;
+  max-width: 100%;
   background: #111;
   margin: 0 -12px;
+  padding: 0;
   border: none;
   border-radius: 0;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 .kp-gallery-track {
   display: flex;
+  width: 100%;
   overflow-x: auto;
   scroll-snap-type: x mandatory;
   -webkit-overflow-scrolling: touch;
@@ -967,6 +981,9 @@ body.page-detail { background: #f0f0f0; }
 .kp-gallery-track::-webkit-scrollbar { display: none; }
 .kp-gallery-slide {
   flex: 0 0 100%;
+  width: 100%;
+  min-width: 100%;
+  max-width: 100%;
   scroll-snap-align: start;
   min-height: 280px;
   max-height: 70vh;
@@ -974,10 +991,11 @@ body.page-detail { background: #f0f0f0; }
   align-items: center;
   justify-content: center;
   background: #111;
+  box-sizing: border-box;
 }
 .kp-gallery-slide img {
   width: 100%;
-  height: 100%;
+  height: auto;
   max-height: 70vh;
   object-fit: contain;
   display: block;
@@ -1190,7 +1208,7 @@ body.page-detail { background: #f0f0f0; }
   min-height: var(--touch-min);
 }
 .page-detail { padding-bottom: 130px; }
-.kp-desktop-only-sidebar { display: none; }
+.kp-desktop-only-sidebar { display: none !important; }
 .kp-msg-form .form-group { margin-bottom: 10px; }
 
 @media (min-width: 768px) {
@@ -1199,20 +1217,30 @@ body.page-detail { background: #f0f0f0; }
   .kp-list-card .kp-list-title,
   .kp-list-card .ad-title { font-size: 16px; color: var(--kp-blue, #1a6bb5); }
   .ad-desktop-extra { display: block; margin-top: 4px; }
-  .kp-gallery { margin: 0; border-radius: 12px; overflow: hidden; }
-  .kp-detail-head { margin: 12px 0 0; border-radius: 12px; border: 1px solid #ececec; }
+  .kp-gallery {
+    margin: 0;
+    border-radius: 12px;
+    overflow: hidden;
+    max-width: 720px;
+  }
+  .kp-detail-head {
+    margin: 12px 0 0;
+    border-radius: 12px;
+    border: 1px solid #ececec;
+    max-width: 720px;
+  }
+  .kp-detail-main > .kp-card,
+  .kp-detail-main > .kp-card.kp-cat-chip {
+    max-width: 720px;
+  }
   .kp-sticky-contact,
-  .kp-sticky-contact.sticky-contact { display: none !important; }
+  .kp-sticky-contact.sticky-contact,
+  .page-detail .sticky-contact { display: none !important; }
   .page-detail { padding-bottom: 24px; }
   .kp-detail-wrap.main-wrap {
-    display: grid;
-    grid-template-columns: 1fr 320px;
-    gap: 16px;
-    align-items: start;
+    display: block !important;
     padding-top: 12px;
   }
-  .kp-desktop-only-sidebar { display: block; }
-  .kp-desktop-only-sidebar .kp-card { position: sticky; top: 80px; }
 }
 
 @media (max-width: 767px) {

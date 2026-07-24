@@ -278,31 +278,6 @@ require __DIR__ . '/partials/layout-start.php';
             </div>
         <?php endif; ?>
     </main>
-
-    <aside class="kp-desktop-only-sidebar">
-        <div class="kp-card">
-            <?php if (!empty($site['enable_messages'])): ?>
-                <a class="kp-btn-msg" href="<?= h($msgHref) ?>" style="width:100%;"><?= $isOwnAd ? 'Otvori poruke' : 'Pošaljite poruku' ?></a>
-                <p class="kp-reply-hint"><?= $isOwnAd ? 'Odgovori kupcima iz inboxa.' : 'Odgovara na poruke, uglavnom u roku od nekoliko sati.' ?></p>
-            <?php endif; ?>
-            <?php if ($phone !== ''): ?>
-                <button type="button" class="kp-btn-tel" style="width:100%;margin-top:8px;" data-reveal-phone="<?= h($phone) ?>" data-ad-id="<?= (int)$id ?>">Klik za broj telefona</button>
-            <?php endif; ?>
-            <?php if ($sellerUsername !== ''): ?>
-                <a class="kp-seller-card" href="<?= h(shopUrl($sellerUsername)) ?>" style="margin-top:14px;display:block;text-decoration:none;color:inherit;">
-                    <div class="kp-seller-top">
-                        <div class="kp-seller-avatar"><?= h($sellerInitials) ?></div>
-                        <div class="kp-seller-name"><?= h($sellerName) ?></div>
-                    </div>
-                    <div class="kp-seller-meta"><?= h($sellerLocation) ?></div>
-                    <div class="kp-seller-rating">
-                        <span class="kp-thumb-up">👍 <?= (int)($sellerSummary['positive'] ?? 0) ?></span>
-                        <span class="kp-thumb-down">👎 <?= (int)($sellerSummary['negative'] ?? 0) ?></span>
-                    </div>
-                </a>
-            <?php endif; ?>
-        </div>
-    </aside>
 </div>
 
 <div class="kp-sticky-contact sticky-contact">
