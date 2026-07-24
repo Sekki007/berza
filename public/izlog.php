@@ -73,7 +73,7 @@ require __DIR__ . '/partials/layout-start.php';
             <div class="shop-header-main">
                 <div class="seller-avatar shop-avatar"><?= h($initials) ?></div>
                 <div class="shop-header-info">
-                    <h1 class="shop-title"><?= h($shopName) ?> <?= renderVerifiedBadge($seller) ?></h1>
+                    <h1 class="shop-title"><?= h($shopName) ?> <?= renderSellerBadges($seller) ?></h1>
                     <p class="shop-meta">
                         @<?= h((string)$seller['username']) ?>
                         · <?= count($ads) ?> <?= count($ads) === 1 ? 'oglas' : 'oglasa' ?>

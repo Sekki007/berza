@@ -114,7 +114,7 @@ require __DIR__ . '/partials/layout-start.php';
                                 ?>
                                 <td>
                                     <?= h($sName) ?>
-                                    <?= $seller ? renderVerifiedBadge($seller) : '' ?>
+                                    <?= $seller ? renderSellerBadges($seller) : '' ?>
                                 </td>
                             <?php endforeach; ?>
                         </tr>

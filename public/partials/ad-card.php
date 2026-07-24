@@ -54,7 +54,7 @@ if ($cardShop === '' && $cardSeller) {
                         <?php if ($cardShopUrl !== ''): ?>
                             <div class="ad-shop">
                                 <span class="ad-shop-link" data-shop-url="<?= h($cardShopUrl) ?>"><?= h($cardShop) ?></span>
-                                <?= $cardSeller ? renderVerifiedBadge($cardSeller) : '' ?>
+                                <?= $cardSeller ? renderSellerBadges($cardSeller) : '' ?>
                             </div>
                         <?php else: ?>
                             <div class="ad-shop"><?= h($cardShop) ?></div>

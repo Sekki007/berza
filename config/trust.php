@@ -56,6 +56,149 @@ function renderVerifiedBadge(?array $user): string
     return '<span class="verified-badge" title="Proveren prodavac">✓ Proveren</span>';
 }
 
+function normalizePib(string $raw): ?string
+{
+    $digits = preg_replace('/\D+/', '', $raw);
+    if ($digits === null || !preg_match('/^\d{9}$/', $digits)) {
+        return null;
+    }
+    return $digits;
+}
+
+/**
+ * @return 'private'|'business'
+ */
+function userAccountType(?array $user): string
+{
+    $type = (string)($user['account_type'] ?? 'private');
+    return $type === 'business' ? 'business' : 'private';
+}
+
+/**
+ * @return 'shop'|'service'|''
+ */
+function userBusinessKind(?array $user): string
+{
+    $kind = (string)($user['business_kind'] ?? '');
+    return in_array($kind, ['shop', 'service'], true) ? $kind : '';
+}
+
+function businessKindLabel(string $kind): string
+{
+    return match ($kind) {
+        'shop' => 'Prodavnica',
+        'service' => 'Servis',
+        default => 'Firma',
+    };
+}
+
+/**
+ * @return 'none'|'pending'|'approved'|'rejected'
+ */
+function userBusinessStatus(?array $user): string
+{
+    if (!$user || userAccountType($user) !== 'business') {
+        return 'none';
+    }
+    $status = (string)($user['business_status'] ?? 'none');
+    return in_array($status, ['pending', 'approved', 'rejected'], true) ? $status : 'none';
+}
+
+function isBusinessVerified(?array $user): bool
+{
+    return userBusinessStatus($user) === 'approved'
+        && normalizePib((string)($user['pib'] ?? '')) !== null
+        && userBusinessKind($user) !== '';
+}
+
+function renderBusinessBadge(?array $user): string
+{
+    if (!isBusinessVerified($user)) {
+        return '';
+    }
+    $kind = userBusinessKind($user);
+    $label = businessKindLabel($kind);
+    $title = $label . ' · PIB ' . h((string)($user['pib'] ?? ''));
+    $class = $kind === 'service' ? 'business-badge business-badge-service' : 'business-badge business-badge-shop';
+    return '<span class="' . $class . '" title="' . $title . '">' . h($label) . '</span>';
+}
+
+function renderSellerBadges(?array $user): string
+{
+    return renderBusinessBadge($user) . renderVerifiedBadge($user);
+}
+
+/**
+ * @return array{ok: bool, error?: string}
+ */
+function requestBusinessVerification(int $userId): array
+{
+    $user = findUserById($userId);
+    if (!$user) {
+        return ['ok' => false, 'error' => 'Korisnik nije pronađen.'];
+    }
+    if (!isPhoneVerified($user)) {
+        return ['ok' => false, 'error' => 'Prvo potvrdi broj telefona.'];
+    }
+    if (userAccountType($user) !== 'business') {
+        return ['ok' => false, 'error' => 'Izaberi tip naloga Prodavnica/Servis.'];
+    }
+    $kind = userBusinessKind($user);
+    if ($kind === '') {
+        return ['ok' => false, 'error' => 'Izaberi da li si prodavnica ili servis.'];
+    }
+    if (trim((string)($user['shop_name'] ?? '')) === '') {
+        return ['ok' => false, 'error' => 'Unesi naziv firme / izloga.'];
+    }
+    $pib = normalizePib((string)($user['pib'] ?? ''));
+    if ($pib === null) {
+        return ['ok' => false, 'error' => 'PIB mora imati tačno 9 cifara.'];
+    }
+    if (userBusinessStatus($user) === 'approved') {
+        return ['ok' => true];
+    }
+
+    $ok = patchUser($userId, [
+        'account_type' => 'business',
+        'business_kind' => $kind,
+        'pib' => $pib,
+        'business_status' => 'pending',
+        'business_requested_at' => date('Y-m-d H:i:s'),
+        'business_verified_at' => null,
+        'business_reject_reason' => null,
+    ]);
+
+    return $ok
+        ? ['ok' => true]
+        : ['ok' => false, 'error' => 'Zahtev nije sačuvan.'];
+}
+
+function setBusinessVerification(int $userId, bool $approve, string $rejectReason = ''): bool
+{
+    $user = findUserById($userId);
+    if (!$user || userAccountType($user) !== 'business') {
+        return false;
+    }
+    if ($approve) {
+        $pib = normalizePib((string)($user['pib'] ?? ''));
+        if ($pib === null || userBusinessKind($user) === '') {
+            return false;
+        }
+        return patchUser($userId, [
+            'business_status' => 'approved',
+            'business_verified_at' => date('Y-m-d H:i:s'),
+            'business_reject_reason' => null,
+            'pib' => $pib,
+        ]);
+    }
+
+    return patchUser($userId, [
+        'business_status' => 'rejected',
+        'business_verified_at' => null,
+        'business_reject_reason' => trim($rejectReason) !== '' ? trim($rejectReason) : 'Zahtev odbijen.',
+    ]);
+}
+
 function patchUser(int $userId, array $fields): bool
 {
     if ($userId <= 0 || $fields === []) {

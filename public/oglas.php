@@ -123,7 +123,7 @@ $sellerBlock = static function () use (
             <div class="kp-seller-top">
                 <div class="kp-seller-avatar"><?= h($sellerInitials) ?></div>
                 <div>
-                    <div class="kp-seller-name"><?= h($sellerName) ?> <?= renderVerifiedBadge($seller) ?></div>
+                    <div class="kp-seller-name"><?= h($sellerName) ?> <?= renderSellerBadges($seller) ?></div>
                 </div>
                 <span class="kp-seller-chevron">›</span>
             </div>

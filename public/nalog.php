@@ -167,6 +167,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    if ($action === 'request_business') {
+        $result = requestBusinessVerification($userId);
+        if (!empty($result['ok'])) {
+            setFlash('success', 'Zahtev za bedž Prodavnica/Servis je poslat. Čeka admin potvrdu.');
+        } else {
+            setFlash('danger', (string)($result['error'] ?? 'Zahtev nije poslat.'));
+        }
+        header('Location: /nalog.php?tab=profil');
+        exit;
+    }
+
     if ($action === 'save_search') {
         $created = createSavedSearch($userId, $_POST, trim((string)($_POST['name'] ?? '')), !empty($_POST['alert_enabled']));
         if ($created) {
@@ -218,9 +229,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'shop_bio' => trim((string)($_POST['shop_bio'] ?? '')),
         'location' => trim((string)($_POST['location'] ?? '')),
         'notify_email' => !empty($_POST['notify_email']),
+        'account_type' => trim((string)($_POST['account_type'] ?? 'private')),
+        'business_kind' => trim((string)($_POST['business_kind'] ?? '')),
+        'pib' => trim((string)($_POST['pib'] ?? '')),
     ]);
     if (!$ok) {
-        setFlash('danger', 'Profil nije ažuriran. Proveri telefon.');
+        setFlash('danger', 'Profil nije ažuriran. Proveri telefon i PIB (9 cifara).');
     } else {
         $fresh = findUserById($userId);
         if ($fresh && !isPhoneVerified($fresh) && normalizePhoneRs((string)($fresh['phone'] ?? '')) !== null) {
@@ -283,7 +297,7 @@ require __DIR__ . '/partials/layout-start.php';
             <div class="account-hero-main">
                 <div class="seller-avatar account-avatar"><?= h($initials) ?></div>
                 <div class="account-hero-info">
-                    <h1 class="account-name"><?= h($displayName) ?> <?= renderVerifiedBadge($profile) ?></h1>
+                    <h1 class="account-name"><?= h($displayName) ?> <?= renderSellerBadges($profile) ?></h1>
                     <p class="account-username">@<?= h((string)$profile['username']) ?></p>
                     <div class="account-rep"><?= renderReputation($summary, $shopLink) ?></div>
                 </div>
@@ -852,10 +866,32 @@ require __DIR__ . '/partials/layout-start.php';
         <?php elseif ($tab === 'profil'): ?>
             <section class="form-card">
                 <h2>Podaci profila</h2>
-                <?php if (isVerifiedSeller($profile)): ?>
-                    <p class="form-hint"><?= renderVerifiedBadge($profile) ?> Imaš bedž proverenog prodavca.</p>
+                <?php if (isBusinessVerified($profile) || isVerifiedSeller($profile)): ?>
+                    <p class="form-hint"><?= renderSellerBadges($profile) ?></p>
                 <?php endif; ?>
-                <form method="POST" class="account-profile-form">
+                <?php
+                $bizStatus = userBusinessStatus($profile);
+                $accountType = userAccountType($profile);
+                $bizKind = userBusinessKind($profile);
+                ?>
+                <?php if ($accountType === 'business'): ?>
+                    <p class="form-hint" style="margin-bottom:12px;">
+                        Status firme:
+                        <?php if ($bizStatus === 'approved'): ?>
+                            <strong style="color:var(--kp-green-dark);">potvrđena</strong> <?= renderBusinessBadge($profile) ?>
+                        <?php elseif ($bizStatus === 'pending'): ?>
+                            <strong style="color:#b45309;">čeka admin potvrdu</strong>
+                        <?php elseif ($bizStatus === 'rejected'): ?>
+                            <strong style="color:#b91c1c;">odbijena</strong>
+                            <?php if (!empty($profile['business_reject_reason'])): ?>
+                                — <?= h((string)$profile['business_reject_reason']) ?>
+                            <?php endif; ?>
+                        <?php else: ?>
+                            <strong style="color:#b45309;">nije poslata na potvrdu</strong>
+                        <?php endif; ?>
+                    </p>
+                <?php endif; ?>
+                <form method="POST" class="account-profile-form" id="account-profile-form">
                     <input type="hidden" name="action" value="profile">
                     <div class="form-row">
                         <div class="form-group">
@@ -869,9 +905,33 @@ require __DIR__ . '/partials/layout-start.php';
                     </div>
                     <div class="form-row">
                         <div class="form-group">
-                            <label>Naziv izloga / prodavnice</label>
+                            <label>Tip naloga</label>
+                            <select name="account_type" id="account-type-select">
+                                <option value="private" <?= $accountType === 'private' ? 'selected' : '' ?>>Privatno lice</option>
+                                <option value="business" <?= $accountType === 'business' ? 'selected' : '' ?>>Prodavnica / Servis</option>
+                            </select>
+                        </div>
+                        <div class="form-group" data-business-only <?= $accountType === 'business' ? '' : 'hidden' ?>>
+                            <label>Vrsta</label>
+                            <select name="business_kind">
+                                <option value="">Izaberi…</option>
+                                <option value="shop" <?= $bizKind === 'shop' ? 'selected' : '' ?>>Prodavnica</option>
+                                <option value="service" <?= $bizKind === 'service' ? 'selected' : '' ?>>Servis</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>Naziv izloga / firme</label>
                             <input type="text" name="shop_name" value="<?= h((string)($profile['shop_name'] ?? '')) ?>" placeholder="npr. MobilServis XYZ">
                         </div>
+                        <div class="form-group" data-business-only <?= $accountType === 'business' ? '' : 'hidden' ?>>
+                            <label>PIB</label>
+                            <input type="text" name="pib" inputmode="numeric" maxlength="9" pattern="[0-9]{9}" value="<?= h((string)($profile['pib'] ?? '')) ?>" placeholder="123456789">
+                            <p class="form-hint" style="margin-top:6px;">9 cifara. Bedž dobijaš tek posle admin potvrde.</p>
+                        </div>
+                    </div>
+                    <div class="form-row">
                         <div class="form-group">
                             <label>Telefon</label>
                             <input type="text" name="phone" value="<?= h((string)($profile['phone'] ?? '')) ?>" placeholder="06x xxx xxxx" required>
@@ -884,8 +944,6 @@ require __DIR__ . '/partials/layout-start.php';
                                 <?php endif; ?>
                             </p>
                         </div>
-                    </div>
-                    <div class="form-row">
                         <div class="form-group">
                             <label>Grad (podrazumevani za oglase)</label>
                             <select name="location">
@@ -895,6 +953,8 @@ require __DIR__ . '/partials/layout-start.php';
                                 <?php endforeach; ?>
                             </select>
                         </div>
+                    </div>
+                    <div class="form-row">
                         <div class="form-group">
                             <label>Email</label>
                             <input type="email" name="email" value="<?= h((string)($profile['email'] ?? '')) ?>" placeholder="ime@email.com">
@@ -909,6 +969,7 @@ require __DIR__ . '/partials/layout-start.php';
                                 </p>
                             <?php endif; ?>
                         </div>
+                        <div class="form-group"></div>
                     </div>
                     <div class="form-group">
                         <label class="type-chip" style="min-width:auto;display:inline-flex;">
@@ -922,6 +983,33 @@ require __DIR__ . '/partials/layout-start.php';
                     </div>
                     <button class="btn-call" type="submit" style="width:auto;min-width:180px;">Sačuvaj izmene</button>
                 </form>
+                <script>
+                (function () {
+                  var typeSel = document.getElementById('account-type-select');
+                  var form = document.getElementById('account-profile-form');
+                  if (!typeSel || !form) return;
+                  function sync() {
+                    var biz = typeSel.value === 'business';
+                    form.querySelectorAll('[data-business-only]').forEach(function (el) {
+                      el.hidden = !biz;
+                    });
+                  }
+                  typeSel.addEventListener('change', sync);
+                  sync();
+                })();
+                </script>
+                <?php if ($accountType === 'business' && !in_array($bizStatus, ['approved', 'pending'], true)): ?>
+                    <form method="POST" style="margin-top:12px;">
+                        <input type="hidden" name="action" value="request_business">
+                        <button class="btn-sm btn-sm-primary" type="submit">Pošalji zahtev za bedž Prodavnica/Servis</button>
+                    </form>
+                    <p class="form-hint" style="margin-top:8px;">Prvo sačuvaj profil (vrsta + PIB), pa pošalji zahtev.</p>
+                <?php elseif ($accountType === 'business' && $bizStatus === 'rejected'): ?>
+                    <form method="POST" style="margin-top:12px;">
+                        <input type="hidden" name="action" value="request_business">
+                        <button class="btn-sm btn-sm-primary" type="submit">Pošalji zahtev ponovo</button>
+                    </form>
+                <?php endif; ?>
                 <?php if (trim((string)($profile['email'] ?? '')) !== '' && !isEmailVerified($profile)): ?>
                     <form method="POST" style="margin-top:12px;">
                         <input type="hidden" name="action" value="verify_email">

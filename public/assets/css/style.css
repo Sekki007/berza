@@ -276,6 +276,9 @@ body.account-menu-open{overflow:hidden;}
 .ad-compare-btn{position:absolute;top:8px;right:8px;z-index:2;padding:5px 8px;font-size:11px;font-weight:bold;border:1px solid var(--border);border-radius:4px;background:rgba(255,255,255,.95);cursor:pointer;font-family:inherit;color:var(--text-muted);}
 .ad-compare-btn.active,.ad-compare-btn:hover{border-color:var(--kp-green);color:var(--kp-green-dark);background:#f3faf4;}
 .verified-badge{display:inline-block;margin-left:6px;padding:2px 7px;border-radius:3px;background:#e8f5e9;color:var(--kp-green-dark);border:1px solid #c8e6c9;font-size:11px;font-weight:bold;vertical-align:middle;white-space:nowrap;}
+.business-badge{display:inline-block;margin-left:6px;padding:2px 7px;border-radius:3px;font-size:11px;font-weight:bold;vertical-align:middle;white-space:nowrap;}
+.business-badge-shop{background:#e3f2fd;color:#1565c0;border:1px solid #90caf9;}
+.business-badge-service{background:#fff8e1;color:#856404;border:1px solid #ffe082;}
 .compare-bar{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(var(--mobile-bar-h) + var(--safe-bottom) + 12px);z-index:55;display:flex;align-items:center;gap:10px;padding:10px 14px;background:#1f2937;color:#fff;border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.2);font-size:13px;font-weight:bold;text-decoration:none;}
 .compare-bar:hover{color:#fff;text-decoration:none;}
 .compare-bar[hidden]{display:none !important;}

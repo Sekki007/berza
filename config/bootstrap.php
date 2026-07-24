@@ -251,6 +251,48 @@ function updateUserProfile(int $userId, array $data): bool
         if (array_key_exists('shop_name', $data)) {
             $user['shop_name'] = trim((string)$data['shop_name']);
         }
+        if (array_key_exists('account_type', $data) || array_key_exists('business_kind', $data) || array_key_exists('pib', $data)) {
+            $newType = array_key_exists('account_type', $data)
+                ? ((string)$data['account_type'] === 'business' ? 'business' : 'private')
+                : userAccountType($user);
+            $oldType = userAccountType($user);
+            $oldKind = userBusinessKind($user);
+            $oldPib = normalizePib((string)($user['pib'] ?? '')) ?? '';
+
+            if ($newType === 'private') {
+                $user['account_type'] = 'private';
+                $user['business_kind'] = '';
+                $user['pib'] = '';
+                $user['business_status'] = 'none';
+                $user['business_verified_at'] = null;
+                $user['business_requested_at'] = null;
+                $user['business_reject_reason'] = null;
+            } else {
+                $kind = array_key_exists('business_kind', $data)
+                    ? (string)$data['business_kind']
+                    : userBusinessKind($user);
+                if (!in_array($kind, ['shop', 'service'], true)) {
+                    $kind = '';
+                }
+                $pibRaw = array_key_exists('pib', $data) ? trim((string)$data['pib']) : (string)($user['pib'] ?? '');
+                $pib = $pibRaw !== '' ? normalizePib($pibRaw) : null;
+                if ($pibRaw !== '' && $pib === null) {
+                    return false;
+                }
+
+                $user['account_type'] = 'business';
+                $user['business_kind'] = $kind;
+                $user['pib'] = $pib ?? '';
+
+                $changedIdentity = $oldType !== 'business'
+                    || $oldKind !== $kind
+                    || $oldPib !== (string)($pib ?? '');
+                if ($changedIdentity && userBusinessStatus($user) === 'approved') {
+                    $user['business_status'] = 'none';
+                    $user['business_verified_at'] = null;
+                }
+            }
+        }
         if (array_key_exists('shop_bio', $data)) {
             $user['shop_bio'] = trim((string)$data['shop_bio']);
         }

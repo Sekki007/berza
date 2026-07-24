@@ -35,6 +35,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $userId > 0) {
         } else {
             setFlash('danger', 'Nije uspelo.');
         }
+    } elseif ($action === 'approve_business') {
+        if (setBusinessVerification($userId, true)) {
+            $u = findUserById($userId);
+            if ($u) {
+                notifyUser($userId, 'business_approved', 'Firma potvrđena', 'Admin je potvrdio tvoj nalog kao ' . businessKindLabel(userBusinessKind($u)) . '. Bedž je aktivan.', '/nalog.php?tab=profil', false);
+            }
+            setFlash('success', 'Firma je potvrđena. Bedž je aktivan.');
+        } else {
+            setFlash('danger', 'Potvrda nije uspela. Proveri PIB i vrstu naloga.');
+        }
+    } elseif ($action === 'reject_business') {
+        $reason = trim((string)($_POST['reason'] ?? ''));
+        if (setBusinessVerification($userId, false, $reason)) {
+            notifyUser($userId, 'business_rejected', 'Zahtev za firmu odbijen', $reason !== '' ? $reason : 'Admin je odbio zahtev za bedž Prodavnica/Servis.', '/nalog.php?tab=profil', false);
+            setFlash('success', 'Zahtev za firmu je odbijen.');
+        } else {
+            setFlash('danger', 'Odbijanje nije uspelo.');
+        }
     } elseif ($action === 'delete') {
         if (deleteUserById($userId)) {
             setFlash('success', 'Korisnik je obrisan. Njegovi oglasi su deaktivirani.');
@@ -47,7 +65,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $userId > 0) {
 }
 
 $users = getUsers();
-usort($users, static fn($a, $b) => ((int)($b['id'] ?? 0)) <=> ((int)($a['id'] ?? 0)));
+usort($users, static function ($a, $b) {
+    $ap = userBusinessStatus($a) === 'pending' ? 1 : 0;
+    $bp = userBusinessStatus($b) === 'pending' ? 1 : 0;
+    if ($ap !== $bp) {
+        return $bp <=> $ap;
+    }
+    return ((int)($b['id'] ?? 0)) <=> ((int)($a['id'] ?? 0));
+});
+
+$pendingBusiness = count(array_filter($users, static fn($u) => userBusinessStatus($u) === 'pending'));
 
 $pageTitle = 'Korisnici — Admin';
 $activePage = 'nalog';
@@ -62,6 +89,11 @@ require __DIR__ . '/partials/layout-start.php';
     <main class="content">
         <div class="breadcrumb"><a href="/dashboard.php">Admin</a> › Korisnici</div>
         <h2 style="font-size:18px;margin-bottom:12px;">Upravljanje korisnicima (<?= count($users) ?>)</h2>
+        <?php if ($pendingBusiness > 0): ?>
+            <p class="form-hint" style="margin-bottom:12px;color:#b45309;">
+                Čeka potvrdu firme: <strong><?= (int)$pendingBusiness ?></strong>
+            </p>
+        <?php endif; ?>
 
         <div class="form-card table-scroll" style="padding:0;">
             <table class="admin-table">
@@ -70,6 +102,7 @@ require __DIR__ . '/partials/layout-start.php';
                     <th>ID</th>
                     <th>Korisnik</th>
                     <th>Telefon</th>
+                    <th>Firma</th>
                     <th>Oglasi</th>
                     <th>Status</th>
                     <th>Registrovan</th>
@@ -82,17 +115,35 @@ require __DIR__ . '/partials/layout-start.php';
                     $uid = (int)$u['id'];
                     $isAdminUser = !empty($u['is_admin']) || ($u['username'] ?? '') === 'admin';
                     $blocked = !empty($u['is_blocked']);
+                    $bizStatus = userBusinessStatus($u);
                     ?>
-                    <tr class="<?= $blocked ? 'row-blocked' : '' ?>">
+                    <tr class="<?= $blocked ? 'row-blocked' : '' ?>" <?= $bizStatus === 'pending' ? 'style="background:#fff8e1;"' : '' ?>>
                         <td>#<?= $uid ?></td>
                         <td>
                             <strong><?= h((string)$u['full_name']) ?></strong><br>
                             <span style="color:var(--text-muted);font-size:12px;">@<?= h((string)$u['username']) ?></span>
                             <?php if ($isAdminUser): ?><span class="vote-tag vote-tag-pos" style="margin-left:6px;">Admin</span><?php endif; ?>
                             <?php if (!empty($u['shop_name'])): ?><div style="font-size:12px;margin-top:2px;"><a href="<?= h(shopUrl((string)$u['username'])) ?>"><?= h((string)$u['shop_name']) ?></a></div><?php endif; ?>
-                            <?= renderVerifiedBadge($u) ?>
+                            <?= renderSellerBadges($u) ?>
                         </td>
                         <td><?= h((string)($u['phone'] ?? '—')) ?></td>
+                        <td style="font-size:12px;">
+                            <?php if (userAccountType($u) === 'business'): ?>
+                                <div><?= h(businessKindLabel(userBusinessKind($u))) ?></div>
+                                <div>PIB: <?= h((string)($u['pib'] ?? '—')) ?></div>
+                                <?php if ($bizStatus === 'pending'): ?>
+                                    <span class="vote-tag vote-tag-neg">Čeka potvrdu</span>
+                                <?php elseif ($bizStatus === 'approved'): ?>
+                                    <span class="vote-tag vote-tag-pos">Potvrđena</span>
+                                <?php elseif ($bizStatus === 'rejected'): ?>
+                                    <span class="vote-tag vote-tag-neg">Odbijena</span>
+                                <?php else: ?>
+                                    <span style="color:var(--text-muted);">Bez zahteva</span>
+                                <?php endif; ?>
+                            <?php else: ?>
+                                <span style="color:var(--text-light);">Privatno</span>
+                            <?php endif; ?>
+                        </td>
                         <td><?= countUserAds($uid) ?></td>
                         <td>
                             <?php if ($blocked): ?>
@@ -109,6 +160,21 @@ require __DIR__ . '/partials/layout-start.php';
                             <?php if (!$isAdminUser): ?>
                                 <div class="admin-actions">
                                     <a class="btn-sm" href="<?= h(shopUrl((string)$u['username'])) ?>">Izlog</a>
+                                    <?php if ($bizStatus === 'pending' || $bizStatus === 'rejected'): ?>
+                                        <form method="POST" style="display:inline;">
+                                            <input type="hidden" name="user_id" value="<?= $uid ?>">
+                                            <input type="hidden" name="action" value="approve_business">
+                                            <button class="btn-sm btn-sm-primary" type="submit">Potvrdi firmu</button>
+                                        </form>
+                                    <?php endif; ?>
+                                    <?php if ($bizStatus === 'pending' || $bizStatus === 'approved'): ?>
+                                        <form method="POST" style="display:inline;" onsubmit="return confirm('Odbiti zahtev za firmu?');">
+                                            <input type="hidden" name="user_id" value="<?= $uid ?>">
+                                            <input type="hidden" name="action" value="reject_business">
+                                            <input type="hidden" name="reason" value="Zahtev odbijen od administratora.">
+                                            <button class="btn-sm" type="submit"><?= $bizStatus === 'approved' ? 'Ukloni firmu' : 'Odbij firmu' ?></button>
+                                        </form>
+                                    <?php endif; ?>
                                     <?php if (!empty($u['verified_seller'])): ?>
                                         <form method="POST" style="display:inline;">
                                             <input type="hidden" name="user_id" value="<?= $uid ?>">
