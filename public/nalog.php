@@ -324,36 +324,56 @@ require __DIR__ . '/partials/layout-start.php';
             </div>
         </section>
 
-        <div class="account-stats">
-            <div class="account-stat">
-                <span class="account-stat-value"><?= count($activeAds) ?></span>
-                <span class="account-stat-label">Aktivni</span>
+        <?php
+        $statActive = count($activeAds);
+        $statSold = count($soldAds);
+        $statTotal = count($myAds);
+        $statInactive = max(0, $statTotal - $statActive - $statSold);
+        ?>
+        <section class="account-overview form-card">
+            <div class="account-overview-block">
+                <div class="account-overview-head">
+                    <h2>Oglasi</h2>
+                    <a href="?tab=oglasi">Vidi sve</a>
+                </div>
+                <div class="account-overview-ads">
+                    <a class="account-ov-stat" href="?tab=oglasi">
+                        <strong><?= $statActive ?></strong>
+                        <span>Aktivni</span>
+                    </a>
+                    <div class="account-ov-stat">
+                        <strong><?= $statSold ?></strong>
+                        <span>Prodato</span>
+                    </div>
+                    <div class="account-ov-stat">
+                        <strong><?= $statTotal ?></strong>
+                        <span>Ukupno</span>
+                    </div>
+                </div>
+                <?php if ($statInactive > 0): ?>
+                    <p class="account-overview-note"><?= $statInactive ?> neaktivnih (isključeni ili istekli)</p>
+                <?php endif; ?>
             </div>
-            <div class="account-stat">
-                <span class="account-stat-value"><?= count($soldAds) ?></span>
-                <span class="account-stat-label">Prodato</span>
-            </div>
-            <div class="account-stat">
-                <span class="account-stat-value"><?= count($myAds) ?></span>
-                <span class="account-stat-label">Ukupno</span>
-            </div>
-            <?php if ($creditsOn): ?>
-                <a class="account-stat account-stat-link" href="?tab=krediti">
-                    <span class="account-stat-value account-stat-value-sm"><?= number_format($userCredits, 0, ',', '.') ?></span>
-                    <span class="account-stat-label">Krediti</span>
+
+            <div class="account-overview-inbox">
+                <?php if (!empty($site['enable_messages'])): ?>
+                    <a class="account-ov-chip<?= $unread > 0 ? ' has-count' : '' ?>" href="/poruke.php">
+                        <span>Poruke</span>
+                        <em><?= (int)$unread ?></em>
+                    </a>
+                <?php endif; ?>
+                <a class="account-ov-chip<?= $unreadNotifs > 0 ? ' has-count' : '' ?>" href="?tab=obavestenja">
+                    <span>Obaveštenja</span>
+                    <em><?= (int)$unreadNotifs ?></em>
                 </a>
-            <?php endif; ?>
-            <a class="account-stat account-stat-link" href="?tab=obavestenja">
-                <span class="account-stat-value"><?= (int)$unreadNotifs ?></span>
-                <span class="account-stat-label">Obav.</span>
-            </a>
-            <?php if (!empty($site['enable_messages'])): ?>
-                <a class="account-stat account-stat-link" href="/poruke.php">
-                    <span class="account-stat-value"><?= (int)$unread ?></span>
-                    <span class="account-stat-label">Poruke</span>
-                </a>
-            <?php endif; ?>
-        </div>
+                <?php if ($creditsOn): ?>
+                    <a class="account-ov-chip account-ov-chip-credits" href="?tab=krediti">
+                        <span>Krediti</span>
+                        <em><?= number_format($userCredits, 0, ',', '.') ?></em>
+                    </a>
+                <?php endif; ?>
+            </div>
+        </section>
 
         <nav class="account-tabs" aria-label="Sekcije naloga">
             <a href="?tab=pregled" class="<?= $tab === 'pregled' ? 'active' : '' ?>">Pregled</a>
