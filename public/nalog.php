@@ -314,16 +314,20 @@ require __DIR__ . '/partials/layout-start.php';
                 </div>
             </div>
             <div class="account-hero-actions">
-                <a class="btn-call account-hero-primary" href="/ad_form.php">+ Novi oglas</a>
-                <div class="account-hero-secondary<?= $creditsOn ? ' has-multi' : '' ?>">
-                    <a class="btn-message" href="<?= h($shopLink) ?>">Moj izlog</a>
-                    <?php if ($creditsOn): ?>
-                        <a class="btn-message btn-top-cta" href="?tab=krediti">Krediti: <?= number_format($userCredits, 0, ',', '.') ?></a>
-                    <?php endif; ?>
-                    <?php if ($topOn): ?>
-                        <a class="btn-message account-hero-promo" href="?tab=top">⭐ TOP promocije</a>
-                    <?php endif; ?>
+                <div class="account-hero-primary-row">
+                    <a class="btn-call account-hero-primary" href="/ad_form.php">+ Novi oglas</a>
+                    <a class="btn-message account-hero-izlog" href="<?= h($shopLink) ?>">Moj izlog</a>
                 </div>
+                <?php if ($creditsOn || $topOn): ?>
+                    <div class="account-hero-secondary<?= $creditsOn && $topOn ? ' has-multi' : '' ?>">
+                        <?php if ($creditsOn): ?>
+                            <a class="btn-message btn-top-cta" href="?tab=krediti">Krediti: <?= number_format($userCredits, 0, ',', '.') ?></a>
+                        <?php endif; ?>
+                        <?php if ($topOn): ?>
+                            <a class="btn-message account-hero-promo" href="?tab=top">⭐ TOP promocije</a>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
             </div>
         </section>
 
