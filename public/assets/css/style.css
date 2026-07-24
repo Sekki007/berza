@@ -445,6 +445,44 @@ body.account-menu-open{overflow:hidden;}
 .account-ad-status.is-off { color: var(--text-light); }
 .account-ad-actions { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
 .account-profile-form .btn-call { margin-top: 4px; }
+.account-profile-card .profile-head{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:14px;padding-bottom:12px;border-bottom:1px solid var(--border-light);}
+.account-profile-card .profile-head h2{margin:0;padding:0;border:0;font-size:18px;}
+.profile-head-sub{margin:6px 0 0;font-size:13px;color:var(--text-muted);}
+.profile-head-badges{display:flex;flex-wrap:wrap;gap:6px;justify-content:flex-end;}
+.profile-head-badges .verified-badge,
+.profile-head-badges .business-badge{margin-left:0;}
+.profile-status{display:flex;flex-direction:column;gap:4px;margin:0 0 16px;padding:12px 14px;border-radius:4px;border:1px solid var(--border);background:#fafafa;font-size:13px;line-height:1.4;}
+.profile-status strong{font-size:13px;}
+.profile-status span{color:var(--text-muted);}
+.profile-status-approved{background:#e8f5e9;border-color:#c8e6c9;}
+.profile-status-approved strong{color:var(--kp-green-dark);}
+.profile-status-pending,
+.profile-status-idle{background:#fff8e1;border-color:#ffe082;}
+.profile-status-pending strong,
+.profile-status-idle strong{color:#856404;}
+.profile-status-rejected{background:#fdecea;border-color:#f5c2c0;}
+.profile-status-rejected strong{color:#b91c1c;}
+.profile-section{margin:0 0 18px;padding:0 0 16px;border-bottom:1px solid var(--border-light);}
+.profile-section:last-of-type{border-bottom:0;padding-bottom:0;}
+.profile-section-title{font-size:14px;margin:0 0 6px;color:var(--text);}
+.profile-section-desc{font-size:12px;color:var(--text-muted);margin:0 0 12px;line-height:1.4;}
+.profile-section .form-hint{margin:6px 0 0;}
+.profile-check{display:flex;align-items:flex-start;gap:10px;margin-top:4px;padding:10px 12px;border:1px solid var(--border);border-radius:4px;background:#fafafa;font-size:13px;cursor:pointer;}
+.profile-check input{width:auto;margin-top:2px;flex:0 0 auto;}
+.profile-check span{line-height:1.35;color:var(--text);}
+.profile-actions{margin-top:4px;}
+.profile-actions .btn-call{width:auto;min-width:180px;}
+.profile-side-actions{margin-top:14px;padding-top:14px;border-top:1px solid var(--border-light);display:flex;flex-direction:column;gap:10px;}
+.profile-action-row{display:flex;flex-wrap:wrap;align-items:center;gap:10px;}
+.profile-action-row .form-hint{margin:0;}
+.status-ok{color:var(--kp-green-dark);font-weight:bold;}
+.status-warn{color:#b45309;font-weight:bold;}
+@media (max-width: 640px) {
+  .account-profile-card .profile-head{flex-direction:column;align-items:flex-start;}
+  .profile-head-badges{justify-content:flex-start;}
+  .profile-actions .btn-call{width:100%;}
+}
+
 .account-expiry { color: var(--text-muted); }
 .account-expiry.is-warn { color: #b45309; font-weight: bold; }
 .inline-form { display: inline; margin: 0; }
