@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/config/bootstrap.php';
 
 $cfg = categoriesConfig();
+$schema = adFormSchema();
 $settings = siteSettings();
 $search = trim((string)($_GET['q'] ?? ''));
 $brand = trim((string)($_GET['brand'] ?? ''));
@@ -14,9 +15,17 @@ $maxPrice = trim((string)($_GET['max_price'] ?? ''));
 $minPrice = trim((string)($_GET['min_price'] ?? ''));
 $condition = trim((string)($_GET['condition'] ?? ''));
 $categoryGroup = trim((string)($_GET['category_group'] ?? ''));
+$storage = trim((string)($_GET['storage'] ?? ''));
+$listingType = trim((string)($_GET['listing_type'] ?? ''));
+$equipmentType = trim((string)($_GET['equipment_type'] ?? ''));
+$onlyPriced = !empty($_GET['only_priced']);
+$onlyPhotos = !empty($_GET['only_photos']);
 $type = trim((string)($_GET['type'] ?? ''));
 if (!in_array($type, ['telefon', 'delovi', 'servis'], true)) {
     $type = '';
+}
+if (!in_array($listingType, ['sell', 'buy', 'trade', 'service'], true)) {
+    $listingType = '';
 }
 $sort = trim((string)($_GET['sort'] ?? 'newest'));
 $page = max(1, (int)($_GET['page'] ?? 1));
@@ -31,6 +40,11 @@ $filters = [
     'min_price' => $minPrice,
     'condition' => $condition,
     'category_group' => $categoryGroup,
+    'storage' => $storage,
+    'listing_type' => $listingType,
+    'equipment_type' => $equipmentType,
+    'only_priced' => $onlyPriced,
+    'only_photos' => $onlyPhotos,
     'types' => $type !== '' ? [$type] : [],
     'sort' => $sort,
 ];
@@ -54,9 +68,14 @@ $queryBase = array_filter([
     'min_price' => $minPrice,
     'condition' => $condition,
     'category_group' => $categoryGroup,
+    'storage' => $storage,
+    'listing_type' => $listingType,
+    'equipment_type' => $equipmentType,
+    'only_priced' => $onlyPriced ? '1' : '',
+    'only_photos' => $onlyPhotos ? '1' : '',
     'type' => $type,
     'sort' => $sort,
-], static fn($v) => $v !== '');
+], static fn($v) => $v !== '' && $v !== null);
 
 $pageTitle = 'TelefonBerza — Oglasi';
 $activePage = 'oglasi';
@@ -70,56 +89,10 @@ require __DIR__ . '/partials/layout-start.php';
         <form method="GET" class="filter-box">
             <div class="filter-head">Filteri</div>
             <div class="filter-body">
-                <?php foreach ($queryBase as $k => $v): if (in_array($k, ['sort', 'type', 'brand', 'location', 'condition', 'min_price', 'max_price', 'model'], true)) continue; ?>
-                    <input type="hidden" name="<?= h($k) ?>" value="<?= h((string)$v) ?>">
-                <?php endforeach; ?>
-
-                <select class="filter-select" name="type">
-                    <option value="">Svi tipovi oglasa</option>
-                    <option value="telefon" <?= $type === 'telefon' ? 'selected' : '' ?>>Telefoni</option>
-                    <option value="delovi" <?= $type === 'delovi' ? 'selected' : '' ?>>Delovi</option>
-                    <option value="servis" <?= $type === 'servis' ? 'selected' : '' ?>>Servisne usluge</option>
-                </select>
-
-                <select class="filter-select" name="brand">
-                    <option value="">Svi brendovi</option>
-                    <?php foreach ($cfg['brands'] as $b): ?>
-                        <option value="<?= h($b) ?>" <?= $brand === $b ? 'selected' : '' ?>><?= h($b) ?></option>
-                    <?php endforeach; ?>
-                </select>
-
-                <select class="filter-select" name="location">
-                    <option value="">Svi gradovi</option>
-                    <?php foreach ($cfg['cities'] as $city): ?>
-                        <option value="<?= h($city) ?>" <?= $location === $city ? 'selected' : '' ?>><?= h($city) ?></option>
-                    <?php endforeach; ?>
-                </select>
-
-                <?php if ($categoryGroup !== '' && !empty($cfg['groups'][$categoryGroup]['models'])): ?>
-                    <select class="filter-select" name="model">
-                        <option value="">Svi modeli</option>
-                        <?php foreach ($cfg['groups'][$categoryGroup]['models'] as $m): ?>
-                            <option value="<?= h($m) ?>" <?= $model === $m ? 'selected' : '' ?>><?= h($m) ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                <?php endif; ?>
-
-                <select class="filter-select" name="condition">
-                    <option value="">Sva stanja</option>
-                    <?php foreach ($cfg['conditions'] as $st): ?>
-                        <option value="<?= h($st) ?>" <?= $condition === $st ? 'selected' : '' ?>><?= h($st) ?></option>
-                    <?php endforeach; ?>
-                </select>
-
-                <input class="filter-select" type="number" name="min_price" placeholder="Cena od (€)" value="<?= h($minPrice) ?>">
-                <input class="filter-select" type="number" name="max_price" placeholder="Cena do (€)" value="<?= h($maxPrice) ?>">
-
-                <select class="filter-select" name="sort">
-                    <option value="newest" <?= $sort === 'newest' ? 'selected' : '' ?>>Najnovije</option>
-                    <option value="price_asc" <?= $sort === 'price_asc' ? 'selected' : '' ?>>Cena rastuće</option>
-                    <option value="price_desc" <?= $sort === 'price_desc' ? 'selected' : '' ?>>Cena opadajuće</option>
-                </select>
-
+                <?php
+                $includeHiddenQ = false;
+                require __DIR__ . '/partials/ads-filters.php';
+                ?>
                 <button class="filter-apply" type="submit">Primeni filtere</button>
                 <a href="/index.php" class="btn-message" style="display:block;text-align:center;margin-top:8px;">Poništi filtere</a>
             </div>
@@ -153,7 +126,9 @@ require __DIR__ . '/partials/layout-start.php';
             <span class="results-count">Pronađeno: <strong data-results-count><?= (int)$pagination['total'] ?></strong> oglasa</span>
             <div class="results-bar-right">
                 <?php
-                $hasFilters = $search !== '' || $brand !== '' || $model !== '' || $location !== '' || $condition !== '' || $type !== '' || $minPrice !== '' || $maxPrice !== '' || $categoryGroup !== '';
+                $hasFilters = $search !== '' || $brand !== '' || $model !== '' || $location !== '' || $condition !== '' || $type !== ''
+                    || $minPrice !== '' || $maxPrice !== '' || $categoryGroup !== '' || $storage !== '' || $listingType !== ''
+                    || $equipmentType !== '' || $onlyPriced || $onlyPhotos;
                 if ($hasFilters):
                 ?>
                     <?php if (isLoggedIn()): ?>
@@ -168,6 +143,11 @@ require __DIR__ . '/partials/layout-start.php';
                             <input type="hidden" name="min_price" value="<?= h($minPrice) ?>">
                             <input type="hidden" name="max_price" value="<?= h($maxPrice) ?>">
                             <input type="hidden" name="category_group" value="<?= h($categoryGroup) ?>">
+                            <input type="hidden" name="storage" value="<?= h($storage) ?>">
+                            <input type="hidden" name="listing_type" value="<?= h($listingType) ?>">
+                            <input type="hidden" name="equipment_type" value="<?= h($equipmentType) ?>">
+                            <?php if ($onlyPriced): ?><input type="hidden" name="only_priced" value="1"><?php endif; ?>
+                            <?php if ($onlyPhotos): ?><input type="hidden" name="only_photos" value="1"><?php endif; ?>
                             <input type="hidden" name="alert_enabled" value="1">
                             <button class="btn-sm" type="submit" title="Sačuvaj pretragu i alert">Sačuvaj pretragu</button>
                         </form>
@@ -209,39 +189,12 @@ require __DIR__ . '/partials/layout-start.php';
     <div class="filter-drawer-head"><h3>Filteri</h3><button class="filter-drawer-close" data-close-filters>×</button></div>
     <div class="filter-drawer-body">
         <form method="GET">
-            <input type="hidden" name="q" value="<?= h($search) ?>">
-            <select class="filter-select" name="type">
-                <option value="">Svi tipovi oglasa</option>
-                <option value="telefon" <?= $type === 'telefon' ? 'selected' : '' ?>>Telefoni</option>
-                <option value="delovi" <?= $type === 'delovi' ? 'selected' : '' ?>>Delovi</option>
-                <option value="servis" <?= $type === 'servis' ? 'selected' : '' ?>>Servisne usluge</option>
-            </select>
-            <select class="filter-select" name="sort">
-                <option value="newest" <?= $sort === 'newest' ? 'selected' : '' ?>>Najnovije</option>
-                <option value="price_asc" <?= $sort === 'price_asc' ? 'selected' : '' ?>>Cena rastuće</option>
-                <option value="price_desc" <?= $sort === 'price_desc' ? 'selected' : '' ?>>Cena opadajuće</option>
-            </select>
-            <select class="filter-select" name="brand">
-                <option value="">Svi brendovi</option>
-                <?php foreach ($cfg['brands'] as $b): ?>
-                    <option value="<?= h($b) ?>" <?= $brand === $b ? 'selected' : '' ?>><?= h($b) ?></option>
-                <?php endforeach; ?>
-            </select>
-            <select class="filter-select" name="location">
-                <option value="">Svi gradovi</option>
-                <?php foreach ($cfg['cities'] as $city): ?>
-                    <option value="<?= h($city) ?>" <?= $location === $city ? 'selected' : '' ?>><?= h($city) ?></option>
-                <?php endforeach; ?>
-            </select>
-            <select class="filter-select" name="condition">
-                <option value="">Sva stanja</option>
-                <?php foreach ($cfg['conditions'] as $st): ?>
-                    <option value="<?= h($st) ?>" <?= $condition === $st ? 'selected' : '' ?>><?= h($st) ?></option>
-                <?php endforeach; ?>
-            </select>
-            <input class="filter-select" type="number" name="min_price" placeholder="Cena od (€)" value="<?= h($minPrice) ?>">
-            <input class="filter-select" type="number" name="max_price" placeholder="Cena do (€)" value="<?= h($maxPrice) ?>">
+            <?php
+            $includeHiddenQ = true;
+            require __DIR__ . '/partials/ads-filters.php';
+            ?>
             <button class="filter-apply" type="submit">Primeni filtere</button>
+            <a href="/index.php" class="btn-message" style="display:block;text-align:center;margin-top:8px;">Poništi</a>
         </form>
     </div>
 </div>

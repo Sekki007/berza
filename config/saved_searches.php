@@ -37,6 +37,10 @@ function findSavedSearch(int $id): ?array
 
 function savedSearchFiltersFromInput(array $input): array
 {
+    $listingType = trim((string)($input['listing_type'] ?? ''));
+    if (!in_array($listingType, ['sell', 'buy', 'trade', 'service', ''], true)) {
+        $listingType = '';
+    }
     $filters = [
         'q' => trim((string)($input['q'] ?? '')),
         'brand' => trim((string)($input['brand'] ?? '')),
@@ -47,6 +51,11 @@ function savedSearchFiltersFromInput(array $input): array
         'min_price' => trim((string)($input['min_price'] ?? '')),
         'max_price' => trim((string)($input['max_price'] ?? '')),
         'category_group' => trim((string)($input['category_group'] ?? '')),
+        'storage' => trim((string)($input['storage'] ?? '')),
+        'listing_type' => $listingType,
+        'equipment_type' => trim((string)($input['equipment_type'] ?? '')),
+        'only_priced' => !empty($input['only_priced']) ? '1' : '',
+        'only_photos' => !empty($input['only_photos']) ? '1' : '',
     ];
     if (!in_array($filters['type'], ['telefon', 'delovi', 'servis', ''], true)) {
         $filters['type'] = '';
@@ -61,6 +70,10 @@ function savedSearchToPublicFilters(array $search): array
         $f = [];
     }
     $type = trim((string)($f['type'] ?? ''));
+    $listingType = trim((string)($f['listing_type'] ?? ''));
+    if (!in_array($listingType, ['sell', 'buy', 'trade', 'service'], true)) {
+        $listingType = '';
+    }
     return [
         'q' => trim((string)($f['q'] ?? '')),
         'brand' => trim((string)($f['brand'] ?? '')),
@@ -70,6 +83,11 @@ function savedSearchToPublicFilters(array $search): array
         'category_group' => trim((string)($f['category_group'] ?? '')),
         'min_price' => trim((string)($f['min_price'] ?? '')),
         'max_price' => trim((string)($f['max_price'] ?? '')),
+        'storage' => trim((string)($f['storage'] ?? '')),
+        'listing_type' => $listingType,
+        'equipment_type' => trim((string)($f['equipment_type'] ?? '')),
+        'only_priced' => !empty($f['only_priced']),
+        'only_photos' => !empty($f['only_photos']),
         'types' => $type !== '' ? [$type] : [],
         'sort' => 'newest',
     ];
@@ -83,11 +101,16 @@ function savedSearchLabel(array $search): string
     }
     $f = $search['filters'] ?? [];
     $parts = [];
-    foreach (['q', 'brand', 'model', 'location', 'type', 'condition'] as $key) {
+    foreach (['q', 'brand', 'model', 'location', 'type', 'condition', 'storage', 'equipment_type'] as $key) {
         $v = trim((string)($f[$key] ?? ''));
         if ($v !== '') {
             $parts[] = $v;
         }
+    }
+    $lt = trim((string)($f['listing_type'] ?? ''));
+    if ($lt !== '') {
+        $schema = adFormSchema();
+        $parts[] = (string)($schema['listing_types'][$lt] ?? $lt);
     }
     $min = trim((string)($f['min_price'] ?? ''));
     $max = trim((string)($f['max_price'] ?? ''));
