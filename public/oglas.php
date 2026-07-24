@@ -120,7 +120,9 @@ require __DIR__ . '/partials/layout-start.php';
                 <div class="kp-gallery-track" id="gallery-track">
                     <?php foreach ($images as $i => $img): ?>
                         <div class="kp-gallery-slide">
-                            <img src="<?= h((string)$img) ?>" alt="<?= h((string)$ad['title']) ?>" <?= $i === 0 ? 'id="gallery-main"' : '' ?>>
+                            <button type="button" class="kp-gallery-zoom" data-lightbox-open="<?= $i ?>" aria-label="Uvećaj sliku">
+                                <img src="<?= h((string)$img) ?>" alt="<?= h((string)$ad['title']) ?>" <?= $i === 0 ? 'id="gallery-main"' : '' ?>>
+                            </button>
                         </div>
                     <?php endforeach; ?>
                 </div>
@@ -139,12 +141,6 @@ require __DIR__ . '/partials/layout-start.php';
         <div class="kp-detail-head">
             <div class="kp-title-row">
                 <h1 class="kp-ad-title"><?= h((string)$ad['title']) ?></h1>
-                <?php if (!empty($site['enable_favorites'])): ?>
-                    <a class="kp-follow-btn <?= $isFav ? 'active' : '' ?>" href="/favorite.php?id=<?= (int)$ad['id'] ?>">
-                        <span class="icon-heart"><?= $isFav ? '♥' : '♡' ?></span>
-                        <span><?= $isFav ? 'Pratite' : 'Prati' ?></span>
-                    </a>
-                <?php endif; ?>
             </div>
             <div class="kp-price-block">
                 <div class="kp-price <?= $price <= 0 ? 'kp-price-free' : '' ?>"><?= formatPrice($price) ?></div>
@@ -279,5 +275,18 @@ require __DIR__ . '/partials/layout-start.php';
         <?php endif; ?>
     </main>
 </div>
+
+<?php if ($images): ?>
+<div class="kp-lightbox" data-lightbox hidden>
+    <button type="button" class="kp-lightbox-close" data-lightbox-close aria-label="Zatvori">×</button>
+    <button type="button" class="kp-lightbox-nav kp-lightbox-prev" data-lightbox-prev aria-label="Prethodna" <?= $imageCount < 2 ? 'hidden' : '' ?>>‹</button>
+    <div class="kp-lightbox-stage">
+        <img src="" alt="" data-lightbox-img>
+    </div>
+    <button type="button" class="kp-lightbox-nav kp-lightbox-next" data-lightbox-next aria-label="Sledeća" <?= $imageCount < 2 ? 'hidden' : '' ?>>›</button>
+    <div class="kp-lightbox-counter" data-lightbox-counter>1 od <?= $imageCount ?></div>
+    <script type="application/json" data-lightbox-sources><?= json_encode(array_values($images), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?></script>
+</div>
+<?php endif; ?>
 
 <?php require __DIR__ . '/partials/layout-end.php'; ?>

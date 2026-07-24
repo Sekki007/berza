@@ -248,6 +248,80 @@
     }
   }
 
+  function initLightbox() {
+    const box = one('[data-lightbox]');
+    if (!box) return;
+    const imgEl = one('[data-lightbox-img]', box);
+    const counterEl = one('[data-lightbox-counter]', box);
+    const sourcesEl = one('[data-lightbox-sources]', box);
+    let sources = [];
+    try {
+      sources = JSON.parse((sourcesEl && sourcesEl.textContent) || '[]');
+    } catch (e) {
+      sources = [];
+    }
+    if (!imgEl || !sources.length) return;
+
+    let index = 0;
+
+    function show(i) {
+      index = (i + sources.length) % sources.length;
+      imgEl.src = sources[index];
+      if (counterEl) counterEl.textContent = (index + 1) + ' od ' + sources.length;
+    }
+
+    function open(i) {
+      show(typeof i === 'number' ? i : 0);
+      box.removeAttribute('hidden');
+      document.body.classList.add('kp-lightbox-open');
+    }
+
+    function close() {
+      box.setAttribute('hidden', '');
+      document.body.classList.remove('kp-lightbox-open');
+      imgEl.removeAttribute('src');
+    }
+
+    all('[data-lightbox-open]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const i = parseInt(btn.getAttribute('data-lightbox-open') || '0', 10);
+        open(isNaN(i) ? 0 : i);
+      });
+    });
+
+    const closeBtn = one('[data-lightbox-close]', box);
+    if (closeBtn) closeBtn.addEventListener('click', close);
+    box.addEventListener('click', function (e) {
+      if (e.target === box || e.target === one('.kp-lightbox-stage', box)) close();
+    });
+
+    const prev = one('[data-lightbox-prev]', box);
+    const next = one('[data-lightbox-next]', box);
+    if (prev) prev.addEventListener('click', function (e) { e.stopPropagation(); show(index - 1); });
+    if (next) next.addEventListener('click', function (e) { e.stopPropagation(); show(index + 1); });
+
+    document.addEventListener('keydown', function (e) {
+      if (box.hasAttribute('hidden')) return;
+      if (e.key === 'Escape') close();
+      if (e.key === 'ArrowLeft') show(index - 1);
+      if (e.key === 'ArrowRight') show(index + 1);
+    });
+
+    let touchX = null;
+    box.addEventListener('touchstart', function (e) {
+      if (!e.touches || !e.touches[0]) return;
+      touchX = e.touches[0].clientX;
+    }, { passive: true });
+    box.addEventListener('touchend', function (e) {
+      if (touchX === null || !e.changedTouches || !e.changedTouches[0]) return;
+      const dx = e.changedTouches[0].clientX - touchX;
+      touchX = null;
+      if (Math.abs(dx) < 50) return;
+      if (dx > 0) show(index - 1);
+      else show(index + 1);
+    }, { passive: true });
+  }
+
   function initPhoneReveal() {
     all('[data-reveal-phone]').forEach(function (btn) {
       btn.addEventListener('click', function () {
@@ -878,6 +952,7 @@
     initAccountQuick();
     initPromoPanels();
     initGallery();
+    initLightbox();
     initPhotoPreview();
     initPhotoReorder();
     initSearchSuggest();
