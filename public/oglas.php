@@ -273,7 +273,9 @@ $contactBlock = static function (string $formId = 'poruka') use (
 
         <div class="kp-card">
             <?php if (!empty($ad['condition_state'])): ?>
-                <div class="kp-info-cond"><strong><?= h((string)$ad['condition_state']) ?></strong></div>
+                <div class="kp-info-cond"><strong><?= h((string)$ad['condition_state']) ?></strong><?php if (!empty($ad['listing_type'])): ?> · <?= h(listingTypeLabel($ad)) ?><?php endif; ?></div>
+            <?php elseif (!empty($ad['listing_type'])): ?>
+                <div class="kp-info-cond"><strong><?= h(listingTypeLabel($ad)) ?></strong></div>
             <?php endif; ?>
             <div class="kp-info-stats">
                 <span title="Pregledi">👁 <?= (int)($ad['views'] ?? 0) ?></span>
@@ -282,16 +284,45 @@ $contactBlock = static function (string $formId = 'poruka') use (
             </div>
         </div>
 
+        <?php $attrRows = adAttributeRows($ad); ?>
+        <?php if ($attrRows): ?>
+            <div class="kp-card">
+                <h3 class="kp-section-title">Specifikacije</h3>
+                <div class="kp-attr-list">
+                    <?php foreach ($attrRows as $row): ?>
+                        <div class="kp-attr-row">
+                            <span class="kp-attr-label"><?= h($row['label']) ?></span>
+                            <span class="kp-attr-value"><?= h($row['value']) ?></span>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        <?php endif; ?>
+
         <div class="kp-card">
             <div class="kp-logistics">
+                <?php
+                $pickup = is_array($ad['pickup_methods'] ?? null) ? $ad['pickup_methods'] : ['pickup', 'courier'];
+                $schemaPick = adFormSchema()['pickup_methods'];
+                if (in_array('courier', $pickup, true)):
+                ?>
                 <div class="kp-log-row">
                     <span class="kp-log-ico">🚚</span>
-                    <span><strong>Dostava</strong> — dogovor sa prodavcem</span>
+                    <span><strong><?= h($schemaPick['courier']) ?></strong></span>
                 </div>
+                <?php endif; ?>
+                <?php if (in_array('pickup', $pickup, true)): ?>
+                <div class="kp-log-row">
+                    <span class="kp-log-ico">🏪</span>
+                    <span><strong><?= h($schemaPick['pickup']) ?></strong><?= $sellerLocation !== '' ? ' — ' . h($sellerLocation) : '' ?></span>
+                </div>
+                <?php endif; ?>
+                <?php if ($pickup === []): ?>
                 <div class="kp-log-row">
                     <span class="kp-log-ico">🏪</span>
                     <span><strong>Lično preuzimanje</strong><?= $sellerLocation !== '' ? ' — ' . h($sellerLocation) : '' ?></span>
                 </div>
+                <?php endif; ?>
             </div>
         </div>
 

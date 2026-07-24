@@ -942,6 +942,7 @@ function renderUnreadBadge(int $count): string
 require_once __DIR__ . '/settings.php';
 require_once __DIR__ . '/csrf.php';
 require_once __DIR__ . '/ads_helpers.php';
+require_once __DIR__ . '/ad_form_schema.php';
 require_once __DIR__ . '/search.php';
 require_once __DIR__ . '/ratings.php';
 require_once __DIR__ . '/admin_helpers.php';

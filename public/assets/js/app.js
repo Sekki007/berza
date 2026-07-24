@@ -172,29 +172,74 @@
     const form = one('[data-ad-form]');
     if (!form) return;
 
-    const showStorage = type === 'telefon';
-    const showBrandModel = type !== 'servis';
-    form.querySelectorAll('[data-field="storage"]').forEach(function (el) {
-      el.hidden = !showStorage;
+    form.querySelectorAll('[data-panel]').forEach(function (panel) {
+      const match = panel.getAttribute('data-panel') === type;
+      if (match) panel.removeAttribute('hidden');
+      else panel.setAttribute('hidden', '');
+      panel.querySelectorAll('input, select, textarea').forEach(function (el) {
+        if (el.getAttribute('data-keep-enabled') === '1') return;
+        el.disabled = !match;
+      });
     });
-    form.querySelectorAll('[data-field="brand"], [data-field="model"]').forEach(function (el) {
-      el.hidden = !showBrandModel;
+
+    form.querySelectorAll('[data-listing-opt]').forEach(function (lab) {
+      const forTypes = (lab.getAttribute('data-for-types') || '').split(',');
+      const ok = forTypes.indexOf(type) !== -1;
+      lab.hidden = !ok;
+      const inp = lab.querySelector('input');
+      if (inp) inp.disabled = !ok;
+      if (!ok && inp && inp.checked) {
+        inp.checked = false;
+        lab.classList.remove('is-on');
+      }
+    });
+
+    let listingChecked = one('[data-listing-type]:checked:not(:disabled)', form);
+    if (!listingChecked) {
+      const fallback = type === 'servis'
+        ? one('[data-listing-type][value="service"]', form)
+        : one('[data-listing-type][value="sell"]', form);
+      if (fallback && !fallback.disabled) {
+        fallback.checked = true;
+        const lab = fallback.closest('.chip-option');
+        if (lab) lab.classList.add('is-on');
+      }
+    }
+
+    form.querySelectorAll('[data-listing-opt]').forEach(function (lab) {
+      const inp = lab.querySelector('[data-listing-type]');
+      lab.classList.toggle('is-on', !!(inp && inp.checked && !inp.disabled));
     });
 
     const cat = one('#ad-category', form);
-    if (!cat) return;
-    const options = all('#ad-category option', form);
-    let firstVisible = null;
-    options.forEach(function (opt) {
-      const t = opt.getAttribute('data-ad-type') || '';
-      const match = !t || t === type;
-      opt.hidden = !match;
-      opt.disabled = !match;
-      if (match && !firstVisible) firstVisible = opt;
-    });
-    const selected = cat.options[cat.selectedIndex];
-    if (selected && (selected.hidden || selected.disabled) && firstVisible) {
-      cat.value = firstVisible.value;
+    if (cat) {
+      const options = all('#ad-category option', form);
+      let firstVisible = null;
+      options.forEach(function (opt) {
+        const t = opt.getAttribute('data-ad-type') || '';
+        const match = !t || t === type;
+        opt.hidden = !match;
+        opt.disabled = !match;
+        if (match && !firstVisible) firstVisible = opt;
+      });
+      const selected = cat.options[cat.selectedIndex];
+      if (selected && (selected.hidden || selected.disabled) && firstVisible) {
+        cat.value = firstVisible.value;
+      }
+    }
+
+    const brandSel = one('[data-phone-brand]', form);
+    const batt = one('[data-battery-field]', form);
+    if (batt && brandSel) {
+      const isApple = (brandSel.value || '') === 'Apple';
+      batt.hidden = !isApple;
+      const bh = batt.querySelector('input');
+      if (bh) {
+        var panel = batt.closest('[data-panel]');
+        var panelHidden = panel && panel.hasAttribute('hidden');
+        bh.disabled = !isApple || !!panelHidden;
+        if (!isApple) bh.value = '';
+      }
     }
   }
 
@@ -202,21 +247,9 @@
     const form = one('[data-ad-form]');
     if (!form) return;
 
-    const moreBtn = one('[data-ad-more-toggle]', form);
-    const more = one('[data-ad-more]', form);
-    if (moreBtn && more) {
-      moreBtn.addEventListener('click', function () {
-        const open = more.hasAttribute('hidden');
-        if (open) more.removeAttribute('hidden');
-        else more.setAttribute('hidden', '');
-        moreBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
-        moreBtn.textContent = open ? 'Kontakt i dodatno ▴' : 'Kontakt i dodatno ▾';
-      });
-    }
-
     const title = one('#ad-title', form);
     const model = one('#ad-model', form);
-    const brand = one('select[name="brand"]', form);
+    const brand = one('[data-phone-brand]', form);
     if (title && model && brand) {
       function suggestTitle() {
         if ((title.value || '').trim() !== '') return;
@@ -232,6 +265,11 @@
         const m = (model.value || '').trim();
         if (!m) return;
         title.value = (b && b !== 'Ostalo' ? b + ' ' : '') + m;
+      });
+      brand.addEventListener('change', function () {
+        const typeEl = one('[data-form-type]:checked', form);
+        syncAdFormByType(typeEl ? typeEl.value : 'telefon');
+        suggestTitle();
       });
     }
 
@@ -262,9 +300,7 @@
         if (!fixed) priceInput.value = '';
       }
       if (hint) {
-        if (type === 'contact') hint.textContent = 'Umesto cene piše „Na kontakt“.';
-        else if (type === 'negotiable') hint.textContent = 'Umesto cene piše „Po dogovoru“.';
-        else hint.textContent = 'Iznos kako želiš da se prikaže u oglasu.';
+        hint.textContent = fixed ? 'Unesi iznos i valutu.' : 'Polje za cenu je isključeno.';
       }
     }
 
@@ -275,6 +311,65 @@
       el.addEventListener('change', syncPriceUi);
     });
     syncPriceUi();
+
+    function wireToggle(toggleSel, panelSel) {
+      const toggle = one(toggleSel, form);
+      const panel = one(panelSel, form);
+      if (!toggle || !panel) return;
+      function sync() {
+        if (toggle.checked) panel.removeAttribute('hidden');
+        else panel.setAttribute('hidden', '');
+      }
+      toggle.addEventListener('change', sync);
+      sync();
+    }
+    wireToggle('[data-warranty-toggle]', '[data-warranty-months]');
+    wireToggle('[data-work-warranty-toggle]', '[data-work-warranty-months]');
+
+    form.addEventListener('change', function (e) {
+      const t = e.target;
+      if (!t) return;
+      if (t.matches('[data-listing-type], .chip-option input')) {
+        const lab = t.closest('.chip-option');
+        if (!lab) return;
+        const name = t.getAttribute('name');
+        if (t.type === 'radio' && name) {
+          form.querySelectorAll('.chip-option input[name="' + name + '"]').forEach(function (inp) {
+            const l = inp.closest('.chip-option');
+            if (l) l.classList.toggle('is-on', inp.checked);
+          });
+        } else if (t.type === 'checkbox') {
+          lab.classList.toggle('is-on', t.checked);
+        }
+      }
+    });
+
+    const drop = one('[data-photo-drop]', form);
+    const fileInput = one('[data-photo-input]', form);
+    if (drop && fileInput) {
+      ['dragenter', 'dragover'].forEach(function (ev) {
+        drop.addEventListener(ev, function (e) {
+          e.preventDefault();
+          drop.classList.add('is-drag');
+        });
+      });
+      ['dragleave', 'drop'].forEach(function (ev) {
+        drop.addEventListener(ev, function (e) {
+          e.preventDefault();
+          drop.classList.remove('is-drag');
+        });
+      });
+      drop.addEventListener('drop', function (e) {
+        const files = e.dataTransfer && e.dataTransfer.files;
+        if (!files || !files.length) return;
+        try {
+          const dt = new DataTransfer();
+          Array.prototype.forEach.call(files, function (f) { dt.items.add(f); });
+          fileInput.files = dt.files;
+          fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+        } catch (err) {}
+      });
+    }
   }
 
   function initActiveNav() {

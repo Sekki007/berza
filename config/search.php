@@ -28,15 +28,28 @@ function searchTokens(string $query): array
 
 function adSearchHaystack(array $ad): string
 {
+    $acc = is_array($ad['accessories'] ?? null) ? implode(' ', $ad['accessories']) : '';
+    $svc = is_array($ad['service_types'] ?? null) ? implode(' ', $ad['service_types']) : '';
+    $brands = is_array($ad['supported_brands'] ?? null) ? implode(' ', $ad['supported_brands']) : '';
+
     return mb_strtolower(implode(' ', [
         (string)($ad['title'] ?? ''),
         (string)($ad['description'] ?? ''),
         (string)($ad['brand'] ?? ''),
         (string)($ad['model'] ?? ''),
         (string)($ad['storage'] ?? ''),
+        (string)($ad['ram'] ?? ''),
+        (string)($ad['color'] ?? ''),
         (string)($ad['location'] ?? ''),
         (string)($ad['shop_name'] ?? ''),
         (string)($ad['condition_state'] ?? ''),
+        (string)($ad['equipment_type'] ?? ''),
+        (string)($ad['compatible_models'] ?? ''),
+        (string)($ad['originality'] ?? ''),
+        $acc,
+        $svc,
+        $brands,
+        listingTypeLabel($ad),
         adTypeLabel(getAdType($ad)),
     ]));
 }

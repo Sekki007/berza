@@ -44,7 +44,7 @@ $compareCount = count(compareIds());
     <?php endif; ?>
     <meta name="twitter:title" content="<?= h($pageTitle) ?>">
     <meta name="twitter:description" content="<?= h($pageDescription) ?>">
-    <link rel="stylesheet" href="/assets/css/style.css?v=20260725g">
+    <link rel="stylesheet" href="/assets/css/style.css?v=20260725h">
 </head>
 <body class="<?= h($bodyClass) ?>" data-page="<?= h($activePage) ?>" data-unread-messages="<?= (int)$unreadMessages ?>" data-compare-count="<?= (int)$compareCount ?>">
 <?php if (!$minimalHeader): ?>
