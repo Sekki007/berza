@@ -311,14 +311,16 @@ require __DIR__ . '/partials/layout-start.php';
                 </div>
             </div>
             <div class="account-hero-actions">
-                <a class="btn-call" href="/ad_form.php">+ Novi oglas</a>
-                <?php if ($creditsOn): ?>
-                    <a class="btn-message btn-top-cta" href="?tab=krediti">💰 Krediti: <?= formatCredits($userCredits) ?></a>
-                <?php endif; ?>
-                <?php if ($topOn): ?>
-                    <a class="btn-message" href="?tab=top">⭐ Promocije</a>
-                <?php endif; ?>
-                <a class="btn-message" href="<?= h($shopLink) ?>">Moj izlog</a>
+                <a class="btn-call account-hero-primary" href="/ad_form.php">+ Novi oglas</a>
+                <div class="account-hero-secondary">
+                    <a class="btn-message" href="<?= h($shopLink) ?>">Moj izlog</a>
+                    <?php if ($creditsOn): ?>
+                        <a class="btn-message btn-top-cta" href="?tab=krediti">Krediti: <?= number_format($userCredits, 0, ',', '.') ?></a>
+                    <?php endif; ?>
+                    <?php if ($topOn): ?>
+                        <a class="btn-message account-hero-promo" href="?tab=top">⭐ TOP</a>
+                    <?php endif; ?>
+                </div>
             </div>
         </section>
 
@@ -337,13 +339,13 @@ require __DIR__ . '/partials/layout-start.php';
             </div>
             <?php if ($creditsOn): ?>
                 <a class="account-stat account-stat-link" href="?tab=krediti">
-                    <span class="account-stat-value" style="font-size:16px;"><?= number_format($userCredits, 0, ',', '.') ?></span>
-                    <span class="account-stat-label">Krediti (<?= h(creditCurrencyLabel()) ?>)</span>
+                    <span class="account-stat-value account-stat-value-sm"><?= number_format($userCredits, 0, ',', '.') ?></span>
+                    <span class="account-stat-label">Krediti</span>
                 </a>
             <?php endif; ?>
             <a class="account-stat account-stat-link" href="?tab=obavestenja">
                 <span class="account-stat-value"><?= (int)$unreadNotifs ?></span>
-                <span class="account-stat-label">Obaveštenja</span>
+                <span class="account-stat-label">Obav.</span>
             </a>
             <?php if (!empty($site['enable_messages'])): ?>
                 <a class="account-stat account-stat-link" href="/poruke.php">
@@ -353,21 +355,20 @@ require __DIR__ . '/partials/layout-start.php';
             <?php endif; ?>
         </div>
 
-        <nav class="account-tabs">
+        <nav class="account-tabs" aria-label="Sekcije naloga">
             <a href="?tab=pregled" class="<?= $tab === 'pregled' ? 'active' : '' ?>">Pregled</a>
-            <a href="?tab=oglasi" class="<?= $tab === 'oglasi' ? 'active' : '' ?>">Moji oglasi</a>
+            <a href="?tab=oglasi" class="<?= $tab === 'oglasi' ? 'active' : '' ?>">Oglasi</a>
             <?php if ($topOn): ?>
-                <a href="?tab=top" class="<?= $tab === 'top' ? 'active' : '' ?>">Promocije</a>
+                <a href="?tab=top" class="<?= $tab === 'top' ? 'active' : '' ?>">TOP</a>
             <?php endif; ?>
             <?php if ($creditsOn): ?>
-                <a href="?tab=krediti" class="<?= $tab === 'krediti' ? 'active' : '' ?>">Dopuna kredita</a>
+                <a href="?tab=krediti" class="<?= $tab === 'krediti' ? 'active' : '' ?>">Krediti</a>
             <?php endif; ?>
-            <a href="?tab=obavestenja" class="<?= $tab === 'obavestenja' ? 'active' : '' ?>">Obaveštenja<?= $unreadNotifs > 0 ? ' (' . $unreadNotifs . ')' : '' ?></a>
+            <a href="?tab=obavestenja" class="<?= $tab === 'obavestenja' ? 'active' : '' ?>">Obav.<?= $unreadNotifs > 0 ? ' · ' . $unreadNotifs : '' ?></a>
             <a href="?tab=pretrage" class="<?= $tab === 'pretrage' ? 'active' : '' ?>">Pretrage</a>
-            <a href="?tab=statistika" class="<?= $tab === 'statistika' ? 'active' : '' ?>">Statistika</a>
+            <a href="?tab=statistika" class="<?= $tab === 'statistika' ? 'active' : '' ?>">Stat.</a>
             <a href="?tab=profil" class="<?= $tab === 'profil' ? 'active' : '' ?>">Profil</a>
         </nav>
-
         <?php if ($tab === 'pregled'): ?>
             <section class="account-quick form-card">
                 <button type="button" class="account-quick-toggle" data-account-quick-toggle aria-expanded="false" aria-controls="account-quick-list">
