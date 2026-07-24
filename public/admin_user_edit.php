@@ -146,8 +146,9 @@ require __DIR__ . '/partials/layout-start.php';
                     <label>Vrsta firme</label>
                     <select name="business_kind">
                         <option value="">—</option>
-                        <option value="shop" <?= $bizKind === 'shop' ? 'selected' : '' ?>>Prodavnica</option>
                         <option value="service" <?= $bizKind === 'service' ? 'selected' : '' ?>>Servis</option>
+                        <option value="shop" <?= $bizKind === 'shop' ? 'selected' : '' ?>>Mobile Shop</option>
+                        <option value="both" <?= $bizKind === 'both' ? 'selected' : '' ?>>Servis & Mobile Shop</option>
                     </select>
                 </div>
             </div>

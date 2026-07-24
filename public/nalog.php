@@ -170,7 +170,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'request_business') {
         $result = requestBusinessVerification($userId);
         if (!empty($result['ok'])) {
-            setFlash('success', 'Zahtev za bedž Prodavnica/Servis je poslat. Čeka admin potvrdu.');
+            setFlash('success', 'Zahtev za bedž firme je poslat. Čeka admin potvrdu.');
         } else {
             setFlash('danger', (string)($result['error'] ?? 'Zahtev nije poslat.'));
         }
@@ -958,21 +958,22 @@ require __DIR__ . '/partials/layout-start.php';
                             <label>Tip naloga</label>
                             <select name="account_type" id="account-type-select">
                                 <option value="private" <?= $accountType === 'private' ? 'selected' : '' ?>>Fizičko lice</option>
-                                <option value="business" <?= $accountType === 'business' ? 'selected' : '' ?>>Prodavnica / Servis</option>
+                                <option value="business" <?= $accountType === 'business' ? 'selected' : '' ?>>Firma</option>
                             </select>
                         </div>
                     </div>
 
                     <div class="profile-section" data-business-block <?= $accountType === 'business' ? '' : 'hidden' ?>>
                         <h3 class="profile-section-title">Firma / izlog</h3>
-                        <p class="profile-section-desc">Ovi podaci idu na javni izlog. Bedž Prodavnica/Servis dobijaš tek posle admin potvrde.</p>
+                        <p class="profile-section-desc">Ovi podaci idu na javni izlog. Bedž firme dobijaš tek posle admin potvrde.</p>
                         <div class="form-row">
                             <div class="form-group">
-                                <label>Vrsta</label>
+                                <label>Vrsta firme</label>
                                 <select name="business_kind">
                                     <option value="">Izaberi…</option>
-                                    <option value="shop" <?= $bizKind === 'shop' ? 'selected' : '' ?>>Prodavnica</option>
                                     <option value="service" <?= $bizKind === 'service' ? 'selected' : '' ?>>Servis</option>
+                                    <option value="shop" <?= $bizKind === 'shop' ? 'selected' : '' ?>>Mobile Shop</option>
+                                    <option value="both" <?= $bizKind === 'both' ? 'selected' : '' ?>>Servis & Mobile Shop</option>
                                 </select>
                             </div>
                             <div class="form-group">

@@ -295,8 +295,8 @@ function adminUpdateUser(int $userId, array $input): array
     }
 
     if ($accountType === 'business') {
-        if (!in_array($businessKind, ['shop', 'service'], true)) {
-            return ['ok' => false, 'error' => 'Izaberi vrstu firme (Prodavnica / Servis).'];
+        if (!in_array($businessKind, allowedBusinessKinds(), true)) {
+            return ['ok' => false, 'error' => 'Izaberi vrstu firme (Servis / Mobile Shop / Servis & Mobile Shop).'];
         }
         $pib = $pibRaw !== '' ? normalizePib($pibRaw) : null;
         if ($pibRaw !== '' && $pib === null) {

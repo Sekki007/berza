@@ -48,7 +48,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $userId > 0) {
     } elseif ($action === 'reject_business') {
         $reason = trim((string)($_POST['reason'] ?? ''));
         if (setBusinessVerification($userId, false, $reason)) {
-            notifyUser($userId, 'business_rejected', 'Zahtev za firmu odbijen', $reason !== '' ? $reason : 'Admin je odbio zahtev za bedž Prodavnica/Servis.', '/nalog.php?tab=profil', false);
+            notifyUser($userId, 'business_rejected', 'Zahtev za firmu odbijen', $reason !== '' ? $reason : 'Admin je odbio zahtev za bedž firme.', '/nalog.php?tab=profil', false);
             setFlash('success', 'Zahtev za firmu je odbijen.');
         } else {
             setFlash('danger', 'Odbijanje nije uspelo.');

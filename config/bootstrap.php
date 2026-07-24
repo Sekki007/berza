@@ -271,7 +271,7 @@ function updateUserProfile(int $userId, array $data): bool
                 $kind = array_key_exists('business_kind', $data)
                     ? (string)$data['business_kind']
                     : userBusinessKind($user);
-                if (!in_array($kind, ['shop', 'service'], true)) {
+                if (!in_array($kind, allowedBusinessKinds(), true)) {
                     $kind = '';
                 }
                 $pibRaw = array_key_exists('pib', $data) ? trim((string)$data['pib']) : (string)($user['pib'] ?? '');

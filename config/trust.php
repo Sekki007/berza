@@ -75,19 +75,28 @@ function userAccountType(?array $user): string
 }
 
 /**
- * @return 'shop'|'service'|''
+ * @return list<string>
+ */
+function allowedBusinessKinds(): array
+{
+    return ['service', 'shop', 'both'];
+}
+
+/**
+ * @return 'service'|'shop'|'both'|''
  */
 function userBusinessKind(?array $user): string
 {
     $kind = (string)($user['business_kind'] ?? '');
-    return in_array($kind, ['shop', 'service'], true) ? $kind : '';
+    return in_array($kind, allowedBusinessKinds(), true) ? $kind : '';
 }
 
 function businessKindLabel(string $kind): string
 {
     return match ($kind) {
-        'shop' => 'Prodavnica',
         'service' => 'Servis',
+        'shop' => 'Mobile Shop',
+        'both' => 'Servis & Mobile Shop',
         default => 'Firma',
     };
 }
@@ -131,7 +140,11 @@ function renderBusinessBadge(?array $user): string
     $kind = userBusinessKind($user);
     $label = businessKindLabel($kind);
     $title = $label . ' · PIB ' . h((string)($user['pib'] ?? ''));
-    $class = $kind === 'service' ? 'business-badge business-badge-service' : 'business-badge business-badge-shop';
+    $class = match ($kind) {
+        'service' => 'business-badge business-badge-service',
+        'both' => 'business-badge business-badge-both',
+        default => 'business-badge business-badge-shop',
+    };
     return '<span class="' . $class . '" title="' . $title . '">' . h($label) . '</span>';
 }
 
@@ -153,11 +166,11 @@ function requestBusinessVerification(int $userId): array
         return ['ok' => false, 'error' => 'Prvo potvrdi broj telefona.'];
     }
     if (userAccountType($user) !== 'business') {
-        return ['ok' => false, 'error' => 'Izaberi tip naloga Prodavnica/Servis.'];
+        return ['ok' => false, 'error' => 'Izaberi tip naloga Firma.'];
     }
     $kind = userBusinessKind($user);
     if ($kind === '') {
-        return ['ok' => false, 'error' => 'Izaberi da li si prodavnica ili servis.'];
+        return ['ok' => false, 'error' => 'Izaberi vrstu firme.'];
     }
     if (trim((string)($user['shop_name'] ?? '')) === '') {
         return ['ok' => false, 'error' => 'Unesi naziv firme / izloga.'];
