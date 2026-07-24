@@ -148,6 +148,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    if ($action === 'verify_phone') {
+        $profileNow = findUserById($userId) ?? $profile;
+        if (isPhoneVerified($profileNow)) {
+            setFlash('success', 'Telefon je već potvrđen.');
+        } else {
+            $_SESSION['pending_phone_verify_user_id'] = $userId;
+            $result = sendUserOtp($userId, 'phone_verify');
+            if (!empty($result['ok'])) {
+                setFlash('success', 'SMS kod je poslat.');
+                header('Location: /verify-phone.php');
+                exit;
+            }
+            setFlash('danger', (string)($result['error'] ?? 'SMS nije poslat.'));
+        }
+        header('Location: /nalog.php?tab=profil');
+        exit;
+    }
+
     if ($action === 'save_search') {
         $created = createSavedSearch($userId, $_POST, trim((string)($_POST['name'] ?? '')), !empty($_POST['alert_enabled']));
         if ($created) {
@@ -184,16 +202,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
-    updateUserProfile($userId, [
+    $phoneInput = trim((string)($_POST['phone'] ?? ''));
+    if ($phoneInput !== '' && normalizePhoneRs($phoneInput) === null) {
+        setFlash('danger', 'Unesi validan srpski mobilni broj (npr. 06x xxx xxxx).');
+        header('Location: /nalog.php?tab=profil');
+        exit;
+    }
+
+    $ok = updateUserProfile($userId, [
         'full_name' => trim((string)($_POST['full_name'] ?? '')),
-        'phone' => trim((string)($_POST['phone'] ?? '')),
+        'phone' => $phoneInput,
         'email' => trim((string)($_POST['email'] ?? '')),
         'shop_name' => trim((string)($_POST['shop_name'] ?? '')),
         'shop_bio' => trim((string)($_POST['shop_bio'] ?? '')),
         'location' => trim((string)($_POST['location'] ?? '')),
         'notify_email' => !empty($_POST['notify_email']),
     ]);
-    setFlash('success', 'Profil je ažuriran.');
+    if (!$ok) {
+        setFlash('danger', 'Profil nije ažuriran. Proveri telefon.');
+    } else {
+        $fresh = findUserById($userId);
+        if ($fresh && !isPhoneVerified($fresh) && normalizePhoneRs((string)($fresh['phone'] ?? '')) !== null) {
+            setFlash('success', 'Profil je ažuriran. Potvrdi novi broj SMS kodom.');
+        } else {
+            setFlash('success', 'Profil je ažuriran.');
+        }
+    }
     header('Location: /nalog.php?tab=profil');
     exit;
 }
@@ -839,7 +873,15 @@ require __DIR__ . '/partials/layout-start.php';
                         </div>
                         <div class="form-group">
                             <label>Telefon</label>
-                            <input type="text" name="phone" value="<?= h((string)($profile['phone'] ?? '')) ?>" placeholder="06x xxx xxxx">
+                            <input type="text" name="phone" value="<?= h((string)($profile['phone'] ?? '')) ?>" placeholder="06x xxx xxxx" required>
+                            <p class="form-hint" style="margin-top:6px;">
+                                Status:
+                                <?php if (isPhoneVerified($profile)): ?>
+                                    <strong style="color:var(--kp-green-dark);">potvrđen</strong>
+                                <?php else: ?>
+                                    <strong style="color:#b45309;">nije potvrđen</strong>
+                                <?php endif; ?>
+                            </p>
                         </div>
                     </div>
                     <div class="form-row">
@@ -883,6 +925,12 @@ require __DIR__ . '/partials/layout-start.php';
                     <form method="POST" style="margin-top:12px;">
                         <input type="hidden" name="action" value="verify_email">
                         <button class="btn-sm btn-sm-primary" type="submit">Pošalji link za potvrdu emaila</button>
+                    </form>
+                <?php endif; ?>
+                <?php if (!isPhoneVerified($profile) && normalizePhoneRs((string)($profile['phone'] ?? '')) !== null): ?>
+                    <form method="POST" style="margin-top:12px;">
+                        <input type="hidden" name="action" value="verify_phone">
+                        <button class="btn-sm btn-sm-primary" type="submit">Pošalji SMS kod za potvrdu telefona</button>
                     </form>
                 <?php endif; ?>
             </section>

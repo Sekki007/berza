@@ -22,14 +22,49 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $fullName = trim((string)($_POST['full_name'] ?? ''));
     $phone = trim((string)($_POST['phone'] ?? ''));
 
-    if (registerUser($username, $password, $fullName, $phone)) {
-        setFlash('success', 'Nalog je kreiran. Možeš se prijaviti.');
+    $normalized = normalizePhoneRs($phone);
+    if ($normalized === null || !isAllowedSmsPhone($normalized)) {
+        setFlash('danger', 'Unesi validan srpski mobilni broj (npr. 06x xxx xxxx).');
+        header('Location: /register.php');
+        exit;
+    }
+
+    if (strlen($password) < 6) {
+        setFlash('danger', 'Lozinka mora imati najmanje 6 karaktera.');
+        header('Location: /register.php');
+        exit;
+    }
+
+    if (findUserByPhone($normalized)) {
+        setFlash('danger', 'Ovaj broj telefona je već registrovan.');
+        header('Location: /register.php');
+        exit;
+    }
+
+    $userId = registerUser($username, $password, $fullName, $phone);
+    if ($userId === false) {
+        setFlash('danger', 'Registracija nije uspela. Korisničko ime možda već postoji.');
+        header('Location: /register.php');
+        exit;
+    }
+
+    $_SESSION['pending_phone_verify_user_id'] = $userId;
+
+    if (!smsEnabled()) {
+        patchUser($userId, ['phone_verified_at' => date('Y-m-d H:i:s')]);
+        unset($_SESSION['pending_phone_verify_user_id']);
+        setFlash('success', 'Nalog je kreiran (SMS je isključen — telefon automatski označen kao potvrđen).');
         header('Location: /login.php');
         exit;
     }
 
-    setFlash('danger', 'Registracija nije uspela. Korisničko ime možda već postoji.');
-    header('Location: /register.php');
+    $otp = sendUserOtp($userId, 'phone_verify');
+    if (!empty($otp['ok'])) {
+        setFlash('success', 'Nalog je kreiran. Unesi SMS kod koji smo poslali.');
+    } else {
+        setFlash('danger', 'Nalog je kreiran, ali SMS nije poslat: ' . (string)($otp['error'] ?? 'greška') . '. Možeš zatražiti kod ponovo.');
+    }
+    header('Location: /verify-phone.php');
     exit;
 }
 
@@ -46,6 +81,9 @@ require __DIR__ . '/partials/layout-start.php';
         <div class="breadcrumb"><a href="/index.php">Početna</a> › Registracija</div>
         <div class="form-card">
             <h2>Registracija</h2>
+            <p style="font-size:14px;color:var(--text-muted);margin-bottom:16px;">
+                Poslaćemo SMS kod na tvoj mobilni broj radi potvrde.
+            </p>
             <form method="POST">
                 <div class="form-group">
                     <label>Ime i prezime</label>
@@ -56,8 +94,9 @@ require __DIR__ . '/partials/layout-start.php';
                     <input type="text" name="username" required>
                 </div>
                 <div class="form-group">
-                    <label>Telefon</label>
-                    <input type="text" name="phone" placeholder="06x xxx xxxx">
+                    <label>Mobilni telefon</label>
+                    <input type="text" name="phone" required placeholder="06x xxx xxxx">
+                    <p class="form-hint" style="margin-top:6px;">Samo srpski mobilni brojevi (+3816…).</p>
                 </div>
                 <div class="form-group">
                     <label>Lozinka</label>

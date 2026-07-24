@@ -7,3 +7,4 @@ Thumbs.db
 !/public/uploads/ads/.gitkeep
 !/public/uploads/ads/seed_*.jpg
 /data/*_state.json
+/data/sms_rate_limits.json

@@ -163,12 +163,24 @@ function findUserById(int $id): ?array
     return null;
 }
 
-function registerUser(string $username, string $password, string $fullName, string $phone = ''): bool
+/**
+ * @return int|false New user id on success
+ */
+function registerUser(string $username, string $password, string $fullName, string $phone = ''): int|false
 {
     if ($username === '' || $password === '' || $fullName === '') {
         return false;
     }
     if (findUserByUsername($username)) {
+        return false;
+    }
+
+    $normalizedPhone = normalizePhoneRs($phone);
+    if ($normalizedPhone === null || !isAllowedSmsPhone($normalizedPhone)) {
+        return false;
+    }
+
+    if (findUserByPhone($normalizedPhone)) {
         return false;
     }
 
@@ -178,16 +190,28 @@ function registerUser(string $username, string $password, string $fullName, stri
         $maxId = max($maxId, (int)($user['id'] ?? 0));
     }
 
+    $newId = $maxId + 1;
     $users[] = [
-        'id' => $maxId + 1,
+        'id' => $newId,
         'username' => $username,
         'password_hash' => password_hash($password, PASSWORD_DEFAULT),
         'full_name' => $fullName,
-        'phone' => $phone,
+        'phone' => $normalizedPhone,
+        'phone_verified_at' => null,
         'created_at' => date('Y-m-d H:i:s'),
     ];
     writeJsonFile('users.json', $users);
-    return true;
+    return $newId;
+}
+
+function updateUserPassword(int $userId, string $newPassword): bool
+{
+    if ($userId <= 0 || strlen($newPassword) < 6) {
+        return false;
+    }
+    return patchUser($userId, [
+        'password_hash' => password_hash($newPassword, PASSWORD_DEFAULT),
+    ]);
 }
 
 function updateUserProfile(int $userId, array $data): bool
@@ -198,7 +222,29 @@ function updateUserProfile(int $userId, array $data): bool
             continue;
         }
         $user['full_name'] = trim((string)($data['full_name'] ?? $user['full_name']));
-        $user['phone'] = trim((string)($data['phone'] ?? $user['phone'] ?? ''));
+        if (array_key_exists('phone', $data)) {
+            $rawPhone = trim((string)$data['phone']);
+            $normalized = $rawPhone !== '' ? normalizePhoneRs($rawPhone) : null;
+            $oldPhone = normalizePhoneRs((string)($user['phone'] ?? ''));
+            if ($normalized === null && $rawPhone !== '') {
+                return false;
+            }
+            if ($normalized !== $oldPhone) {
+                if ($normalized !== null) {
+                    $existing = findUserByPhone($normalized);
+                    if ($existing && (int)($existing['id'] ?? 0) !== $userId) {
+                        return false;
+                    }
+                }
+                $user['phone'] = $normalized ?? '';
+                $user['phone_verified_at'] = null;
+                $user['otp_purpose'] = null;
+                $user['otp_hash'] = null;
+                $user['otp_sent_at'] = null;
+                $user['otp_attempts'] = 0;
+                $user['otp_verified_at'] = null;
+            }
+        }
         if (array_key_exists('shop_name', $data)) {
             $user['shop_name'] = trim((string)$data['shop_name']);
         }
@@ -758,7 +804,9 @@ require_once __DIR__ . '/admin_helpers.php';
 require_once __DIR__ . '/notifications.php';
 require_once __DIR__ . '/credits.php';
 require_once __DIR__ . '/promotion.php';
+require_once __DIR__ . '/sms.php';
 require_once __DIR__ . '/trust.php';
+require_once __DIR__ . '/otp.php';
 require_once __DIR__ . '/saved_searches.php';
 require_once __DIR__ . '/compare.php';
 require_once __DIR__ . '/ad_stats.php';

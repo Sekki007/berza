@@ -20,14 +20,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: /login.php');
             exit;
         }
+
+        $isAdminUser = !empty($user['is_admin']) || $user['username'] === 'admin';
+        if (!$isAdminUser && !isPhoneVerified($user)) {
+            $_SESSION['pending_phone_verify_user_id'] = (int)$user['id'];
+            setFlash('danger', 'Prvo potvrdi broj telefona SMS kodom.');
+            header('Location: /verify-phone.php');
+            exit;
+        }
+
         $_SESSION['user'] = [
             'id' => (int)$user['id'],
             'username' => $user['username'],
             'full_name' => $user['full_name'],
-            'is_admin' => !empty($user['is_admin']) || $user['username'] === 'admin',
+            'is_admin' => $isAdminUser,
         ];
         setFlash('success', 'Upešno ste prijavljeni.');
-        header('Location: ' . ((!empty($user['is_admin']) || $user['username'] === 'admin') ? '/dashboard.php' : '/nalog.php'));
+        header('Location: ' . ($isAdminUser ? '/dashboard.php' : '/nalog.php'));
         exit;
     }
 
@@ -62,6 +71,9 @@ require __DIR__ . '/partials/layout-start.php';
             </form>
             <p style="margin-top:14px;font-size:13px;color:var(--text-muted);">
                 Nemaš nalog? <a href="/register.php">Registruj se</a>
+            </p>
+            <p style="margin-top:8px;font-size:13px;color:var(--text-muted);">
+                <a href="/forgot-password.php">Zaboravljena lozinka?</a>
             </p>
             <p style="margin-top:8px;font-size:12px;color:var(--text-light);">Demo: admin / admin123</p>
         </div>
