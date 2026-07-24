@@ -161,8 +161,79 @@
         if (selected.value === 'telefon') opt.classList.add('selected');
         if (selected.value === 'delovi') opt.classList.add('selected-parts');
         if (selected.value === 'servis') opt.classList.add('selected-service');
+        syncAdFormByType(selected.value);
       });
     });
+    const current = one('[data-form-type]:checked');
+    if (current) syncAdFormByType(current.value);
+  }
+
+  function syncAdFormByType(type) {
+    const form = one('[data-ad-form]');
+    if (!form) return;
+
+    const showStorage = type === 'telefon';
+    const showBrandModel = type !== 'servis';
+    form.querySelectorAll('[data-field="storage"]').forEach(function (el) {
+      el.hidden = !showStorage;
+    });
+    form.querySelectorAll('[data-field="brand"], [data-field="model"]').forEach(function (el) {
+      el.hidden = !showBrandModel;
+    });
+
+    const cat = one('#ad-category', form);
+    if (!cat) return;
+    const options = all('#ad-category option', form);
+    let firstVisible = null;
+    options.forEach(function (opt) {
+      const t = opt.getAttribute('data-ad-type') || '';
+      const match = !t || t === type;
+      opt.hidden = !match;
+      opt.disabled = !match;
+      if (match && !firstVisible) firstVisible = opt;
+    });
+    const selected = cat.options[cat.selectedIndex];
+    if (selected && (selected.hidden || selected.disabled) && firstVisible) {
+      cat.value = firstVisible.value;
+    }
+  }
+
+  function initAdFormExtras() {
+    const form = one('[data-ad-form]');
+    if (!form) return;
+
+    const moreBtn = one('[data-ad-more-toggle]', form);
+    const more = one('[data-ad-more]', form);
+    if (moreBtn && more) {
+      moreBtn.addEventListener('click', function () {
+        const open = more.hasAttribute('hidden');
+        if (open) more.removeAttribute('hidden');
+        else more.setAttribute('hidden', '');
+        moreBtn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        moreBtn.textContent = open ? 'Kontakt i dodatno ▴' : 'Kontakt i dodatno ▾';
+      });
+    }
+
+    const title = one('#ad-title', form);
+    const model = one('#ad-model', form);
+    const brand = one('select[name="brand"]', form);
+    if (title && model && brand) {
+      function suggestTitle() {
+        if ((title.value || '').trim() !== '') return;
+        const b = (brand.value || '').trim();
+        const m = (model.value || '').trim();
+        if (!m) return;
+        title.placeholder = (b && b !== 'Ostalo' ? b + ' ' : '') + m;
+      }
+      model.addEventListener('change', suggestTitle);
+      model.addEventListener('blur', function () {
+        if ((title.value || '').trim() !== '') return;
+        const b = (brand.value || '').trim();
+        const m = (model.value || '').trim();
+        if (!m) return;
+        title.value = (b && b !== 'Ostalo' ? b + ' ' : '') + m;
+      });
+    }
   }
 
   function initActiveNav() {
@@ -1005,6 +1076,7 @@
     initDrawer();
     initFocusSearch();
     initFormTypeSelect();
+    initAdFormExtras();
     initActiveNav();
     initAccountMenu();
     initAccountTabs();

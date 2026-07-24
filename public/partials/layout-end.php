@@ -201,6 +201,6 @@ if ($user) {
         <span class="btn-sm btn-sm-primary">Otvori</span>
     </a>
 
-    <script src="/assets/js/app.js?v=20260724k"></script>
+    <script src="/assets/js/app.js?v=20260725f"></script>
 </body>
 </html>
