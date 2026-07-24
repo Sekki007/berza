@@ -256,6 +256,7 @@ $pickupSel = is_array($ad['pickup_methods'] ?? null) ? $ad['pickup_methods'] : [
 
 $pageTitle = ($isEdit ? 'Izmena oglasa' : 'Postavi oglas') . ' — TelefonBerza';
 $activePage = 'dodaj';
+$bodyClass = 'page-ad-form';
 $showSearch = false;
 
 require __DIR__ . '/partials/layout-start.php';

@@ -212,19 +212,28 @@
     });
 
     const cat = one('#ad-category', form);
+    const catWrap = one('[data-category-wrap]', form);
     if (cat) {
       const options = all('#ad-category option', form);
       let firstVisible = null;
+      let visibleCount = 0;
       options.forEach(function (opt) {
         const t = opt.getAttribute('data-ad-type') || '';
         const match = !t || t === type;
         opt.hidden = !match;
         opt.disabled = !match;
-        if (match && !firstVisible) firstVisible = opt;
+        if (match) {
+          visibleCount++;
+          if (!firstVisible) firstVisible = opt;
+        }
       });
       const selected = cat.options[cat.selectedIndex];
       if (selected && (selected.hidden || selected.disabled) && firstVisible) {
         cat.value = firstVisible.value;
+      }
+      if (catWrap) {
+        if (visibleCount > 1) catWrap.removeAttribute('hidden');
+        else catWrap.setAttribute('hidden', '');
       }
     }
 
@@ -326,6 +335,28 @@
     wireToggle('[data-warranty-toggle]', '[data-warranty-months]');
     wireToggle('[data-work-warranty-toggle]', '[data-work-warranty-months]');
 
+    function wireMore(btnSel, panelSel, openLabel, closedLabel) {
+      const btn = one(btnSel, form);
+      const panel = one(panelSel, form);
+      if (!btn || !panel) return;
+      btn.addEventListener('click', function () {
+        const open = panel.hasAttribute('hidden');
+        if (open) panel.removeAttribute('hidden');
+        else panel.setAttribute('hidden', '');
+        btn.setAttribute('aria-expanded', open ? 'true' : 'false');
+        btn.textContent = open ? openLabel : closedLabel;
+        const typeEl = one('[data-form-type]:checked', form);
+        if (typeEl) syncAdFormByType(typeEl.value);
+      });
+    }
+    wireMore('[data-phone-more-toggle]', '[data-phone-more]', 'Manje detalja ▴', 'Više detalja (RAM, boja, SIM…) ▾');
+    wireMore('[data-contact-more-toggle]', '[data-contact-more]', 'Manje opcija ▴', 'Dodatne opcije ▾');
+
+    const err = one('[data-form-error]', form);
+    if (err) {
+      try { err.scrollIntoView({ behavior: 'smooth', block: 'center' }); } catch (e) {}
+    }
+
     form.addEventListener('change', function (e) {
       const t = e.target;
       if (!t) return;
@@ -367,7 +398,7 @@
           Array.prototype.forEach.call(files, function (f) { dt.items.add(f); });
           fileInput.files = dt.files;
           fileInput.dispatchEvent(new Event('change', { bubbles: true }));
-        } catch (err) {}
+        } catch (err2) {}
       });
     }
   }

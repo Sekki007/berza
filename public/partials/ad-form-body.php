@@ -31,33 +31,54 @@
             </div>
 
             <?php if ($formError !== ''): ?>
-                <p class="form-hint ad-form-error"><?= h($formError) ?></p>
+                <p class="form-hint ad-form-error" data-form-error><?= h($formError) ?></p>
             <?php endif; ?>
+
+            <div class="form-group" data-category-wrap hidden>
+                <label>Podkategorija</label>
+                <select name="category_group" id="ad-category" data-keep-enabled="1" data-group-map="<?= h(json_encode($groupMeta, JSON_UNESCAPED_UNICODE)) ?>">
+                    <?php foreach ($cfg['groups'] as $key => $group): ?>
+                        <option value="<?= h($key) ?>" data-ad-type="<?= h((string)($group['ad_type'] ?? '')) ?>" <?= ($ad['category_group'] ?? '') === $key ? 'selected' : '' ?>><?= h($group['label']) ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
 
             <section class="ad-form-section">
                 <h3 class="ad-form-section-title">1. Osnovne informacije</h3>
-
-                <div class="form-group">
-                    <label for="ad-title">Naslov oglasa *</label>
-                    <input name="title" id="ad-title" placeholder="npr. iPhone 13 Pro Max 256GB" value="<?= h((string)$ad['title']) ?>" required maxlength="120">
-                </div>
 
                 <div class="form-group">
                     <label>Kategorija *</label>
                     <div class="form-type-select">
                         <label class="form-type-option <?= $currentType === 'telefon' ? 'selected' : '' ?>">
                             <input data-form-type type="radio" name="ad_type" value="telefon" <?= $currentType === 'telefon' ? 'checked' : '' ?>>
-                            <span><strong>Mobilni telefoni</strong><small>Ceo uređaj</small></span>
+                            <span>
+                                <strong>Telefon</strong>
+                                <small class="hide-mobile">Ceo uređaj</small>
+                                <small class="show-mobile">Uređaj</small>
+                            </span>
                         </label>
                         <label class="form-type-option <?= $currentType === 'delovi' ? 'selected-parts' : '' ?>">
                             <input data-form-type type="radio" name="ad_type" value="delovi" <?= $currentType === 'delovi' ? 'checked' : '' ?>>
-                            <span><strong>Oprema i delovi</strong><small>Maske, delovi…</small></span>
+                            <span>
+                                <strong>Delovi</strong>
+                                <small class="hide-mobile">Oprema i delovi</small>
+                                <small class="show-mobile">Oprema</small>
+                            </span>
                         </label>
                         <label class="form-type-option <?= $currentType === 'servis' ? 'selected-service' : '' ?>">
                             <input data-form-type type="radio" name="ad_type" value="servis" <?= $currentType === 'servis' ? 'checked' : '' ?>>
-                            <span><strong>Servis i usluge</strong><small>Popravke</small></span>
+                            <span>
+                                <strong>Servis</strong>
+                                <small class="hide-mobile">Popravka / usluga</small>
+                                <small class="show-mobile">Usluga</small>
+                            </span>
                         </label>
                     </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="ad-title">Naslov oglasa *</label>
+                    <input name="title" id="ad-title" placeholder="npr. iPhone 13 Pro Max 256GB" value="<?= h((string)$ad['title']) ?>" required maxlength="120" autocomplete="off">
                 </div>
 
                 <div class="form-group" data-listing-types>
@@ -88,7 +109,7 @@
                         </label>
                     </div>
                     <div class="price-amount-row" data-price-amount-row <?= $currentPriceType !== 'fixed' ? 'hidden' : '' ?>>
-                        <input type="number" step="1" min="1" name="price" data-price-input value="<?= $currentPriceType === 'fixed' ? h((string)$ad['price']) : '' ?>" placeholder="Iznos" <?= $currentPriceType === 'fixed' ? 'required' : 'disabled' ?>>
+                        <input type="number" step="1" min="1" name="price" inputmode="numeric" data-price-input value="<?= $currentPriceType === 'fixed' ? h((string)$ad['price']) : '' ?>" placeholder="Iznos" <?= $currentPriceType === 'fixed' ? 'required' : 'disabled' ?>>
                         <div class="price-currency-toggle" role="group" aria-label="Valuta">
                             <label class="price-cur-option <?= $currentCurrency === 'eur' ? 'is-on' : '' ?>">
                                 <input type="radio" name="currency" value="eur" data-price-currency <?= $currentCurrency === 'eur' ? 'checked' : '' ?>>
@@ -106,14 +127,6 @@
 
             <section class="ad-form-section" data-panel="telefon" <?= $currentType !== 'telefon' ? 'hidden' : '' ?>>
                 <h3 class="ad-form-section-title">2. Detalji telefona</h3>
-                <div class="form-group">
-                    <label>Podkategorija</label>
-                    <select name="category_group" id="ad-category" data-group-map="<?= h(json_encode($groupMeta, JSON_UNESCAPED_UNICODE)) ?>">
-                        <?php foreach ($cfg['groups'] as $key => $group): ?>
-                            <option value="<?= h($key) ?>" data-ad-type="<?= h((string)($group['ad_type'] ?? '')) ?>" <?= ($ad['category_group'] ?? '') === $key ? 'selected' : '' ?>><?= h($group['label']) ?></option>
-                        <?php endforeach; ?>
-                    </select>
-                </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label>Brend</label>
@@ -125,7 +138,7 @@
                     </div>
                     <div class="form-group">
                         <label>Model</label>
-                        <input name="model" id="ad-model" list="model-list" value="<?= h((string)$ad['model']) ?>" placeholder="npr. iPhone 13 Pro Max">
+                        <input name="model" id="ad-model" list="model-list" value="<?= h((string)$ad['model']) ?>" placeholder="npr. iPhone 13 Pro Max" autocomplete="off">
                         <datalist id="model-list">
                             <?php foreach ($cfg['groups'] as $group): ?>
                                 <?php foreach ($group['models'] ?? [] as $m): ?>
@@ -145,7 +158,7 @@
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Interna memorija</label>
+                        <label>Memorija</label>
                         <select name="storage">
                             <option value="">—</option>
                             <?php foreach ($schema['storage_options'] as $st): ?>
@@ -154,48 +167,62 @@
                         </select>
                     </div>
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>RAM</label>
-                        <select name="ram">
-                            <option value="">—</option>
-                            <?php foreach ($schema['ram_options'] as $ram): ?>
-                                <option value="<?= h($ram) ?>" <?= ($ad['ram'] ?? '') === $ram ? 'selected' : '' ?>><?= h($ram) ?></option>
-                            <?php endforeach; ?>
-                        </select>
+
+                <?php
+                $phoneExtraOpen = trim((string)($ad['ram'] ?? '')) !== ''
+                    || trim((string)($ad['color'] ?? '')) !== ''
+                    || trim((string)($ad['sim_status'] ?? '')) !== ''
+                    || (isset($ad['battery_health']) && $ad['battery_health'] !== null && $ad['battery_health'] !== '')
+                    || !empty($ad['has_warranty'])
+                    || (is_array($ad['accessories'] ?? null) && $ad['accessories'] !== []);
+                ?>
+                <button type="button" class="ad-form-more-toggle" data-phone-more-toggle aria-expanded="<?= $phoneExtraOpen ? 'true' : 'false' ?>">
+                    <?= $phoneExtraOpen ? 'Manje detalja ▴' : 'Više detalja (RAM, boja, SIM…) ▾' ?>
+                </button>
+                <div class="ad-form-more" data-phone-more <?= $phoneExtraOpen ? '' : 'hidden' ?>>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>RAM</label>
+                            <select name="ram">
+                                <option value="">—</option>
+                                <?php foreach ($schema['ram_options'] as $ram): ?>
+                                    <option value="<?= h($ram) ?>" <?= ($ad['ram'] ?? '') === $ram ? 'selected' : '' ?>><?= h($ram) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label>Boja</label>
+                            <input name="color" value="<?= h((string)($ad['color'] ?? '')) ?>" placeholder="npr. Graphite" autocomplete="off">
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label>SIM status</label>
+                            <select name="sim_status">
+                                <option value="">—</option>
+                                <?php foreach ($schema['sim_statuses'] as $sim): ?>
+                                    <option value="<?= h($sim) ?>" <?= ($ad['sim_status'] ?? '') === $sim ? 'selected' : '' ?>><?= h($sim) ?></option>
+                                <?php endforeach; ?>
+                            </select>
+                        </div>
+                        <div class="form-group" data-battery-field>
+                            <label>Battery Health % <span class="form-hint-inline">(iPhone)</span></label>
+                            <input type="number" name="battery_health" min="0" max="100" step="1" inputmode="numeric" value="<?= isset($ad['battery_health']) && $ad['battery_health'] !== null && $ad['battery_health'] !== '' ? h((string)$ad['battery_health']) : '' ?>" placeholder="npr. 87">
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label>Boja</label>
-                        <input name="color" value="<?= h((string)($ad['color'] ?? '')) ?>" placeholder="npr. Graphite">
+                        <label class="check-inline">
+                            <input type="checkbox" name="has_warranty" value="1" data-warranty-toggle <?= !empty($ad['has_warranty']) ? 'checked' : '' ?>>
+                            Garancija
+                        </label>
+                        <div class="warranty-months" data-warranty-months <?= empty($ad['has_warranty']) ? 'hidden' : '' ?>>
+                            <input type="number" name="warranty_months" min="1" max="60" inputmode="numeric" value="<?= !empty($ad['warranty_months']) ? (int)$ad['warranty_months'] : '' ?>" placeholder="Broj meseci">
+                        </div>
                     </div>
-                </div>
-                <div class="form-row">
                     <div class="form-group">
-                        <label>SIM status</label>
-                        <select name="sim_status">
-                            <option value="">—</option>
-                            <?php foreach ($schema['sim_statuses'] as $sim): ?>
-                                <option value="<?= h($sim) ?>" <?= ($ad['sim_status'] ?? '') === $sim ? 'selected' : '' ?>><?= h($sim) ?></option>
-                            <?php endforeach; ?>
-                        </select>
+                        <label>Prateća oprema</label>
+                        <?php renderChipGroup('accessories', $schema['phone_accessories'], $accessoriesSel); ?>
                     </div>
-                    <div class="form-group" data-battery-field>
-                        <label>Battery Health % <span class="form-hint-inline">(iPhone)</span></label>
-                        <input type="number" name="battery_health" min="0" max="100" step="1" value="<?= isset($ad['battery_health']) && $ad['battery_health'] !== null && $ad['battery_health'] !== '' ? h((string)$ad['battery_health']) : '' ?>" placeholder="npr. 87">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label class="check-inline">
-                        <input type="checkbox" name="has_warranty" value="1" data-warranty-toggle <?= !empty($ad['has_warranty']) ? 'checked' : '' ?>>
-                        Garancija
-                    </label>
-                    <div class="warranty-months" data-warranty-months <?= empty($ad['has_warranty']) ? 'hidden' : '' ?>>
-                        <input type="number" name="warranty_months" min="1" max="60" value="<?= !empty($ad['warranty_months']) ? (int)$ad['warranty_months'] : '' ?>" placeholder="Broj meseci">
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>Prateća oprema</label>
-                    <?php renderChipGroup('accessories', $schema['phone_accessories'], $accessoriesSel); ?>
                 </div>
             </section>
 
@@ -313,12 +340,8 @@
                     </div>
                     <div class="form-group">
                         <label>Broj telefona *</label>
-                        <input name="contact_phone" placeholder="06x xxx xxxx" value="<?= h((string)$ad['contact_phone']) ?>" required>
+                        <input name="contact_phone" type="tel" inputmode="tel" placeholder="06x xxx xxxx" value="<?= h((string)$ad['contact_phone']) ?>" required autocomplete="tel">
                     </div>
-                </div>
-                <div class="form-group">
-                    <label>Naziv prodavnice / izloga</label>
-                    <input name="shop_name" value="<?= h((string)($ad['shop_name'] ?? '')) ?>" placeholder="Iz profila ako ostaviš prazno">
                 </div>
                 <div class="form-group">
                     <label>Opcije kontaktiranja</label>
@@ -328,18 +351,35 @@
                     <label>Način preuzimanja</label>
                     <?php renderChipGroup('pickup_methods', $schema['pickup_methods'], $pickupSel); ?>
                 </div>
-                <div class="form-group">
-                    <label>Oznaka (opciono)</label>
-                    <input name="badge" placeholder="npr. Garancija / Original" value="<?= h((string)($ad['badge'] ?? '')) ?>">
-                </div>
-                <div class="form-group form-checks">
-                    <label class="type-chip" style="min-width:auto;flex:none;"><input type="checkbox" name="is_active" <?= (int)($ad['is_active'] ?? 1) === 1 ? 'checked' : '' ?>> Aktivan</label>
-                    <?php if ($isEdit): ?>
-                        <label class="type-chip" style="min-width:auto;flex:none;"><input type="checkbox" name="is_sold" <?= !empty($ad['is_sold']) ? 'checked' : '' ?>> Prodato</label>
-                    <?php endif; ?>
-                    <?php if (isAdmin()): ?>
-                        <label class="type-chip" style="min-width:auto;flex:none;"><input type="checkbox" name="is_promoted" <?= !empty($ad['is_promoted']) ? 'checked' : '' ?>> TOP (admin)</label>
-                    <?php endif; ?>
+
+                <?php
+                $contactExtraOpen = trim((string)($ad['shop_name'] ?? '')) !== ''
+                    || trim((string)($ad['badge'] ?? '')) !== ''
+                    || (int)($ad['is_active'] ?? 1) !== 1
+                    || !empty($ad['is_sold'])
+                    || (isAdmin() && !empty($ad['is_promoted']));
+                ?>
+                <button type="button" class="ad-form-more-toggle" data-contact-more-toggle aria-expanded="<?= $contactExtraOpen ? 'true' : 'false' ?>">
+                    <?= $contactExtraOpen ? 'Manje opcija ▴' : 'Dodatne opcije ▾' ?>
+                </button>
+                <div class="ad-form-more" data-contact-more <?= $contactExtraOpen ? '' : 'hidden' ?>>
+                    <div class="form-group">
+                        <label>Naziv prodavnice / izloga</label>
+                        <input name="shop_name" value="<?= h((string)($ad['shop_name'] ?? '')) ?>" placeholder="Iz profila ako ostaviš prazno" autocomplete="organization">
+                    </div>
+                    <div class="form-group">
+                        <label>Oznaka (opciono)</label>
+                        <input name="badge" placeholder="npr. Garancija / Original" value="<?= h((string)($ad['badge'] ?? '')) ?>">
+                    </div>
+                    <div class="form-group form-checks">
+                        <label class="type-chip" style="min-width:auto;flex:none;"><input type="checkbox" name="is_active" <?= (int)($ad['is_active'] ?? 1) === 1 ? 'checked' : '' ?>> Aktivan</label>
+                        <?php if ($isEdit): ?>
+                            <label class="type-chip" style="min-width:auto;flex:none;"><input type="checkbox" name="is_sold" <?= !empty($ad['is_sold']) ? 'checked' : '' ?>> Prodato</label>
+                        <?php endif; ?>
+                        <?php if (isAdmin()): ?>
+                            <label class="type-chip" style="min-width:auto;flex:none;"><input type="checkbox" name="is_promoted" <?= !empty($ad['is_promoted']) ? 'checked' : '' ?>> TOP (admin)</label>
+                        <?php endif; ?>
+                    </div>
                 </div>
             </section>
 
