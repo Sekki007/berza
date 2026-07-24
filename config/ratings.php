@@ -69,6 +69,17 @@ function getSellerShopName(array $user, array $ads = []): string
         return $shop;
     }
 
+    // Firma: javno prikazuj naziv firme, ne lično ime.
+    if (function_exists('userAccountType') && userAccountType($user) === 'business') {
+        foreach ($ads as $ad) {
+            $fromAd = trim((string)($ad['shop_name'] ?? ''));
+            if ($fromAd !== '') {
+                return $fromAd;
+            }
+        }
+        return 'Firma';
+    }
+
     foreach ($ads as $ad) {
         $fromAd = trim((string)($ad['shop_name'] ?? ''));
         if ($fromAd !== '') {

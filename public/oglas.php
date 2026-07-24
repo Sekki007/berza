@@ -70,7 +70,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $type = getAdType($ad);
 $seller = findUserById((int)($ad['created_by'] ?? 1));
 $sellerUsername = (string)($seller['username'] ?? '');
-$sellerName = (string)($ad['shop_name'] ?: ($seller ? getSellerShopName($seller) : 'Prodavac'));
+$sellerName = $seller
+    ? getSellerShopName($seller, [$ad])
+    : (trim((string)($ad['shop_name'] ?? '')) ?: 'Prodavac');
 $sellerInitials = mb_strtoupper(mb_substr($sellerName, 0, 1));
 if ($sellerInitials === '') {
     $sellerInitials = '?';
