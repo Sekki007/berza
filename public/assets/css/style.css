@@ -403,7 +403,7 @@ body.account-menu-open{overflow:hidden;}
 .account-hero-actions { display: flex; flex-direction: column; gap: 8px; width: 100%; }
 .account-hero-primary-row {
   display: grid;
-  grid-template-columns: 1.2fr 1fr;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
   width: 100%;
 }
@@ -419,8 +419,18 @@ body.account-menu-open{overflow:hidden;}
   text-decoration: none;
   padding: 12px 10px;
   font-size: 14px;
+  white-space: nowrap;
 }
-.account-hero-primary { font-size: 15px; }
+.account-hero-primary {
+  font-size: 14px;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+.account-hero-izlog {
+  font-size: 14px;
+  padding-left: 8px;
+  padding-right: 8px;
+}
 .account-hero-secondary {
   display: grid;
   grid-template-columns: 1fr;
@@ -493,20 +503,21 @@ a.account-ov-stat:hover {
   color: var(--text-muted);
 }
 .account-overview-inbox {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 8px;
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px solid var(--border-light);
 }
 .account-ov-chip {
-  display: inline-flex;
+  display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: 8px;
-  padding: 8px 12px;
+  padding: 10px 12px;
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: 8px;
   background: #fff;
   text-decoration: none;
   color: var(--text);
@@ -529,7 +540,8 @@ a.account-ov-stat:hover {
   color: var(--kp-green-dark);
 }
 .account-ov-chip-credits {
-  margin-left: auto;
+  grid-column: 1 / -1;
+  margin-left: 0;
   background: #fff8db;
   border-color: #f0d56a;
 }
@@ -635,7 +647,7 @@ a.account-ov-stat:hover {
   .account-avatar { width: 64px; height: 64px; font-size: 22px; }
   .account-name { font-size: 22px; }
   .account-hero-actions { flex-direction: column; align-items: stretch; width: 260px; flex-shrink: 0; }
-  .account-hero-primary-row { grid-template-columns: 1fr; }
+  .account-hero-primary-row { grid-template-columns: 1fr 1fr !important; }
   .account-hero-secondary,
   .account-hero-secondary.has-multi { grid-template-columns: 1fr; }
   .account-hero-secondary .account-hero-promo { grid-column: auto; }
@@ -719,17 +731,22 @@ a.account-ov-stat:hover {
   .mobile-bar-icon { font-size: 20px; }
 
   .account-hero-actions {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
+    display: flex;
+    flex-direction: column;
     gap: 8px;
+    width: 100%;
   }
-  .account-hero-actions > * {
-    min-width: 0 !important;
+  .account-hero-primary-row {
+    display: grid !important;
+    grid-template-columns: 1fr 1fr !important;
+    gap: 8px;
     width: 100% !important;
-    text-align: center;
-    box-sizing: border-box;
   }
-  .account-hero-actions .btn-call { grid-column: 1 / -1; }
+  .account-hero-primary-row > a {
+    width: 100% !important;
+    min-width: 0 !important;
+    grid-column: auto !important;
+  }
 
   .account-ad-row, .account-ad-row-full {
     flex-direction: column;
