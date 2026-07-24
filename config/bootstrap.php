@@ -446,11 +446,29 @@ function formatAdPrice(array $ad): string
     if ($type === 'contact') {
         return 'Na kontakt';
     }
-    $price = (float)($ad['price'] ?? 0);
-    if ($price <= 0) {
+    $eur = adPriceEur($ad);
+    if ($eur <= 0) {
         return 'Po dogovoru';
     }
-    return formatPrice($price, adCurrency($ad));
+    // Na sajtu uvek prikazujemo EUR (RSD unos se pretvara kursom).
+    return formatPrice($eur, 'eur');
+}
+
+/** Pomoćni prikaz u dinarima, npr. „≈ 99.450 din“. */
+function formatAdPriceRsd(array $ad): string
+{
+    if (isAdPriceOpen($ad)) {
+        return '';
+    }
+    $eur = adPriceEur($ad);
+    if ($eur <= 0) {
+        return '';
+    }
+    $rsd = (int)round($eur * eurRsdRate());
+    if ($rsd <= 0) {
+        return '';
+    }
+    return '≈ ' . number_format($rsd, 0, ',', '.') . ' din';
 }
 
 function isAdPriceOpen(array $ad): bool
@@ -458,7 +476,13 @@ function isAdPriceOpen(array $ad): bool
     return adPriceType($ad) !== 'fixed' || (float)($ad['price'] ?? 0) <= 0;
 }
 
-/** EUR ekvivalent za sort/filter (0 ako nije fiksna cena). */
+function eurRsdRate(): float
+{
+    $rate = (float)(siteSettings()['eur_rsd_rate'] ?? 117);
+    return $rate > 0 ? $rate : 117.0;
+}
+
+/** EUR ekvivalent za sort/filter/prikaz (0 ako nije fiksna cena). */
 function adPriceEur(array $ad): float
 {
     if (adPriceType($ad) !== 'fixed') {
@@ -469,11 +493,7 @@ function adPriceEur(array $ad): float
         return 0.0;
     }
     if (adCurrency($ad) === 'rsd') {
-        $rate = (float)(siteSettings()['eur_rsd_rate'] ?? 117);
-        if ($rate <= 0) {
-            $rate = 117.0;
-        }
-        return $price / $rate;
+        return $price / eurRsdRate();
     }
     return $price;
 }

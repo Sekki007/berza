@@ -125,7 +125,7 @@
                             <span>Po dogovoru</span>
                         </label>
                     </div>
-                    <div class="price-amount-row" data-price-amount-row <?= $currentPriceType !== 'fixed' ? 'hidden' : '' ?>>
+                    <div class="price-amount-row" data-price-amount-row <?= $currentPriceType !== 'fixed' ? 'hidden' : '' ?> data-eur-rsd-rate="<?= h((string)eurRsdRate()) ?>">
                         <input type="number" step="1" min="1" name="price" inputmode="numeric" data-price-input value="<?= $currentPriceType === 'fixed' ? h((string)$ad['price']) : '' ?>" placeholder="Iznos" <?= $currentPriceType === 'fixed' ? 'required' : 'disabled' ?>>
                         <div class="price-currency-toggle" role="group" aria-label="Valuta">
                             <label class="price-cur-option <?= $currentCurrency === 'eur' ? 'is-on' : '' ?>">
@@ -138,7 +138,8 @@
                             </label>
                         </div>
                     </div>
-                    <p class="form-hint" data-price-hint><?= $currentPriceType === 'fixed' ? 'Unesi iznos i valutu.' : 'Polje za cenu je isključeno.' ?></p>
+                    <p class="form-hint price-convert-hint" data-price-convert hidden></p>
+                    <p class="form-hint" data-price-hint><?= $currentPriceType === 'fixed' ? 'Na sajtu se cena prikazuje u eurima.' : 'Polje za cenu je isključeno.' ?></p>
                 </div>
             </section>
 

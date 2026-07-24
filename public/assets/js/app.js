@@ -288,6 +288,7 @@
       const amountRow = one('[data-price-amount-row]', form);
       const priceInput = one('[data-price-input]', form);
       const hint = one('[data-price-hint]', form);
+      const convert = one('[data-price-convert]', form);
       const fixed = type === 'fixed';
 
       form.querySelectorAll('.price-type-option').forEach(function (lab) {
@@ -309,7 +310,33 @@
         if (!fixed) priceInput.value = '';
       }
       if (hint) {
-        hint.textContent = fixed ? 'Unesi iznos i valutu.' : 'Polje za cenu je isključeno.';
+        hint.textContent = fixed ? 'Na sajtu se cena prikazuje u eurima.' : 'Polje za cenu je isključeno.';
+      }
+
+      if (convert) {
+        if (!fixed) {
+          convert.setAttribute('hidden', '');
+          convert.textContent = '';
+          return;
+        }
+        const curEl = one('[data-price-currency]:checked', form);
+        const currency = curEl ? curEl.value : 'eur';
+        const amount = parseFloat((priceInput && priceInput.value) || '0');
+        const rate = parseFloat((amountRow && amountRow.getAttribute('data-eur-rsd-rate')) || '117') || 117;
+        if (!amount || amount <= 0) {
+          convert.setAttribute('hidden', '');
+          convert.textContent = '';
+          return;
+        }
+        function fmt(n) {
+          return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+        }
+        if (currency === 'eur') {
+          convert.textContent = '≈ ' + fmt(amount * rate) + ' din (kurs ' + fmt(rate) + ')';
+        } else {
+          convert.textContent = '≈ ' + fmt(amount / rate) + ' € (kurs ' + fmt(rate) + ')';
+        }
+        convert.removeAttribute('hidden');
       }
     }
 
@@ -319,6 +346,11 @@
     all('[data-price-currency]', form).forEach(function (el) {
       el.addEventListener('change', syncPriceUi);
     });
+    const priceInputLive = one('[data-price-input]', form);
+    if (priceInputLive) {
+      priceInputLive.addEventListener('input', syncPriceUi);
+      priceInputLive.addEventListener('change', syncPriceUi);
+    }
     syncPriceUi();
 
     function wireToggle(toggleSel, panelSel) {

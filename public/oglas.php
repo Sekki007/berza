@@ -259,6 +259,10 @@ $contactBlock = static function (string $formId = 'poruka') use (
             <div class="kp-price-block">
                 <div class="kp-price <?= $priceOpen ? 'kp-price-free' : '' ?>"><?= h(formatAdPrice($ad)) ?></div>
                 <?php if (!$priceOpen): ?>
+                    <?php $rsdHint = formatAdPriceRsd($ad); ?>
+                    <?php if ($rsdHint !== ''): ?>
+                        <div class="kp-price-rsd"><?= h($rsdHint) ?></div>
+                    <?php endif; ?>
                     <span class="kp-price-note"><?= h(adPriceTypeLabel($ad)) ?></span>
                 <?php endif; ?>
             </div>

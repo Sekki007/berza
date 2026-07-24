@@ -40,7 +40,15 @@ $priceOpen = isAdPriceOpen($ad);
                     <span title="Objavljeno">↻ <?= h(formatRelativeTime((string)($ad['created_at'] ?? ''))) ?></span>
                 </div>
                 <div class="ad-price-row kp-list-price-row">
-                    <div class="ad-price kp-list-price <?= $priceOpen ? 'kp-list-price-free' : '' ?>"><?= h(formatAdPrice($ad)) ?></div>
+                    <div class="ad-price kp-list-price <?= $priceOpen ? 'kp-list-price-free' : '' ?>">
+                        <?= h(formatAdPrice($ad)) ?>
+                        <?php if (!$priceOpen): ?>
+                            <?php $rsdHint = formatAdPriceRsd($ad); ?>
+                            <?php if ($rsdHint !== ''): ?>
+                                <span class="ad-price-rsd"><?= h($rsdHint) ?></span>
+                            <?php endif; ?>
+                        <?php endif; ?>
+                    </div>
                     <?php if ($isPromoted): ?><span class="kp-list-badge">TOP</span><?php endif; ?>
                 </div>
                 <div class="ad-desktop-extra">
