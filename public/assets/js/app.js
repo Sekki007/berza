@@ -234,6 +234,47 @@
         title.value = (b && b !== 'Ostalo' ? b + ' ' : '') + m;
       });
     }
+
+    function syncPriceUi() {
+      const typeEl = one('[data-price-type]:checked', form);
+      const type = typeEl ? typeEl.value : 'fixed';
+      const amountRow = one('[data-price-amount-row]', form);
+      const priceInput = one('[data-price-input]', form);
+      const hint = one('[data-price-hint]', form);
+      const fixed = type === 'fixed';
+
+      form.querySelectorAll('.price-type-option').forEach(function (lab) {
+        const inp = lab.querySelector('[data-price-type]');
+        lab.classList.toggle('is-on', !!(inp && inp.checked));
+      });
+      form.querySelectorAll('.price-cur-option').forEach(function (lab) {
+        const inp = lab.querySelector('[data-price-currency]');
+        lab.classList.toggle('is-on', !!(inp && inp.checked));
+      });
+
+      if (amountRow) {
+        if (fixed) amountRow.removeAttribute('hidden');
+        else amountRow.setAttribute('hidden', '');
+      }
+      if (priceInput) {
+        priceInput.disabled = !fixed;
+        priceInput.required = fixed;
+        if (!fixed) priceInput.value = '';
+      }
+      if (hint) {
+        if (type === 'contact') hint.textContent = 'Umesto cene piše „Na kontakt“.';
+        else if (type === 'negotiable') hint.textContent = 'Umesto cene piše „Po dogovoru“.';
+        else hint.textContent = 'Iznos kako želiš da se prikaže u oglasu.';
+      }
+    }
+
+    all('[data-price-type]', form).forEach(function (el) {
+      el.addEventListener('change', syncPriceUi);
+    });
+    all('[data-price-currency]', form).forEach(function (el) {
+      el.addEventListener('change', syncPriceUi);
+    });
+    syncPriceUi();
   }
 
   function initActiveNav() {

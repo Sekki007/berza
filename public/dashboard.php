@@ -52,7 +52,7 @@ require __DIR__ . '/partials/layout-start.php';
                     <tr>
                         <td><a href="/oglas.php?id=<?= (int)$ad['id'] ?>"><?= h((string)$ad['title']) ?></a></td>
                         <td><?= h(adTypeLabel(getAdType($ad))) ?></td>
-                        <td><?= formatPrice((float)$ad['price']) ?></td>
+                        <td><?= h(formatAdPrice($ad)) ?></td>
                         <td><?= h((string)$ad['location']) ?></td>
                         <td><?= h((string)$ad['created_at']) ?></td>
                     </tr>

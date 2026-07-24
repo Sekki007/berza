@@ -177,7 +177,7 @@ function getSimilarAds(array $ad, int $limit = 6): array
     $brand = mb_strtolower((string)($ad['brand'] ?? ''));
     $location = mb_strtolower((string)($ad['location'] ?? ''));
     $storage = mb_strtolower((string)($ad['storage'] ?? ''));
-    $price = (float)($ad['price'] ?? 0);
+    $price = adPriceEur($ad);
     $adId = (int)($ad['id'] ?? 0);
 
     $candidates = array_values(array_filter(getPublicAds(), static fn($item) => (int)($item['id'] ?? 0) !== $adId));
@@ -204,8 +204,9 @@ function getSimilarAds(array $ad, int $limit = 6): array
         if ($storage !== '' && mb_strtolower((string)($item['storage'] ?? '')) === $storage) {
             $s += 1;
         }
-        if ($price > 0) {
-            $diff = abs((float)($item['price'] ?? 0) - $price);
+        if ($price > 0 && adPriceType($item) === 'fixed') {
+            $itemEur = adPriceEur($item);
+            $diff = abs($itemEur - $price);
             if ($diff <= $price * 0.25) {
                 $s += 2;
             } elseif ($diff <= $price * 0.5) {
@@ -265,8 +266,10 @@ function sortAds(array $ads, string $sort): array
         $bTime = (string)($b['bumped_at'] ?? $b['created_at'] ?? '');
 
         return match ($sort) {
-            'price_asc' => (float)($a['price'] ?? 0) <=> (float)($b['price'] ?? 0),
-            'price_desc' => (float)($b['price'] ?? 0) <=> (float)($a['price'] ?? 0),
+            'price_asc' => (adPriceType($a) === 'fixed' ? adPriceEur($a) : PHP_FLOAT_MAX)
+                <=> (adPriceType($b) === 'fixed' ? adPriceEur($b) : PHP_FLOAT_MAX),
+            'price_desc' => (adPriceType($b) === 'fixed' ? adPriceEur($b) : -1.0)
+                <=> (adPriceType($a) === 'fixed' ? adPriceEur($a) : -1.0),
             default => strcmp($bTime, $aTime),
         };
     });
@@ -347,5 +350,12 @@ function normalizeAdDefaults(array $payload): array
     $payload['shop_name'] = trim((string)($payload['shop_name'] ?? ''));
     $payload['country'] = trim((string)($payload['country'] ?? 'Srbija'));
     $payload['category_group'] = trim((string)($payload['category_group'] ?? ''));
+    $payload['currency'] = normalizeAdCurrency((string)($payload['currency'] ?? 'eur'));
+    $payload['price_type'] = normalizeAdPriceType((string)($payload['price_type'] ?? 'fixed'));
+    if ($payload['price_type'] !== 'fixed') {
+        $payload['price'] = 0;
+    } else {
+        $payload['price'] = max(0, (float)($payload['price'] ?? 0));
+    }
     return $payload;
 }

@@ -43,7 +43,7 @@ require __DIR__ . '/partials/layout-start.php';
                     <tr>
                         <td><?= h((string)$ad['title']) ?></td>
                         <td><?= h(adTypeLabel(getAdType($ad))) ?></td>
-                        <td><?= formatPrice((float)$ad['price']) ?></td>
+                        <td><?= h(formatAdPrice($ad)) ?></td>
                         <td><?= h((string)$ad['location']) ?></td>
                         <td><?= (int)($ad['is_active'] ?? 0) === 1 ? 'Aktivan' : 'Neaktivan' ?></td>
                         <td>

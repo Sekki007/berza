@@ -386,9 +386,96 @@ function formatRelativeTime(string $createdAt): string
     return $d === 1 ? 'juče' : "pre {$d} dana";
 }
 
-function formatPrice(float $price): string
+function formatPrice(float $price, string $currency = 'eur'): string
 {
-    return number_format($price, 0, ',', '.') . ' €';
+    $currency = normalizeAdCurrency($currency);
+    $suffix = $currency === 'rsd' ? ' din' : ' €';
+    return number_format($price, 0, ',', '.') . $suffix;
+}
+
+function normalizeAdCurrency(string $currency): string
+{
+    $c = strtolower(trim($currency));
+    return $c === 'rsd' || $c === 'din' ? 'rsd' : 'eur';
+}
+
+/** @return 'fixed'|'negotiable'|'contact' */
+function normalizeAdPriceType(string $type): string
+{
+    $t = strtolower(trim($type));
+    if (in_array($t, ['negotiable', 'po_dogovoru', 'dogovor'], true)) {
+        return 'negotiable';
+    }
+    if (in_array($t, ['contact', 'na_kontakt', 'kontakt'], true)) {
+        return 'contact';
+    }
+    return 'fixed';
+}
+
+function adCurrency(array $ad): string
+{
+    return normalizeAdCurrency((string)($ad['currency'] ?? 'eur'));
+}
+
+/** @return 'fixed'|'negotiable'|'contact' */
+function adPriceType(array $ad): string
+{
+    $explicit = trim((string)($ad['price_type'] ?? ''));
+    if ($explicit !== '') {
+        return normalizeAdPriceType($explicit);
+    }
+    // Stari oglasi bez price_type: 0 = po dogovoru
+    return ((float)($ad['price'] ?? 0) <= 0) ? 'negotiable' : 'fixed';
+}
+
+function adPriceTypeLabel(array $ad): string
+{
+    return match (adPriceType($ad)) {
+        'negotiable' => 'Po dogovoru',
+        'contact' => 'Na kontakt',
+        default => 'Fiksno',
+    };
+}
+
+function formatAdPrice(array $ad): string
+{
+    $type = adPriceType($ad);
+    if ($type === 'negotiable') {
+        return 'Po dogovoru';
+    }
+    if ($type === 'contact') {
+        return 'Na kontakt';
+    }
+    $price = (float)($ad['price'] ?? 0);
+    if ($price <= 0) {
+        return 'Po dogovoru';
+    }
+    return formatPrice($price, adCurrency($ad));
+}
+
+function isAdPriceOpen(array $ad): bool
+{
+    return adPriceType($ad) !== 'fixed' || (float)($ad['price'] ?? 0) <= 0;
+}
+
+/** EUR ekvivalent za sort/filter (0 ako nije fiksna cena). */
+function adPriceEur(array $ad): float
+{
+    if (adPriceType($ad) !== 'fixed') {
+        return 0.0;
+    }
+    $price = (float)($ad['price'] ?? 0);
+    if ($price <= 0) {
+        return 0.0;
+    }
+    if (adCurrency($ad) === 'rsd') {
+        $rate = (float)(siteSettings()['eur_rsd_rate'] ?? 117);
+        if ($rate <= 0) {
+            $rate = 117.0;
+        }
+        return $price / $rate;
+    }
+    return $price;
 }
 
 function getAllAds(): array
@@ -542,12 +629,20 @@ function getPublicAds(array $filters = []): array
         $ads = array_filter($ads, static fn($ad) => in_array(getAdType($ad), $types, true));
     }
 
-    if ($maxPrice !== null) {
-        $ads = array_filter($ads, static fn($ad) => (float)($ad['price'] ?? 0) <= $maxPrice);
-    }
-
-    if ($minPrice !== null) {
-        $ads = array_filter($ads, static fn($ad) => (float)($ad['price'] ?? 0) >= $minPrice);
+    if ($maxPrice !== null || $minPrice !== null) {
+        $ads = array_filter($ads, static function ($ad) use ($minPrice, $maxPrice) {
+            if (adPriceType($ad) !== 'fixed') {
+                return false;
+            }
+            $eur = adPriceEur($ad);
+            if ($minPrice !== null && $eur < $minPrice) {
+                return false;
+            }
+            if ($maxPrice !== null && $eur > $maxPrice) {
+                return false;
+            }
+            return true;
+        });
     }
 
     if ($location !== '') {
@@ -613,8 +708,11 @@ function getDashboardStats(): array
         $isActive = (int)($ad['is_active'] ?? 0) === 1;
         if ($isActive) {
             $active++;
-            $priceSum += (float)($ad['price'] ?? 0);
-            $priceCount++;
+            $eur = adPriceEur($ad);
+            if ($eur > 0) {
+                $priceSum += $eur;
+                $priceCount++;
+            }
         } else {
             $inactive++;
         }

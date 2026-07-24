@@ -19,6 +19,8 @@ $ad = [
     'model' => '',
     'storage' => '',
     'price' => '',
+    'currency' => 'eur',
+    'price_type' => 'fixed',
     'condition_state' => 'Polovno',
     'location' => '',
     'contact_phone' => '',
@@ -64,6 +66,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $adType = 'telefon';
     }
 
+    $priceType = normalizeAdPriceType((string)($_POST['price_type'] ?? 'fixed'));
+    $currency = normalizeAdCurrency((string)($_POST['currency'] ?? 'eur'));
+    $priceAmount = $priceType === 'fixed' ? (float)($_POST['price'] ?? 0) : 0;
+
     $payload = [
         'title' => trim((string)($_POST['title'] ?? '')),
         'description' => trim((string)($_POST['description'] ?? '')),
@@ -72,7 +78,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'brand' => trim((string)($_POST['brand'] ?? '')),
         'model' => trim((string)($_POST['model'] ?? '')),
         'storage' => trim((string)($_POST['storage'] ?? '')),
-        'price' => (float)($_POST['price'] ?? 0),
+        'price' => $priceAmount,
+        'currency' => $currency,
+        'price_type' => $priceType,
         'condition_state' => trim((string)($_POST['condition_state'] ?? '')),
         'location' => trim((string)($_POST['location'] ?? '')),
         'country' => 'Srbija',
@@ -101,6 +109,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($payload['title'] === '' || $payload['location'] === '') {
         $formError = 'Naslov i grad su obavezni.';
+    } elseif ($payload['price_type'] === 'fixed' && $payload['price'] <= 0) {
+        $formError = 'Unesi cenu ili izaberi Po dogovoru / Na kontakt.';
     } elseif ($payload['price'] < 0) {
         $formError = 'Cena nije validna.';
     } else {
@@ -171,6 +181,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $currentType = getAdType($ad);
+$currentPriceType = adPriceType($ad);
+$currentCurrency = adCurrency($ad);
 $pageTitle = ($isEdit ? 'Izmena oglasa' : 'Postavi oglas') . ' — TelefonBerza';
 $activePage = 'dodaj';
 $showSearch = false;
@@ -223,20 +235,45 @@ require __DIR__ . '/partials/layout-start.php';
                     <input name="title" id="ad-title" placeholder="npr. iPhone 13 Pro Max 256GB" value="<?= h((string)$ad['title']) ?>" required maxlength="120">
                     <p class="form-hint">Kratko i jasno — model prvi u naslovu.</p>
                 </div>
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Cena (€)</label>
-                        <input type="number" step="1" min="0" name="price" value="<?= h((string)$ad['price']) ?>" required>
+                <div class="form-group">
+                    <label>Cena</label>
+                    <div class="price-type-row" data-price-type-row>
+                        <label class="price-type-option <?= $currentPriceType === 'fixed' ? 'is-on' : '' ?>">
+                            <input type="radio" name="price_type" value="fixed" data-price-type <?= $currentPriceType === 'fixed' ? 'checked' : '' ?>>
+                            <span>Fiksno</span>
+                        </label>
+                        <label class="price-type-option <?= $currentPriceType === 'negotiable' ? 'is-on' : '' ?>">
+                            <input type="radio" name="price_type" value="negotiable" data-price-type <?= $currentPriceType === 'negotiable' ? 'checked' : '' ?>>
+                            <span>Po dogovoru</span>
+                        </label>
+                        <label class="price-type-option <?= $currentPriceType === 'contact' ? 'is-on' : '' ?>">
+                            <input type="radio" name="price_type" value="contact" data-price-type <?= $currentPriceType === 'contact' ? 'checked' : '' ?>>
+                            <span>Na kontakt</span>
+                        </label>
                     </div>
-                    <div class="form-group">
-                        <label>Grad</label>
-                        <select name="location" required>
-                            <option value="">Izaberi grad</option>
-                            <?php foreach ($cfg['cities'] as $city): ?>
-                                <option value="<?= h($city) ?>" <?= ($ad['location'] ?? '') === $city ? 'selected' : '' ?>><?= h($city) ?></option>
-                            <?php endforeach; ?>
-                        </select>
+                    <div class="price-amount-row" data-price-amount-row <?= $currentPriceType !== 'fixed' ? 'hidden' : '' ?>>
+                        <input type="number" step="1" min="1" name="price" data-price-input value="<?= $currentPriceType === 'fixed' ? h((string)$ad['price']) : '' ?>" placeholder="Iznos" <?= $currentPriceType === 'fixed' ? 'required' : 'disabled' ?>>
+                        <div class="price-currency-toggle" role="group" aria-label="Valuta">
+                            <label class="price-cur-option <?= $currentCurrency === 'eur' ? 'is-on' : '' ?>">
+                                <input type="radio" name="currency" value="eur" data-price-currency <?= $currentCurrency === 'eur' ? 'checked' : '' ?>>
+                                <span>€</span>
+                            </label>
+                            <label class="price-cur-option <?= $currentCurrency === 'rsd' ? 'is-on' : '' ?>">
+                                <input type="radio" name="currency" value="rsd" data-price-currency <?= $currentCurrency === 'rsd' ? 'checked' : '' ?>>
+                                <span>din</span>
+                            </label>
+                        </div>
                     </div>
+                    <p class="form-hint" data-price-hint><?= $currentPriceType === 'fixed' ? 'Iznos kako želiš da se prikaže u oglasu.' : ($currentPriceType === 'contact' ? 'Umesto cene piše „Na kontakt“.' : 'Umesto cene piše „Po dogovoru“.') ?></p>
+                </div>
+                <div class="form-group">
+                    <label>Grad</label>
+                    <select name="location" required>
+                        <option value="">Izaberi grad</option>
+                        <?php foreach ($cfg['cities'] as $city): ?>
+                            <option value="<?= h($city) ?>" <?= ($ad['location'] ?? '') === $city ? 'selected' : '' ?>><?= h($city) ?></option>
+                        <?php endforeach; ?>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label>Opis</label>

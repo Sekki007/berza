@@ -88,7 +88,7 @@ require __DIR__ . '/partials/layout-start.php';
                         <tbody>
                         <?php
                         $rows = [
-                            'Cena' => static fn($ad) => formatPrice((float)$ad['price']),
+                            'Cena' => static fn($ad) => formatAdPrice($ad),
                             'Tip' => static fn($ad) => adTypeLabel(getAdType($ad)),
                             'Brend' => static fn($ad) => (string)($ad['brand'] ?? '—'),
                             'Model' => static fn($ad) => (string)($ad['model'] ?? '—'),

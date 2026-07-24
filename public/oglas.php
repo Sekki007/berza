@@ -86,12 +86,13 @@ if (!empty($seller['created_at'])) {
 $images = is_array($ad['images'] ?? null) ? $ad['images'] : [];
 $imageCount = count($images);
 $similarAds = getSimilarAds($ad);
-$waMsg = 'Zdravo, interesuje me oglas: ' . ($ad['title'] ?? '') . ' — ' . formatPrice((float)$ad['price']);
+$waMsg = 'Zdravo, interesuje me oglas: ' . ($ad['title'] ?? '') . ' — ' . formatAdPrice($ad);
 $isFav = isFavorite($id);
 $isOwnAd = isLoggedIn() && (int)currentUser()['id'] === (int)($ad['created_by'] ?? 0);
 $phone = (string)($ad['contact_phone'] ?? '');
 $msgHref = $isOwnAd ? '/poruke.php' : (isLoggedIn() ? '#poruka' : '/login.php');
 $price = (float)($ad['price'] ?? 0);
+$priceOpen = isAdPriceOpen($ad);
 
 $pageTitle = (string)$ad['title'] . ' — TelefonBerza';
 $activePage = 'oglasi';
@@ -256,8 +257,10 @@ $contactBlock = static function (string $formId = 'poruka') use (
                 <h1 class="kp-ad-title"><?= h((string)$ad['title']) ?></h1>
             </div>
             <div class="kp-price-block">
-                <div class="kp-price <?= $price <= 0 ? 'kp-price-free' : '' ?>"><?= formatPrice($price) ?></div>
-                <span class="kp-price-note">Fiksno</span>
+                <div class="kp-price <?= $priceOpen ? 'kp-price-free' : '' ?>"><?= h(formatAdPrice($ad)) ?></div>
+                <?php if (!$priceOpen): ?>
+                    <span class="kp-price-note"><?= h(adPriceTypeLabel($ad)) ?></span>
+                <?php endif; ?>
             </div>
             <div class="kp-action-links">
                 <button type="button" class="kp-action-link" data-share-ad data-share-url="<?= h($canonicalUrl) ?>" data-share-title="<?= h((string)$ad['title']) ?>">↗ Podeli</button>

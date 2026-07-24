@@ -11,7 +11,7 @@ $inCompare = isInCompare($adId);
 $isFav = function_exists('isFavorite') ? isFavorite($adId) : false;
 $favEnabled = !empty(siteSettings()['enable_favorites']);
 $views = (int)($ad['views'] ?? 0);
-$price = (float)($ad['price'] ?? 0);
+$priceOpen = isAdPriceOpen($ad);
 $cardShop = trim((string)($ad['shop_name'] ?? ''));
 $cardSeller = !empty($ad['created_by']) ? findUserById((int)$ad['created_by']) : null;
 $cardShopUrl = $cardSeller ? shopUrl((string)$cardSeller['username']) : '';
@@ -46,7 +46,7 @@ if ($cardShop === '' && $cardSeller) {
                     <span title="Objavljeno">↻ <?= h(formatRelativeTime((string)($ad['created_at'] ?? ''))) ?></span>
                 </div>
                 <div class="ad-price-row kp-list-price-row">
-                    <div class="ad-price kp-list-price <?= $price <= 0 ? 'kp-list-price-free' : '' ?>"><?= formatPrice($price) ?></div>
+                    <div class="ad-price kp-list-price <?= $priceOpen ? 'kp-list-price-free' : '' ?>"><?= h(formatAdPrice($ad)) ?></div>
                     <?php if ($isPromoted): ?><span class="kp-list-badge">TOP</span><?php endif; ?>
                 </div>
                 <div class="ad-desktop-extra">

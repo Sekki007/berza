@@ -509,7 +509,7 @@ require __DIR__ . '/partials/layout-start.php';
                                     <a href="/oglas.php?id=<?= (int)$ad['id'] ?>" class="account-ad-title"><?= h((string)$ad['title']) ?></a>
                                     <div class="account-ad-meta">
                                         <span><?= h(adTypeLabel($type)) ?></span>
-                                        <span><?= formatPrice((float)$ad['price']) ?></span>
+                                        <span><?= h(formatAdPrice($ad)) ?></span>
                                         <span class="account-ad-status <?= $statusClass ?>"><?= h($statusLabel) ?></span>
                                         <?php if ($daysLeft !== null && (int)($ad['is_active'] ?? 0) === 1 && empty($ad['is_sold'])): ?>
                                             <span class="account-expiry <?= $daysLeft <= $warningDays ? 'is-warn' : '' ?>">
@@ -573,7 +573,7 @@ require __DIR__ . '/partials/layout-start.php';
                                     <a href="/oglas.php?id=<?= (int)$ad['id'] ?>" class="account-ad-title"><?= h((string)$ad['title']) ?></a>
                                     <div class="account-ad-meta">
                                         <span><?= h(adTypeLabel($type)) ?></span>
-                                        <span><?= formatPrice((float)$ad['price']) ?></span>
+                                        <span><?= h(formatAdPrice($ad)) ?></span>
                                         <span><?= h((string)$ad['location']) ?></span>
                                         <span class="account-ad-status <?= $statusClass ?>"><?= h($statusLabel) ?></span>
                                         <?php if ($topActive): ?>
@@ -699,7 +699,7 @@ require __DIR__ . '/partials/layout-start.php';
                             <select name="ad_id" required>
                                 <?php foreach ($topEligible as $ad): ?>
                                     <option value="<?= (int)$ad['id'] ?>">
-                                        <?= h((string)$ad['title']) ?> — <?= formatPrice((float)$ad['price']) ?>
+                                        <?= h((string)$ad['title']) ?> — <?= h(formatAdPrice($ad)) ?>
                                         <?= isAdTopActive($ad) ? ' (već TOP)' : '' ?>
                                     </option>
                                 <?php endforeach; ?>

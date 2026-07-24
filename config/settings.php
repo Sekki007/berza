@@ -42,6 +42,7 @@ function defaultSiteSettings(): array
         ],
         'enable_credits' => true,
         'credit_currency_label' => 'din',
+        'eur_rsd_rate' => 117,
         'credit_topup_amounts' => [500, 1000, 2000, 5000],
         'credit_payment_info' => "Uplata kredita:\nPrimalac: TelefonBerza\nBroj računa: 160-0000000000000-00\nSvrha: KR-[BROJ] + tvoje korisničko ime\nPrimer: KR-12 marko",
         'ad_renewal_credits' => 200,

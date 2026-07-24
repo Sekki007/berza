@@ -132,7 +132,7 @@ function searchSuggestions(string $query, int $limit = 8): array
         if ($title === '') {
             continue;
         }
-        $price = formatPrice((float)($ad['price'] ?? 0));
+        $price = formatAdPrice($ad);
         $loc = trim((string)($ad['location'] ?? ''));
         $sub = $price . ($loc !== '' ? ' · ' . $loc : '');
         if (!$add([
