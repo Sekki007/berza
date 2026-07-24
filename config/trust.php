@@ -111,6 +111,18 @@ function isBusinessVerified(?array $user): bool
         && userBusinessKind($user) !== '';
 }
 
+/** Servisne usluge: samo firma sa potvrđenim PIB-om (admin uvek može). */
+function canPostServiceAds(?array $user): bool
+{
+    if (!$user) {
+        return false;
+    }
+    if (function_exists('isAdmin') && isAdmin()) {
+        return true;
+    }
+    return isBusinessVerified($user);
+}
+
 function renderBusinessBadge(?array $user): string
 {
     if (!isBusinessVerified($user)) {

@@ -78,12 +78,19 @@ if ($isEdit) {
 }
 
 $formError = '';
+$canPostService = canPostServiceAds($profile);
+$editingOwnService = $isEdit && getAdType($ad) === 'servis';
+$allowServiceType = $canPostService || $editingOwnService;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     requireCsrf('/ad_form.php' . ($isEdit ? '?id=' . $adId : ''));
     $adType = trim((string)($_POST['ad_type'] ?? 'telefon'));
     if (!in_array($adType, ['telefon', 'delovi', 'servis'], true)) {
         $adType = 'telefon';
+    }
+    if ($adType === 'servis' && !$allowServiceType) {
+        $adType = 'telefon';
+        $formError = 'Servisne usluge mogu da objavljuju samo registrovane firme sa potvrđenim PIB-om. Pošalji zahtev u Nalog → Firma.';
     }
 
     $priceType = normalizeAdPriceType((string)($_POST['price_type'] ?? 'fixed'));
@@ -162,12 +169,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $ad = array_merge($ad, $payload);
 
-    if ($payload['title'] === '') {
+    if ($formError !== '') {
+        // već postavljen (npr. servis bez potvrđenog PIB-a)
+    } elseif ($payload['title'] === '') {
         $formError = 'Naslov je obavezan.';
     } elseif ($payload['location'] === '') {
         $formError = 'Grad je obavezan.';
     } elseif ($payload['contact_phone'] === '') {
         $formError = 'Broj telefona je obavezan.';
+    } elseif (($payload['ad_type'] ?? '') === 'servis' && !$allowServiceType) {
+        $formError = 'Servisne usluge mogu da objavljuju samo registrovane firme sa potvrđenim PIB-om.';
     } elseif ($payload['price_type'] === 'fixed' && $payload['price'] <= 0) {
         $formError = 'Unesi cenu ili označi Po dogovoru.';
     } elseif ($payload['price'] < 0) {
@@ -237,6 +248,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $currentType = getAdType($ad);
+if ($currentType === 'servis' && !$allowServiceType) {
+    $currentType = 'telefon';
+    $ad['ad_type'] = 'telefon';
+    $ad['listing_type'] = 'sell';
+}
 $currentPriceType = adPriceType($ad) === 'contact' ? 'negotiable' : adPriceType($ad);
 $currentCurrency = adCurrency($ad);
 $currentListing = normalizeListingType((string)($ad['listing_type'] ?? 'sell'), $currentType);
@@ -253,6 +269,7 @@ $supportedBrandsSel = is_array($ad['supported_brands'] ?? null) ? $ad['supported
 $serviceExtrasSel = is_array($ad['service_extras'] ?? null) ? $ad['service_extras'] : [];
 $contactSel = is_array($ad['contact_methods'] ?? null) ? $ad['contact_methods'] : ['call', 'message'];
 $pickupSel = is_array($ad['pickup_methods'] ?? null) ? $ad['pickup_methods'] : ['pickup'];
+$bizStatus = userBusinessStatus($profile);
 
 $pageTitle = ($isEdit ? 'Izmena oglasa' : 'Postavi oglas') . ' — TelefonBerza';
 $activePage = 'dodaj';

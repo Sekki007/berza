@@ -17,7 +17,10 @@
 /** @var string $currentListing */
 /** @var string $formError */
 /** @var bool $isEdit */
-/** @var int $userId */
+/** @var bool $canPostService */
+/** @var bool $allowServiceType */
+/** @var bool $editingOwnService */
+/** @var string $bizStatus */
 ?>
 <div class="main-wrap">
     <main class="content ad-form-page">
@@ -65,15 +68,29 @@
                                 <small class="show-mobile">Oprema</small>
                             </span>
                         </label>
-                        <label class="form-type-option <?= $currentType === 'servis' ? 'selected-service' : '' ?>">
-                            <input data-form-type type="radio" name="ad_type" value="servis" <?= $currentType === 'servis' ? 'checked' : '' ?>>
+                        <label class="form-type-option <?= $currentType === 'servis' ? 'selected-service' : '' ?><?= !$allowServiceType ? ' is-locked' : '' ?>">
+                            <input data-form-type type="radio" name="ad_type" value="servis" <?= $currentType === 'servis' ? 'checked' : '' ?> <?= !$allowServiceType ? 'disabled' : '' ?>>
                             <span>
                                 <strong>Servis</strong>
-                                <small class="hide-mobile">Popravka / usluga</small>
-                                <small class="show-mobile">Usluga</small>
+                                <small class="hide-mobile"><?= $allowServiceType ? 'Popravka / usluga' : 'Samo potvrđene firme' ?></small>
+                                <small class="show-mobile"><?= $allowServiceType ? 'Usluga' : 'Samo firme' ?></small>
                             </span>
                         </label>
                     </div>
+                    <?php if (!$canPostService): ?>
+                        <p class="form-hint ad-form-service-note">
+                            Servisne usluge objavljuju samo firme sa <strong>potvrđenim PIB-om</strong>.
+                            <?php if ($editingOwnService): ?>
+                                Možeš izmeniti postojeći servis oglas, ali novi zahtevaju potvrdu.
+                            <?php elseif ($bizStatus === 'pending'): ?>
+                                Zahtev čeka potvrdu admina.
+                            <?php elseif ($bizStatus === 'rejected'): ?>
+                                Zahtev je odbijen — ispravi podatke i pošalji ponovo u <a href="/nalog.php?tab=profil">Nalogu</a>.
+                            <?php else: ?>
+                                <a href="/nalog.php?tab=profil">Registruj firmu u Nalogu</a>
+                            <?php endif; ?>
+                        </p>
+                    <?php endif; ?>
                 </div>
 
                 <div class="form-group">
