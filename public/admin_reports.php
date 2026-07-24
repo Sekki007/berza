@@ -6,6 +6,7 @@ require_once dirname(__DIR__) . '/config/bootstrap.php';
 requireAdmin();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    requireCsrf('/admin_reports.php');
     $reportId = (int)($_POST['report_id'] ?? 0);
     $action = trim((string)($_POST['action'] ?? ''));
     $note = trim((string)($_POST['admin_note'] ?? ''));

@@ -23,6 +23,7 @@ if (!$ad && !$targetUser) {
 $type = $ad ? 'ad' : 'user';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    requireCsrf('/report.php' . ($adId > 0 ? '?ad=' . $adId : ($userId > 0 ? '?user=' . $userId : '')));
     $reason = trim((string)($_POST['reason'] ?? 'other'));
     $details = trim((string)($_POST['details'] ?? ''));
     $from = currentUser();

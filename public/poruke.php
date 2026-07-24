@@ -19,6 +19,7 @@ $withId = isset($_GET['with']) ? (int)$_GET['with'] : 0;
 $viewThread = $adId > 0 && $withId > 0;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    requireCsrf('/poruke.php');
     $replyAd = (int)($_POST['ad_id'] ?? 0);
     $replyTo = (int)($_POST['to_user_id'] ?? 0);
     $body = trim((string)($_POST['message'] ?? ''));

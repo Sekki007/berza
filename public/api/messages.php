@@ -35,6 +35,9 @@ if ($action === 'unread') {
 }
 
 if ($action === 'send' && $_SERVER['REQUEST_METHOD'] === 'POST') {
+    if (!verifyCsrf()) {
+        jsonOut(['ok' => false, 'error' => 'csrf'], 403);
+    }
     $adId = (int)($_POST['ad_id'] ?? 0);
     $toUserId = (int)($_POST['to_user_id'] ?? 0);
     $body = trim((string)($_POST['message'] ?? ''));

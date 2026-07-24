@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/config/bootstrap.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    requireCsrf('/uporedi.php');
     $adId = (int)($_POST['ad_id'] ?? $_GET['id'] ?? 0);
     $result = toggleCompare($adId);
     $wantsJson = str_contains((string)($_SERVER['HTTP_ACCEPT'] ?? ''), 'application/json')

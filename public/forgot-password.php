@@ -10,24 +10,20 @@ if (isLoggedIn()) {
 }
 
 $error = '';
+$phoneValue = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $identity = trim((string)($_POST['identity'] ?? ''));
-    $user = null;
+    requireCsrf('/forgot-password.php');
 
-    if ($identity !== '') {
-        $user = findUserByUsername($identity);
-        if (!$user) {
-            $user = findUserByPhone($identity);
-        }
-    }
+    $phoneValue = trim((string)($_POST['phone'] ?? ''));
+    $user = $phoneValue !== '' ? findUserByPhone($phoneValue) : null;
 
-    // Same response whether found or not (anti-enumeration), but only send if valid
     if ($user && isPhoneVerified($user)) {
         $result = sendUserOtp((int)$user['id'], 'password_reset');
         if (!empty($result['ok'])) {
             $_SESSION['pending_password_reset_user_id'] = (int)$user['id'];
-            setFlash('success', 'Ako nalog postoji, SMS kod je poslat. Unesi kod i novu lozinku.');
+            unset($_SESSION['password_reset_verified']);
+            setFlash('success', 'SMS kod je poslat. Unesi ga na sledećem koraku.');
             header('Location: /reset-password.php');
             exit;
         }
@@ -38,10 +34,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         header('Location: /verify-phone.php');
         exit;
     } else {
-        // Fake success path delay-ish message
-        setFlash('success', 'Ako nalog postoji i ima verifikovan telefon, SMS kod je poslat.');
-        header('Location: /forgot-password.php');
-        exit;
+        // Anti-enumeration: same UX, but no SMS
+        $error = 'Ako postoji nalog sa ovim brojem, SMS će stići uskoro. Proveri broj i pokušaj ponovo ako ne stigne.';
     }
 }
 
@@ -59,7 +53,7 @@ require __DIR__ . '/partials/layout-start.php';
         <div class="form-card">
             <h2>Zaboravljena lozinka</h2>
             <p style="font-size:14px;color:var(--text-muted);margin-bottom:16px;">
-                Unesi korisničko ime ili broj telefona. Poslaćemo SMS kod na verifikovani +381 broj.
+                Korak 1/3 — unesi broj telefona sa naloga. Poslaćemo SMS kod.
             </p>
 
             <?php if ($error !== ''): ?>
@@ -67,9 +61,10 @@ require __DIR__ . '/partials/layout-start.php';
             <?php endif; ?>
 
             <form method="POST">
+                <?= csrfField() ?>
                 <div class="form-group">
-                    <label>Korisničko ime ili telefon</label>
-                    <input type="text" name="identity" required placeholder="username ili 06x…">
+                    <label>Broj telefona</label>
+                    <input type="text" name="phone" required placeholder="06x xxx xxxx" value="<?= h($phoneValue) ?>" autocomplete="tel">
                 </div>
                 <button class="btn-call" type="submit">Pošalji SMS kod</button>
             </form>

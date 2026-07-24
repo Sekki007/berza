@@ -40,6 +40,7 @@ if (mb_strlen($initials) < 1) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'rate') {
+    requireCsrf($shopLink);
     requireLogin();
     $vote = trim((string)($_POST['vote'] ?? ''));
     $comment = (string)($_POST['comment'] ?? '');

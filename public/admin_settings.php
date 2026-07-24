@@ -38,6 +38,7 @@ if (!in_array($tab, $validTabs, true)) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    requireCsrf('/admin_settings.php?tab=' . urlencode($tab));
     $current = siteSettings();
     $payload = array_merge($current, [
         'site_name' => trim((string)($_POST['site_name'] ?? $current['site_name'])),
@@ -125,6 +126,7 @@ require __DIR__ . '/partials/layout-start.php';
         </div>
 
         <form method="POST" class="form-card admin-settings-form">
+            <?= csrfField() ?>
             <div class="admin-tab-panel <?= $tab === 'general' ? 'active' : '' ?>">
                 <h3>Opšte informacije</h3>
                 <div class="form-row">

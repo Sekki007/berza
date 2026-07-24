@@ -9,6 +9,7 @@ $action = trim((string)($_POST['action'] ?? $_GET['action'] ?? ''));
 $userId = (int)($_POST['user_id'] ?? $_GET['user_id'] ?? 0);
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $userId > 0) {
+    requireCsrf('/admin_users.php');
     if ($action === 'block') {
         $reason = trim((string)($_POST['reason'] ?? ''));
         if (setUserBlocked($userId, true, $reason !== '' ? $reason : 'Blokiran od administratora')) {

@@ -6,6 +6,7 @@ require_once dirname(__DIR__) . '/config/bootstrap.php';
 requireAdmin();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    requireCsrf('/admin_top.php');
     $action = trim((string)($_POST['action'] ?? ''));
     $orderId = (int)($_POST['order_id'] ?? 0);
     if ($action === 'confirm' && $orderId > 0) {

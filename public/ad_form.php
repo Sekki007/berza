@@ -57,6 +57,7 @@ if ($isEdit) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    requireCsrf('/ad_form.php' . ($isEdit ? '?id=' . $adId : ''));
     $adType = trim((string)($_POST['ad_type'] ?? 'telefon'));
     if (!in_array($adType, ['telefon', 'delovi', 'servis'], true)) {
         $adType = 'telefon';
@@ -185,6 +186,7 @@ require __DIR__ . '/partials/layout-start.php';
         <div class="breadcrumb"><a href="/index.php">Početna</a> › <?= $isEdit ? 'Izmena oglasa' : 'Postavi oglas' ?></div>
 
         <form method="POST" enctype="multipart/form-data" class="form-card" data-ad-form>
+            <?= csrfField() ?>
             <div class="steps">
                 <div class="step active"><div class="step-bar"></div>Tip</div>
                 <div class="step active"><div class="step-bar"></div>Detalji</div>

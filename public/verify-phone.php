@@ -28,6 +28,7 @@ $error = '';
 $info = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    requireCsrf('/verify-phone.php');
     $action = trim((string)($_POST['action'] ?? 'verify'));
 
     if ($action === 'send' || $action === 'resend') {
@@ -85,6 +86,7 @@ require __DIR__ . '/partials/layout-start.php';
 
             <?php if (!$otpPending || !$hasPhone): ?>
                 <form method="POST" style="margin-bottom:18px;">
+                    <?= csrfField() ?>
                     <input type="hidden" name="action" value="send">
                     <?php if (!$hasPhone): ?>
                         <div class="form-group">
@@ -96,6 +98,7 @@ require __DIR__ . '/partials/layout-start.php';
                 </form>
             <?php else: ?>
                 <form method="POST">
+                    <?= csrfField() ?>
                     <input type="hidden" name="action" value="verify">
                     <div class="form-group">
                         <label>SMS kod</label>
@@ -104,6 +107,7 @@ require __DIR__ . '/partials/layout-start.php';
                     <button class="btn-call" type="submit">Potvrdi kod</button>
                 </form>
                 <form method="POST" style="margin-top:12px;">
+                    <?= csrfField() ?>
                     <input type="hidden" name="action" value="resend">
                     <button class="btn-sm btn-sm-primary" type="submit">Pošalji kod ponovo</button>
                 </form>

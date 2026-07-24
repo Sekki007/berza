@@ -10,6 +10,7 @@ if (isLoggedIn()) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    requireCsrf('/login.php');
     $username = trim((string)($_POST['username'] ?? ''));
     $password = (string)($_POST['password'] ?? '');
     $user = findUserByUsername($username);
@@ -59,6 +60,7 @@ require __DIR__ . '/partials/layout-start.php';
         <div class="form-card">
             <h2>Prijava</h2>
             <form method="POST">
+                <?= csrfField() ?>
                 <div class="form-group">
                     <label>Korisničko ime</label>
                     <input type="text" name="username" required>

@@ -12,6 +12,12 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     exit;
 }
 
+if (!verifyCsrf()) {
+    http_response_code(403);
+    echo json_encode(['ok' => false, 'error' => 'csrf']);
+    exit;
+}
+
 $adId = (int)($_POST['ad_id'] ?? 0);
 if ($adId <= 0 || !getAdById($adId)) {
     http_response_code(400);

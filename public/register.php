@@ -24,6 +24,7 @@ $form = [
 $formError = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    requireCsrf('/register.php');
     $username = trim((string)($_POST['username'] ?? ''));
     $password = (string)($_POST['password'] ?? '');
     $fullName = trim((string)($_POST['full_name'] ?? ''));
@@ -95,6 +96,7 @@ require __DIR__ . '/partials/layout-start.php';
             <?php endif; ?>
 
             <form method="POST" id="register-form" data-register-form novalidate>
+                <?= csrfField() ?>
                 <div class="form-group">
                     <label>Ime i prezime</label>
                     <input type="text" name="full_name" required value="<?= h($form['full_name']) ?>">

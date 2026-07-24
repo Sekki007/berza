@@ -18,6 +18,7 @@ $ad = getAdById($id) ?? $ad;
 $site = siteSettings();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    requireCsrf(adUrl($ad));
     requireLogin();
     $siteCheck = siteSettings();
     if (empty($siteCheck['enable_messages'])) {

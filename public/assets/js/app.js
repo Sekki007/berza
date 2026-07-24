@@ -2,6 +2,47 @@
   function all(sel, root) { return (root || document).querySelectorAll(sel); }
   function one(sel, root) { return (root || document).querySelector(sel); }
 
+  function csrfToken() {
+    var meta = one('meta[name="csrf-token"]');
+    return meta ? (meta.getAttribute('content') || '') : '';
+  }
+
+  function appendCsrf(fd) {
+    if (!fd || typeof fd.append !== 'function') return fd;
+    var has = typeof fd.has === 'function' ? fd.has('_csrf') : false;
+    if (!has) fd.append('_csrf', csrfToken());
+    return fd;
+  }
+
+  function csrfHeaders(extra) {
+    var h = extra || {};
+    var t = csrfToken();
+    if (t) h['X-CSRF-Token'] = t;
+    return h;
+  }
+
+  function ensureCsrfOnForms() {
+    var token = csrfToken();
+    if (!token) return;
+    all('form').forEach(function (form) {
+      var method = (form.getAttribute('method') || 'get').toLowerCase();
+      if (method !== 'post') return;
+      var existing = form.querySelector('input[name="_csrf"]');
+      if (existing) {
+        existing.value = token;
+        return;
+      }
+      var input = document.createElement('input');
+      input.type = 'hidden';
+      input.name = '_csrf';
+      input.value = token;
+      form.appendChild(input);
+    });
+  }
+
+  ensureCsrfOnForms();
+  document.addEventListener('submit', function () { ensureCsrfOnForms(); }, true);
+
   function syncTypeCheckboxes(source) {
     const value = source.value;
     const checked = source.checked;
@@ -343,7 +384,8 @@
             try {
               const body = new FormData();
               body.append('ad_id', adId);
-              fetch('/api/track.php', { method: 'POST', body: body, credentials: 'same-origin' });
+              appendCsrf(body);
+              fetch('/api/track.php', { method: 'POST', body: body, credentials: 'same-origin', headers: csrfHeaders() });
             } catch (e) {}
           }
         }
@@ -372,11 +414,12 @@
       const body = new FormData();
       body.append('ad_id', adId);
       body.append('ajax', '1');
+      appendCsrf(body);
       fetch('/uporedi.php', {
         method: 'POST',
         body: body,
         credentials: 'same-origin',
-        headers: { 'Accept': 'application/json' }
+        headers: csrfHeaders({ 'Accept': 'application/json' })
       }).then(function (r) { return r.json(); }).then(function (data) {
         if (!data || !data.ok) return;
         if (data.full) {
@@ -765,12 +808,13 @@
       fd.append('ad_id', adId);
       fd.append('to_user_id', withId);
       fd.append('message', body);
+      appendCsrf(fd);
 
       fetch('/api/messages.php?action=send', {
         method: 'POST',
         credentials: 'same-origin',
         body: fd,
-        headers: { 'Accept': 'application/json' }
+        headers: csrfHeaders({ 'Accept': 'application/json' })
       })
         .then(function (r) { return r.json(); })
         .then(function (data) {

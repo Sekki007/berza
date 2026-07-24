@@ -26,6 +26,7 @@ $compareCount = count(compareIds());
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <?= csrfMetaTag() ?>
     <title><?= h($pageTitle) ?></title>
     <meta name="description" content="<?= h($pageDescription) ?>">
     <link rel="canonical" href="<?= h($canonicalUrl) ?>">

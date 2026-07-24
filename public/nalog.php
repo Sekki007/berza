@@ -11,6 +11,7 @@ $profile = findUserById($userId) ?? $user;
 $site = siteSettings();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+    requireCsrf('/nalog.php');
     $action = trim((string)($_POST['action'] ?? 'profile'));
 
     if ($action === 'renew') {
