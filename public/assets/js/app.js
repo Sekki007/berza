@@ -233,6 +233,19 @@
         }
       });
     });
+
+    const track = one('#gallery-track') || one('.kp-gallery-track');
+    if (track && counter) {
+      const slides = all('.kp-gallery-slide', track);
+      const total = slides.length;
+      if (total > 1) {
+        track.addEventListener('scroll', function () {
+          const w = track.clientWidth || 1;
+          const idx = Math.min(total, Math.max(1, Math.round(track.scrollLeft / w) + 1));
+          counter.textContent = idx + ' od ' + total;
+        }, { passive: true });
+      }
+    }
   }
 
   function initPhoneReveal() {
@@ -240,7 +253,7 @@
       btn.addEventListener('click', function () {
         const phone = btn.getAttribute('data-reveal-phone') || '';
         if (!phone) return;
-        if (btn.tagName === 'BUTTON' || btn.classList.contains('btn-phone-reveal') || btn.classList.contains('btn-call')) {
+        if (btn.tagName === 'BUTTON' || btn.classList.contains('btn-phone-reveal') || btn.classList.contains('btn-call') || btn.classList.contains('kp-btn-tel')) {
           if (btn.classList.contains('revealed') || btn.getAttribute('data-revealed') === '1') {
             window.location.href = 'tel:' + phone.replace(/\s+/g, '');
             return;
@@ -304,10 +317,12 @@
         }
         // Uklonjen sa liste — ostani na stranici
         all('[data-compare-toggle="' + adId + '"]').forEach(function (el) {
-          el.classList.remove('active');
+          el.classList.remove('active', 'is-in-compare');
           el.setAttribute('aria-pressed', 'false');
-          if (el.classList.contains('ad-compare-btn') || el.tagName === 'BUTTON') {
-            el.textContent = 'Uporedi';
+          if (el.classList.contains('ad-compare-btn') || el.classList.contains('kp-list-cmp')) {
+            el.textContent = '⇄';
+          } else if (el.tagName === 'BUTTON') {
+            el.textContent = '⇄ Uporedi';
           }
         });
         updateCompareBar(data.count || 0);

@@ -70,8 +70,8 @@ $type = getAdType($ad);
 $seller = findUserById((int)($ad['created_by'] ?? 1));
 $sellerUsername = (string)($seller['username'] ?? '');
 $sellerName = (string)($ad['shop_name'] ?: ($seller ? getSellerShopName($seller) : 'Prodavac'));
-$sellerInitials = mb_strtoupper(mb_substr($sellerName, 0, 1) . mb_substr(trim(strrchr($sellerName, ' ') ?: ''), 0, 1));
-if (mb_strlen($sellerInitials) < 1) {
+$sellerInitials = mb_strtoupper(mb_substr($sellerName, 0, 1));
+if ($sellerInitials === '') {
     $sellerInitials = '?';
 }
 $sellerSummary = $seller ? getSellerRatingSummary((int)$seller['id']) : ['positive' => 0, 'negative' => 0, 'count' => 0];
@@ -89,6 +89,8 @@ $waMsg = 'Zdravo, interesuje me oglas: ' . ($ad['title'] ?? '') . ' — ' . form
 $isFav = isFavorite($id);
 $isOwnAd = isLoggedIn() && (int)currentUser()['id'] === (int)($ad['created_by'] ?? 0);
 $phone = (string)($ad['contact_phone'] ?? '');
+$msgHref = $isOwnAd ? '/poruke.php' : (isLoggedIn() ? '#poruka' : '/login.php');
+$price = (float)($ad['price'] ?? 0);
 
 $pageTitle = (string)$ad['title'] . ' — TelefonBerza';
 $activePage = 'oglasi';
@@ -104,193 +106,211 @@ $inCompare = isInCompare($id);
 require __DIR__ . '/partials/layout-start.php';
 ?>
 
-<div class="main-wrap" data-ad-id="<?= (int)$id ?>">
-    <main class="content">
-        <div class="breadcrumb">
+<div class="main-wrap kp-detail-wrap" data-ad-id="<?= (int)$id ?>">
+    <main class="content kp-detail-main">
+        <div class="breadcrumb kp-detail-breadcrumb">
             <a href="/index.php">Početna</a>
             <?php if (!empty($ad['category'])): ?>
                 › <a href="/index.php?type=<?= urlencode($type) ?>"><?= h((string)$ad['category']) ?></a>
             <?php endif; ?>
         </div>
 
-        <div class="detail-layout">
-            <div class="detail-main">
-                <div class="detail-gallery kp-gallery">
-                    <?php if ($imageCount > 1): ?>
-                        <div class="detail-thumbs kp-thumbs">
-                            <?php foreach ($images as $i => $img): ?>
-                                <button type="button" class="detail-thumb <?= $i === 0 ? 'active' : '' ?>" data-gallery-thumb="<?= h((string)$img) ?>" data-gallery-index="<?= $i + 1 ?>">
-                                    <img src="<?= h((string)$img) ?>" alt="">
-                                </button>
-                            <?php endforeach; ?>
+        <div class="detail-gallery kp-gallery">
+            <?php if ($images): ?>
+                <div class="kp-gallery-track" id="gallery-track">
+                    <?php foreach ($images as $i => $img): ?>
+                        <div class="kp-gallery-slide">
+                            <img src="<?= h((string)$img) ?>" alt="<?= h((string)$ad['title']) ?>" <?= $i === 0 ? 'id="gallery-main"' : '' ?>>
                         </div>
-                    <?php endif; ?>
-                    <div class="detail-main-img" id="main-image">
-                        <?php if ($images): ?>
-                            <img src="<?= h((string)$images[0]) ?>" alt="" class="detail-img" id="gallery-main">
-                            <?php if ($imageCount > 0): ?>
-                                <span class="gallery-counter" data-gallery-counter>1 od <?= $imageCount ?></span>
-                            <?php endif; ?>
-                        <?php else: ?>
-                            <div class="<?= $type === 'telefon' ? 'phone-silhouette' : 'parts-icon' ?>" style="width:90px;height:160px;">
-                                <?= $type === 'telefon' ? '' : strtoupper(adTypeLabel($type)) ?>
-                            </div>
-                        <?php endif; ?>
-                        <?php if (!empty($ad['is_sold'])): ?><span class="ad-badge-sold detail-sold">Prodato</span><?php endif; ?>
-                        <?php if (!empty($ad['is_promoted'])): ?><span class="ad-badge-promo detail-promo">TOP</span><?php endif; ?>
+                    <?php endforeach; ?>
+                </div>
+                <span class="kp-gallery-counter" data-gallery-counter>1 od <?= $imageCount ?></span>
+            <?php else: ?>
+                <div class="kp-gallery-slide">
+                    <div class="<?= $type === 'telefon' ? 'phone-silhouette' : 'parts-icon' ?>" style="width:90px;height:160px;">
+                        <?= $type === 'telefon' ? '' : strtoupper(adTypeLabel($type)) ?>
                     </div>
                 </div>
+            <?php endif; ?>
+            <?php if (!empty($ad['is_sold'])): ?><span class="ad-badge-sold detail-sold">Prodato</span><?php endif; ?>
+            <?php if (!empty($ad['is_promoted'])): ?><span class="ad-badge-promo detail-promo">TOP</span><?php endif; ?>
+        </div>
 
-                <div class="detail-card kp-ad-head">
-                    <div class="kp-title-row">
-                        <h1 class="detail-title"><?= h((string)$ad['title']) ?></h1>
-                        <div class="kp-title-actions">
-                            <?php if (!empty($site['enable_favorites'])): ?>
-                                <a class="kp-follow <?= $isFav ? 'active' : '' ?>" href="/favorite.php?id=<?= (int)$ad['id'] ?>">
-                                    <?= $isFav ? '♥ Pratite' : '♡ Prati' ?>
-                                </a>
-                            <?php endif; ?>
-                            <button type="button" class="btn-sm" data-compare-toggle="<?= (int)$ad['id'] ?>" aria-pressed="<?= $inCompare ? 'true' : 'false' ?>">
-                                <?= $inCompare ? 'U poređenju' : 'Uporedi' ?>
-                            </button>
-                            <button type="button" class="btn-sm" data-share-ad data-share-url="<?= h($canonicalUrl) ?>" data-share-title="<?= h((string)$ad['title']) ?>">Podeli</button>
-                        </div>
-                    </div>
-                    <div class="detail-price"><?= formatPrice((float)$ad['price']) ?></div>
-                    <div class="kp-stats">
-                        <span title="Pregledi">👁 <?= (int)($ad['views'] ?? 0) ?></span>
-                        <span title="Omiljeni"><?= $isFav ? '♥' : '♡' ?> <?= $isFav ? '1' : '0' ?></span>
-                        <span><?= h(formatRelativeTime((string)$ad['created_at'])) ?></span>
-                    </div>
-                    <div class="kp-attrs">
-                        <?php if (!empty($ad['condition_state'])): ?>
-                            <div class="kp-attr"><span class="kp-attr-label">Stanje</span><span><?= h((string)$ad['condition_state']) ?></span></div>
-                        <?php endif; ?>
-                        <?php if (!empty($ad['brand'])): ?>
-                            <div class="kp-attr"><span class="kp-attr-label">Brend</span><span><?= h((string)$ad['brand']) ?></span></div>
-                        <?php endif; ?>
-                        <?php if (!empty($ad['model'])): ?>
-                            <div class="kp-attr"><span class="kp-attr-label">Model</span><span><?= h((string)$ad['model']) ?></span></div>
-                        <?php endif; ?>
-                        <?php if (!empty($ad['storage'])): ?>
-                            <div class="kp-attr"><span class="kp-attr-label">Memorija</span><span><?= h((string)$ad['storage']) ?></span></div>
-                        <?php endif; ?>
-                        <div class="kp-attr"><span class="kp-attr-label">Tip</span><span><?= h(adTypeLabel($type)) ?></span></div>
-                    </div>
-                    <div class="kp-ad-footer">
-                        <span>ID Oglasa: #<?= (int)$ad['id'] ?></span>
-                        <a class="kp-report" href="/report.php?ad=<?= (int)$ad['id'] ?>">Prijavi</a>
-                    </div>
-                </div>
-
-                <div class="detail-card">
-                    <div class="detail-desc">
-                        <h3>Opis oglasa</h3>
-                        <?= nl2br(h((string)$ad['description'])) ?>
-                    </div>
-                </div>
-
-                <?php if ($similarAds): ?>
-                    <div class="form-card" style="margin-top:12px;">
-                        <h2>Slični oglasi</h2>
-                        <p class="form-hint" style="margin-top:-6px;">Isti model, brend, grad ili slična cena.</p>
-                        <div class="ads-list compact-list">
-                            <?php foreach ($similarAds as $similar): ?>
-                                <?php $ad = $similar; require __DIR__ . '/partials/ad-card.php'; ?>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
+        <div class="kp-detail-head">
+            <div class="kp-title-row">
+                <h1 class="kp-ad-title"><?= h((string)$ad['title']) ?></h1>
+                <?php if (!empty($site['enable_favorites'])): ?>
+                    <a class="kp-follow-btn <?= $isFav ? 'active' : '' ?>" href="/favorite.php?id=<?= (int)$ad['id'] ?>">
+                        <span class="icon-heart"><?= $isFav ? '♥' : '♡' ?></span>
+                        <span><?= $isFav ? 'Pratite' : 'Prati' ?></span>
+                    </a>
                 <?php endif; ?>
             </div>
-
-            <aside class="detail-sidebar">
-                <div class="detail-card kp-seller-box">
-                    <?php if (!empty($site['enable_messages'])): ?>
-                        <?php if ($isOwnAd): ?>
-                            <a class="btn-kp-message" href="/poruke.php">Otvori poruke</a>
-                            <p class="kp-response-hint">Ovo je tvoj oglas — odgovori kupcima iz inboxa.</p>
-                        <?php elseif (isLoggedIn()): ?>
-                            <a class="btn-kp-message" href="#poruka">Pošaljite poruku</a>
-                            <p class="kp-response-hint">Odgovara na poruke, uglavnom u roku od nekoliko sati.</p>
-                        <?php else: ?>
-                            <a class="btn-kp-message" href="/login.php">Pošaljite poruku</a>
-                            <p class="kp-response-hint">Prijavi se da pošalješ poruku prodavcu.</p>
-                        <?php endif; ?>
-                    <?php endif; ?>
-
-                    <?php if ($sellerUsername !== ''): ?>
-                        <a class="kp-seller kp-seller-link" href="<?= h(shopUrl($sellerUsername)) ?>">
-                            <div class="seller-avatar"><?= h($sellerInitials) ?></div>
-                            <div class="seller-info">
-                                <h4><?= h($sellerName) ?> <?= renderVerifiedBadge($seller) ?></h4>
-                                <?php if ($sellerLocation !== ''): ?>
-                                    <p class="kp-seller-loc"><?= h($sellerLocation) ?></p>
-                                <?php endif; ?>
-                                <?php if ($memberSince !== ''): ?>
-                                    <p class="kp-seller-since">Član od <?= h($memberSince) ?></p>
-                                <?php endif; ?>
-                                <p class="kp-seller-open">Pogledaj izlog →</p>
-                            </div>
-                        </a>
-                        <div class="kp-seller-reps"><?= renderReputation($sellerSummary, shopUrl($sellerUsername)) ?></div>
-                    <?php else: ?>
-                        <div class="kp-seller">
-                            <div class="seller-avatar"><?= h($sellerInitials) ?></div>
-                            <div class="seller-info">
-                                <h4><?= h($sellerName) ?> <?= renderVerifiedBadge($seller) ?></h4>
-                                <?php if ($sellerLocation !== ''): ?>
-                                    <p class="kp-seller-loc"><?= h($sellerLocation) ?></p>
-                                <?php endif; ?>
-                            </div>
-                        </div>
-                        <div class="kp-seller-reps"><?= renderReputation($sellerSummary) ?></div>
-                    <?php endif; ?>
-
-                    <div class="kp-seller-links">
-                        <?php if ($sellerUsername !== ''): ?>
-                            <a href="<?= h(shopUrl($sellerUsername)) ?>">📄 Svi oglasi (<?= $sellerAdsCount ?>)</a>
-                            <a href="<?= h(shopUrl($sellerUsername)) ?>#ocene">Ocene i komentari</a>
-                        <?php endif; ?>
-                    </div>
-
-                    <?php if ($phone !== ''): ?>
-                        <button type="button" class="btn-phone-reveal" data-reveal-phone="<?= h($phone) ?>" data-ad-id="<?= (int)$id ?>">
-                            Klik za broj telefona
-                        </button>
-                        <?php if (!empty($site['enable_whatsapp'])): ?>
-                            <a class="btn-message" href="<?= h(whatsappLink($phone, $waMsg)) ?>" target="_blank" rel="noopener">WhatsApp</a>
-                        <?php endif; ?>
-                    <?php endif; ?>
-
-                    <?php if (!empty($site['enable_messages']) && isLoggedIn() && !$isOwnAd): ?>
-                        <form method="POST" id="poruka" class="kp-msg-form">
-                            <div class="form-group">
-                                <label>Poruka prodavcu</label>
-                                <textarea name="message" rows="3" placeholder="Zdravo, da li je oglas još aktivan?" required></textarea>
-                            </div>
-                            <button class="btn-kp-message btn-kp-message-secondary" type="submit">Pošalji</button>
-                        </form>
-                    <?php endif; ?>
-                </div>
-
-                <div class="detail-card kp-disclaimer">
-                    <strong>Napomena</strong>
-                    <p>Dogovor oko kupovine i plaćanja je između kupca i prodavca. TelefonBerza ne učestvuje u transakciji.</p>
-                </div>
-            </aside>
+            <div class="kp-price-block">
+                <div class="kp-price <?= $price <= 0 ? 'kp-price-free' : '' ?>"><?= formatPrice($price) ?></div>
+                <span class="kp-price-note">Fiksno</span>
+            </div>
+            <div class="kp-action-links">
+                <button type="button" class="kp-action-link" data-share-ad data-share-url="<?= h($canonicalUrl) ?>" data-share-title="<?= h((string)$ad['title']) ?>">↗ Podeli</button>
+                <button type="button" class="kp-action-link" data-compare-toggle="<?= (int)$ad['id'] ?>" aria-pressed="<?= $inCompare ? 'true' : 'false' ?>">
+                    <?= $inCompare ? '✓ U poređenju' : '⇄ Uporedi' ?>
+                </button>
+                <a class="kp-action-link" href="/report.php?ad=<?= (int)$ad['id'] ?>">⋯ Opcije</a>
+            </div>
         </div>
+
+        <div class="kp-card">
+            <?php if (!empty($ad['condition_state'])): ?>
+                <div class="kp-info-cond"><strong><?= h((string)$ad['condition_state']) ?></strong></div>
+            <?php endif; ?>
+            <div class="kp-info-stats">
+                <span title="Pregledi">👁 <?= (int)($ad['views'] ?? 0) ?></span>
+                <span title="Omiljeni"><?= $isFav ? '♥' : '♡' ?></span>
+                <span>↻ <?= h(formatRelativeTime((string)$ad['created_at'])) ?></span>
+            </div>
+        </div>
+
+        <div class="kp-card">
+            <div class="kp-logistics">
+                <div class="kp-log-row">
+                    <span class="kp-log-ico">🚚</span>
+                    <span><strong>Dostava</strong> — dogovor sa prodavcem</span>
+                </div>
+                <div class="kp-log-row">
+                    <span class="kp-log-ico">🏪</span>
+                    <span><strong>Lično preuzimanje</strong><?= $sellerLocation !== '' ? ' — ' . h($sellerLocation) : '' ?></span>
+                </div>
+            </div>
+        </div>
+
+        <div class="kp-card kp-contact-card">
+            <div class="kp-contact-btns">
+                <?php if (!empty($site['enable_messages'])): ?>
+                    <a class="kp-btn-msg" href="<?= h($msgHref) ?>">
+                        💬 <?= $isOwnAd ? 'Otvori poruke' : 'Pošaljite poruku' ?>
+                    </a>
+                <?php endif; ?>
+                <?php if ($phone !== ''): ?>
+                    <button type="button" class="kp-btn-tel" data-reveal-phone="<?= h($phone) ?>" data-ad-id="<?= (int)$id ?>">📞 Telefon</button>
+                <?php endif; ?>
+            </div>
+            <p class="kp-reply-hint">
+                <?= $isOwnAd
+                    ? 'Ovo je tvoj oglas — odgovori kupcima iz inboxa.'
+                    : 'Odgovara na poruke, uglavnom u roku od nekoliko sati.' ?>
+            </p>
+
+            <?php if (!empty($site['enable_messages']) && isLoggedIn() && !$isOwnAd): ?>
+                <form method="POST" id="poruka" class="kp-msg-form" style="margin-top:12px;">
+                    <div class="form-group">
+                        <label>Poruka prodavcu</label>
+                        <textarea name="message" rows="3" placeholder="Zdravo, da li je oglas još aktivan?" required></textarea>
+                    </div>
+                    <button class="kp-btn-msg" type="submit" style="width:100%;">Pošalji</button>
+                </form>
+            <?php endif; ?>
+
+            <?php if ($phone !== '' && !empty($site['enable_whatsapp'])): ?>
+                <a class="kp-action-link" style="margin-top:10px;display:inline-flex;" href="<?= h(whatsappLink($phone, $waMsg)) ?>" target="_blank" rel="noopener">WhatsApp</a>
+            <?php endif; ?>
+        </div>
+
+        <?php if (!empty($ad['category'])): ?>
+            <a class="kp-card kp-cat-chip" href="/index.php?type=<?= urlencode($type) ?>">
+                <div>
+                    <span class="kp-cat-name"><?= h((string)$ad['category']) ?></span>
+                    <span class="kp-cat-path"><?= h(adTypeLabel($type)) ?><?= !empty($ad['brand']) ? ' · ' . h((string)$ad['brand']) : '' ?></span>
+                </div>
+                <span class="kp-cat-chevron">›</span>
+            </a>
+        <?php endif; ?>
+
+        <?php if ($sellerUsername !== ''): ?>
+            <a class="kp-card kp-seller-card" href="<?= h(shopUrl($sellerUsername)) ?>">
+                <div class="kp-seller-top">
+                    <div class="kp-seller-avatar"><?= h($sellerInitials) ?></div>
+                    <div>
+                        <div class="kp-seller-name"><?= h($sellerName) ?> <?= renderVerifiedBadge($seller) ?></div>
+                    </div>
+                    <span class="kp-seller-chevron">›</span>
+                </div>
+                <div class="kp-seller-meta">
+                    <?php if ($memberSince !== ''): ?>Član od: <?= h($memberSince) ?><?php endif; ?>
+                    <?php if ($sellerLocation !== ''): ?><?= $memberSince !== '' ? ' · ' : '' ?><?= h($sellerLocation) ?><?php endif; ?>
+                </div>
+                <div class="kp-seller-rating">
+                    <span class="kp-thumb-up">👍 <?= (int)($sellerSummary['positive'] ?? 0) ?></span>
+                    <span class="kp-thumb-down">👎 <?= (int)($sellerSummary['negative'] ?? 0) ?></span>
+                    <span style="font-weight:400;color:#888;font-size:12px;">Svi oglasi (<?= $sellerAdsCount ?>)</span>
+                </div>
+            </a>
+        <?php else: ?>
+            <div class="kp-card">
+                <div class="kp-seller-top">
+                    <div class="kp-seller-avatar"><?= h($sellerInitials) ?></div>
+                    <div class="kp-seller-name"><?= h($sellerName) ?></div>
+                </div>
+                <div class="kp-seller-rating">
+                    <span class="kp-thumb-up">👍 <?= (int)($sellerSummary['positive'] ?? 0) ?></span>
+                    <span class="kp-thumb-down">👎 <?= (int)($sellerSummary['negative'] ?? 0) ?></span>
+                </div>
+            </div>
+        <?php endif; ?>
+
+        <div class="kp-card kp-desc-card">
+            <h3 class="kp-section-title">Opis oglasa</h3>
+            <div class="kp-desc-body"><?= nl2br(h((string)$ad['description'])) ?></div>
+        </div>
+
+        <div class="kp-card">
+            <strong>Napomena</strong>
+            <p style="margin:6px 0 0;font-size:13px;color:#666;line-height:1.45;">Dogovor oko kupovine i plaćanja je između kupca i prodavca. TelefonBerza ne učestvuje u transakciji.</p>
+        </div>
+
+        <?php if ($similarAds): ?>
+            <div class="kp-card">
+                <h3 class="kp-section-title">Slični oglasi</h3>
+                <div class="ads-list compact-list">
+                    <?php foreach ($similarAds as $similar): ?>
+                        <?php $ad = $similar; require __DIR__ . '/partials/ad-card.php'; ?>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+        <?php endif; ?>
     </main>
+
+    <aside class="kp-desktop-only-sidebar">
+        <div class="kp-card">
+            <?php if (!empty($site['enable_messages'])): ?>
+                <a class="kp-btn-msg" href="<?= h($msgHref) ?>" style="width:100%;"><?= $isOwnAd ? 'Otvori poruke' : 'Pošaljite poruku' ?></a>
+                <p class="kp-reply-hint"><?= $isOwnAd ? 'Odgovori kupcima iz inboxa.' : 'Odgovara na poruke, uglavnom u roku od nekoliko sati.' ?></p>
+            <?php endif; ?>
+            <?php if ($phone !== ''): ?>
+                <button type="button" class="kp-btn-tel" style="width:100%;margin-top:8px;" data-reveal-phone="<?= h($phone) ?>" data-ad-id="<?= (int)$id ?>">Klik za broj telefona</button>
+            <?php endif; ?>
+            <?php if ($sellerUsername !== ''): ?>
+                <a class="kp-seller-card" href="<?= h(shopUrl($sellerUsername)) ?>" style="margin-top:14px;display:block;text-decoration:none;color:inherit;">
+                    <div class="kp-seller-top">
+                        <div class="kp-seller-avatar"><?= h($sellerInitials) ?></div>
+                        <div class="kp-seller-name"><?= h($sellerName) ?></div>
+                    </div>
+                    <div class="kp-seller-meta"><?= h($sellerLocation) ?></div>
+                    <div class="kp-seller-rating">
+                        <span class="kp-thumb-up">👍 <?= (int)($sellerSummary['positive'] ?? 0) ?></span>
+                        <span class="kp-thumb-down">👎 <?= (int)($sellerSummary['negative'] ?? 0) ?></span>
+                    </div>
+                </a>
+            <?php endif; ?>
+        </div>
+    </aside>
 </div>
 
-<div class="sticky-contact">
+<div class="kp-sticky-contact sticky-contact">
     <?php if (!empty($site['enable_messages'])): ?>
-        <a class="btn-kp-message" href="<?= isLoggedIn() ? '#poruka' : '/login.php' ?>">Poruka</a>
+        <a class="kp-btn-msg" href="<?= h($msgHref) ?>">💬 Poruka</a>
     <?php endif; ?>
     <?php if ($phone !== ''): ?>
-        <button type="button" class="btn-call" data-reveal-phone="<?= h($phone) ?>" data-ad-id="<?= (int)$id ?>">Telefon</button>
-    <?php endif; ?>
-    <?php if (!empty($site['enable_favorites'])): ?>
-        <a class="btn-message" href="/favorite.php?id=<?= (int)$id ?>"><?= $isFav ? '♥' : '♡' ?></a>
+        <button type="button" class="kp-btn-tel" data-reveal-phone="<?= h($phone) ?>" data-ad-id="<?= (int)$id ?>">📞 Telefon</button>
     <?php endif; ?>
 </div>
 
