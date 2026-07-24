@@ -280,13 +280,4 @@ require __DIR__ . '/partials/layout-start.php';
     </main>
 </div>
 
-<div class="kp-sticky-contact sticky-contact">
-    <?php if (!empty($site['enable_messages'])): ?>
-        <a class="kp-btn-msg" href="<?= h($msgHref) ?>">💬 Poruka</a>
-    <?php endif; ?>
-    <?php if ($phone !== ''): ?>
-        <button type="button" class="kp-btn-tel" data-reveal-phone="<?= h($phone) ?>" data-ad-id="<?= (int)$id ?>">📞 Telefon</button>
-    <?php endif; ?>
-</div>
-
 <?php require __DIR__ . '/partials/layout-end.php'; ?>

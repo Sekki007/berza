@@ -411,7 +411,7 @@ body.account-menu-open{overflow:hidden;}
 }
 @media (max-width: 767px) {
   body.page-detail {
-    padding-bottom: calc(var(--mobile-bar-h) + var(--sticky-contact-h) + var(--safe-bottom) + 12px);
+    padding-bottom: calc(var(--mobile-bar-h) + var(--safe-bottom) + 12px);
   }
   #poruka { scroll-margin-top: 88px; scroll-margin-bottom: 160px; }
 
@@ -1207,7 +1207,7 @@ body.page-detail { background: #f0f0f0; }
   width: auto;
   min-height: var(--touch-min);
 }
-.page-detail { padding-bottom: 130px; }
+.page-detail { padding-bottom: 80px; }
 .kp-desktop-only-sidebar { display: none !important; }
 .kp-msg-form .form-group { margin-bottom: 10px; }
 
