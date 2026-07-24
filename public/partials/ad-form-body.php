@@ -211,12 +211,14 @@
                         </div>
                     </div>
                     <div class="form-group">
-                        <label class="check-inline">
-                            <input type="checkbox" name="has_warranty" value="1" data-warranty-toggle <?= !empty($ad['has_warranty']) ? 'checked' : '' ?>>
-                            Garancija
-                        </label>
-                        <div class="warranty-months" data-warranty-months <?= empty($ad['has_warranty']) ? 'hidden' : '' ?>>
-                            <input type="number" name="warranty_months" min="1" max="60" inputmode="numeric" value="<?= !empty($ad['warranty_months']) ? (int)$ad['warranty_months'] : '' ?>" placeholder="Broj meseci">
+                        <div class="warranty-row">
+                            <label class="check-inline">
+                                <input type="checkbox" name="has_warranty" value="1" data-warranty-toggle <?= !empty($ad['has_warranty']) ? 'checked' : '' ?>>
+                                <span>Garancija</span>
+                            </label>
+                            <div class="warranty-months" data-warranty-months <?= empty($ad['has_warranty']) ? 'hidden' : '' ?>>
+                                <input type="number" name="warranty_months" min="1" max="60" inputmode="numeric" value="<?= !empty($ad['warranty_months']) ? (int)$ad['warranty_months'] : '' ?>" placeholder="Broj meseci">
+                            </div>
                         </div>
                     </div>
                     <div class="form-group">
@@ -282,12 +284,14 @@
                     <?php renderChipGroupList('supported_brands', $phoneBrands, $supportedBrandsSel); ?>
                 </div>
                 <div class="form-group">
-                    <label class="check-inline">
-                        <input type="checkbox" name="has_work_warranty" value="1" data-work-warranty-toggle <?= !empty($ad['has_work_warranty']) ? 'checked' : '' ?>>
-                        Garancija na rad
-                    </label>
-                    <div class="warranty-months" data-work-warranty-months <?= empty($ad['has_work_warranty']) ? 'hidden' : '' ?>>
-                        <input type="number" name="work_warranty_months" min="1" max="60" value="<?= !empty($ad['work_warranty_months']) ? (int)$ad['work_warranty_months'] : '' ?>" placeholder="Broj meseci">
+                    <div class="warranty-row">
+                        <label class="check-inline">
+                            <input type="checkbox" name="has_work_warranty" value="1" data-work-warranty-toggle <?= !empty($ad['has_work_warranty']) ? 'checked' : '' ?>>
+                            <span>Garancija na rad</span>
+                        </label>
+                        <div class="warranty-months" data-work-warranty-months <?= empty($ad['has_work_warranty']) ? 'hidden' : '' ?>>
+                            <input type="number" name="work_warranty_months" min="1" max="60" value="<?= !empty($ad['work_warranty_months']) ? (int)$ad['work_warranty_months'] : '' ?>" placeholder="Broj meseci">
+                        </div>
                     </div>
                 </div>
                 <div class="form-group">
