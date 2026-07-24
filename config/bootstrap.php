@@ -609,11 +609,6 @@ function getPublicAds(array $filters = []): array
     $location = trim((string)($filters['location'] ?? ''));
     $condition = trim((string)($filters['condition'] ?? ''));
     $categoryGroup = trim((string)($filters['category_group'] ?? ''));
-    $storage = trim((string)($filters['storage'] ?? ''));
-    $listingType = trim((string)($filters['listing_type'] ?? ''));
-    $equipmentType = trim((string)($filters['equipment_type'] ?? ''));
-    $onlyPriced = !empty($filters['only_priced']);
-    $onlyPhotos = !empty($filters['only_photos']);
     $includeSold = !empty($filters['include_sold']);
 
     $ads = array_filter(getAllAds(), static fn($ad) => (int)($ad['is_active'] ?? 0) === 1);
@@ -688,38 +683,6 @@ function getPublicAds(array $filters = []): array
 
     if ($condition !== '') {
         $ads = array_filter($ads, static fn($ad) => (string)($ad['condition_state'] ?? '') === $condition);
-    }
-
-    if ($storage !== '') {
-        $s = mb_strtolower($storage);
-        $ads = array_filter($ads, static function ($ad) use ($s) {
-            return mb_strtolower((string)($ad['storage'] ?? '')) === $s;
-        });
-    }
-
-    if ($listingType !== '' && in_array($listingType, ['sell', 'buy', 'trade', 'service'], true)) {
-        $ads = array_filter($ads, static function ($ad) use ($listingType) {
-            $lt = normalizeListingType((string)($ad['listing_type'] ?? 'sell'), getAdType($ad));
-            return $lt === $listingType;
-        });
-    }
-
-    if ($equipmentType !== '') {
-        $eq = mb_strtolower($equipmentType);
-        $ads = array_filter($ads, static function ($ad) use ($eq) {
-            return mb_strtolower((string)($ad['equipment_type'] ?? '')) === $eq;
-        });
-    }
-
-    if ($onlyPriced) {
-        $ads = array_filter($ads, static fn($ad) => adPriceType($ad) === 'fixed' && adPriceEur($ad) > 0);
-    }
-
-    if ($onlyPhotos) {
-        $ads = array_filter($ads, static function ($ad) {
-            $imgs = $ad['images'] ?? [];
-            return is_array($imgs) && $imgs !== [];
-        });
     }
 
     $sort = (string)($filters['sort'] ?? 'newest');

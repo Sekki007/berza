@@ -322,9 +322,7 @@ body.account-menu-open{overflow:hidden;}
 .filter-drawer.open{transform:translateY(0);} .filter-drawer-head{display:flex;justify-content:space-between;align-items:center;padding:16px;border-bottom:1px solid var(--border);position:sticky;top:0;background:#fff;}
 .filter-drawer-close{background:none;border:none;font-size:24px;cursor:pointer;color:var(--text-muted);} .filter-drawer-body{padding:16px;}
 .filter-box{margin-bottom:16px;} .filter-head{font-weight:bold;font-size:13px;margin-bottom:10px;color:var(--text);}
-.filter-body label,.filter-check{display:flex;align-items:center;gap:8px;font-size:14px;padding:8px 0;cursor:pointer;}
-.filter-body input[type="checkbox"],.filter-check input[type="checkbox"]{width:18px;height:18px;accent-color:var(--kp-green);flex-shrink:0;}
-.filter-check{margin-bottom:2px;color:var(--text);}
+.filter-body label{display:flex;align-items:center;gap:8px;font-size:14px;padding:8px 0;cursor:pointer;} .filter-body input[type="checkbox"]{width:18px;height:18px;accent-color:var(--kp-green);}
 .filter-apply{width:100%;padding:14px;background:var(--kp-green);color:#fff;border:none;border-radius:4px;font-size:15px;font-weight:bold;cursor:pointer;}
 .detail-gallery,.detail-card,.form-card,.page-card{background:#fff;border:1px solid var(--border);border-radius:4px;}
 .detail-gallery{margin-bottom:10px;overflow:hidden;} .detail-main-img{position:relative;height:240px;background:#f5f5f5;display:flex;align-items:center;justify-content:center;border-bottom:1px solid var(--border-light);}
