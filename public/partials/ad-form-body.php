@@ -165,14 +165,7 @@
                     </div>
                     <div class="form-group">
                         <label>Model</label>
-                        <input name="model" id="ad-model" list="model-list" value="<?= h((string)$ad['model']) ?>" placeholder="npr. iPhone 13 Pro Max" autocomplete="off">
-                        <datalist id="model-list">
-                            <?php foreach ($cfg['groups'] as $group): ?>
-                                <?php foreach ($group['models'] ?? [] as $m): ?>
-                                    <option value="<?= h($m) ?>">
-                                <?php endforeach; ?>
-                            <?php endforeach; ?>
-                        </datalist>
+                        <input name="model" id="ad-model" value="<?= h((string)$ad['model']) ?>" placeholder="npr. iPhone 13 Pro Max" autocomplete="off">
                     </div>
                 </div>
                 <div class="form-row">
