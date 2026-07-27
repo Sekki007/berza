@@ -315,9 +315,6 @@ function updateUserProfile(int $userId, array $data): bool
         if (array_key_exists('notify_email', $data)) {
             $user['notify_email'] = !empty($data['notify_email']);
         }
-        if (array_key_exists('notify_whatsapp', $data)) {
-            $user['notify_whatsapp'] = !empty($data['notify_whatsapp']);
-        }
         writeJsonFile('users.json', $users);
         $sessionId = (int)($_SESSION['user']['id'] ?? 0);
         if ($sessionId === $userId) {
@@ -327,9 +324,6 @@ function updateUserProfile(int $userId, array $data): bool
             }
             if (array_key_exists('notify_email', $user)) {
                 $_SESSION['user']['notify_email'] = $user['notify_email'];
-            }
-            if (array_key_exists('notify_whatsapp', $user)) {
-                $_SESSION['user']['notify_whatsapp'] = $user['notify_whatsapp'];
             }
         }
         return true;
@@ -1000,7 +994,6 @@ require_once __DIR__ . '/promotion.php';
 require_once __DIR__ . '/sms.php';
 require_once __DIR__ . '/trust.php';
 require_once __DIR__ . '/otp.php';
-require_once __DIR__ . '/whatsapp.php';
 require_once __DIR__ . '/saved_searches.php';
 require_once __DIR__ . '/compare.php';
 require_once __DIR__ . '/ad_stats.php';
