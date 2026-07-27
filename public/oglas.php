@@ -203,9 +203,15 @@ $contactBlock = static function (string $formId = 'poruka') use (
             <div class="filter-body">
                 <select class="filter-select" name="type">
                     <option value="">Svi tipovi oglasa</option>
-                    <option value="telefon" <?= $type === 'telefon' ? 'selected' : '' ?>>Telefoni</option>
-                    <option value="delovi" <?= $type === 'delovi' ? 'selected' : '' ?>>Delovi</option>
+                    <option value="telefon" <?= $type === 'telefon' ? 'selected' : '' ?>>Uređaji</option>
+                    <option value="delovi" <?= $type === 'delovi' ? 'selected' : '' ?>>Oprema</option>
                     <option value="servis" <?= $type === 'servis' ? 'selected' : '' ?>>Servisne usluge</option>
+                </select>
+                <select class="filter-select" name="device_type">
+                    <option value="">Tip uređaja (sve)</option>
+                    <?php foreach (adFormSchema()['device_types'] as $dtKey => $dtLabel): ?>
+                        <option value="<?= h($dtKey) ?>" <?= getAdDeviceType($ad) === $dtKey ? 'selected' : '' ?>><?= h($dtLabel) ?></option>
+                    <?php endforeach; ?>
                 </select>
                 <?php if ($adBrand !== ''): ?>
                     <input type="hidden" name="brand" value="<?= h($adBrand) ?>">
@@ -246,7 +252,7 @@ $contactBlock = static function (string $formId = 'poruka') use (
             <?php else: ?>
                 <div class="kp-gallery-slide">
                     <div class="<?= $type === 'telefon' ? 'phone-silhouette' : 'parts-icon' ?>" style="width:90px;height:160px;">
-                        <?= $type === 'telefon' ? '' : strtoupper(adTypeLabel($type)) ?>
+                        <?= $type === 'telefon' ? '' : strtoupper(adCategoryLabel($ad)) ?>
                     </div>
                 </div>
             <?php endif; ?>
@@ -341,7 +347,7 @@ $contactBlock = static function (string $formId = 'poruka') use (
             <a class="kp-card kp-cat-chip" href="/index.php?type=<?= urlencode($type) ?>">
                 <div>
                     <span class="kp-cat-name"><?= h($adCategory) ?></span>
-                    <span class="kp-cat-path"><?= h(adTypeLabel($type)) ?><?= $adBrand !== '' ? ' · ' . h($adBrand) : '' ?></span>
+                    <span class="kp-cat-path"><?= h(adCategoryLabel($ad)) ?><?= $adBrand !== '' ? ' · ' . h($adBrand) : '' ?></span>
                 </div>
                 <span class="kp-cat-chevron">›</span>
             </a>
@@ -384,7 +390,7 @@ $contactBlock = static function (string $formId = 'poruka') use (
             <?php $contactBlock('poruka-desktop'); ?>
             <div class="kp-card kp-detail-browse">
                 <div class="filter-head" style="margin:0 0 10px;">Brza pretraga</div>
-                <a class="kp-browse-link" href="/index.php?type=<?= urlencode($type) ?>"><?= h(adTypeLabel($type)) ?></a>
+                <a class="kp-browse-link" href="/index.php?<?= h(http_build_query(array_filter(['type' => $type, 'device_type' => getAdDeviceType($ad) ?: null]))) ?>"><?= h(adCategoryLabel($ad)) ?></a>
                 <?php if ($adBrand !== ''): ?>
                     <a class="kp-browse-link" href="/index.php?brand=<?= urlencode($adBrand) ?>"><?= h($adBrand) ?></a>
                 <?php endif; ?>

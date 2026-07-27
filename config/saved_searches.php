@@ -37,6 +37,10 @@ function findSavedSearch(int $id): ?array
 
 function savedSearchFiltersFromInput(array $input): array
 {
+    $deviceType = trim((string)($input['device_type'] ?? ''));
+    if ($deviceType !== '' && !in_array($deviceType, allowedDeviceTypes(), true)) {
+        $deviceType = '';
+    }
     $filters = [
         'q' => trim((string)($input['q'] ?? '')),
         'brand' => trim((string)($input['brand'] ?? '')),
@@ -44,6 +48,7 @@ function savedSearchFiltersFromInput(array $input): array
         'location' => trim((string)($input['location'] ?? '')),
         'condition' => trim((string)($input['condition'] ?? '')),
         'type' => trim((string)($input['type'] ?? '')),
+        'device_type' => $deviceType,
         'min_price' => trim((string)($input['min_price'] ?? '')),
         'max_price' => trim((string)($input['max_price'] ?? '')),
         'category_group' => trim((string)($input['category_group'] ?? '')),
@@ -61,6 +66,10 @@ function savedSearchToPublicFilters(array $search): array
         $f = [];
     }
     $type = trim((string)($f['type'] ?? ''));
+    $deviceType = trim((string)($f['device_type'] ?? ''));
+    if ($deviceType !== '' && !in_array($deviceType, allowedDeviceTypes(), true)) {
+        $deviceType = '';
+    }
     return [
         'q' => trim((string)($f['q'] ?? '')),
         'brand' => trim((string)($f['brand'] ?? '')),
@@ -70,6 +79,7 @@ function savedSearchToPublicFilters(array $search): array
         'category_group' => trim((string)($f['category_group'] ?? '')),
         'min_price' => trim((string)($f['min_price'] ?? '')),
         'max_price' => trim((string)($f['max_price'] ?? '')),
+        'device_type' => $deviceType,
         'types' => $type !== '' ? [$type] : [],
         'sort' => 'newest',
     ];
@@ -88,6 +98,10 @@ function savedSearchLabel(array $search): string
         if ($v !== '') {
             $parts[] = $v;
         }
+    }
+    $dt = trim((string)($f['device_type'] ?? ''));
+    if ($dt !== '' && in_array($dt, allowedDeviceTypes(), true)) {
+        $parts[] = deviceTypeLabel($dt);
     }
     $min = trim((string)($f['min_price'] ?? ''));
     $max = trim((string)($f['max_price'] ?? ''));

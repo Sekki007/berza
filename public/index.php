@@ -15,8 +15,13 @@ $minPrice = trim((string)($_GET['min_price'] ?? ''));
 $condition = trim((string)($_GET['condition'] ?? ''));
 $categoryGroup = trim((string)($_GET['category_group'] ?? ''));
 $type = trim((string)($_GET['type'] ?? ''));
+$deviceType = trim((string)($_GET['device_type'] ?? ''));
+$schema = adFormSchema();
 if (!in_array($type, ['telefon', 'delovi', 'servis'], true)) {
     $type = '';
+}
+if ($deviceType !== '' && !in_array($deviceType, allowedDeviceTypes(), true)) {
+    $deviceType = '';
 }
 $sort = trim((string)($_GET['sort'] ?? 'newest'));
 $page = max(1, (int)($_GET['page'] ?? 1));
@@ -31,6 +36,7 @@ $filters = [
     'min_price' => $minPrice,
     'condition' => $condition,
     'category_group' => $categoryGroup,
+    'device_type' => $deviceType,
     'types' => $type !== '' ? [$type] : [],
     'sort' => $sort,
 ];
@@ -54,6 +60,7 @@ $queryBase = array_filter([
     'min_price' => $minPrice,
     'condition' => $condition,
     'category_group' => $categoryGroup,
+    'device_type' => $deviceType,
     'type' => $type,
     'sort' => $sort,
 ], static fn($v) => $v !== '');
@@ -70,15 +77,22 @@ require __DIR__ . '/partials/layout-start.php';
         <form method="GET" class="filter-box">
             <div class="filter-head">Filteri</div>
             <div class="filter-body">
-                <?php foreach ($queryBase as $k => $v): if (in_array($k, ['sort', 'type', 'brand', 'location', 'condition', 'min_price', 'max_price', 'model'], true)) continue; ?>
+                <?php foreach ($queryBase as $k => $v): if (in_array($k, ['sort', 'type', 'device_type', 'brand', 'location', 'condition', 'min_price', 'max_price', 'model'], true)) continue; ?>
                     <input type="hidden" name="<?= h($k) ?>" value="<?= h((string)$v) ?>">
                 <?php endforeach; ?>
 
                 <select class="filter-select" name="type">
                     <option value="">Svi tipovi oglasa</option>
-                    <option value="telefon" <?= $type === 'telefon' ? 'selected' : '' ?>>Telefoni</option>
-                    <option value="delovi" <?= $type === 'delovi' ? 'selected' : '' ?>>Delovi</option>
+                    <option value="telefon" <?= $type === 'telefon' ? 'selected' : '' ?>>Uređaji</option>
+                    <option value="delovi" <?= $type === 'delovi' ? 'selected' : '' ?>>Oprema</option>
                     <option value="servis" <?= $type === 'servis' ? 'selected' : '' ?>>Servisne usluge</option>
+                </select>
+
+                <select class="filter-select" name="device_type">
+                    <option value="">Tip uređaja (sve)</option>
+                    <?php foreach ($schema['device_types'] as $dtKey => $dtLabel): ?>
+                        <option value="<?= h($dtKey) ?>" <?= $deviceType === $dtKey ? 'selected' : '' ?>><?= h($dtLabel) ?></option>
+                    <?php endforeach; ?>
                 </select>
 
                 <select class="filter-select" name="brand">
@@ -153,7 +167,7 @@ require __DIR__ . '/partials/layout-start.php';
             <span class="results-count">Pronađeno: <strong data-results-count><?= (int)$pagination['total'] ?></strong> oglasa</span>
             <div class="results-bar-right">
                 <?php
-                $hasFilters = $search !== '' || $brand !== '' || $model !== '' || $location !== '' || $condition !== '' || $type !== '' || $minPrice !== '' || $maxPrice !== '' || $categoryGroup !== '';
+                $hasFilters = $search !== '' || $brand !== '' || $model !== '' || $location !== '' || $condition !== '' || $type !== '' || $deviceType !== '' || $minPrice !== '' || $maxPrice !== '' || $categoryGroup !== '';
                 if ($hasFilters):
                 ?>
                     <?php if (isLoggedIn()): ?>
@@ -165,6 +179,7 @@ require __DIR__ . '/partials/layout-start.php';
                             <input type="hidden" name="location" value="<?= h($location) ?>">
                             <input type="hidden" name="condition" value="<?= h($condition) ?>">
                             <input type="hidden" name="type" value="<?= h($type) ?>">
+                            <input type="hidden" name="device_type" value="<?= h($deviceType) ?>">
                             <input type="hidden" name="min_price" value="<?= h($minPrice) ?>">
                             <input type="hidden" name="max_price" value="<?= h($maxPrice) ?>">
                             <input type="hidden" name="category_group" value="<?= h($categoryGroup) ?>">
@@ -212,9 +227,15 @@ require __DIR__ . '/partials/layout-start.php';
             <input type="hidden" name="q" value="<?= h($search) ?>">
             <select class="filter-select" name="type">
                 <option value="">Svi tipovi oglasa</option>
-                <option value="telefon" <?= $type === 'telefon' ? 'selected' : '' ?>>Telefoni</option>
-                <option value="delovi" <?= $type === 'delovi' ? 'selected' : '' ?>>Delovi</option>
+                <option value="telefon" <?= $type === 'telefon' ? 'selected' : '' ?>>Uređaji</option>
+                <option value="delovi" <?= $type === 'delovi' ? 'selected' : '' ?>>Oprema</option>
                 <option value="servis" <?= $type === 'servis' ? 'selected' : '' ?>>Servisne usluge</option>
+            </select>
+            <select class="filter-select" name="device_type">
+                <option value="">Tip uređaja (sve)</option>
+                <?php foreach ($schema['device_types'] as $dtKey => $dtLabel): ?>
+                    <option value="<?= h($dtKey) ?>" <?= $deviceType === $dtKey ? 'selected' : '' ?>><?= h($dtLabel) ?></option>
+                <?php endforeach; ?>
             </select>
             <select class="filter-select" name="sort">
                 <option value="newest" <?= $sort === 'newest' ? 'selected' : '' ?>>Najnovije</option>

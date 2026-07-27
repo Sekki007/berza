@@ -365,8 +365,8 @@ function adTypeLabel(string $type): string
 {
     return match ($type) {
         'servis' => 'Servis',
-        'delovi' => 'Deo',
-        default => 'Telefon',
+        'delovi' => 'Oprema',
+        default => 'Uređaj',
     };
 }
 
@@ -609,6 +609,10 @@ function getPublicAds(array $filters = []): array
     $location = trim((string)($filters['location'] ?? ''));
     $condition = trim((string)($filters['condition'] ?? ''));
     $categoryGroup = trim((string)($filters['category_group'] ?? ''));
+    $deviceType = trim((string)($filters['device_type'] ?? ''));
+    if ($deviceType !== '' && !in_array($deviceType, allowedDeviceTypes(), true)) {
+        $deviceType = '';
+    }
     $includeSold = !empty($filters['include_sold']);
 
     $ads = array_filter(getAllAds(), static fn($ad) => (int)($ad['is_active'] ?? 0) === 1);
@@ -658,6 +662,12 @@ function getPublicAds(array $filters = []): array
 
     if (is_array($types) && $types !== []) {
         $ads = array_filter($ads, static fn($ad) => in_array(getAdType($ad), $types, true));
+    }
+
+    if ($deviceType !== '') {
+        $ads = array_filter($ads, static function ($ad) use ($deviceType) {
+            return getAdType($ad) === 'telefon' && getAdDeviceType($ad) === $deviceType;
+        });
     }
 
     if ($maxPrice !== null || $minPrice !== null) {

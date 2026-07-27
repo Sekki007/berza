@@ -55,16 +55,16 @@
                         <label class="form-type-option <?= $currentType === 'telefon' ? 'selected' : '' ?>">
                             <input data-form-type type="radio" name="ad_type" value="telefon" <?= $currentType === 'telefon' ? 'checked' : '' ?>>
                             <span>
-                                <strong>Telefon</strong>
-                                <small class="hide-mobile">Ceo uređaj</small>
+                                <strong>Uređaj</strong>
+                                <small class="hide-mobile">Telefon, tablet, sat…</small>
                                 <small class="show-mobile">Uređaj</small>
                             </span>
                         </label>
                         <label class="form-type-option <?= $currentType === 'delovi' ? 'selected-parts' : '' ?>">
                             <input data-form-type type="radio" name="ad_type" value="delovi" <?= $currentType === 'delovi' ? 'checked' : '' ?>>
                             <span>
-                                <strong>Delovi</strong>
-                                <small class="hide-mobile">Oprema i delovi</small>
+                                <strong>Oprema</strong>
+                                <small class="hide-mobile">Delovi i oprema</small>
                                 <small class="show-mobile">Oprema</small>
                             </span>
                         </label>
@@ -144,7 +144,16 @@
             </section>
 
             <section class="ad-form-section" data-panel="telefon" <?= $currentType !== 'telefon' ? 'hidden' : '' ?>>
-                <h3 class="ad-form-section-title">2. Detalji telefona</h3>
+                <h3 class="ad-form-section-title">2. Detalji uređaja</h3>
+                <?php $currentDeviceType = getAdDeviceType($ad) ?: 'phone'; ?>
+                <div class="form-group">
+                    <label>Tip uređaja *</label>
+                    <select name="device_type">
+                        <?php foreach ($schema['device_types'] as $dtKey => $dtLabel): ?>
+                            <option value="<?= h($dtKey) ?>" <?= $currentDeviceType === $dtKey ? 'selected' : '' ?>><?= h($dtLabel) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label>Brend</label>

@@ -35,6 +35,13 @@ function adFormSchema(): array
             'Rezervni delovi',
             'Ostalo',
         ],
+        'device_types' => [
+            'phone' => 'Telefon',
+            'tablet' => 'Tablet',
+            'watch' => 'Pametni sat',
+            'earbuds' => 'Slušalice / AirPods',
+            'other' => 'Ostalo',
+        ],
         'parts_conditions' => ['Novo', 'Polovno'],
         'originality_options' => ['Original', 'Kopija/A klasa', 'Univerzalno'],
         'service_types' => [
@@ -88,6 +95,45 @@ function listingTypeLabel(array $ad): string
     return (string)($schema['listing_types'][$key] ?? 'Prodaja');
 }
 
+/**
+ * @return list<string>
+ */
+function allowedDeviceTypes(): array
+{
+    return array_keys(adFormSchema()['device_types']);
+}
+
+function normalizeDeviceType(string $type): string
+{
+    $type = strtolower(trim($type));
+    return in_array($type, allowedDeviceTypes(), true) ? $type : 'phone';
+}
+
+function getAdDeviceType(array $ad): string
+{
+    if (getAdType($ad) !== 'telefon') {
+        return '';
+    }
+    return normalizeDeviceType((string)($ad['device_type'] ?? 'phone'));
+}
+
+function deviceTypeLabel(string $type): string
+{
+    $schema = adFormSchema();
+    $key = normalizeDeviceType($type);
+    return (string)($schema['device_types'][$key] ?? 'Telefon');
+}
+
+/** Javni label kategorije (Tablet, Deo, Servis…). */
+function adCategoryLabel(array $ad): string
+{
+    $type = getAdType($ad);
+    if ($type === 'telefon') {
+        return deviceTypeLabel(getAdDeviceType($ad));
+    }
+    return adTypeLabel($type);
+}
+
 /** @return list<string> */
 function normalizeStringList($value, array $allowed = []): array
 {
@@ -133,6 +179,7 @@ function parseAdFormExtras(array $post, string $adType): array
         'listing_type' => $listingType,
         'contact_methods' => $contactMethods,
         'pickup_methods' => $pickupMethods,
+        'device_type' => '',
         'ram' => '',
         'color' => '',
         'sim_status' => '',
@@ -151,6 +198,7 @@ function parseAdFormExtras(array $post, string $adType): array
     ];
 
     if ($adType === 'telefon') {
+        $extras['device_type'] = normalizeDeviceType((string)($post['device_type'] ?? 'phone'));
         $extras['ram'] = in_array((string)($post['ram'] ?? ''), $schema['ram_options'], true)
             ? (string)$post['ram'] : trim((string)($post['ram'] ?? ''));
         $extras['color'] = trim((string)($post['color'] ?? ''));
@@ -212,6 +260,7 @@ function adAttributeRows(array $ad): array
     $add('Tip oglasa', listingTypeLabel($ad));
 
     if ($type === 'telefon') {
+        $add('Tip uređaja', deviceTypeLabel(getAdDeviceType($ad)));
         $add('Brend', $ad['brand'] ?? '');
         $add('Model', $ad['model'] ?? '');
         $add('Stanje', $ad['condition_state'] ?? '');

@@ -51,6 +51,7 @@ function adSearchHaystack(array $ad): string
         $brands,
         listingTypeLabel($ad),
         adTypeLabel(getAdType($ad)),
+        getAdType($ad) === 'telefon' ? deviceTypeLabel(getAdDeviceType($ad)) : '',
     ]));
 }
 

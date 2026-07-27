@@ -508,7 +508,7 @@ require __DIR__ . '/partials/layout-start.php';
                                 <div class="account-ad-main">
                                     <a href="/oglas.php?id=<?= (int)$ad['id'] ?>" class="account-ad-title"><?= h((string)$ad['title']) ?></a>
                                     <div class="account-ad-meta">
-                                        <span><?= h(adTypeLabel($type)) ?></span>
+                                        <span><?= h(adCategoryLabel($ad)) ?></span>
                                         <span><?= h(formatAdPrice($ad)) ?></span>
                                         <span class="account-ad-status <?= $statusClass ?>"><?= h($statusLabel) ?></span>
                                         <?php if ($daysLeft !== null && (int)($ad['is_active'] ?? 0) === 1 && empty($ad['is_sold'])): ?>
@@ -566,13 +566,13 @@ require __DIR__ . '/partials/layout-start.php';
                                     <?php if ($img): ?>
                                         <img src="<?= h($img) ?>" alt="">
                                     <?php else: ?>
-                                        <span><?= h(mb_strtoupper(mb_substr(adTypeLabel($type), 0, 1))) ?></span>
+                                        <span><?= h(mb_strtoupper(mb_substr(adCategoryLabel($ad), 0, 1))) ?></span>
                                     <?php endif; ?>
                                 </div>
                                 <div class="account-ad-main">
                                     <a href="/oglas.php?id=<?= (int)$ad['id'] ?>" class="account-ad-title"><?= h((string)$ad['title']) ?></a>
                                     <div class="account-ad-meta">
-                                        <span><?= h(adTypeLabel($type)) ?></span>
+                                        <span><?= h(adCategoryLabel($ad)) ?></span>
                                         <span><?= h(formatAdPrice($ad)) ?></span>
                                         <span><?= h((string)$ad['location']) ?></span>
                                         <span class="account-ad-status <?= $statusClass ?>"><?= h($statusLabel) ?></span>

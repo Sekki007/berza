@@ -24,7 +24,7 @@ return [
             'models' => ['Galaxy S21 Ultra', 'Galaxy S22 Ultra', 'Galaxy S23 Ultra', 'Galaxy S24 Ultra', 'Galaxy A52', 'Galaxy A54'],
         ],
         'phones' => [
-            'label' => 'Telefoni',
+            'label' => 'Uređaji',
             'ad_type' => 'telefon',
             'brand' => '',
             'models' => [],

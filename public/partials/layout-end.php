@@ -43,8 +43,8 @@ if ($user) {
                 <div class="site-footer-col">
                     <h4>Istraži</h4>
                     <a href="/index.php">Početna</a>
-                    <a href="/index.php?type=telefon">Telefoni</a>
-                    <a href="/index.php?type=delovi">Delovi</a>
+                    <a href="/index.php?type=telefon">Uređaji</a>
+                    <a href="/index.php?type=delovi">Oprema</a>
                     <a href="/index.php?type=servis">Servis</a>
                 </div>
                 <div class="site-footer-col">

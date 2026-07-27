@@ -26,7 +26,7 @@ $cardShopUrl = $cardSeller ? shopUrl((string)$cardSeller['username']) : '';
                     <img src="<?= h($img) ?>" alt="" loading="lazy" class="ad-thumb-img">
                 <?php else: ?>
                     <div class="<?= $type === 'telefon' ? 'phone-silhouette' : 'parts-icon' ?>">
-                        <?= $type === 'telefon' ? '' : strtoupper(adTypeLabel($type)) ?>
+                        <?= $type === 'telefon' ? '' : strtoupper(adCategoryLabel($ad)) ?>
                     </div>
                 <?php endif; ?>
                 <?php if ($isPromoted): ?><span class="ad-badge-promo">TOP</span><?php endif; ?>
@@ -70,7 +70,7 @@ $cardShopUrl = $cardSeller ? shopUrl((string)$cardSeller['username']) : '';
                     <p class="ad-desc"><?= h((string)($ad['description'] ?? '')) ?></p>
                     <div class="ad-tags">
                         <span class="tag <?= $type === 'telefon' ? 'tag-cat-phone' : ($type === 'delovi' ? 'tag-cat-parts' : 'tag-cat-service') ?>">
-                            <?= h(adTypeLabel($type)) ?>
+                            <?= h(adCategoryLabel($ad)) ?>
                         </span>
                         <?php if (!empty($ad['badge'])): ?>
                             <span class="tag tag-green"><?= h((string)$ad['badge']) ?></span>

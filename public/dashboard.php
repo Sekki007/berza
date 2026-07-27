@@ -51,7 +51,7 @@ require __DIR__ . '/partials/layout-start.php';
                 <?php foreach ($stats['latestAds'] as $ad): ?>
                     <tr>
                         <td><a href="/oglas.php?id=<?= (int)$ad['id'] ?>"><?= h((string)$ad['title']) ?></a></td>
-                        <td><?= h(adTypeLabel(getAdType($ad))) ?></td>
+                        <td><?= h(adCategoryLabel($ad)) ?></td>
                         <td><?= h(formatAdPrice($ad)) ?></td>
                         <td><?= h((string)$ad['location']) ?></td>
                         <td><?= h((string)$ad['created_at']) ?></td>

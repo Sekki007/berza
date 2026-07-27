@@ -28,6 +28,7 @@ $ad = [
     'has_warranty' => 0,
     'warranty_months' => null,
     'accessories' => [],
+    'device_type' => 'phone',
     'equipment_type' => '',
     'compatible_models' => '',
     'originality' => '',

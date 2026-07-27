@@ -89,7 +89,7 @@ require __DIR__ . '/partials/layout-start.php';
                         <?php
                         $rows = [
                             'Cena' => static fn($ad) => formatAdPrice($ad),
-                            'Tip' => static fn($ad) => adTypeLabel(getAdType($ad)),
+                            'Tip' => static fn($ad) => adCategoryLabel($ad),
                             'Brend' => static fn($ad) => (string)($ad['brand'] ?? '—'),
                             'Model' => static fn($ad) => (string)($ad['model'] ?? '—'),
                             'Stanje' => static fn($ad) => (string)($ad['condition_state'] ?? '—'),
