@@ -131,7 +131,8 @@ function emailNotificationsEnabled(): bool
 }
 
 /**
- * In-app always; email when global + user preference + valid email.
+ * In-app always; email when global + user preference + valid email;
+ * WhatsApp for selected types when opt-in + verified phone.
  */
 function notifyUser(int $userId, string $type, string $title, string $body, string $link = '', bool $emailToo = true): int
 {
@@ -148,6 +149,9 @@ function notifyUser(int $userId, string $type, string $title, string $body, stri
             $emailBody .= "\n\nTelefonBerza";
             sendUserEmail($userId, 'TelefonBerza: ' . $title, $emailBody);
         }
+    }
+    if (function_exists('maybeSendWhatsappNotification')) {
+        maybeSendWhatsappNotification($userId, $type, $title, $body, $link);
     }
     return $id;
 }

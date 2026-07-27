@@ -229,7 +229,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ? trim((string)($_POST['shop_bio'] ?? ''))
         : trim((string)($_POST['shop_bio_private'] ?? $_POST['shop_bio'] ?? ''));
 
-    $ok = updateUserProfile($userId, [
+    $profilePatch = [
         'full_name' => trim((string)($_POST['full_name'] ?? '')),
         'phone' => $phoneInput,
         'email' => trim((string)($_POST['email'] ?? '')),
@@ -240,7 +240,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'account_type' => $accountTypePost,
         'business_kind' => trim((string)($_POST['business_kind'] ?? '')),
         'pib' => trim((string)($_POST['pib'] ?? '')),
-    ]);
+    ];
+    // WhatsApp opt-in samo ako je telefon već potvrđen (disabled checkbox inače briše vrednost).
+    if (isPhoneVerified($profile)) {
+        $profilePatch['notify_whatsapp'] = !empty($_POST['notify_whatsapp']);
+    }
+
+    $ok = updateUserProfile($userId, $profilePatch);
     if (!$ok) {
         setFlash('danger', 'Profil nije ažuriran. Proveri telefon i PIB (9 cifara).');
     } else {
@@ -1045,6 +1051,13 @@ require __DIR__ . '/partials/layout-start.php';
                             <input type="checkbox" name="notify_email" value="1" <?= !isset($profile['notify_email']) || !empty($profile['notify_email']) ? 'checked' : '' ?>>
                             <span>Email obaveštenja (poruke, alerti, istek oglasa)</span>
                         </label>
+                        <label class="profile-check">
+                            <input type="checkbox" name="notify_whatsapp" value="1" <?= !empty($profile['notify_whatsapp']) ? 'checked' : '' ?> <?= empty($phoneOk) ? 'disabled' : '' ?>>
+                            <span>WhatsApp obaveštenja (nova poruka, istek oglasa, alert pretrage)</span>
+                        </label>
+                        <?php if (empty($phoneOk)): ?>
+                            <p class="form-hint">Za WhatsApp obaveštenja prvo potvrdi broj telefona.</p>
+                        <?php endif; ?>
                     </div>
 
                     <div class="profile-actions">

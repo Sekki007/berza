@@ -75,6 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'enable_registration' => (string)($_POST['enable_registration'] ?? '0') === '1',
         'enable_messages' => (string)($_POST['enable_messages'] ?? '0') === '1',
         'enable_whatsapp' => (string)($_POST['enable_whatsapp'] ?? '0') === '1',
+        'enable_whatsapp_notifications' => (string)($_POST['enable_whatsapp_notifications'] ?? '0') === '1',
         'enable_favorites' => (string)($_POST['enable_favorites'] ?? '0') === '1',
         'enable_ad_expiry' => (string)($_POST['enable_ad_expiry'] ?? '0') === '1',
         'ad_max_active_days' => (int)($_POST['ad_max_active_days'] ?? $current['ad_max_active_days'] ?? 30),
@@ -242,9 +243,27 @@ require __DIR__ . '/partials/layout-start.php';
                     <label class="type-chip" style="min-width:auto;flex:none;"><input type="checkbox" name="enable_messages" value="1" <?= !empty($settings['enable_messages']) ? 'checked' : '' ?>> Poruke između korisnika</label>
                     <input type="hidden" name="enable_whatsapp" value="0">
                     <label class="type-chip" style="min-width:auto;flex:none;"><input type="checkbox" name="enable_whatsapp" value="1" <?= !empty($settings['enable_whatsapp']) ? 'checked' : '' ?>> WhatsApp dugme na oglasu</label>
+                    <input type="hidden" name="enable_whatsapp_notifications" value="0">
+                    <label class="type-chip" style="min-width:auto;flex:none;"><input type="checkbox" name="enable_whatsapp_notifications" value="1" <?= !empty($settings['enable_whatsapp_notifications']) ? 'checked' : '' ?>> WhatsApp obaveštenja (TextMeBot)</label>
                     <input type="hidden" name="enable_favorites" value="0">
                     <label class="type-chip" style="min-width:auto;flex:none;"><input type="checkbox" name="enable_favorites" value="1" <?= !empty($settings['enable_favorites']) ? 'checked' : '' ?>> Omiljeni oglasi</label>
                 </div>
+                <p class="form-hint" style="margin-top:8px;">
+                    WhatsApp obaveštenja: nova poruka, istek oglasa, alert pretrage.
+                    Zahteva <code>WHATSAPP_ENABLED=true</code> i <code>WHATSAPP_API_KEY</code> u <code>.env</code>, plus opt-in korisnika i verifikovan telefon.
+                    <?php
+                    $waKey = trim((string)envValue('WHATSAPP_API_KEY', ''));
+                    $waEnv = whatsappNotificationsEnabled();
+                    ?>
+                    Status API:
+                    <?php if ($waEnv): ?>
+                        <strong style="color:var(--kp-green-dark);">spreman</strong>
+                    <?php elseif ($waKey !== ''): ?>
+                        <strong style="color:#b45309;">ključ postoji, ali isključeno (env ili admin)</strong>
+                    <?php else: ?>
+                        <strong style="color:#b91c1c;">nije podešen API ključ</strong>
+                    <?php endif; ?>
+                </p>
 
                 <h3 style="margin-top:22px;">Rok trajanja oglasa</h3>
                 <p class="form-hint">Oglas se automatski deaktivira posle isteka. Prodavač dobija upozorenje na profilu (i opciono email) nekoliko dana ranije.</p>

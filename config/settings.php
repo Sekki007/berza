@@ -26,6 +26,7 @@ function defaultSiteSettings(): array
         'enable_registration' => true,
         'enable_messages' => true,
         'enable_whatsapp' => true,
+        'enable_whatsapp_notifications' => false,
         'enable_favorites' => true,
         'enable_ad_expiry' => true,
         'ad_max_active_days' => 30,
