@@ -12,6 +12,11 @@ $isFav = function_exists('isFavorite') ? isFavorite($adId) : false;
 $favEnabled = !empty(siteSettings()['enable_favorites']);
 $views = (int)($ad['views'] ?? 0);
 $priceOpen = isAdPriceOpen($ad);
+$cardSeller = !empty($ad['created_by']) ? findUserById((int)$ad['created_by']) : null;
+$cardShop = $cardSeller
+    ? getSellerShopName($cardSeller, [$ad])
+    : trim((string)($ad['shop_name'] ?? ''));
+$cardShopUrl = $cardSeller ? shopUrl((string)$cardSeller['username']) : '';
 ?>
 <article class="ad-item kp-list-card <?= $isSold ? 'is-sold ad-sold' : '' ?> <?= $isHighlighted ? 'ad-highlighted' : '' ?>" data-category="<?= h($type) ?>" data-ad-id="<?= $adId ?>">
     <a href="<?= h($adHref) ?>" class="ad-item-link kp-list-link">
@@ -30,6 +35,16 @@ $priceOpen = isAdPriceOpen($ad);
             </div>
             <div class="ad-body kp-list-body">
                 <h2 class="ad-title kp-list-title"><?= h((string)$ad['title']) ?></h2>
+                <?php if ($cardShop !== ''): ?>
+                    <div class="ad-shop kp-list-shop">
+                        <?php if ($cardShopUrl !== ''): ?>
+                            <span class="ad-shop-link" data-shop-url="<?= h($cardShopUrl) ?>"><?= h($cardShop) ?></span>
+                        <?php else: ?>
+                            <?= h($cardShop) ?>
+                        <?php endif; ?>
+                        <?= $cardSeller ? renderSellerBadges($cardSeller) : '' ?>
+                    </div>
+                <?php endif; ?>
                 <div class="ad-loc-line kp-list-loc">
                     <span class="ad-loc"><?= h((string)($ad['location'] ?? '')) ?></span>
                     <span class="kp-deliv-ok" title="Dostava / dogovor">☑</span>

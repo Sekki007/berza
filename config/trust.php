@@ -53,7 +53,11 @@ function renderVerifiedBadge(?array $user): string
     if (!isVerifiedSeller($user)) {
         return '';
     }
-    return '<span class="verified-badge" title="Proveren prodavac">✓ Proveren</span>';
+    return '<span class="verified-badge" title="Proveren prodavac" aria-label="Proveren prodavac">'
+        . '<svg class="verified-badge-icon" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" focusable="false">'
+        . '<circle cx="12" cy="12" r="12" fill="#1d9bf0"/>'
+        . '<path fill="#fff" d="M10.1 15.9 6.7 12.5l1.4-1.4 2 2 5-5.1 1.4 1.4z"/>'
+        . '</svg></span>';
 }
 
 function normalizePib(string $raw): ?string

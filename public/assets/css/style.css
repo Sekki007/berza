@@ -277,7 +277,11 @@ body.account-menu-open{overflow:hidden;}
 .ad-item-link:hover{text-decoration:none;}
 .ad-compare-btn{position:absolute;top:8px;right:8px;z-index:2;padding:5px 8px;font-size:11px;font-weight:bold;border:1px solid var(--border);border-radius:4px;background:rgba(255,255,255,.95);cursor:pointer;font-family:inherit;color:var(--text-muted);}
 .ad-compare-btn.active,.ad-compare-btn:hover{border-color:var(--kp-green);color:var(--kp-green-dark);background:#f3faf4;}
-.verified-badge{display:inline-block;margin-left:6px;padding:2px 7px;border-radius:3px;background:#e8f5e9;color:var(--kp-green-dark);border:1px solid #c8e6c9;font-size:11px;font-weight:bold;vertical-align:middle;white-space:nowrap;}
+.verified-badge{display:inline-flex;align-items:center;justify-content:center;margin-left:4px;padding:0;border:0;background:transparent;vertical-align:middle;line-height:0;flex-shrink:0;}
+.verified-badge-icon{display:block;width:16px;height:16px;}
+.kp-seller-name .verified-badge-icon,
+.shop-title .verified-badge-icon,
+.account-name-badges .verified-badge-icon{width:18px;height:18px;}
 .business-badge{display:inline-block;margin-left:6px;padding:2px 7px;border-radius:3px;font-size:11px;font-weight:bold;vertical-align:middle;white-space:nowrap;}
 .business-badge-shop{background:#e3f2fd;color:#1565c0;border:1px solid #90caf9;}
 .business-badge-service{background:#fff8e1;color:#856404;border:1px solid #ffe082;}
@@ -1048,7 +1052,8 @@ body.page-chat .footer,body.page-chat .site-footer{display:none;}
 .ad-badge-promo { background: var(--kp-yellow); color: var(--text); }
 .ad-badge-sold { background: #333; color: #fff; left: auto; right: 8px; }
 .ad-sold { opacity: 0.75; }
-.ad-shop { font-size: 12px; color: var(--text-muted); margin-bottom: 4px; font-weight: bold; }
+.ad-shop { font-size: 12px; color: var(--text-muted); margin: 2px 0 4px; font-weight: bold; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+.kp-list-shop { font-size: 12px; }
 .detail-img { max-width: 100%; max-height: 100%; object-fit: contain; }
 .detail-meta-line { font-size: 12px; color: var(--text-light); margin-bottom: 10px; }
 .detail-sold { top: 12px; right: 12px; left: auto; }
