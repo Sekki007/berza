@@ -315,8 +315,8 @@ body.account-menu-open{overflow:hidden;}
 .ads-list.view-grid .ad-body{
   padding:10px;display:flex;flex-direction:column;flex:1;gap:6px;min-width:0;
 }
-.ads-list.view-grid .ad-price-row{order:1;margin:0;align-items:flex-start;}
-.ads-list.view-grid .ad-title{order:2;font-size:13px;margin:0;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:calc(1.3em * 2);}
+.ads-list.view-grid .ad-title{order:1;font-size:13px;margin:0;line-height:1.3;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:calc(1.3em * 2);}
+.ads-list.view-grid .ad-price-row{order:2;margin:0;align-items:flex-start;}
 .ads-list.view-grid .ad-shop{order:3;font-size:11px;margin:0;gap:4px;flex-wrap:nowrap;min-width:0;}
 .ads-list.view-grid .ad-loc-line{order:4;margin:0;font-size:11px;color:var(--text-muted);gap:4px;}
 .ads-list.view-grid .ad-tags-compact{order:5;display:flex;margin:0;margin-top:auto;padding-top:2px;}
