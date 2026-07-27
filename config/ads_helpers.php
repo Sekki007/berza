@@ -335,6 +335,52 @@ function whatsappLink(string $phone, string $message): string
     return 'https://wa.me/' . $digits . '?text=' . rawurlencode($message);
 }
 
+/**
+ * Gradovi sa aktivnim oglasima (nisu prodati), sortirani po broju oglasa.
+ * Blaga dnevna rotacija među sličnim gradovima da chipovi nisu uvek isti.
+ *
+ * @return list<string>
+ */
+function getCitiesWithActiveAds(int $limit = 8, string $preferCity = ''): array
+{
+    $limit = max(1, $limit);
+    $counts = [];
+    foreach (getAllAds() as $ad) {
+        if ((int)($ad['is_active'] ?? 0) !== 1 || !empty($ad['is_sold'])) {
+            continue;
+        }
+        $city = trim((string)($ad['location'] ?? ''));
+        if ($city === '') {
+            continue;
+        }
+        $counts[$city] = ($counts[$city] ?? 0) + 1;
+    }
+    if ($counts === []) {
+        return [];
+    }
+
+    $cities = array_keys($counts);
+    $daySeed = (int)date('Ymd');
+    usort($cities, static function (string $a, string $b) use ($counts, $daySeed): int {
+        $ca = $counts[$a] ?? 0;
+        $cb = $counts[$b] ?? 0;
+        if ($ca !== $cb) {
+            return $cb <=> $ca;
+        }
+        return (($daySeed + crc32($a)) % 97) <=> (($daySeed + crc32($b)) % 97);
+    });
+
+    $out = array_slice($cities, 0, $limit);
+    $preferCity = trim($preferCity);
+    if ($preferCity !== '' && isset($counts[$preferCity]) && !in_array($preferCity, $out, true)) {
+        array_unshift($out, $preferCity);
+        $out = array_values(array_unique($out));
+        $out = array_slice($out, 0, $limit);
+    }
+
+    return $out;
+}
+
 function buildFilterQuery(array $params): string
 {
     $filtered = array_filter($params, static fn($v) => $v !== '' && $v !== null && $v !== []);

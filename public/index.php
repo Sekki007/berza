@@ -156,11 +156,16 @@ require __DIR__ . '/partials/layout-start.php';
         <?php endif; ?>
 
         <?php if ($search === '' && $brand === '' && $page === 1): ?>
+            <?php
+            $chipCities = getCitiesWithActiveAds(8, $location);
+            if ($chipCities !== []):
+            ?>
             <div class="quick-city-chips">
-                <?php foreach (array_slice($cfg['cities'], 0, 8) as $city): ?>
+                <?php foreach ($chipCities as $city): ?>
                     <a class="quick-chip <?= $location === $city ? 'active' : '' ?>" href="/index.php?<?= h(buildFilterQuery(array_merge($queryBase, ['location' => $city, 'page' => null]))) ?>"><?= h($city) ?></a>
                 <?php endforeach; ?>
             </div>
+            <?php endif; ?>
         <?php endif; ?>
 
         <div class="results-bar">
