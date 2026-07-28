@@ -40,11 +40,12 @@ $selectedPayments = array_values(array_filter(
 require __DIR__ . '/partials/layout-start.php';
 ?>
 
-<div class="main-wrap">
+<div class="main-wrap storefront-page">
     <main class="content">
         <div class="breadcrumb"><a href="/index.php">Početna</a> › <a href="<?= h($shopLink) ?>">Izlog</a> › Usluge</div>
 
         <section class="form-card storefront-hero">
+            <div class="storefront-kicker">Usluge za kupce</div>
             <h1><?= h((string)($seller['shop_page_title'] ?? $shopName)) ?></h1>
             <?php if (!empty($seller['shop_page_tagline'])): ?>
                 <p class="storefront-tagline"><?= h((string)$seller['shop_page_tagline']) ?></p>
@@ -55,56 +56,61 @@ require __DIR__ . '/partials/layout-start.php';
             <?php endif; ?>
         </section>
 
-        <section class="form-card storefront-grid">
-            <div class="storefront-box">
+        <section class="storefront-layout">
+            <article class="form-card storefront-section">
                 <h2>Podaci o trgovcu</h2>
-                <ul class="storefront-list">
-                    <li><strong>Naziv:</strong> <?= h($shopName) ?></li>
-                    <li><strong>PIB:</strong> <?= h((string)($seller['pib'] ?? '')) ?></li>
+                <div class="storefront-rows">
+                    <div class="storefront-row"><span>Pun naziv trgovca:</span><strong><?= h($shopName) ?></strong></div>
+                    <?php if (!empty($seller['mb'])): ?>
+                        <div class="storefront-row"><span>Matični broj:</span><strong><?= h((string)$seller['mb']) ?></strong></div>
+                    <?php endif; ?>
+                    <div class="storefront-row"><span>PIB:</span><strong><?= h((string)($seller['pib'] ?? '')) ?></strong></div>
                     <?php if (!empty($seller['shop_page_address'])): ?>
-                        <li><strong>Adresa:</strong> <?= h((string)$seller['shop_page_address']) ?></li>
+                        <div class="storefront-row"><span>Adresa sedišta:</span><strong><?= h((string)$seller['shop_page_address']) ?></strong></div>
                     <?php endif; ?>
                     <?php if (!empty($seller['location'])): ?>
-                        <li><strong>Grad:</strong> <?= h((string)$seller['location']) ?></li>
+                        <div class="storefront-row"><span>Grad:</span><strong><?= h((string)$seller['location']) ?></strong></div>
                     <?php endif; ?>
-                </ul>
-            </div>
+                </div>
+            </article>
 
-            <div class="storefront-box">
+            <article class="form-card storefront-section">
                 <h2>Kontakt</h2>
-                <ul class="storefront-list">
+                <div class="storefront-rows">
                     <?php if (!empty($seller['shop_page_contact_email'])): ?>
-                        <li><strong>Email:</strong> <a href="mailto:<?= h((string)$seller['shop_page_contact_email']) ?>"><?= h((string)$seller['shop_page_contact_email']) ?></a></li>
+                        <div class="storefront-row"><span>E-mail:</span><strong><a href="mailto:<?= h((string)$seller['shop_page_contact_email']) ?>"><?= h((string)$seller['shop_page_contact_email']) ?></a></strong></div>
                     <?php elseif (!empty($seller['email'])): ?>
-                        <li><strong>Email:</strong> <a href="mailto:<?= h((string)$seller['email']) ?>"><?= h((string)$seller['email']) ?></a></li>
+                        <div class="storefront-row"><span>E-mail:</span><strong><a href="mailto:<?= h((string)$seller['email']) ?>"><?= h((string)$seller['email']) ?></a></strong></div>
                     <?php endif; ?>
                     <?php if (!empty($seller['phone'])): ?>
-                        <li><strong>Telefon:</strong> <a href="tel:<?= h((string)$seller['phone']) ?>"><?= h((string)$seller['phone']) ?></a></li>
+                        <div class="storefront-row"><span>Telefon:</span><strong><a href="tel:<?= h((string)$seller['phone']) ?>"><?= h((string)$seller['phone']) ?></a></strong></div>
                     <?php endif; ?>
-                </ul>
-            </div>
+                </div>
+            </article>
         </section>
 
-        <?php if (!empty($seller['shop_page_work_hours'])): ?>
-            <section class="form-card storefront-box">
-                <h2>Radno vreme</h2>
-                <div class="storefront-pre"><?= nl2br(h((string)$seller['shop_page_work_hours'])) ?></div>
-            </section>
-        <?php endif; ?>
+        <section class="storefront-layout">
+            <?php if (!empty($seller['shop_page_work_hours'])): ?>
+                <article class="form-card storefront-section">
+                    <h2>Radno vreme</h2>
+                    <div class="storefront-pre"><?= nl2br(h((string)$seller['shop_page_work_hours'])) ?></div>
+                </article>
+            <?php endif; ?>
 
-        <?php if ($selectedPayments): ?>
-            <section class="form-card storefront-box">
-                <h2>Uslovi plaćanja</h2>
-                <div class="storefront-chips">
-                    <?php foreach ($selectedPayments as $pm): ?>
-                        <span class="storefront-chip"><?= h($paymentMap[$pm]) ?></span>
-                    <?php endforeach; ?>
-                </div>
-            </section>
-        <?php endif; ?>
+            <?php if ($selectedPayments): ?>
+                <article class="form-card storefront-section">
+                    <h2>Uslovi plaćanja</h2>
+                    <div class="storefront-chips">
+                        <?php foreach ($selectedPayments as $pm): ?>
+                            <span class="storefront-chip"><?= h($paymentMap[$pm]) ?></span>
+                        <?php endforeach; ?>
+                    </div>
+                </article>
+            <?php endif; ?>
+        </section>
 
         <?php if (!empty($seller['shop_page_description'])): ?>
-            <section class="form-card storefront-box">
+            <section class="form-card storefront-section">
                 <h2>Opis usluga</h2>
                 <div class="storefront-pre"><?= nl2br(h((string)$seller['shop_page_description'])) ?></div>
             </section>

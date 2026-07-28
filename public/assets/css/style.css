@@ -1387,6 +1387,14 @@ a.rep-thumb:hover { opacity: 0.85; text-decoration: underline; }
 .ad-desktop-extra { display: none; }
 
 /* Mini web stranica radnje */
+.storefront-page { max-width: 1000px; }
+.storefront-kicker {
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: #64748b;
+  margin-bottom: 8px;
+}
 .account-check-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -1394,30 +1402,43 @@ a.rep-thumb:hover { opacity: 0.85; text-decoration: underline; }
 }
 .storefront-hero h1 { margin-bottom: 8px; }
 .storefront-tagline { margin: 0 0 8px; color: var(--text-muted); }
-.storefront-grid {
+.storefront-layout {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+  margin-bottom: 12px;
 }
-.storefront-box h2 { margin-bottom: 10px; font-size: 16px; }
-.storefront-list { margin: 0; padding-left: 18px; }
-.storefront-list li { margin-bottom: 6px; }
+.storefront-section h2 { margin-bottom: 12px; font-size: 16px; }
+.storefront-rows { display: grid; gap: 10px; }
+.storefront-row {
+  display: grid;
+  grid-template-columns: 180px 1fr;
+  gap: 12px;
+  align-items: start;
+  padding: 8px 0;
+  border-bottom: 1px dashed #e5e7eb;
+}
+.storefront-row:last-child { border-bottom: none; padding-bottom: 0; }
+.storefront-row span { color: #6b7280; font-size: 13px; }
+.storefront-row strong { color: #111827; font-size: 14px; line-height: 1.45; }
 .storefront-pre {
   white-space: pre-wrap;
   line-height: 1.55;
   color: var(--text);
 }
-.storefront-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.storefront-chips { display: flex; flex-wrap: wrap; gap: 8px; padding-top: 4px; }
 .storefront-chip {
-  background: #eef3f8;
-  border: 1px solid #d7e1ec;
+  background: #f5f7fb;
+  border: 1px solid #dbe3f0;
   border-radius: 999px;
   padding: 6px 10px;
   font-size: 12px;
+  color: #334155;
 }
 @media (max-width: 767px) {
   .account-check-grid { grid-template-columns: 1fr; }
-  .storefront-grid { grid-template-columns: 1fr; }
+  .storefront-layout { grid-template-columns: 1fr; }
+  .storefront-row { grid-template-columns: 1fr; gap: 4px; }
 }
 
 /* ===== KP-style ad detail ===== */
