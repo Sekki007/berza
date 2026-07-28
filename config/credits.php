@@ -52,6 +52,9 @@ function getUserCredits(int $userId): int
 
 function ensureCreditFiles(): void
 {
+    if (function_exists('usesMySqlStorage') && usesMySqlStorage()) {
+        return;
+    }
     if (!file_exists(dataPath('credit_deposits.json'))) {
         writeJsonFile('credit_deposits.json', []);
     }

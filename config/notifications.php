@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 function ensureNotificationsFile(): void
 {
+    if (function_exists('usesMySqlStorage') && usesMySqlStorage()) {
+        return;
+    }
     if (!file_exists(dataPath('notifications.json'))) {
         writeJsonFile('notifications.json', []);
     }

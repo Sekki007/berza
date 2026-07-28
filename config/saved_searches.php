@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 function ensureSavedSearchesFile(): void
 {
+    if (function_exists('usesMySqlStorage') && usesMySqlStorage()) {
+        return;
+    }
     if (!file_exists(dataPath('saved_searches.json'))) {
         writeJsonFile('saved_searches.json', []);
     }

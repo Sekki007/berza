@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 function ensureAdStatsFile(): void
 {
+    if (function_exists('usesMySqlStorage') && usesMySqlStorage()) {
+        return;
+    }
     if (!file_exists(dataPath('ad_stats.json'))) {
         writeJsonFile('ad_stats.json', []);
     }

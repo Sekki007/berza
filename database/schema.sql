@@ -11,6 +11,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 DROP TABLE IF EXISTS ad_stats_daily;
 DROP TABLE IF EXISTS ad_stats;
 DROP TABLE IF EXISTS saved_searches;
+DROP TABLE IF EXISTS json_documents;
 DROP TABLE IF EXISTS notifications;
 DROP TABLE IF EXISTS credit_transactions;
 DROP TABLE IF EXISTS credit_deposits;
@@ -246,6 +247,12 @@ CREATE TABLE settings (
     setting_key VARCHAR(80) PRIMARY KEY,
     setting_value JSON NOT NULL
 ) ENGINE=InnoDB;
+
+CREATE TABLE json_documents (
+    filename VARCHAR(120) NOT NULL PRIMARY KEY,
+    payload LONGTEXT NOT NULL,
+    updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- Demo admin (lozinka: admin123)
 INSERT INTO users (id, username, password_hash, full_name, phone, is_admin, credits)

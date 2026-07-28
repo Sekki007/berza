@@ -44,13 +44,116 @@ function h(?string $value): string
     return htmlspecialchars((string)$value, ENT_QUOTES, 'UTF-8');
 }
 
+require_once __DIR__ . '/database.php';
+
 function dataPath(string $filename): string
 {
     return dirname(__DIR__) . '/data/' . $filename;
 }
 
+function storageDriver(): string
+{
+    static $driver = null;
+    if ($driver !== null) {
+        return $driver;
+    }
+    $raw = strtolower(trim((string)envValue('STORAGE_DRIVER', 'json')));
+    $driver = $raw === 'mysql' ? 'mysql' : 'json';
+    return $driver;
+}
+
+function usesMySqlStorage(): bool
+{
+    return storageDriver() === 'mysql';
+}
+
+function jsonStorageDefaults(): array
+{
+    require_once __DIR__ . '/settings.php';
+    return [
+        'users.json' => [
+            [
+                'id' => 1,
+                'username' => 'admin',
+                'password_hash' => '$2y$10$IePWFxxngm51mSE78bxi8.44l4n7pWf.8kmDDHmmcf9WSODhPPZfK',
+                'full_name' => 'Administrator',
+                'phone' => '0601234567',
+                'is_admin' => true,
+                'created_at' => '2026-07-22 11:00:00',
+            ],
+        ],
+        'ads.json' => [],
+        'settings.json' => defaultSiteSettings(),
+        'messages.json' => [],
+        'ratings.json' => [],
+        'reports.json' => [],
+        'notifications.json' => [],
+        'top_orders.json' => [],
+        'credit_deposits.json' => [],
+        'credit_transactions.json' => [],
+        'saved_searches.json' => [],
+        'ad_stats.json' => [],
+        'sms_rate_limits.json' => [],
+        'nbs_rate_cache.json' => [],
+        'top_state.json' => [],
+        'expiry_state.json' => [],
+        'saved_search_state.json' => [],
+    ];
+}
+
+function jsonStorageEncode(array $payload): string
+{
+    return json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) ?: '[]';
+}
+
+function ensureMySqlStorageTable(): void
+{
+    static $ready = false;
+    if ($ready) {
+        return;
+    }
+    db()->exec(
+        'CREATE TABLE IF NOT EXISTS json_documents (
+            filename VARCHAR(120) NOT NULL PRIMARY KEY,
+            payload LONGTEXT NOT NULL,
+            updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+    );
+    $ready = true;
+}
+
+function readJsonFromMySql(string $filename): array
+{
+    ensureMySqlStorageTable();
+    $stmt = db()->prepare('SELECT payload FROM json_documents WHERE filename = :filename LIMIT 1');
+    $stmt->execute([':filename' => $filename]);
+    $payload = $stmt->fetchColumn();
+    if (!is_string($payload) || trim($payload) === '') {
+        return [];
+    }
+    $decoded = json_decode($payload, true);
+    return is_array($decoded) ? $decoded : [];
+}
+
+function writeJsonToMySql(string $filename, array $payload): void
+{
+    ensureMySqlStorageTable();
+    $stmt = db()->prepare(
+        'INSERT INTO json_documents (filename, payload, updated_at)
+         VALUES (:filename, :payload, NOW())
+         ON DUPLICATE KEY UPDATE payload = VALUES(payload), updated_at = NOW()'
+    );
+    $stmt->execute([
+        ':filename' => $filename,
+        ':payload' => jsonStorageEncode($payload),
+    ]);
+}
+
 function readJsonFile(string $filename): array
 {
+    if (usesMySqlStorage()) {
+        return readJsonFromMySql($filename);
+    }
     $path = dataPath($filename);
     if (!file_exists($path)) {
         return [];
@@ -67,74 +170,42 @@ function readJsonFile(string $filename): array
 
 function writeJsonFile(string $filename, array $payload): void
 {
+    if (usesMySqlStorage()) {
+        writeJsonToMySql($filename, $payload);
+        return;
+    }
     $path = dataPath($filename);
-    file_put_contents($path, json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE));
+    file_put_contents($path, jsonStorageEncode($payload));
 }
 
 function ensureJsonDataFiles(): void
 {
+    $defaults = jsonStorageDefaults();
+    if (usesMySqlStorage()) {
+        ensureMySqlStorageTable();
+        $stmt = db()->prepare(
+            'INSERT INTO json_documents (filename, payload, updated_at)
+             VALUES (:filename, :payload, NOW())
+             ON DUPLICATE KEY UPDATE filename = filename'
+        );
+        foreach ($defaults as $filename => $payload) {
+            $stmt->execute([
+                ':filename' => $filename,
+                ':payload' => jsonStorageEncode(is_array($payload) ? $payload : []),
+            ]);
+        }
+        return;
+    }
+
     $dataDir = dirname(__DIR__) . '/data';
     if (!is_dir($dataDir)) {
         mkdir($dataDir, 0777, true);
     }
 
-    if (!file_exists(dataPath('users.json'))) {
-        writeJsonFile('users.json', [
-            [
-                'id' => 1,
-                'username' => 'admin',
-                'password_hash' => '$2y$10$IePWFxxngm51mSE78bxi8.44l4n7pWf.8kmDDHmmcf9WSODhPPZfK',
-                'full_name' => 'Administrator',
-                'phone' => '0601234567',
-                'is_admin' => true,
-                'created_at' => '2026-07-22 11:00:00',
-            ],
-        ]);
-    }
-
-    if (!file_exists(dataPath('ads.json'))) {
-        writeJsonFile('ads.json', []);
-    }
-
-    if (!file_exists(dataPath('settings.json'))) {
-        require_once __DIR__ . '/settings.php';
-        writeJsonFile('settings.json', defaultSiteSettings());
-    }
-
-    if (!file_exists(dataPath('messages.json'))) {
-        writeJsonFile('messages.json', []);
-    }
-
-    if (!file_exists(dataPath('ratings.json'))) {
-        writeJsonFile('ratings.json', []);
-    }
-
-    if (!file_exists(dataPath('reports.json'))) {
-        writeJsonFile('reports.json', []);
-    }
-
-    if (!file_exists(dataPath('notifications.json'))) {
-        writeJsonFile('notifications.json', []);
-    }
-
-    if (!file_exists(dataPath('top_orders.json'))) {
-        writeJsonFile('top_orders.json', []);
-    }
-
-    if (!file_exists(dataPath('credit_deposits.json'))) {
-        writeJsonFile('credit_deposits.json', []);
-    }
-
-    if (!file_exists(dataPath('credit_transactions.json'))) {
-        writeJsonFile('credit_transactions.json', []);
-    }
-
-    if (!file_exists(dataPath('saved_searches.json'))) {
-        writeJsonFile('saved_searches.json', []);
-    }
-
-    if (!file_exists(dataPath('ad_stats.json'))) {
-        writeJsonFile('ad_stats.json', []);
+    foreach ($defaults as $filename => $payload) {
+        if (!file_exists(dataPath($filename))) {
+            writeJsonFile($filename, is_array($payload) ? $payload : []);
+        }
     }
 }
 

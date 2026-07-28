@@ -391,7 +391,30 @@ if ($settings !== []) {
     println('  (empty)');
 }
 
+println('== Import json_documents (storage driver layer) ==');
+$pdo->exec('DELETE FROM json_documents');
+$docStmt = $pdo->prepare(
+    'INSERT INTO json_documents (filename, payload, updated_at)
+     VALUES (:filename, :payload, NOW())'
+);
+$dataDir = dirname(__DIR__) . '/data';
+$files = glob($dataDir . '/*.json') ?: [];
+$docsCount = 0;
+foreach ($files as $filePath) {
+    $filename = basename((string)$filePath);
+    $payload = file_get_contents($filePath);
+    if (!is_string($payload) || trim($payload) === '') {
+        $payload = '[]';
+    }
+    $docStmt->execute([
+        ':filename' => $filename,
+        ':payload' => $payload,
+    ]);
+    $docsCount++;
+}
+println("  {$docsCount} json documents");
+
 $pdo->exec('SET FOREIGN_KEY_CHECKS=1');
 println('');
 println('Gotovo. MySQL je napunjen iz JSON fajlova.');
-println('NAPOMENA: sama aplikacija i dalje čita JSON dok ne uključimo MySQL data sloj (sledeći korak).');
+println('Ako je STORAGE_DRIVER=mysql, aplikacija sada čita iz MySQL json_documents tabele.');

@@ -88,10 +88,15 @@ cp .env.example .env
 chmod -R 775 data public/uploads
 chown -R www-data:www-data data public/uploads
 
-# MySQL (opciono za sada — app i dalje koristi JSON)
+# MySQL (preporučeno)
 sudo mysql < database/schema.sql
 # uredi .env pa:
 php tools/import_json_to_mysql.php
+php tools/validate_mysql_import.php
+# kratki downtime/cutover:
+php tools/mysql_cutover.php --apply
+# post-cutover health check:
+php tools/mysql_post_cutover_check.php
 ```
 
 PHP potreban: `pdo_mysql`, `gd` ili `imagick` (za slike), `mbstring`, `json`.
@@ -122,13 +127,15 @@ git push -u origin main --force
 
 ---
 
-## Šta radi sada vs MySQL
+## Storage režimi
 
-| Sloj | Stanje |
-|------|--------|
-| Sajt (PHP) | **JSON** u `data/` — radi odmah na serveru |
-| MySQL `schema.sql` | Spreman (sve tabele) |
-| `tools/import_json_to_mysql.php` | Kopira JSON → MySQL |
-| `STORAGE_DRIVER=mysql` | Sledeći korak (prebaciti data sloj) |
+| Režim | Opis |
+|------|------|
+| `STORAGE_DRIVER=json` | Čitanje/pisanje iz `data/*.json` |
+| `STORAGE_DRIVER=mysql` | Čitanje/pisanje iz MySQL tabele `json_documents` |
 
-Za test na serveru **ne moraš** MySQL odmah — dovoljan je PHP + `data/` + `public/uploads`.
+Rollback:
+
+```bash
+php tools/mysql_rollback_to_json.php --backup backups/mysql-cutover-YYYYmmdd_HHMMSS
+```

@@ -17,6 +17,9 @@ function reportReasons(): array
 
 function ensureReportsFile(): void
 {
+    if (function_exists('usesMySqlStorage') && usesMySqlStorage()) {
+        return;
+    }
     if (!file_exists(dataPath('reports.json'))) {
         writeJsonFile('reports.json', []);
     }

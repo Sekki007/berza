@@ -192,6 +192,9 @@ function activateAdHighlight(int $adId, int $userId, int $days = 7): ?array
 
 function ensureTopOrdersFile(): void
 {
+    if (function_exists('usesMySqlStorage') && usesMySqlStorage()) {
+        return;
+    }
     if (!file_exists(dataPath('top_orders.json'))) {
         writeJsonFile('top_orders.json', []);
     }
