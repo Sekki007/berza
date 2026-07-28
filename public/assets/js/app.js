@@ -1120,8 +1120,13 @@
 
   function initUnreadPolling() {
     if (!document.body || !document.body.hasAttribute('data-unread-messages')) return;
-    // Only when user appears logged in (attribute present from layout)
     let timer = null;
+    function stop() {
+      if (timer) {
+        clearInterval(timer);
+        timer = null;
+      }
+    }
     function tick() {
       if (document.hidden) return;
       // Skip if live chat already polls unread
@@ -1130,8 +1135,15 @@
         credentials: 'same-origin',
         headers: { 'Accept': 'application/json' }
       })
-        .then(function (r) { return r.json(); })
+        .then(function (r) {
+          if (r.status === 401 || r.status === 403) {
+            stop();
+            return null;
+          }
+          return r.json();
+        })
         .then(function (data) {
+          if (!data) return;
           if (data && data.ok && typeof data.unread === 'number') {
             const prev = parseInt(document.body.getAttribute('data-unread-messages') || '0', 10) || 0;
             updateUnreadBadges(data.unread);
@@ -1143,9 +1155,7 @@
         .catch(function () {});
     }
     timer = setInterval(tick, 5000);
-    window.addEventListener('beforeunload', function () {
-      if (timer) clearInterval(timer);
-    });
+    window.addEventListener('beforeunload', stop);
   }
 
   function showLiveToast(count) {

@@ -60,7 +60,7 @@ $compareCount = count(compareIds());
         ?>
     <?php endif; ?>
 </head>
-<body class="<?= h($bodyClass) ?>" data-page="<?= h($activePage) ?>" data-unread-messages="<?= (int)$unreadMessages ?>" data-compare-count="<?= (int)$compareCount ?>">
+<body class="<?= h($bodyClass) ?>" data-page="<?= h($activePage) ?>" data-compare-count="<?= (int)$compareCount ?>"<?= $user ? ' data-unread-messages="' . (int)$unreadMessages . '"' : '' ?>>
 <?php if (!$minimalHeader): ?>
     <div class="topbar">
         <div class="topbar-inner">
