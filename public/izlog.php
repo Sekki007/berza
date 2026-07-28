@@ -24,9 +24,8 @@ $shopName = getSellerShopName($seller, $ads);
 $summary = getSellerRatingSummary($sellerId);
 $ratings = getSellerRatings($sellerId);
 $shopLink = shopUrl((string)$seller['username']);
-$pageDescription = trim((string)($seller['shop_bio'] ?? '')) !== ''
-    ? mb_substr(trim((string)$seller['shop_bio']), 0, 160)
-    : ('Izlog prodavca ' . $shopName . ' na TelefonBerzi');
+$shopSeo = seoShopMeta($seller, $shopName);
+$pageDescription = $shopSeo['description'];
 $canonicalUrl = absoluteUrl($shopLink);
 $currentUser = currentUser();
 $isOwnShop = isLoggedIn() && (int)$currentUser['id'] === $sellerId;
@@ -58,9 +57,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'rate'
     exit;
 }
 
-$pageTitle = $shopName . ' — Izlog — KupiTelefon';
+$pageTitle = $shopSeo['title'];
 $activePage = 'oglasi';
 $showSearch = true;
+$jsonLd = [
+    '@context' => 'https://schema.org',
+    '@type' => 'ProfilePage',
+    'name' => $shopName,
+    'url' => $canonicalUrl,
+    'mainEntity' => [
+        '@type' => 'Person',
+        'name' => $shopName,
+        'url' => $canonicalUrl,
+    ],
+];
 
 require __DIR__ . '/partials/layout-start.php';
 ?>
@@ -104,7 +114,7 @@ require __DIR__ . '/partials/layout-start.php';
             <?php if (!$ads): ?>
                 <p style="color:var(--text-muted);margin-top:8px;">Ovaj prodavac trenutno nema aktivnih oglasa.</p>
             <?php else: ?>
-                <div class="ads-list" style="margin-top:12px;">
+                <div class="listings" style="margin-top:12px;">
                     <?php foreach ($ads as $ad): ?>
                         <?php require __DIR__ . '/partials/ad-card.php'; ?>
                     <?php endforeach; ?>

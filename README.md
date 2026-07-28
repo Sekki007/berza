@@ -30,6 +30,13 @@ Aplikacija podržava oba drajvera preko `STORAGE_DRIVER`:
 - `json` → čita/piše `data/*.json`
 - `mysql` → čita/piše MySQL tabelu `json_documents`
 
+## SEO
+
+- `APP_URL=https://kupitelefon.rs` u `.env` (canonical + sitemap)
+- `public/robots.txt`
+- Sitemap: `/sitemap.xml` (ili `/sitemap.php`)
+- JSON-LD na početnoj, oglasu i mini sajtu
+
 ## Struktura
 
 | Put | Opis |

@@ -23,6 +23,11 @@ if (preg_match('#^/usluge/([^/]+)/?$#', $uri, $m)) {
     exit;
 }
 
+if ($uri === '/sitemap.xml' || $uri === '/sitemap.php') {
+    require __DIR__ . '/public/sitemap.php';
+    exit;
+}
+
 if ($uri !== '/' && file_exists($filePath) && !is_dir($filePath)) {
     $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
     $mimeMap = [

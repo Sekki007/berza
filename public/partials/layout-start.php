@@ -44,7 +44,19 @@ $compareCount = count(compareIds());
     <?php endif; ?>
     <meta name="twitter:title" content="<?= h($pageTitle) ?>">
     <meta name="twitter:description" content="<?= h($pageDescription) ?>">
-    <link rel="stylesheet" href="/assets/css/style.css?v=20260728e">
+    <link rel="stylesheet" href="/assets/css/style.css?v=20260728f">
+    <?php if (!empty($jsonLd) && is_array($jsonLd)): ?>
+        <?php
+        $jsonLdBlocks = (isset($jsonLd[0]) && is_array($jsonLd[0]) && !isset($jsonLd['@context']))
+            ? $jsonLd
+            : [$jsonLd];
+        foreach ($jsonLdBlocks as $block) {
+            if (is_array($block)) {
+                echo seoJsonLdScript($block);
+            }
+        }
+        ?>
+    <?php endif; ?>
 </head>
 <body class="<?= h($bodyClass) ?>" data-page="<?= h($activePage) ?>" data-unread-messages="<?= (int)$unreadMessages ?>" data-compare-count="<?= (int)$compareCount ?>">
 <?php if (!$minimalHeader): ?>

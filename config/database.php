@@ -52,3 +52,19 @@ function db(): PDO
 
     return $pdo;
 }
+
+function appBaseUrl(): string
+{
+    $configured = trim((string)envValue('APP_URL', ''));
+    if ($configured !== '') {
+        return rtrim($configured, '/');
+    }
+
+    $forwarded = strtolower((string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ''));
+    $https = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off')
+        || ((string)($_SERVER['SERVER_PORT'] ?? '') === '443')
+        || $forwarded === 'https';
+    $host = (string)($_SERVER['HTTP_HOST'] ?? 'localhost');
+
+    return ($https ? 'https' : 'http') . '://' . $host;
+}

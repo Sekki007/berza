@@ -96,15 +96,17 @@ $msgHref = $isOwnAd ? '/poruke.php' : (isLoggedIn() ? '#poruka' : '/login.php');
 $price = (float)($ad['price'] ?? 0);
 $priceOpen = isAdPriceOpen($ad);
 
-$pageTitle = (string)$ad['title'] . ' — KupiTelefon';
+$pageSeo = seoAdMeta($ad);
+$pageTitle = $pageSeo['title'];
 $activePage = 'oglasi';
 $bodyClass = 'page-detail';
 $showSearch = true;
-$pageDescription = mb_substr(trim((string)($ad['description'] ?? $ad['title'])), 0, 160);
+$pageDescription = $pageSeo['description'];
 $primaryImg = adPrimaryImage($ad);
 $pageImage = $primaryImg ? absoluteUrl($primaryImg) : '';
 $canonicalUrl = absoluteUrl(adUrl($ad));
 $ogType = 'product';
+$jsonLd = seoAdJsonLd($ad, $seller);
 $inCompare = isInCompare($id);
 $adBrand = (string)($ad['brand'] ?? '');
 $adCategory = (string)($ad['category'] ?? '');
@@ -256,13 +258,13 @@ $contactBlock = static function (string $formId = 'poruka') use (
                     </div>
                 </div>
             <?php endif; ?>
-            <?php if (!empty($ad['is_sold'])): ?><span class="ad-badge-sold detail-sold">Prodato</span><?php endif; ?>
-            <?php if (!empty($ad['is_promoted'])): ?><span class="ad-badge-promo detail-promo">TOP</span><?php endif; ?>
+            <?php if (!empty($ad['is_sold'])): ?><span class="listing-badge-sold detail-sold">Prodato</span><?php endif; ?>
+            <?php if (!empty($ad['is_promoted'])): ?><span class="listing-badge-promo detail-promo">TOP</span><?php endif; ?>
         </div>
 
         <div class="kp-detail-head">
             <div class="kp-title-row">
-                <h1 class="kp-ad-title"><?= h((string)$ad['title']) ?></h1>
+                <h1 class="kp-listing-title"><?= h((string)$ad['title']) ?></h1>
             </div>
             <div class="kp-price-block">
                 <div class="kp-price <?= $priceOpen ? 'kp-price-free' : '' ?>"><?= h(formatAdPrice($ad)) ?></div>
@@ -369,7 +371,7 @@ $contactBlock = static function (string $formId = 'poruka') use (
         ?>
             <div class="kp-card">
                 <h3 class="kp-section-title">Slični oglasi</h3>
-                <div class="ads-list compact-list">
+                <div class="listings compact-list">
                     <?php foreach ($similarAds as $similar): ?>
                         <?php $ad = $similar; require __DIR__ . '/partials/ad-card.php'; ?>
                     <?php endforeach; ?>

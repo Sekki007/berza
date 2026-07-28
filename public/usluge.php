@@ -75,12 +75,16 @@ $ratings = function_exists('getSellerRatings') ? getSellerRatings((int)$seller['
 usort($ratings, static fn($a, $b) => strcmp((string)($b['created_at'] ?? ''), (string)($a['created_at'] ?? '')));
 $ratings = array_slice($ratings, 0, 5);
 
-$pageTitle = $shopName . ' — Usluge';
+$pageSeo = seoStorefrontMeta($seller, $shopName);
+$pageTitle = $pageSeo['title'];
 $activePage = 'oglasi';
 $showSearch = true;
-$pageDescription = trim((string)($seller['shop_page_tagline'] ?? '')) !== ''
-    ? trim((string)$seller['shop_page_tagline'])
-    : ('Mini stranica radnje ' . $shopName);
+$pageDescription = $pageSeo['description'];
+$canonicalUrl = absoluteUrl(storefrontUrlForUser($seller));
+if (!empty($seller['shop_page_cover'])) {
+    $pageImage = absoluteUrl((string)$seller['shop_page_cover']);
+}
+$jsonLd = seoStorefrontJsonLd($seller, $shopName);
 
 $paymentMap = storefrontPaymentMethodsOptions();
 $selectedPayments = array_values(array_filter(
@@ -318,7 +322,7 @@ require __DIR__ . '/partials/layout-start.php';
             <?php if (!$ads): ?>
                 <p class="form-hint">Trenutno nema aktivnih oglasa.</p>
             <?php else: ?>
-                <div class="ads-list compact-list">
+                <div class="listings compact-list">
                     <?php foreach ($ads as $ad): ?>
                         <?php require __DIR__ . '/partials/ad-card.php'; ?>
                     <?php endforeach; ?>

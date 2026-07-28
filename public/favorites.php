@@ -21,7 +21,7 @@ require __DIR__ . '/partials/layout-start.php';
             <?php if (!$ads): ?>
                 <p style="color:var(--text-muted);">Nema sačuvanih oglasa. Klikni ☆ na detalju oglasa.</p>
             <?php else: ?>
-                <div class="ads-list">
+                <div class="listings">
                     <?php foreach ($ads as $ad): ?>
                         <?php require __DIR__ . '/partials/ad-card.php'; ?>
                     <?php endforeach; ?>

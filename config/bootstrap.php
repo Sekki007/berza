@@ -1058,6 +1058,7 @@ require_once __DIR__ . '/ad_form_schema.php';
 require_once __DIR__ . '/nbs_rate.php';
 require_once __DIR__ . '/search.php';
 require_once __DIR__ . '/ratings.php';
+require_once __DIR__ . '/seo.php';
 require_once __DIR__ . '/admin_helpers.php';
 require_once __DIR__ . '/notifications.php';
 require_once __DIR__ . '/credits.php';

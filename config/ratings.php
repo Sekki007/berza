@@ -39,12 +39,13 @@ function adUrl(array $ad): string
 
 function absoluteUrl(string $path): string
 {
-    $host = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http')
-        . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
+    if (preg_match('#^https?://#i', $path) === 1) {
+        return $path;
+    }
     if ($path === '' || $path[0] !== '/') {
         $path = '/' . $path;
     }
-    return $host . $path;
+    return appBaseUrl() . $path;
 }
 
 function getPublicAdsByUserId(int $userId, bool $includeSold = true): array

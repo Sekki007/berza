@@ -65,7 +65,20 @@ $queryBase = array_filter([
     'sort' => $sort,
 ], static fn($v) => $v !== '');
 
-$pageTitle = 'KupiTelefon — Oglasi';
+$seoMeta = seoListingMeta([
+    'q' => $search,
+    'brand' => $brand,
+    'location' => $location,
+    'type' => $type,
+    'device_type' => $deviceType,
+]);
+$pageTitle = $seoMeta['title'];
+$pageDescription = $seoMeta['description'];
+$canonicalUrl = absoluteUrl('/' . ($queryBase === [] ? '' : ('index.php?' . http_build_query($queryBase))));
+if ($queryBase === []) {
+    $canonicalUrl = absoluteUrl('/');
+    $jsonLd = [seoOrganizationJsonLd(), seoWebsiteJsonLd()];
+}
 $activePage = 'oglasi';
 $searchValue = $search;
 
@@ -147,7 +160,7 @@ require __DIR__ . '/partials/layout-start.php';
         <?php if ($promotedAds && $page === 1 && $search === '' && $brand === '' && $location === ''): ?>
             <div class="promo-section">
                 <div class="promo-section-head">⭐ Istaknuti oglasi</div>
-                <div class="ads-list compact-list">
+                <div class="listings compact-list">
                     <?php foreach ($promotedAds as $ad): ?>
                         <?php require __DIR__ . '/partials/ad-card.php'; ?>
                     <?php endforeach; ?>
@@ -203,7 +216,7 @@ require __DIR__ . '/partials/layout-start.php';
             </div>
         </div>
 
-        <div class="ads-list view-list" data-ads-list>
+        <div class="listings view-list" data-listings>
             <?php foreach ($ads as $ad): ?>
                 <?php require __DIR__ . '/partials/ad-card.php'; ?>
             <?php endforeach; ?>

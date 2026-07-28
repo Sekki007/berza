@@ -29,6 +29,7 @@ server {
     rewrite ^/oglas/(\d+)(?:-.*)?/?$ /oglas.php?id=$1 last;
     rewrite ^/izlog/([^/]+)/?$ /izlog.php?u=$1 last;
     rewrite ^/usluge/([^/]+)/?$ /usluge.php?u=$1 last;
+    rewrite ^/sitemap\.xml$ /sitemap.php last;
 
     location / {
         try_files $uri $uri/ /index.php?$query_string;

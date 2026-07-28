@@ -5,6 +5,8 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/config/bootstrap.php';
 
 $pageTitle = 'Kako radi — KupiTelefon';
+$pageDescription = 'Kako kupovati i prodavati telefone, tablete i pametne satove na KupiTelefon, i kako pronaći servis.';
+$canonicalUrl = absoluteUrl('/kako-radi.php');
 $activePage = 'oglasi';
 $showSearch = true;
 

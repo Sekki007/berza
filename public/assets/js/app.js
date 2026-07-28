@@ -70,7 +70,7 @@
 
   function filterAds() {
     const selected = selectedTypes();
-    const ads = all('.ad-item[data-category]');
+    const ads = all('.listing-card[data-category]');
     let visible = 0;
     ads.forEach(function (ad) {
       const show = selected.length === 0 || selected.includes(ad.getAttribute('data-category'));
@@ -256,7 +256,7 @@
     const form = one('[data-ad-form]');
     if (!form) return;
 
-    const title = one('#ad-title', form);
+    const title = one('#listing-title', form);
     const model = one('#ad-model', form);
     const brand = one('[data-phone-brand]', form);
     if (title && model && brand) {
@@ -706,7 +706,7 @@
         all('[data-compare-toggle="' + adId + '"]').forEach(function (el) {
           el.classList.remove('active', 'is-in-compare');
           el.setAttribute('aria-pressed', 'false');
-          if (el.classList.contains('ad-compare-btn') || el.classList.contains('kp-list-cmp')) {
+          if (el.classList.contains('listing-compare-btn') || el.classList.contains('kp-list-cmp')) {
             el.textContent = '⇄';
           } else if (el.tagName === 'BUTTON') {
             el.textContent = '⇄ Uporedi';
@@ -1241,7 +1241,7 @@
   }
 
   function initAdsView() {
-    const list = one('[data-ads-list]');
+    const list = one('[data-listings]');
     const toggle = one('[data-view-toggle]');
     if (!list || !toggle) return;
 

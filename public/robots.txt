@@ -1,0 +1,25 @@
+User-agent: *
+Allow: /
+
+Disallow: /admin_users.php
+Disallow: /admin_user_edit.php
+Disallow: /admin_settings.php
+Disallow: /admin_credits.php
+Disallow: /admin_top.php
+Disallow: /admin_reports.php
+Disallow: /dashboard.php
+Disallow: /ads.php
+Disallow: /ad_form.php
+Disallow: /nalog.php
+Disallow: /login.php
+Disallow: /register.php
+Disallow: /poruke.php
+Disallow: /favorites.php
+Disallow: /uporedi.php
+Disallow: /report.php
+Disallow: /forgot-password.php
+Disallow: /reset-password.php
+Disallow: /verify-phone.php
+Disallow: /api/
+
+Sitemap: https://kupitelefon.rs/sitemap.xml
