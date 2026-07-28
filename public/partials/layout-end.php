@@ -34,10 +34,11 @@ if ($user) {
                 }
                 ?>
                     <div class="site-footer-contact">
+                        <strong class="site-footer-contact-label">Kontakt</strong>
                         <?php if ($footerPhone !== ''): ?>
-                            <a href="tel:<?= h(preg_replace('/\s+/', '', $footerPhone) ?? $footerPhone) ?>"><?= h($footerPhone) ?></a>
+                            <a href="tel:<?= h(preg_replace('/\s+/', '', $footerPhone) ?? $footerPhone) ?>">Tel: <?= h($footerPhone) ?></a>
                         <?php endif; ?>
-                        <a href="mailto:<?= h($footerEmail) ?>"><?= h($footerEmail) ?></a>
+                        <a href="mailto:<?= h($footerEmail) ?>">E-mail: <?= h($footerEmail) ?></a>
                     </div>
             </div>
 
