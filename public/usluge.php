@@ -30,7 +30,7 @@ $loginNext = '/login.php?next=' . rawurlencode($_SERVER['REQUEST_URI'] ?? storef
 $canQuickMessage = isLoggedIn() && !$isOwner && $firstAdId > 0;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string)($_POST['action'] ?? '') === 'shop_contact_send') {
-    csrfVerify();
+    requireCsrf(storefrontUrlForUser($seller));
     if (!isLoggedIn()) {
         setFlash('danger', 'Prijavi se da pošalješ poruku.');
         header('Location: /login.php?next=' . rawurlencode($_SERVER['REQUEST_URI'] ?? storefrontUrlForUser($seller)));
