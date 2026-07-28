@@ -19,6 +19,31 @@ $cities = categoriesConfig()['cities'] ?? [];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     requireCsrf('/admin_user_edit.php?id=' . $userId);
+    $postAction = trim((string)($_POST['action'] ?? 'save_user'));
+
+    if ($postAction === 'grant_shop_page') {
+        $days = (int)($_POST['shop_page_days'] ?? storefrontDurationDays());
+        $result = storefrontAdminGrant($userId, $days > 0 ? $days : null);
+        if (!empty($result['ok'])) {
+            setFlash('success', 'Mini sajt je aktiviran besplatno do ' . date('d.m.Y.', strtotime((string)$result['until']) ?: time()) . '.');
+        } else {
+            setFlash('danger', (string)($result['error'] ?? 'Aktivacija mini sajta nije uspela.'));
+        }
+        header('Location: /admin_user_edit.php?id=' . $userId);
+        exit;
+    }
+
+    if ($postAction === 'revoke_shop_page') {
+        $result = storefrontAdminRevoke($userId);
+        if (!empty($result['ok'])) {
+            setFlash('success', 'Mini sajt je isključen.');
+        } else {
+            setFlash('danger', (string)($result['error'] ?? 'Isključivanje mini sajta nije uspelo.'));
+        }
+        header('Location: /admin_user_edit.php?id=' . $userId);
+        exit;
+    }
+
     $result = adminUpdateUser($userId, [
         'full_name' => $_POST['full_name'] ?? '',
         'username' => $_POST['username'] ?? '',
@@ -64,6 +89,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $accountType = userAccountType($editUser);
 $bizStatus = userBusinessStatus($editUser);
 $bizKind = userBusinessKind($editUser);
+$storefrontActive = storefrontIsActive($editUser);
+$storefrontUntilTs = strtotime((string)($editUser['shop_page_until'] ?? ''));
+$storefrontUntilLabel = $storefrontUntilTs ? date('d.m.Y. H:i', $storefrontUntilTs) : '';
+$storefrontUrl = storefrontUrlForUser($editUser);
+$defaultStorefrontDays = storefrontDurationDays();
 
 $pageTitle = 'Izmena korisnika — Admin';
 $activePage = 'nalog';
@@ -199,6 +229,43 @@ require __DIR__ . '/partials/layout-start.php';
                 <a class="btn-message" href="/admin_users.php" style="width:auto;min-width:120px;">Nazad</a>
             </div>
         </form>
+
+        <section class="form-card" style="max-width:720px;margin-top:14px;">
+            <h3 style="margin:0 0 8px;font-size:14px;">Mini sajt (besplatna aktivacija)</h3>
+            <p class="form-hint" style="margin-bottom:10px;">
+                Status:
+                <?php if ($storefrontActive): ?>
+                    <strong style="color:#166534;">Aktivan do <?= h($storefrontUntilLabel) ?></strong>
+                    · <a href="<?= h($storefrontUrl) ?>" target="_blank" rel="noopener">Otvori mini sajt</a>
+                <?php else: ?>
+                    <strong style="color:#991b1b;">Nije aktivan</strong>
+                <?php endif; ?>
+            </p>
+            <?php if (!isBusinessVerified($editUser)): ?>
+                <p class="form-hint">Za aktivaciju mini sajta firma mora biti potvrđena (status firme = Potvrđena).</p>
+            <?php else: ?>
+                <form method="POST" style="display:flex;gap:8px;flex-wrap:wrap;align-items:end;margin-bottom:10px;">
+                    <?= csrfField() ?>
+                    <input type="hidden" name="user_id" value="<?= (int)$editUser['id'] ?>">
+                    <input type="hidden" name="action" value="grant_shop_page">
+                    <div class="form-group" style="margin:0;min-width:140px;">
+                        <label>Broj dana</label>
+                        <input type="number" name="shop_page_days" min="1" max="3650" value="<?= (int)$defaultStorefrontDays ?>">
+                    </div>
+                    <button class="btn-call" type="submit" style="width:auto;min-width:200px;">
+                        <?= $storefrontActive ? 'Produži besplatno' : 'Aktiviraj besplatno' ?>
+                    </button>
+                </form>
+                <?php if ($storefrontActive): ?>
+                    <form method="POST" onsubmit="return confirm('Isključiti mini sajt ovom korisniku?');">
+                        <?= csrfField() ?>
+                        <input type="hidden" name="user_id" value="<?= (int)$editUser['id'] ?>">
+                        <input type="hidden" name="action" value="revoke_shop_page">
+                        <button class="btn-message" type="submit" style="width:auto;min-width:180px;">Isključi mini sajt</button>
+                    </form>
+                <?php endif; ?>
+            <?php endif; ?>
+        </section>
     </main>
 </div>
 

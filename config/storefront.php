@@ -106,6 +106,84 @@ function storefrontPurchase(int $userId): array
     ];
 }
 
+/**
+ * Admin: aktivira ili produžava mini sajt bez naplate kreditima.
+ */
+function storefrontAdminGrant(int $userId, ?int $days = null): array
+{
+    $user = findUserById($userId);
+    if (!$user) {
+        return ['ok' => false, 'error' => 'Korisnik nije pronađen.'];
+    }
+    if (!isBusinessVerified($user)) {
+        return ['ok' => false, 'error' => 'Prvo potvrdi firmu (PIB), pa onda aktiviraj mini sajt.'];
+    }
+
+    $durationDays = $days !== null && $days > 0 ? $days : storefrontDurationDays();
+    $now = time();
+    $baseTs = $now;
+    $existing = strtotime((string)($user['shop_page_until'] ?? ''));
+    if ($existing !== false && $existing > $now) {
+        $baseTs = $existing;
+    }
+    $newUntil = date('Y-m-d H:i:s', $baseTs + ($durationDays * 86400));
+
+    $ok = patchUser($userId, [
+        'shop_page_enabled' => true,
+        'shop_page_until' => $newUntil,
+        'shop_page_updated_at' => date('Y-m-d H:i:s'),
+        'shop_page_admin_granted' => true,
+        'shop_page_admin_granted_at' => date('Y-m-d H:i:s'),
+    ]);
+    if (!$ok) {
+        return ['ok' => false, 'error' => 'Aktivacija nije uspela.'];
+    }
+
+    notifyUser(
+        $userId,
+        'shop_page_activated',
+        'Mini stranica je aktivirana',
+        'Admin ti je omogućio mini sajt do ' . date('d.m.Y.', strtotime($newUntil) ?: time()) . '.',
+        '/nalog.php?tab=mini_sajt'
+    );
+
+    return [
+        'ok' => true,
+        'until' => $newUntil,
+        'days' => $durationDays,
+    ];
+}
+
+/**
+ * Admin: isključuje mini sajt odmah.
+ */
+function storefrontAdminRevoke(int $userId): array
+{
+    $user = findUserById($userId);
+    if (!$user) {
+        return ['ok' => false, 'error' => 'Korisnik nije pronađen.'];
+    }
+
+    $ok = patchUser($userId, [
+        'shop_page_enabled' => false,
+        'shop_page_until' => null,
+        'shop_page_updated_at' => date('Y-m-d H:i:s'),
+    ]);
+    if (!$ok) {
+        return ['ok' => false, 'error' => 'Isključivanje nije uspelo.'];
+    }
+
+    notifyUser(
+        $userId,
+        'shop_page_revoked',
+        'Mini stranica je isključena',
+        'Admin je isključio tvoj mini sajt.',
+        '/nalog.php?tab=mini_sajt'
+    );
+
+    return ['ok' => true];
+}
+
 function storefrontPayloadFromInput(array $input): array
 {
     $payments = $input['shop_page_payment_methods'] ?? [];
