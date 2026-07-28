@@ -17,7 +17,10 @@ a { color: var(--link); text-decoration: none; } a:hover { text-decoration: unde
 .topbar-links a{color:#ccc;text-decoration:none;}
 .header { background: #fff; border-bottom:2px solid var(--kp-yellow); padding:10px 0; position:sticky; top:0; z-index:40; }
 .header-inner { display:flex; flex-direction:column; gap:10px; } .header-row{display:flex;align-items:center;justify-content:space-between;gap:10px;}
-.logo { display:flex; align-items:baseline; gap:2px; text-decoration:none; } .logo-telefon{font-size:20px;font-weight:bold;color:var(--kp-green);} .logo-berza{font-size:20px;font-weight:bold;color:var(--text);}
+.logo { display:flex; align-items:center; gap:8px; text-decoration:none; } .logo:hover{text-decoration:none;opacity:.92;}
+.logo-mark{width:36px;height:36px;object-fit:contain;flex-shrink:0;display:block;border-radius:50%;}
+.logo-text{display:inline-flex;align-items:baseline;gap:0;line-height:1;}
+.logo-telefon{font-size:20px;font-weight:bold;color:var(--kp-green);} .logo-berza{font-size:20px;font-weight:bold;color:var(--text);}
 .header-user-mobile{display:flex;align-items:center;gap:8px;}
 .mobile-menu-btn{
   display:inline-flex;align-items:center;gap:6px;padding:8px 12px;border:1px solid var(--border);
@@ -794,7 +797,8 @@ a.account-ov-stat:hover {
 .footer,.site-footer{background:#2a2a2a;border-top:3px solid var(--kp-yellow);padding:0;margin-top:28px;font-size:13px;color:#b8b8b8;}
 .site-footer-inner,.footer-inner{max-width:1100px;margin:0 auto;padding:28px 16px 22px;display:grid;grid-template-columns:1fr;gap:28px;}
 .site-footer-brand{max-width:280px;}
-.site-footer-logo{display:inline-flex;align-items:baseline;gap:2px;text-decoration:none;margin-bottom:8px;}
+.site-footer-logo{display:inline-flex;align-items:center;gap:8px;text-decoration:none;margin-bottom:8px;}
+.site-footer-logo .logo-mark-footer{width:32px;height:32px;border-radius:50%;}
 .site-footer-logo .logo-telefon{font-size:22px;font-weight:bold;color:#6fcf7f;}
 .site-footer-logo .logo-berza{font-size:22px;font-weight:bold;color:#fff;}
 .site-footer-logo:hover{text-decoration:none;opacity:.92;}

@@ -19,8 +19,11 @@ if ($user) {
     <footer class="site-footer">
         <div class="site-footer-inner">
             <div class="site-footer-brand">
-                <a href="/index.php" class="site-footer-logo">
-                    <span class="logo-telefon"><?= h((string)$site['logo_telefon']) ?></span><span class="logo-berza"><?= h((string)$site['logo_berza']) ?></span>
+                <a href="/index.php" class="site-footer-logo" aria-label="<?= h((string)($site['site_name'] ?? 'KupiTelefon')) ?>">
+                    <img class="logo-mark logo-mark-footer" src="/assets/img/logo-mark.png" alt="" width="32" height="32" decoding="async">
+                    <span class="logo-text">
+                        <span class="logo-telefon"><?= h((string)$site['logo_telefon']) ?></span><span class="logo-berza"><?= h((string)$site['logo_berza']) ?></span>
+                    </span>
                 </a>
                 <p class="site-footer-tag"><?= h((string)($site['topbar_text'] ?? 'Telefoni · tableti · satovi · servis · Srbija')) ?></p>
                 <?php

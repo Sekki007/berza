@@ -44,7 +44,9 @@ $compareCount = count(compareIds());
     <?php endif; ?>
     <meta name="twitter:title" content="<?= h($pageTitle) ?>">
     <meta name="twitter:description" content="<?= h($pageDescription) ?>">
-    <link rel="stylesheet" href="/assets/css/style.css?v=20260728f">
+    <link rel="stylesheet" href="/assets/css/style.css?v=20260728g">
+    <link rel="icon" type="image/png" href="/assets/img/favicon.png">
+    <link rel="apple-touch-icon" href="/assets/img/logo-mark.png">
     <?php if (!empty($jsonLd) && is_array($jsonLd)): ?>
         <?php
         $jsonLdBlocks = (isset($jsonLd[0]) && is_array($jsonLd[0]) && !isset($jsonLd['@context']))
@@ -82,8 +84,11 @@ $compareCount = count(compareIds());
     <header class="header">
         <div class="header-inner">
             <div class="header-row">
-                <a href="/index.php" class="logo">
-                    <span class="logo-telefon"><?= h((string)$site['logo_telefon']) ?></span><span class="logo-berza"><?= h((string)$site['logo_berza']) ?></span>
+                <a href="/index.php" class="logo" aria-label="<?= h((string)($site['site_name'] ?? 'KupiTelefon')) ?>">
+                    <img class="logo-mark" src="/assets/img/logo-mark.png" alt="" width="36" height="36" decoding="async">
+                    <span class="logo-text">
+                        <span class="logo-telefon"><?= h((string)$site['logo_telefon']) ?></span><span class="logo-berza"><?= h((string)$site['logo_berza']) ?></span>
+                    </span>
                 </a>
                 <div class="header-user-mobile">
                     <button type="button" class="mobile-menu-btn nav-with-badge" data-open-account-menu aria-label="Meni" aria-expanded="false" aria-controls="mobile-account-menu">
@@ -159,8 +164,11 @@ $compareCount = count(compareIds());
     <header class="header">
         <div class="header-inner">
             <div class="header-row">
-                <a href="/index.php" class="logo">
-                    <span class="logo-telefon"><?= h((string)$site['logo_telefon']) ?></span><span class="logo-berza"><?= h((string)$site['logo_berza']) ?></span>
+                <a href="/index.php" class="logo" aria-label="<?= h((string)($site['site_name'] ?? 'KupiTelefon')) ?>">
+                    <img class="logo-mark" src="/assets/img/logo-mark.png" alt="" width="36" height="36" decoding="async">
+                    <span class="logo-text">
+                        <span class="logo-telefon"><?= h((string)$site['logo_telefon']) ?></span><span class="logo-berza"><?= h((string)$site['logo_berza']) ?></span>
+                    </span>
                 </a>
             </div>
         </div>
