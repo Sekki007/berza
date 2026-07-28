@@ -198,6 +198,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             $payload = storefrontPayloadFromInput($_POST);
             $payload['shop_page_cover'] = handleStorefrontCoverUpload($userId, (string)($freshUser['shop_page_cover'] ?? ''));
+            $payload['shop_page_gallery'] = handleStorefrontGalleryUploads($userId, (array)($freshUser['shop_page_gallery'] ?? []));
             if (patchUser($userId, $payload)) {
                 setFlash('success', 'Mini stranica je sačuvana.');
             } else {
@@ -946,6 +947,11 @@ require __DIR__ . '/partials/layout-start.php';
             <?php
             $isBusiness = userAccountType($profile) === 'business';
             $isBizVerified = isBusinessVerified($profile);
+            $hoursWeekly = storefrontWeeklyHoursForUser($profile);
+            $dayLabels = storefrontWeeklyDayLabels();
+            $servicesText = storefrontLinesFromPairs((array)($profile['shop_page_services'] ?? []));
+            $faqText = storefrontLinesFromPairs((array)($profile['shop_page_faq'] ?? []));
+            $gallery = array_values(array_filter((array)($profile['shop_page_gallery'] ?? []), static fn($v) => is_string($v) && $v !== ''));
             ?>
             <section class="form-card">
                 <h2>Mini web stranica radnje</h2>
@@ -1025,9 +1031,33 @@ require __DIR__ . '/partials/layout-start.php';
                             <label>Adresa sedišta</label>
                             <input type="text" name="shop_page_address" value="<?= h((string)($profile['shop_page_address'] ?? '')) ?>" placeholder="Ulica i broj, grad, poštanski broj">
                         </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Website</label>
+                                <input type="url" name="shop_page_website" value="<?= h((string)($profile['shop_page_website'] ?? '')) ?>" placeholder="https://tvojsajt.rs">
+                            </div>
+                            <div class="form-group">
+                                <label>WhatsApp broj</label>
+                                <input type="text" name="shop_page_contact_whatsapp" value="<?= h((string)($profile['shop_page_contact_whatsapp'] ?? '')) ?>" placeholder="+3816xxxxxxxx">
+                            </div>
+                        </div>
                         <div class="form-group">
                             <label>Radno vreme</label>
                             <textarea name="shop_page_work_hours" rows="3" placeholder="Pon–Pet 09–17&#10;Sub 09–14&#10;Nedelja neradna"><?= h((string)($profile['shop_page_work_hours'] ?? '')) ?></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Radno vreme po danima (za automatski status “Otvoreno sada”)</label>
+                            <div class="storefront-hours-grid">
+                                <?php foreach ($dayLabels as $dayKey => $dayLabel): ?>
+                                    <?php $day = $hoursWeekly[$dayKey] ?? ['closed' => false, 'open' => '09:00', 'close' => '17:00']; ?>
+                                    <div class="storefront-hours-row">
+                                        <strong><?= h($dayLabel) ?></strong>
+                                        <label><input type="checkbox" name="shop_page_day_closed_<?= h($dayKey) ?>" value="1" <?= !empty($day['closed']) ? 'checked' : '' ?>> Neradno</label>
+                                        <input type="time" name="shop_page_day_open_<?= h($dayKey) ?>" value="<?= h((string)$day['open']) ?>">
+                                        <input type="time" name="shop_page_day_close_<?= h($dayKey) ?>" value="<?= h((string)$day['close']) ?>">
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
                         </div>
                         <div class="form-group">
                             <label>Kontakt email</label>
@@ -1048,6 +1078,46 @@ require __DIR__ . '/partials/layout-start.php';
                         <div class="form-group">
                             <label>Opis / usluge</label>
                             <textarea name="shop_page_description" rows="8" placeholder="Opiši usluge, prednosti, šta tačno nudite..."><?= h((string)($profile['shop_page_description'] ?? '')) ?></textarea>
+                        </div>
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label>Instagram URL</label>
+                                <input type="url" name="shop_page_instagram" value="<?= h((string)($profile['shop_page_instagram'] ?? '')) ?>" placeholder="https://instagram.com/tvojprofil">
+                            </div>
+                            <div class="form-group">
+                                <label>Facebook URL</label>
+                                <input type="url" name="shop_page_facebook" value="<?= h((string)($profile['shop_page_facebook'] ?? '')) ?>" placeholder="https://facebook.com/tvojprofil">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>TikTok URL</label>
+                            <input type="url" name="shop_page_tiktok" value="<?= h((string)($profile['shop_page_tiktok'] ?? '')) ?>" placeholder="https://tiktok.com/@tvojprofil">
+                        </div>
+                        <div class="form-group">
+                            <label>Istaknute usluge i cene (po liniji: Usluga | Cena)</label>
+                            <textarea name="shop_page_services_text" rows="5" placeholder="Zamena ekrana iPhone 14 | od 6.000 din&#10;Zamena baterije Samsung S23 | od 4.000 din"><?= h($servicesText) ?></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>FAQ (po liniji: Pitanje | Odgovor)</label>
+                            <textarea name="shop_page_faq_text" rows="5" placeholder="Da li dajete garanciju? | Da, 6 meseci na ugrađene delove"><?= h($faqText) ?></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Portfolio / galerija radova (max 8)</label>
+                            <?php if ($gallery): ?>
+                                <div class="storefront-gallery-edit">
+                                    <?php foreach ($gallery as $img): ?>
+                                        <label class="storefront-gallery-item">
+                                            <img src="<?= h($img) ?>" alt="">
+                                            <span><input type="checkbox" name="shop_page_gallery_keep[]" value="<?= h($img) ?>" checked> Zadrži</span>
+                                        </label>
+                                    <?php endforeach; ?>
+                                </div>
+                            <?php endif; ?>
+                            <input type="file" name="shop_page_gallery[]" accept="image/jpeg,image/png,image/webp,image/gif" multiple>
+                            <label class="profile-check" style="margin-top:8px;">
+                                <input type="checkbox" name="shop_page_gallery_clear" value="1">
+                                <span>Obriši celu galeriju</span>
+                            </label>
                         </div>
                         <button class="btn-call" type="submit" style="width:auto;min-width:220px;">Sačuvaj mini sajt</button>
                     </form>

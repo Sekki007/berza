@@ -24,6 +24,48 @@ if (!$isActive && !$isOwner && !isAdmin()) {
 $shopName = getSellerShopName($seller);
 $shopLink = shopUrl((string)$seller['username']);
 $ads = getPublicAdsByUserId((int)$seller['id'], true);
+$firstAdId = (int)($ads[0]['id'] ?? 0);
+
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string)($_POST['action'] ?? '') === 'shop_contact_send') {
+    csrfVerify();
+    if (!isLoggedIn()) {
+        setFlash('danger', 'Prijavi se da pošalješ poruku.');
+        redirect('/login.php?next=' . rawurlencode($_SERVER['REQUEST_URI'] ?? storefrontUrlForUser($seller)));
+    }
+    $viewer = currentUser();
+    $fromId = (int)($viewer['id'] ?? 0);
+    $toId = (int)($seller['id'] ?? 0);
+    $body = mb_substr(trim((string)($_POST['message'] ?? '')), 0, 1200);
+    if ($fromId <= 0 || $toId <= 0 || $fromId === $toId || $firstAdId <= 0 || $body === '') {
+        setFlash('danger', 'Poruka nije poslata. Proveri da li si uneo tekst.');
+    } else {
+        $saved = saveMessage([
+            'from_user_id' => $fromId,
+            'from_name' => (string)($viewer['name'] ?? $viewer['username'] ?? 'Kupac'),
+            'from_phone' => (string)($viewer['phone'] ?? ''),
+            'to_user_id' => $toId,
+            'ad_id' => $firstAdId,
+            'body' => '[Mini sajt upit] ' . $body,
+        ]);
+        setFlash($saved ? 'success' : 'danger', $saved ? 'Poruka je poslata.' : 'Poruka nije poslata.');
+    }
+    redirect(storefrontUrlForUser($seller));
+}
+
+$openStatus = storefrontOpenStatus($seller);
+$hours = storefrontWeeklyHoursForUser($seller);
+$dayLabels = storefrontWeeklyDayLabels();
+$services = array_values(array_filter((array)($seller['shop_page_services'] ?? []), static fn($row) => is_array($row) && trim((string)($row['name'] ?? '')) !== ''));
+$faq = array_values(array_filter((array)($seller['shop_page_faq'] ?? []), static fn($row) => is_array($row) && trim((string)($row['name'] ?? '')) !== ''));
+$gallery = array_values(array_filter((array)($seller['shop_page_gallery'] ?? []), static fn($img) => is_string($img) && $img !== ''));
+$mapQueryRaw = trim((string)($seller['shop_page_address'] ?? '')) . ', ' . trim((string)($seller['location'] ?? ''));
+$mapQuery = trim(trim($mapQueryRaw), ',');
+$mapEmbed = $mapQuery !== '' ? 'https://www.google.com/maps?q=' . rawurlencode($mapQuery) . '&output=embed' : '';
+$ratingSummary = function_exists('getSellerRatingSummary') ? getSellerRatingSummary((int)$seller['id']) : ['avg' => 0, 'count' => 0];
+$ratings = function_exists('getSellerRatings') ? getSellerRatings((int)$seller['id']) : [];
+usort($ratings, static fn($a, $b) => strcmp((string)($b['created_at'] ?? ''), (string)($a['created_at'] ?? '')));
+$ratings = array_slice($ratings, 0, 5);
+
 $pageTitle = $shopName . ' — Usluge';
 $activePage = 'oglasi';
 $showSearch = true;
@@ -55,7 +97,14 @@ require __DIR__ . '/partials/layout-start.php';
             <?php if (!empty($seller['shop_page_tagline'])): ?>
                 <p class="storefront-tagline"><?= h((string)$seller['shop_page_tagline']) ?></p>
             <?php endif; ?>
+            <p><span class="storefront-open-badge <?= !empty($openStatus['open']) ? 'open' : 'closed' ?>"><?= h((string)$openStatus['label']) ?></span></p>
             <p class="form-hint">Objavio: <a href="<?= h($shopLink) ?>"><?= h($shopName) ?></a> <?= renderSellerBadges($seller) ?></p>
+            <div class="storefront-cta">
+                <?php if (!empty($seller['phone'])): ?>
+                    <a class="btn-call" href="tel:<?= h((string)$seller['phone']) ?>">Pozovi odmah</a>
+                <?php endif; ?>
+                <a class="btn-outline" href="/poruke.php?with=<?= (int)$seller['id'] ?>&ad_id=<?= $firstAdId > 0 ? $firstAdId : 0 ?>">Pošalji poruku</a>
+            </div>
             <?php if ($isOwner): ?>
                 <p class="form-hint">Uredi podatke na <a href="/nalog.php?tab=mini_sajt">Moj nalog → Mini sajt</a>.</p>
             <?php endif; ?>
@@ -93,17 +142,36 @@ require __DIR__ . '/partials/layout-start.php';
                     <?php if (!empty($seller['phone'])): ?>
                         <div class="storefront-row"><span>Telefon:</span><strong><a href="tel:<?= h((string)$seller['phone']) ?>"><?= h((string)$seller['phone']) ?></a></strong></div>
                     <?php endif; ?>
+                    <?php if (!empty($seller['shop_page_website'])): ?>
+                        <div class="storefront-row"><span>Website:</span><strong><a href="<?= h((string)$seller['shop_page_website']) ?>" target="_blank" rel="noopener">Otvori sajt</a></strong></div>
+                    <?php endif; ?>
                 </div>
+                <?php if (!empty($seller['shop_page_instagram']) || !empty($seller['shop_page_facebook']) || !empty($seller['shop_page_tiktok'])): ?>
+                    <div class="storefront-socials">
+                        <?php if (!empty($seller['shop_page_instagram'])): ?><a class="btn-outline" href="<?= h((string)$seller['shop_page_instagram']) ?>" target="_blank" rel="noopener">Instagram</a><?php endif; ?>
+                        <?php if (!empty($seller['shop_page_facebook'])): ?><a class="btn-outline" href="<?= h((string)$seller['shop_page_facebook']) ?>" target="_blank" rel="noopener">Facebook</a><?php endif; ?>
+                        <?php if (!empty($seller['shop_page_tiktok'])): ?><a class="btn-outline" href="<?= h((string)$seller['shop_page_tiktok']) ?>" target="_blank" rel="noopener">TikTok</a><?php endif; ?>
+                    </div>
+                <?php endif; ?>
             </article>
         </section>
 
         <section class="storefront-layout">
-            <?php if (!empty($seller['shop_page_work_hours'])): ?>
-                <article class="form-card storefront-section">
-                    <h2>Radno vreme</h2>
-                    <div class="storefront-pre"><?= nl2br(h((string)$seller['shop_page_work_hours'])) ?></div>
-                </article>
-            <?php endif; ?>
+            <article class="form-card storefront-section">
+                <h2>Radno vreme</h2>
+                <?php if (!empty($seller['shop_page_work_hours'])): ?>
+                    <div class="storefront-pre" style="margin-bottom:10px;"><?= nl2br(h((string)$seller['shop_page_work_hours'])) ?></div>
+                <?php endif; ?>
+                <table class="storefront-hours-table">
+                    <?php foreach ($dayLabels as $dayKey => $dayLabel): ?>
+                        <?php $day = $hours[$dayKey] ?? ['closed' => true, 'open' => '00:00', 'close' => '00:00']; ?>
+                        <tr>
+                            <td><?= h($dayLabel) ?></td>
+                            <td><?= !empty($day['closed']) ? 'Neradno' : (h((string)$day['open']) . ' - ' . h((string)$day['close'])) ?></td>
+                        </tr>
+                    <?php endforeach; ?>
+                </table>
+            </article>
 
             <?php if ($selectedPayments): ?>
                 <article class="form-card storefront-section">
@@ -117,12 +185,113 @@ require __DIR__ . '/partials/layout-start.php';
             <?php endif; ?>
         </section>
 
+        <?php if ($services): ?>
+            <section class="form-card storefront-section">
+                <h2>Istaknute usluge</h2>
+                <div class="storefront-services">
+                    <?php foreach ($services as $srv): ?>
+                        <div class="storefront-service">
+                            <strong><?= h((string)$srv['name']) ?></strong>
+                            <?php if (trim((string)($srv['value'] ?? '')) !== ''): ?>
+                                <span class="storefront-service-price"><?= h((string)$srv['value']) ?></span>
+                            <?php endif; ?>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </section>
+        <?php endif; ?>
+
+        <?php if ($gallery): ?>
+            <section class="form-card storefront-section">
+                <h2>Portfolio radova</h2>
+                <div class="storefront-gallery">
+                    <?php foreach ($gallery as $img): ?>
+                        <a href="<?= h($img) ?>" target="_blank" rel="noopener">
+                            <img src="<?= h($img) ?>" alt="<?= h($shopName) ?>">
+                        </a>
+                    <?php endforeach; ?>
+                </div>
+            </section>
+        <?php endif; ?>
+
+        <?php if ($faq): ?>
+            <section class="form-card storefront-section">
+                <h2>Česta pitanja</h2>
+                <div class="storefront-faq">
+                    <?php foreach ($faq as $item): ?>
+                        <details>
+                            <summary><?= h((string)$item['name']) ?></summary>
+                            <?php if (trim((string)($item['value'] ?? '')) !== ''): ?>
+                                <p><?= h((string)$item['value']) ?></p>
+                            <?php endif; ?>
+                        </details>
+                    <?php endforeach; ?>
+                </div>
+            </section>
+        <?php endif; ?>
+
+        <section class="storefront-layout">
+            <article class="form-card storefront-section">
+                <h2>Poverenje i ocene</h2>
+                <div class="storefront-rows">
+                    <div class="storefront-row"><span>PIB verifikacija:</span><strong><?= !empty($seller['pib_verified']) ? 'Verifikovano' : 'Nije verifikovano' ?></strong></div>
+                    <div class="storefront-row"><span>Broj oglasa:</span><strong><?= count($ads) ?></strong></div>
+                    <div class="storefront-row"><span>Ocene kupaca:</span><strong>👍 <?= (int)($ratingSummary['positive'] ?? 0) ?> / 👎 <?= (int)($ratingSummary['negative'] ?? 0) ?></strong></div>
+                </div>
+            </article>
+            <?php if ($mapEmbed !== ''): ?>
+                <article class="form-card storefront-section storefront-map">
+                    <h2>Lokacija</h2>
+                    <iframe src="<?= h($mapEmbed) ?>" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe>
+                </article>
+            <?php endif; ?>
+        </section>
+
+        <?php if ($ratings): ?>
+            <section class="form-card storefront-section">
+                <h2>Mini recenzije</h2>
+                <div class="storefront-faq">
+                    <?php foreach ($ratings as $rv): ?>
+                        <?php $author = findUserById((int)($rv['from_user_id'] ?? 0)); ?>
+                        <div class="storefront-service">
+                            <div>
+                                <strong><?= h((string)($author['username'] ?? 'Kupac')) ?></strong>
+                                <?php if (!empty($rv['comment'])): ?>
+                                    <div style="color:#475569;margin-top:6px;"><?= h((string)$rv['comment']) ?></div>
+                                <?php endif; ?>
+                            </div>
+                            <span class="storefront-service-price"><?= (($rv['vote'] ?? '') === 'negative') ? '👎' : '👍' ?></span>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            </section>
+        <?php endif; ?>
+
         <?php if (!empty($seller['shop_page_description'])): ?>
             <section class="form-card storefront-section">
                 <h2>Opis usluga</h2>
                 <div class="storefront-pre"><?= nl2br(h((string)$seller['shop_page_description'])) ?></div>
             </section>
         <?php endif; ?>
+
+        <section class="form-card storefront-section">
+            <h2>Kontakt forma</h2>
+            <?php if (!isLoggedIn()): ?>
+                <p class="form-hint">Za slanje poruke je potrebna prijava. <a href="/login.php?next=<?= h(rawurlencode($_SERVER['REQUEST_URI'] ?? storefrontUrlForUser($seller))) ?>">Prijavi se</a>.</p>
+            <?php elseif ($firstAdId <= 0): ?>
+                <p class="form-hint">Prodavac trenutno nema aktivan oglas za povezivanje poruke.</p>
+            <?php else: ?>
+                <form method="post">
+                    <?= csrfField() ?>
+                    <input type="hidden" name="action" value="shop_contact_send">
+                    <div class="form-group">
+                        <label>Vaša poruka</label>
+                        <textarea name="message" rows="4" required placeholder="Npr. Da li je moguća ugradnja u subotu?"></textarea>
+                    </div>
+                    <button type="submit" class="btn-call" style="width:auto;">Pošalji upit</button>
+                </form>
+            <?php endif; ?>
+        </section>
 
         <section class="form-card">
             <div class="account-section-head">
@@ -139,6 +308,12 @@ require __DIR__ . '/partials/layout-start.php';
                 </div>
             <?php endif; ?>
         </section>
+        <?php if (!empty($seller['phone'])): ?>
+            <div class="storefront-sticky-contact">
+                <a class="call" href="tel:<?= h((string)$seller['phone']) ?>">Pozovi</a>
+                <a class="msg" href="/poruke.php?with=<?= (int)$seller['id'] ?>&ad_id=<?= $firstAdId > 0 ? $firstAdId : 0 ?>">Poruka</a>
+            </div>
+        <?php endif; ?>
     </main>
 </div>
 

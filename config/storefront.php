@@ -128,11 +128,154 @@ function storefrontPayloadFromInput(array $input): array
         'shop_page_tagline' => mb_substr(trim((string)($input['shop_page_tagline'] ?? '')), 0, 160),
         'shop_page_description' => mb_substr(trim((string)($input['shop_page_description'] ?? '')), 0, 4000),
         'shop_page_address' => mb_substr(trim((string)($input['shop_page_address'] ?? '')), 0, 180),
-        'shop_page_work_hours' => mb_substr(trim((string)($input['shop_page_work_hours'] ?? '')), 0, 500),
+        'shop_page_work_hours' => mb_substr(trim((string)($input['shop_page_work_hours'] ?? '')), 0, 700),
         'shop_page_contact_email' => mb_substr(trim((string)($input['shop_page_contact_email'] ?? '')), 0, 160),
+        'shop_page_contact_whatsapp' => mb_substr(trim((string)($input['shop_page_contact_whatsapp'] ?? '')), 0, 40),
+        'shop_page_website' => mb_substr(trim((string)($input['shop_page_website'] ?? '')), 0, 180),
+        'shop_page_instagram' => mb_substr(trim((string)($input['shop_page_instagram'] ?? '')), 0, 180),
+        'shop_page_facebook' => mb_substr(trim((string)($input['shop_page_facebook'] ?? '')), 0, 180),
+        'shop_page_tiktok' => mb_substr(trim((string)($input['shop_page_tiktok'] ?? '')), 0, 180),
         'shop_page_payment_methods' => array_values(array_unique($cleanPayments)),
+        'shop_page_hours_weekly' => storefrontWeeklyHoursFromInput($input),
+        'shop_page_services' => storefrontParseNameValueLines((string)($input['shop_page_services_text'] ?? ''), 40, 120),
+        'shop_page_faq' => storefrontParseNameValueLines((string)($input['shop_page_faq_text'] ?? ''), 30, 260),
         'shop_page_updated_at' => date('Y-m-d H:i:s'),
     ];
+}
+
+function storefrontWeeklyDayLabels(): array
+{
+    return [
+        'mon' => 'Ponedeljak',
+        'tue' => 'Utorak',
+        'wed' => 'Sreda',
+        'thu' => 'Četvrtak',
+        'fri' => 'Petak',
+        'sat' => 'Subota',
+        'sun' => 'Nedelja',
+    ];
+}
+
+function storefrontWeeklyHoursDefault(): array
+{
+    return [
+        'mon' => ['closed' => false, 'open' => '09:00', 'close' => '17:00'],
+        'tue' => ['closed' => false, 'open' => '09:00', 'close' => '17:00'],
+        'wed' => ['closed' => false, 'open' => '09:00', 'close' => '17:00'],
+        'thu' => ['closed' => false, 'open' => '09:00', 'close' => '17:00'],
+        'fri' => ['closed' => false, 'open' => '09:00', 'close' => '17:00'],
+        'sat' => ['closed' => false, 'open' => '09:00', 'close' => '14:00'],
+        'sun' => ['closed' => true, 'open' => '00:00', 'close' => '00:00'],
+    ];
+}
+
+function storefrontNormalizeTime(string $value, string $fallback): string
+{
+    $value = trim($value);
+    if (!preg_match('/^\d{2}:\d{2}$/', $value)) {
+        return $fallback;
+    }
+    [$h, $m] = array_map('intval', explode(':', $value));
+    $h = max(0, min(23, $h));
+    $m = max(0, min(59, $m));
+    return sprintf('%02d:%02d', $h, $m);
+}
+
+function storefrontWeeklyHoursFromInput(array $input): array
+{
+    $defaults = storefrontWeeklyHoursDefault();
+    $days = storefrontWeeklyDayLabels();
+    $out = [];
+    foreach (array_keys($days) as $day) {
+        $closed = !empty($input['shop_page_day_closed_' . $day]);
+        $open = storefrontNormalizeTime((string)($input['shop_page_day_open_' . $day] ?? $defaults[$day]['open']), $defaults[$day]['open']);
+        $close = storefrontNormalizeTime((string)($input['shop_page_day_close_' . $day] ?? $defaults[$day]['close']), $defaults[$day]['close']);
+        $out[$day] = ['closed' => $closed, 'open' => $open, 'close' => $close];
+    }
+    return $out;
+}
+
+function storefrontWeeklyHoursForUser(array $user): array
+{
+    $defaults = storefrontWeeklyHoursDefault();
+    $raw = $user['shop_page_hours_weekly'] ?? null;
+    if (!is_array($raw)) {
+        return $defaults;
+    }
+    $days = storefrontWeeklyDayLabels();
+    foreach (array_keys($days) as $day) {
+        $item = is_array($raw[$day] ?? null) ? $raw[$day] : [];
+        $defaults[$day] = [
+            'closed' => !empty($item['closed']),
+            'open' => storefrontNormalizeTime((string)($item['open'] ?? $defaults[$day]['open']), $defaults[$day]['open']),
+            'close' => storefrontNormalizeTime((string)($item['close'] ?? $defaults[$day]['close']), $defaults[$day]['close']),
+        ];
+    }
+    return $defaults;
+}
+
+function storefrontParseNameValueLines(string $raw, int $maxLines, int $maxLine): array
+{
+    $lines = preg_split('/\R/u', $raw) ?: [];
+    $out = [];
+    foreach ($lines as $line) {
+        $line = trim($line);
+        if ($line === '') {
+            continue;
+        }
+        if (!str_contains($line, '|')) {
+            $name = mb_substr($line, 0, $maxLine);
+            $value = '';
+        } else {
+            [$name, $value] = array_map('trim', explode('|', $line, 2));
+            $name = mb_substr($name, 0, $maxLine);
+            $value = mb_substr($value, 0, $maxLine);
+        }
+        if ($name === '') {
+            continue;
+        }
+        $out[] = ['name' => $name, 'value' => $value];
+        if (count($out) >= $maxLines) {
+            break;
+        }
+    }
+    return $out;
+}
+
+function storefrontLinesFromPairs(array $items): string
+{
+    $lines = [];
+    foreach ($items as $item) {
+        if (!is_array($item)) {
+            continue;
+        }
+        $name = trim((string)($item['name'] ?? ''));
+        $value = trim((string)($item['value'] ?? ''));
+        if ($name === '') {
+            continue;
+        }
+        $lines[] = $name . ($value !== '' ? ' | ' . $value : '');
+    }
+    return implode("\n", $lines);
+}
+
+function storefrontOpenStatus(array $user): array
+{
+    $hours = storefrontWeeklyHoursForUser($user);
+    $days = ['sun', 'mon', 'tue', 'wed', 'thu', 'fri', 'sat'];
+    $now = new DateTime('now');
+    $dayKey = $days[(int)$now->format('w')] ?? 'mon';
+    $day = $hours[$dayKey] ?? ['closed' => true, 'open' => '00:00', 'close' => '00:00'];
+    if (!empty($day['closed'])) {
+        return ['open' => false, 'label' => 'Zatvoreno danas'];
+    }
+    $cur = (int)$now->format('H') * 60 + (int)$now->format('i');
+    [$oh, $om] = array_map('intval', explode(':', (string)$day['open']));
+    [$ch, $cm] = array_map('intval', explode(':', (string)$day['close']));
+    $openAt = $oh * 60 + $om;
+    $closeAt = $ch * 60 + $cm;
+    $isOpen = $cur >= $openAt && $cur < $closeAt;
+    return ['open' => $isOpen, 'label' => $isOpen ? 'Otvoreno sada' : 'Trenutno zatvoreno'];
 }
 
 function storefrontUploadsDir(): string
@@ -197,4 +340,44 @@ function handleStorefrontCoverUpload(int $userId, ?string $existingCover = null)
     }
 
     return '/uploads/storefront/' . $userId . '/' . $name;
+}
+
+function handleStorefrontGalleryUploads(int $userId, array $existing = []): array
+{
+    ensureStorefrontUploadsDir();
+    $gallery = array_values(array_filter($existing, static fn($v) => is_string($v) && $v !== ''));
+    $keep = $_POST['shop_page_gallery_keep'] ?? [];
+    if (is_array($keep) && $keep !== []) {
+        $gallery = array_values(array_filter($gallery, static fn($img) => in_array($img, $keep, true)));
+    } elseif (!empty($_POST['shop_page_gallery_clear'])) {
+        $gallery = [];
+    }
+
+    $targetDir = storefrontUploadsDir() . '/' . $userId;
+    if (!is_dir($targetDir)) {
+        mkdir($targetDir, 0777, true);
+    }
+    if (isset($_FILES['shop_page_gallery']) && is_array($_FILES['shop_page_gallery']['name'] ?? null)) {
+        $count = count($_FILES['shop_page_gallery']['name']);
+        $allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+        for ($i = 0; $i < $count && count($gallery) < 8; $i++) {
+            if ((int)($_FILES['shop_page_gallery']['error'][$i] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+                continue;
+            }
+            $tmp = (string)($_FILES['shop_page_gallery']['tmp_name'][$i] ?? '');
+            if ($tmp === '' || !is_file($tmp)) {
+                continue;
+            }
+            $type = mime_content_type($tmp) ?: '';
+            if (!in_array($type, $allowed, true)) {
+                continue;
+            }
+            $name = 'gallery_' . time() . '_' . $i . '.jpg';
+            $dest = $targetDir . '/' . $name;
+            if (compressAndSaveImage($tmp, $dest, $type)) {
+                $gallery[] = '/uploads/storefront/' . $userId . '/' . $name;
+            }
+        }
+    }
+    return array_values(array_slice($gallery, 0, 8));
 }
