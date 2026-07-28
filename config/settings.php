@@ -121,6 +121,8 @@ function saveSiteSettings(array $input): bool
             $settings[$key] = (float)$value;
         } elseif ($key === 'top_packages' && is_array($defaultValue)) {
             $settings[$key] = is_array($value) ? array_values($value) : $defaultValue;
+        } elseif ($key === 'email_templates') {
+            $settings[$key] = is_array($value) ? parseEmailTemplatesPost($value) : [];
         } elseif ($key === 'credit_topup_amounts' && is_array($defaultValue)) {
             if (is_array($value)) {
                 $settings[$key] = array_values(array_unique(array_filter(array_map('intval', $value), static fn($n) => $n > 0)));
