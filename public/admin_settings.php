@@ -68,6 +68,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: /admin_settings.php?tab=features');
             exit;
         }
+
+        // Spreči spam: 1 test na 60s (dupli klik / browser retry dok SMTP „visi“)
+        $lastTest = (int)($_SESSION['_smtp_test_at'] ?? 0);
+        if ($lastTest > 0 && (time() - $lastTest) < 60) {
+            $wait = 60 - (time() - $lastTest);
+            setFlash('danger', "Sačekaj {$wait}s pre sledećeg test emaila (zaštita od duplog slanja).");
+            header('Location: /admin_settings.php?tab=features');
+            exit;
+        }
+        $_SESSION['_smtp_test_at'] = time();
+
+        @set_time_limit(25);
         $result = sendSmtpEmail(
             $to,
             'KupiTelefon — test email',
@@ -76,6 +88,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if (!empty($result['ok'])) {
             setFlash('success', 'Test email poslat na ' . $to . '.');
         } else {
+            // Dozvoli retry odmah ako nije uspelo
+            unset($_SESSION['_smtp_test_at']);
             setFlash('danger', 'Test email nije poslat: ' . (string)($result['error'] ?? 'nepoznata greška'));
         }
         header('Location: /admin_settings.php?tab=features');
@@ -153,6 +167,10 @@ $pageTitle = 'Podešavanja sajta — KupiTelefon';
 $activePage = 'nalog';
 $showSearch = false;
 $adminPage = 'settings';
+
+require_once dirname(__DIR__) . '/config/mail.php';
+$mailStatus = mailStatusSummary();
+$adminEmail = trim((string)(currentUser()['email'] ?? ''));
 
 require __DIR__ . '/partials/layout-start.php';
 ?>
@@ -286,11 +304,7 @@ require __DIR__ . '/partials/layout-start.php';
                     <label class="type-chip" style="min-width:auto;flex:none;"><input type="checkbox" name="enable_email_notifications" value="1" <?= !empty($settings['enable_email_notifications']) || (!isset($settings['enable_email_notifications']) && !empty($settings['enable_expiry_email'])) ? 'checked' : '' ?>> Email obaveštenja (poruke, alerti, istek…)</label>
                 </div>
 
-                <?php
-                require_once dirname(__DIR__) . '/config/mail.php';
-                $mailStatus = mailStatusSummary();
-                $adminEmail = trim((string)(currentUser()['email'] ?? ''));
-                ?>
+                <?php /* $mailStatus već učitan gore */ ?>
                 <h3 style="margin-top:22px;">Email SMTP (Zoho)</h3>
                 <p class="form-hint">
                     Lozinka ide samo u <code>.env</code> kao <code>ZOHO_SMTP_PASSWORD</code> (nikad u admin formu).
@@ -304,15 +318,7 @@ require __DIR__ . '/partials/layout-start.php';
                         <strong style="color:#b91c1c;"><?= h($mailStatus['message']) ?></strong>
                     <?php endif; ?>
                 </p>
-                <div class="form-row" style="align-items:end;margin-top:10px;">
-                    <div class="form-group" style="flex:1;">
-                        <label>Test email na</label>
-                        <input type="email" name="test_smtp_to" value="<?= h($adminEmail) ?>" placeholder="tvoj@email.com">
-                    </div>
-                    <div class="form-group" style="flex:0;">
-                        <button type="submit" name="test_smtp_email" value="1" class="btn-message">Pošalji test</button>
-                    </div>
-                </div>
+                <p class="form-hint">Test dugme je ispod (odvojen form) — klikni <strong>jednom</strong> i sačekaj poruku na vrhu stranice.</p>
 
                 <div class="form-row">
                     <div class="form-group">
@@ -476,6 +482,34 @@ require __DIR__ . '/partials/layout-start.php';
 
             <button class="btn-call" type="submit">Sačuvaj podešavanja</button>
         </form>
+
+        <?php if ($tab === 'features'): ?>
+        <form method="POST" action="/admin_settings.php?tab=features" class="form-card" style="margin-top:12px;" id="smtp-test-form" data-smtp-test>
+            <?= csrfField() ?>
+            <h3 style="font-size:16px;margin-bottom:10px;">Pošalji test email</h3>
+            <div class="form-row" style="align-items:end;">
+                <div class="form-group" style="flex:1;">
+                    <label>Na adresu</label>
+                    <input type="email" name="test_smtp_to" value="<?= h($adminEmail) ?>" placeholder="tvoj@email.com" required>
+                </div>
+                <div class="form-group" style="flex:0;">
+                    <button type="submit" name="test_smtp_email" value="1" class="btn-message" id="smtp-test-btn">Pošalji test</button>
+                </div>
+            </div>
+            <p class="form-hint">Maksimalno 1 test na 60 sekundi. Ne klikći više puta dok se stranica ne vrati.</p>
+        </form>
+        <script>
+        (function () {
+          var form = document.getElementById('smtp-test-form');
+          var btn = document.getElementById('smtp-test-btn');
+          if (!form || !btn) return;
+          form.addEventListener('submit', function () {
+            btn.disabled = true;
+            btn.textContent = 'Šaljem…';
+          });
+        })();
+        </script>
+        <?php endif; ?>
     </main>
 </div>
 

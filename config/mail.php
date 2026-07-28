@@ -16,7 +16,7 @@ function mailSmtpConfig(): array
         'password' => (string)(envValue('ZOHO_SMTP_PASSWORD', '') ?: envValue('SMTP_PASSWORD', '')),
         'from_email' => trim((string)envValue('SMTP_FROM_EMAIL', 'podrska@kupitelefon.rs')),
         'from_name' => trim((string)envValue('SMTP_FROM_NAME', 'KupiTelefon.rs')),
-        'timeout' => max(5, (int)envValue('SMTP_TIMEOUT', '20')),
+        'timeout' => max(5, (int)envValue('SMTP_TIMEOUT', '12')),
     ];
 }
 
