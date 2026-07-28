@@ -33,7 +33,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string)($_POST['action'] ?? '') ==
     csrfVerify();
     if (!isLoggedIn()) {
         setFlash('danger', 'Prijavi se da pošalješ poruku.');
-        redirect('/login.php?next=' . rawurlencode($_SERVER['REQUEST_URI'] ?? storefrontUrlForUser($seller)));
+        header('Location: /login.php?next=' . rawurlencode($_SERVER['REQUEST_URI'] ?? storefrontUrlForUser($seller)));
+        exit;
     }
     $viewer = currentUser();
     $fromId = (int)($viewer['id'] ?? 0);
@@ -52,7 +53,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string)($_POST['action'] ?? '') ==
         ]);
         setFlash($saved ? 'success' : 'danger', $saved ? 'Poruka je poslata.' : 'Poruka nije poslata.');
     }
-    redirect(storefrontUrlForUser($seller));
+    header('Location: ' . storefrontUrlForUser($seller));
+    exit;
 }
 
 $openStatus = storefrontOpenStatus($seller);
