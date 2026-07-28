@@ -77,7 +77,6 @@ require __DIR__ . '/partials/layout-start.php';
             <p style="margin-top:8px;font-size:13px;color:var(--text-muted);">
                 <a href="/forgot-password.php">Zaboravljena lozinka?</a>
             </p>
-            <p style="margin-top:8px;font-size:12px;color:var(--text-light);">Demo: admin / admin123</p>
         </div>
     </main>
 </div>
