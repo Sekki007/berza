@@ -62,7 +62,15 @@ function defaultSiteSettings(): array
         'conditions' => ['Novo', 'Kao novo', 'Polovno', 'Oštećeno/Za delove', 'Odlično', 'Servisirano'],
         'sms_template_phone_verify' => 'KupiTelefon kod: {code}. Vazi 10 min.',
         'sms_template_password_reset' => 'KupiTelefon reset lozinke: {code}. Vazi 10 min.',
+        'email_templates' => [],
     ];
+}
+
+/** Jedan slogan sajta (top bar / SEO / footer). */
+function siteTagline(): string
+{
+    $t = trim((string)(siteSettings()['topbar_text'] ?? ''));
+    return $t !== '' ? $t : 'Telefoni · tableti · satovi · servis · Srbija';
 }
 
 function siteSettings(bool $reload = false): array

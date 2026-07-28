@@ -14,7 +14,7 @@ $bodyClass = trim($bodyClass ?? '');
 $minimalHeader = $minimalHeader ?? false;
 $showSearch = $showSearch ?? true;
 $searchValue = $searchValue ?? '';
-$pageDescription = $pageDescription ?? ((string)($site['topbar_text'] ?? '') . ' — ' . (string)($site['site_name'] ?? 'KupiTelefon'));
+$pageDescription = $pageDescription ?? (siteTagline() . ' — ' . (string)($site['site_name'] ?? 'KupiTelefon'));
 $pageImage = $pageImage ?? '';
 $canonicalUrl = $canonicalUrl ?? absoluteUrl(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/');
 $unreadMessages = ($user && !empty($site['enable_messages'])) ? getUnreadMessageCount((int)$user['id']) : 0;
@@ -64,7 +64,7 @@ $compareCount = count(compareIds());
 <?php if (!$minimalHeader): ?>
     <div class="topbar">
         <div class="topbar-inner">
-            <span><?= h((string)$site['topbar_text']) ?></span>
+            <span><?= h(siteTagline()) ?></span>
             <div class="topbar-links">
                 <a href="/kako-radi.php">Kako radi</a>
                 <?php if (!empty($site['enable_favorites'])): ?><a href="/favorites.php">Omiljeni</a><?php endif; ?>

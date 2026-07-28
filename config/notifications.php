@@ -159,13 +159,22 @@ function notifyUser(int $userId, string $type, string $title, string $body, stri
     if ($emailToo && emailNotificationsEnabled()) {
         $user = findUserById($userId);
         if ($user && userWantsEmailNotifications($user)) {
-            $emailBody = $body;
-            if ($link !== '') {
-                $emailBody .= "\n\n" . appBaseUrl() . $link;
-            }
-            $emailBody .= "\n\n—\nKupiTelefon.rs\n" . appBaseUrl();
             $name = trim((string)($user['full_name'] ?? $user['username'] ?? ''));
-            sendUserEmail($userId, 'KupiTelefon: ' . $title, $emailBody, $name !== '' ? $name : null);
+            $templateKey = in_array($type, ['new_message', 'ad_expiry_warning', 'ad_expired', 'saved_search_match'], true)
+                ? $type
+                : 'notification';
+            $rendered = renderEmailTemplate($templateKey, [
+                'name' => $name,
+                'title' => $title,
+                'body' => $body,
+                'link' => $link,
+            ]);
+            sendUserEmail(
+                $userId,
+                $rendered['subject'] !== '' ? $rendered['subject'] : ('KupiTelefon: ' . $title),
+                $rendered['body'] !== '' ? $rendered['body'] : $body,
+                $name !== '' ? $name : null
+            );
         }
     }
     return $id;

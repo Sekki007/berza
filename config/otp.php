@@ -143,11 +143,18 @@ function sendUserOtp(int $userId, string $purpose, ?string $phoneOverride = null
     }
 
     if ($channel === 'email') {
-        $subject = $purpose === 'password_reset'
-            ? 'KupiTelefon: kod za reset lozinke'
-            : 'KupiTelefon: kod za verifikaciju';
-        $body = "Zdravo,\n\nTvoj kod je: {$code}\n\nVaži 10 minuta.\nAko nisi tražio/la ovaj kod, ignoriši poruku.\n\n—\nKupiTelefon.rs\n" . appBaseUrl();
-        $sent = sendRawEmail($emailForSend, $subject, $body, trim((string)($user['full_name'] ?? $user['username'] ?? '')) ?: null);
+        $tplKey = $purpose === 'password_reset' ? 'otp_password_reset' : 'otp_phone_verify';
+        $name = trim((string)($user['full_name'] ?? $user['username'] ?? ''));
+        $rendered = renderEmailTemplate($tplKey, [
+            'code' => $code,
+            'name' => $name,
+        ]);
+        $sent = sendRawEmail(
+            $emailForSend,
+            $rendered['subject'] !== '' ? $rendered['subject'] : ('KupiTelefon: kod'),
+            $rendered['body'] !== '' ? $rendered['body'] : ("Kod: {$code}"),
+            $name !== '' ? $name : null
+        );
         if (!$sent) {
             return ['ok' => false, 'error' => 'Email nije poslat. Proveri SMTP podešavanja.'];
         }

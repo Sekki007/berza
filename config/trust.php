@@ -283,14 +283,18 @@ function sendEmailVerification(int $userId): bool
         'email_verify_sent_at' => date('Y-m-d H:i:s'),
     ]);
 
-    $host = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http')
-        . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
-    $link = $host . '/verify-email.php?token=' . urlencode($token);
+    $link = appBaseUrl() . '/verify-email.php?token=' . urlencode($token);
+    $name = trim((string)($user['full_name'] ?? $user['username'] ?? ''));
+    $rendered = renderEmailTemplate('email_verify', [
+        'link' => $link,
+        'name' => $name,
+    ]);
 
     return sendRawEmail(
         $email,
-        'KupiTelefon: potvrdi email',
-        "Zdravo,\n\nPotvrdi svoj email klikom na link:\n{$link}\n\nAko nisi tražio/la ovo, ignoriši poruku.\n\nKupiTelefon"
+        $rendered['subject'] !== '' ? $rendered['subject'] : 'KupiTelefon: potvrdi email',
+        $rendered['body'] !== '' ? $rendered['body'] : ("Potvrdi email: {$link}"),
+        $name !== '' ? $name : null
     );
 }
 

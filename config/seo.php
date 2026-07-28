@@ -22,8 +22,9 @@ function seoTruncate(string $text, int $max = 160): string
 function seoHomeMeta(): array
 {
     $name = seoSiteName();
+    $tag = siteTagline();
     return [
-        'title' => $name . ' — telefoni, tableti, satovi i servis',
+        'title' => $name . ($tag !== '' ? ' — ' . $tag : ''),
         'description' => 'Kupi i prodaj telefone, tablete i pametne satove, ili pronađi servis u Srbiji. Oglasi, provereni prodavci i mini sajtovi radnji na ' . $name . '.',
     ];
 }
@@ -128,7 +129,7 @@ function seoOrganizationJsonLd(): array
         '@type' => 'Organization',
         'name' => $name,
         'url' => appBaseUrl() . '/',
-        'description' => (string)($site['topbar_text'] ?? 'Telefoni, tableti, satovi i servis'),
+        'description' => siteTagline(),
     ];
     $email = trim((string)($site['contact_email'] ?? ''));
     $phone = trim((string)($site['contact_phone'] ?? ''));

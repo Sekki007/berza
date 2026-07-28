@@ -1071,6 +1071,7 @@ require_once __DIR__ . '/ratings.php';
 require_once __DIR__ . '/seo.php';
 require_once __DIR__ . '/admin_helpers.php';
 require_once __DIR__ . '/mail.php';
+require_once __DIR__ . '/email_templates.php';
 require_once __DIR__ . '/notifications.php';
 require_once __DIR__ . '/credits.php';
 require_once __DIR__ . '/promotion.php';

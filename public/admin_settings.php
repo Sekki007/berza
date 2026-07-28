@@ -32,7 +32,7 @@ function parseTopPackagesPost(): array
 
 $settings = siteSettings();
 $tab = trim((string)($_GET['tab'] ?? 'general'));
-$validTabs = ['general', 'homepage', 'lists', 'features', 'sms', 'maintenance'];
+$validTabs = ['general', 'homepage', 'lists', 'features', 'email', 'sms', 'maintenance'];
 if (!in_array($tab, $validTabs, true)) {
     $tab = 'general';
 }
@@ -138,6 +138,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'enable_shop_page_paid' => (string)($_POST['enable_shop_page_paid'] ?? '0') === '1',
         'shop_page_price_credits' => (int)($_POST['shop_page_price_credits'] ?? $current['shop_page_price_credits'] ?? 1200),
         'shop_page_duration_days' => (int)($_POST['shop_page_duration_days'] ?? $current['shop_page_duration_days'] ?? 30),
+        'email_templates' => isset($_POST['email_templates']) && is_array($_POST['email_templates'])
+            ? parseEmailTemplatesPost($_POST['email_templates'])
+            : ($current['email_templates'] ?? []),
         'maintenance_mode' => (string)($_POST['maintenance_mode'] ?? '0') === '1',
         'maintenance_message' => trim((string)($_POST['maintenance_message'] ?? $current['maintenance_message'])),
         'cities' => parseLines((string)($_POST['cities'] ?? implode("\n", $current['cities']))),
@@ -187,6 +190,7 @@ require __DIR__ . '/partials/layout-start.php';
             <a href="?tab=homepage" class="<?= $tab === 'homepage' ? 'active' : '' ?>">Početna</a>
             <a href="?tab=lists" class="<?= $tab === 'lists' ? 'active' : '' ?>">Liste</a>
             <a href="?tab=features" class="<?= $tab === 'features' ? 'active' : '' ?>">Funkcije</a>
+            <a href="?tab=email" class="<?= $tab === 'email' ? 'active' : '' ?>">Email šabloni</a>
             <a href="?tab=sms" class="<?= $tab === 'sms' ? 'active' : '' ?>">SMS</a>
             <a href="?tab=maintenance" class="<?= $tab === 'maintenance' ? 'active' : '' ?>">Održavanje</a>
         </div>
@@ -201,8 +205,9 @@ require __DIR__ . '/partials/layout-start.php';
                         <input name="site_name" value="<?= h((string)$settings['site_name']) ?>">
                     </div>
                     <div class="form-group">
-                        <label>Tekst u top baru</label>
+                        <label>Slogan sajta</label>
                         <input name="topbar_text" value="<?= h((string)$settings['topbar_text']) ?>">
+                        <p class="form-hint">Jedan tekst — top bar, footer i SEO. Npr. „Telefoni · tableti · satovi · servis · Srbija”.</p>
                     </div>
                 </div>
                 <div class="form-row">
@@ -429,6 +434,29 @@ require __DIR__ . '/partials/layout-start.php';
                         <input type="number" min="1" max="365" name="shop_page_duration_days" value="<?= (int)($settings['shop_page_duration_days'] ?? 30) ?>">
                     </div>
                 </div>
+            </div>
+
+            <div class="admin-tab-panel <?= $tab === 'email' ? 'active' : '' ?>">
+                <h3>Email šabloni</h3>
+                <p class="form-hint" style="margin-bottom:16px;">
+                    Tekstovi koje sistem šalje preko Zoho SMTP. Placeholders se zamenjuju automatski
+                    (npr. <code>{code}</code>, <code>{name}</code>, <code>{title}</code>, <code>{body}</code>, <code>{link}</code>, <code>{site}</code>, <code>{url}</code>).
+                    <code>{name_hello}</code> = „ Ime” ili prazno.
+                </p>
+                <?php foreach (emailTemplatesMerged() as $tplKey => $tpl): ?>
+                    <div class="form-card" style="margin-bottom:14px;padding:14px;border:1px solid var(--border);border-radius:10px;">
+                        <h4 style="font-size:15px;margin:0 0 10px;"><?= h((string)$tpl['label']) ?></h4>
+                        <p class="form-hint" style="margin-bottom:10px;">Ključ: <code><?= h($tplKey) ?></code> · <?= h((string)$tpl['vars']) ?></p>
+                        <div class="form-group">
+                            <label>Naslov (subject)</label>
+                            <input name="email_templates[<?= h($tplKey) ?>][subject]" value="<?= h((string)$tpl['subject']) ?>">
+                        </div>
+                        <div class="form-group">
+                            <label>Tekst poruke</label>
+                            <textarea name="email_templates[<?= h($tplKey) ?>][body]" rows="7"><?= h((string)$tpl['body']) ?></textarea>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
             </div>
 
             <div class="admin-tab-panel <?= $tab === 'sms' ? 'active' : '' ?>">
