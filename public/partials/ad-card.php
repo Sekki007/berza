@@ -16,7 +16,7 @@ $cardSeller = !empty($ad['created_by']) ? findUserById((int)$ad['created_by']) :
 $cardShop = $cardSeller
     ? getSellerShopName($cardSeller, [$ad])
     : trim((string)($ad['shop_name'] ?? ''));
-$cardShopUrl = $cardSeller ? shopUrl((string)$cardSeller['username']) : '';
+$cardShopUrl = $cardSeller ? shopUrlForUser($cardSeller) : '';
 $categoryLabel = adCategoryLabel($ad);
 $rsdHint = !$priceOpen ? formatAdPriceRsd($ad) : '';
 ?>

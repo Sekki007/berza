@@ -123,7 +123,7 @@ require __DIR__ . '/partials/layout-start.php';
                             <strong><?= h((string)$u['full_name']) ?></strong><br>
                             <span style="color:var(--text-muted);font-size:12px;">@<?= h((string)$u['username']) ?></span>
                             <?php if ($isAdminUser): ?><span class="vote-tag vote-tag-pos" style="margin-left:6px;">Admin</span><?php endif; ?>
-                            <?php if (!empty($u['shop_name'])): ?><div style="font-size:12px;margin-top:2px;"><a href="<?= h(shopUrl((string)$u['username'])) ?>"><?= h((string)$u['shop_name']) ?></a></div><?php endif; ?>
+                            <?php if (!empty($u['shop_name'])): ?><div style="font-size:12px;margin-top:2px;"><a href="<?= h(shopUrlForUser($u)) ?>"><?= h((string)$u['shop_name']) ?></a></div><?php endif; ?>
                             <?= renderSellerBadges($u) ?>
                         </td>
                         <td><?= h((string)($u['phone'] ?? '—')) ?></td>
@@ -160,7 +160,7 @@ require __DIR__ . '/partials/layout-start.php';
                             <?php if (!$isAdminUser): ?>
                                 <div class="admin-actions">
                                     <a class="btn-sm btn-sm-primary" href="/admin_user_edit.php?id=<?= $uid ?>">Izmeni</a>
-                                    <a class="btn-sm" href="<?= h(shopUrl((string)$u['username'])) ?>">Izlog</a>
+                                    <a class="btn-sm" href="<?= h(shopUrlForUser($u)) ?>">Izlog</a>
                                     <?php if ($bizStatus === 'pending' || $bizStatus === 'rejected'): ?>
                                         <form method="POST" style="display:inline;">
                                             <input type="hidden" name="user_id" value="<?= $uid ?>">

@@ -265,9 +265,11 @@ function registerUser(string $username, string $password, string $fullName, stri
     }
 
     $newId = $maxId + 1;
+    $shopSlug = allocateUniqueShopSlug(normalizeShopSlug($username) ?: ('izlog-' . $newId), $newId);
     $users[] = [
         'id' => $newId,
         'username' => $username,
+        'shop_slug' => $shopSlug,
         'password_hash' => password_hash($password, PASSWORD_DEFAULT),
         'full_name' => $fullName,
         'phone' => $normalizedPhone,
@@ -321,6 +323,14 @@ function updateUserProfile(int $userId, array $data): bool
         }
         if (array_key_exists('shop_name', $data)) {
             $user['shop_name'] = trim((string)$data['shop_name']);
+        }
+        if (array_key_exists('shop_slug', $data)) {
+            $rawSlug = trim((string)$data['shop_slug']);
+            $slug = normalizeShopSlug($rawSlug);
+            if ($slug === '' || !isValidShopSlug($slug) || shopSlugTaken($slug, $userId)) {
+                return false;
+            }
+            $user['shop_slug'] = $slug;
         }
         if (array_key_exists('account_type', $data) || array_key_exists('business_kind', $data) || array_key_exists('pib', $data)) {
             $newType = array_key_exists('account_type', $data)

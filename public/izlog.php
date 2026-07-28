@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/config/bootstrap.php';
 
-$username = trim((string)($_GET['u'] ?? ''));
-$seller = $username !== '' ? findUserByUsername($username) : null;
+$param = trim((string)($_GET['u'] ?? ''));
+$seller = resolveShopUserFromParam($param);
 
 if (!$seller) {
     http_response_code(404);
@@ -19,11 +19,17 @@ if (!$seller) {
 }
 
 $sellerId = (int)$seller['id'];
+$shopLink = shopUrlForUser($seller);
+// Stari /izlog/{username} → kanonski slug
+if ($param !== '' && rawurldecode($param) !== userShopSlug($seller)) {
+    header('Location: ' . $shopLink, true, 301);
+    exit;
+}
+
 $ads = getPublicAdsByUserId($sellerId, true);
 $shopName = getSellerShopName($seller, $ads);
 $summary = getSellerRatingSummary($sellerId);
 $ratings = getSellerRatings($sellerId);
-$shopLink = shopUrl((string)$seller['username']);
 $shopSeo = seoShopMeta($seller, $shopName);
 $pageDescription = $shopSeo['description'];
 $canonicalUrl = absoluteUrl($shopLink);
@@ -85,8 +91,7 @@ require __DIR__ . '/partials/layout-start.php';
                 <div class="shop-header-info">
                     <h1 class="shop-title"><?= h($shopName) ?> <?= renderSellerBadges($seller) ?></h1>
                     <p class="shop-meta">
-                        @<?= h((string)$seller['username']) ?>
-                        · <?= count($ads) ?> <?= count($ads) === 1 ? 'oglas' : 'oglasa' ?>
+                        <?= count($ads) ?> <?= count($ads) === 1 ? 'oglas' : 'oglasa' ?>
                     </p>
                     <div class="shop-rating"><?= renderReputation($summary, $shopLink) ?></div>
                     <?php if (!empty($seller['shop_bio'])): ?>

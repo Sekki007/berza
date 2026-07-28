@@ -110,7 +110,7 @@ require __DIR__ . '/partials/layout-start.php';
         <h2 style="font-size:18px;margin-bottom:6px;">Izmena korisnika #<?= (int)$editUser['id'] ?></h2>
         <p class="form-hint" style="margin-bottom:14px;">
             @<?= h((string)$editUser['username']) ?>
-            · <a href="<?= h(shopUrl((string)$editUser['username'])) ?>">Izlog</a>
+            · <a href="<?= h(shopUrlForUser($editUser)) ?>">Izlog</a>
             · oglasa: <?= countUserAds((int)$editUser['id']) ?>
         </p>
 

@@ -41,11 +41,11 @@ function storefrontIsActive(?array $user): bool
 
 function storefrontUrlForUser(array $user): string
 {
-    $username = trim((string)($user['username'] ?? ''));
-    if ($username === '') {
+    $slug = function_exists('userShopSlug') ? userShopSlug($user) : trim((string)($user['username'] ?? ''));
+    if ($slug === '') {
         return '/usluge.php';
     }
-    return '/usluge/' . rawurlencode($username);
+    return '/usluge/' . rawurlencode($slug);
 }
 
 function storefrontPurchase(int $userId): array

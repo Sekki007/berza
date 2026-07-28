@@ -2,13 +2,173 @@
 
 declare(strict_types=1);
 
-function shopUrl(string $username): string
+function reservedShopSlugs(): array
 {
-    $username = trim($username);
-    if ($username === '') {
+    return [
+        'admin', 'api', 'assets', 'izlog', 'usluge', 'oglas', 'oglasi', 'login', 'register',
+        'nalog', 'poruke', 'favorites', 'dashboard', 'report', 'sitemap', 'robots', 'uploads',
+        'forgot-password', 'reset-password', 'verify-phone', 'verify-email', 'uporedi',
+        'kako-radi', 'index', 'www', 'mail', 'podrska', 'support', 'kupitelefon',
+    ];
+}
+
+function normalizeShopSlug(string $raw): string
+{
+    $map = [
+        'č' => 'c', 'ć' => 'c', 'š' => 's', 'ž' => 'z', 'đ' => 'dj',
+        'Č' => 'c', 'Ć' => 'c', 'Š' => 's', 'Ž' => 'z', 'Đ' => 'dj',
+    ];
+    $raw = strtr(trim($raw), $map);
+    $raw = mb_strtolower($raw);
+    $raw = preg_replace('/[^a-z0-9-]+/', '-', $raw) ?? '';
+    $raw = preg_replace('/-+/', '-', $raw) ?? '';
+    $raw = trim($raw, '-');
+    if (strlen($raw) > 40) {
+        $raw = rtrim(substr($raw, 0, 40), '-');
+    }
+    return $raw;
+}
+
+function isValidShopSlug(string $slug): bool
+{
+    if ($slug === '' || strlen($slug) < 3 || strlen($slug) > 40) {
+        return false;
+    }
+    if (!preg_match('/^[a-z0-9]+(?:-[a-z0-9]+)*$/', $slug)) {
+        return false;
+    }
+    return !in_array($slug, reservedShopSlugs(), true);
+}
+
+function findUserByShopSlug(string $slug): ?array
+{
+    $slug = normalizeShopSlug($slug);
+    if ($slug === '') {
+        return null;
+    }
+    foreach (getUsers() as $user) {
+        $userSlug = normalizeShopSlug((string)($user['shop_slug'] ?? ''));
+        if ($userSlug !== '' && $userSlug === $slug) {
+            return $user;
+        }
+    }
+    return null;
+}
+
+function shopSlugTaken(string $slug, int $exceptUserId = 0): bool
+{
+    $slug = normalizeShopSlug($slug);
+    if ($slug === '') {
+        return true;
+    }
+    $bySlug = findUserByShopSlug($slug);
+    if ($bySlug && (int)($bySlug['id'] ?? 0) !== $exceptUserId) {
+        return true;
+    }
+    // Ne dozvoli da slug poklopi tuđe login username (stari linkovi)
+    $byUser = findUserByUsername($slug);
+    if ($byUser && (int)($byUser['id'] ?? 0) !== $exceptUserId) {
+        return true;
+    }
+    return false;
+}
+
+function allocateUniqueShopSlug(string $base, int $exceptUserId = 0): string
+{
+    $base = normalizeShopSlug($base);
+    if ($base === '' || !isValidShopSlug($base)) {
+        $base = 'izlog';
+    }
+    if (in_array($base, reservedShopSlugs(), true)) {
+        $base = 'izlog';
+    }
+    $candidate = $base;
+    $i = 2;
+    while (shopSlugTaken($candidate, $exceptUserId) || !isValidShopSlug($candidate)) {
+        $suffix = '-' . $i;
+        $trim = 40 - strlen($suffix);
+        $candidate = rtrim(substr($base, 0, max(1, $trim)), '-') . $suffix;
+        $i++;
+        if ($i > 9999) {
+            $candidate = 'izlog-' . $exceptUserId;
+            break;
+        }
+    }
+    return $candidate;
+}
+
+/**
+ * Javni slug izloga. Ako nedostaje, kreira se iz username-a (jednom).
+ */
+function ensureUserShopSlug(int $userId): string
+{
+    $user = findUserById($userId);
+    if (!$user) {
+        return '';
+    }
+    $existing = normalizeShopSlug((string)($user['shop_slug'] ?? ''));
+    if ($existing !== '' && isValidShopSlug($existing) && !shopSlugTaken($existing, $userId)) {
+        if ((string)($user['shop_slug'] ?? '') !== $existing) {
+            patchUser($userId, ['shop_slug' => $existing]);
+        }
+        return $existing;
+    }
+    $base = normalizeShopSlug((string)($user['username'] ?? ''));
+    if ($base === '') {
+        $base = 'izlog-' . $userId;
+    }
+    $slug = allocateUniqueShopSlug($base, $userId);
+    patchUser($userId, ['shop_slug' => $slug]);
+    return $slug;
+}
+
+function userShopSlug(array $user): string
+{
+    $id = (int)($user['id'] ?? 0);
+    $existing = normalizeShopSlug((string)($user['shop_slug'] ?? ''));
+    if ($existing !== '' && isValidShopSlug($existing)) {
+        return $existing;
+    }
+    if ($id > 0) {
+        return ensureUserShopSlug($id);
+    }
+    return normalizeShopSlug((string)($user['username'] ?? ''));
+}
+
+function shopUrlForUser(array $user): string
+{
+    $slug = userShopSlug($user);
+    if ($slug === '') {
         return '/izlog.php';
     }
-    return '/izlog/' . rawurlencode($username);
+    return '/izlog/' . rawurlencode($slug);
+}
+
+/** @deprecated Prefer shopUrlForUser(); accepts slug or legacy username. */
+function shopUrl(string $slugOrUsername): string
+{
+    $slugOrUsername = trim($slugOrUsername);
+    if ($slugOrUsername === '') {
+        return '/izlog.php';
+    }
+    $user = findUserByShopSlug($slugOrUsername) ?? findUserByUsername($slugOrUsername);
+    if ($user) {
+        return shopUrlForUser($user);
+    }
+    return '/izlog/' . rawurlencode(normalizeShopSlug($slugOrUsername) ?: $slugOrUsername);
+}
+
+function resolveShopUserFromParam(string $param): ?array
+{
+    $param = trim($param);
+    if ($param === '') {
+        return null;
+    }
+    $bySlug = findUserByShopSlug($param);
+    if ($bySlug) {
+        return $bySlug;
+    }
+    return findUserByUsername($param);
 }
 
 function slugifyTitle(string $title): string

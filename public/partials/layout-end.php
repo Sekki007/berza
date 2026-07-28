@@ -13,7 +13,7 @@ $menuShopLink = '';
 if ($user) {
     $menuProfile = findUserById((int)$user['id']) ?? $user;
     $menuDisplayName = (string)(($menuProfile['shop_name'] ?? '') ?: ($menuProfile['full_name'] ?? $user['full_name'] ?? ''));
-    $menuShopLink = shopUrl((string)($menuProfile['username'] ?? $user['username'] ?? ''));
+    $menuShopLink = shopUrlForUser($menuProfile);
 }
 ?>
     <footer class="site-footer">
@@ -92,7 +92,7 @@ if ($user) {
         <div class="mobile-account-menu-head">
             <div>
                 <strong><?= $user ? h($menuDisplayName !== '' ? $menuDisplayName : 'Moj nalog') : 'Dobrodošli' ?></strong>
-                <span><?= $user ? '@' . h((string)($user['username'] ?? '')) : 'Prijavi se da upravljaš oglasima' ?></span>
+                <span><?= $user ? 'Prijavljen' : 'Prijavi se da upravljaš oglasima' ?></span>
             </div>
             <button type="button" class="mobile-account-menu-close" data-close-account-menu aria-label="Zatvori">×</button>
         </div>

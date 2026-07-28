@@ -48,7 +48,7 @@ foreach (getUsers() as $user) {
     $hasAds = getPublicAdsByUserId($uid, true) !== [];
     if ($hasAds) {
         $urls[] = [
-            'loc' => absoluteUrl(shopUrl((string)$user['username'])),
+            'loc' => absoluteUrl(shopUrlForUser($user)),
             'priority' => '0.6',
             'changefreq' => 'weekly',
         ];

@@ -47,7 +47,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($ad) {
         header('Location: /oglas.php?id=' . (int)$ad['id']);
     } elseif ($targetUser) {
-        header('Location: ' . shopUrl((string)$targetUser['username']));
+        header('Location: ' . shopUrlForUser($targetUser));
     } else {
         header('Location: /index.php');
     }
@@ -70,7 +70,7 @@ require __DIR__ . '/partials/layout-start.php';
                 <p class="form-hint">Oglas: <strong><?= h((string)$ad['title']) ?></strong> (#<?= (int)$ad['id'] ?>)</p>
             <?php endif; ?>
             <?php if ($targetUser): ?>
-                <p class="form-hint">Korisnik: <strong><?= h((string)$targetUser['full_name']) ?></strong> (@<?= h((string)$targetUser['username']) ?>)</p>
+                <p class="form-hint">Korisnik: <strong><?= h(getSellerShopName($targetUser)) ?></strong></p>
             <?php endif; ?>
 
             <form method="POST">
@@ -93,7 +93,7 @@ require __DIR__ . '/partials/layout-start.php';
                     <textarea name="details" rows="4" maxlength="1000" placeholder="Objasni ukratko zašto prijavljuješ..."></textarea>
                 </div>
                 <button class="btn-call" type="submit">Pošalji prijavu</button>
-                <a class="btn-message" style="display:inline-block;margin-top:10px;" href="<?= $ad ? '/oglas.php?id=' . (int)$ad['id'] : ($targetUser ? h(shopUrl((string)$targetUser['username'])) : '/index.php') ?>">Otkaži</a>
+                <a class="btn-message" style="display:inline-block;margin-top:10px;" href="<?= $ad ? '/oglas.php?id=' . (int)$ad['id'] : ($targetUser ? h(shopUrlForUser($targetUser)) : '/index.php') ?>">Otkaži</a>
             </form>
         </div>
     </main>

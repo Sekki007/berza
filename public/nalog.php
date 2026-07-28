@@ -266,6 +266,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'email' => trim((string)($_POST['email'] ?? '')),
         'shop_name' => $shopName,
         'shop_bio' => $shopBio,
+        'shop_slug' => trim((string)($_POST['shop_slug'] ?? '')),
         'location' => trim((string)($_POST['location'] ?? '')),
         'notify_email' => !empty($_POST['notify_email']),
         'account_type' => $accountTypePost,
@@ -273,7 +274,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'pib' => trim((string)($_POST['pib'] ?? '')),
     ]);
     if (!$ok) {
-        setFlash('danger', 'Profil nije ažuriran. Proveri telefon i PIB (9 cifara).');
+        setFlash('danger', 'Profil nije ažuriran. Proveri telefon, PIB ili URL izloga (zauzet / neispravan).');
     } else {
         $fresh = findUserById($userId);
         if ($fresh && !isPhoneVerified($fresh) && normalizePhoneRs((string)($fresh['phone'] ?? '')) !== null) {
@@ -300,7 +301,7 @@ $notifications = getNotificationsForUser($userId);
 $unreadNotifs = getUnreadNotificationCount($userId);
 $savedSearches = getSavedSearchesForUser($userId);
 $sellerStats = sumAdStatsForUser($userId, 30);
-$shopLink = shopUrl((string)$profile['username']);
+$shopLink = shopUrlForUser($profile);
 $summary = getSellerRatingSummary($userId);
 $host = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
 $fullShopUrl = $host . $shopLink;
@@ -350,7 +351,7 @@ require __DIR__ . '/partials/layout-start.php';
                         <h1 class="account-name"><?= h($displayName) ?></h1>
                         <div class="account-name-badges"><?= renderSellerBadges($profile) ?></div>
                     </div>
-                    <p class="account-username">@<?= h((string)$profile['username']) ?></p>
+                    <p class="account-username">Izlog: <a href="<?= h($shopLink) ?>"><?= h(userShopSlug($profile)) ?></a></p>
                     <div class="account-rep"><?= renderReputation($summary, $shopLink) ?></div>
                 </div>
             </div>
@@ -1174,10 +1175,18 @@ require __DIR__ . '/partials/layout-start.php';
                                 <input type="text" name="full_name" value="<?= h((string)$profile['full_name']) ?>" required>
                             </div>
                             <div class="form-group">
-                                <label>Korisničko ime</label>
+                                <label>Korisničko ime (prijava)</label>
                                 <input type="text" value="<?= h((string)$profile['username']) ?>" disabled>
-                                <p class="form-hint">Ne može se menjati.</p>
+                                <p class="form-hint">Privatno — služi samo za login, drugi ga ne vide.</p>
                             </div>
+                        </div>
+                        <div class="form-group">
+                            <label>URL izloga</label>
+                            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                                <span style="color:var(--text-muted);font-size:13px;">kupitelefon.rs/izlog/</span>
+                                <input type="text" name="shop_slug" value="<?= h(userShopSlug($profile)) ?>" required minlength="3" maxlength="40" pattern="[a-z0-9]+(-[a-z0-9]+)*" placeholder="moj-izlog" style="flex:1;min-width:160px;" autocomplete="off">
+                            </div>
+                            <p class="form-hint">Samo mala slova, brojevi i crtica. Ovo je javni link tvog izloga.</p>
                         </div>
                         <div class="form-group">
                             <label>Tip naloga</label>

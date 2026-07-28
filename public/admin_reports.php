@@ -119,7 +119,7 @@ require __DIR__ . '/partials/layout-start.php';
                     <?php endif; ?>
                     <?php if ($targetUser): ?>
                         <div><strong>Korisnik:</strong> <?= h((string)$targetUser['full_name']) ?> (@<?= h((string)$targetUser['username']) ?>)
-                            · <a href="<?= h(shopUrl((string)$targetUser['username'])) ?>">Izlog</a>
+                            · <a href="<?= h(shopUrlForUser($targetUser)) ?>">Izlog</a>
                         </div>
                     <?php elseif (!empty($report['target_user_id'])): ?>
                         <div><strong>Korisnik ID:</strong> <?= (int)$report['target_user_id'] ?> (obrisan?)</div>

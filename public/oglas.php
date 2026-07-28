@@ -70,6 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $type = getAdType($ad);
 $seller = findUserById((int)($ad['created_by'] ?? 1));
 $sellerUsername = (string)($seller['username'] ?? '');
+$sellerShopUrl = $seller ? shopUrlForUser($seller) : '';
 $sellerName = $seller
     ? getSellerShopName($seller, [$ad])
     : (trim((string)($ad['shop_name'] ?? '')) ?: 'Prodavac');
@@ -114,7 +115,7 @@ $adCategory = (string)($ad['category'] ?? '');
 require __DIR__ . '/partials/layout-start.php';
 
 $sellerBlock = static function () use (
-    $sellerUsername,
+    $sellerShopUrl,
     $sellerInitials,
     $sellerName,
     $seller,
@@ -123,8 +124,8 @@ $sellerBlock = static function () use (
     $sellerSummary,
     $sellerAdsCount
 ): void {
-    if ($sellerUsername !== ''): ?>
-        <a class="kp-card kp-seller-card" href="<?= h(shopUrl($sellerUsername)) ?>">
+    if ($sellerShopUrl !== ''): ?>
+        <a class="kp-card kp-seller-card" href="<?= h($sellerShopUrl) ?>">
             <div class="kp-seller-top">
                 <div class="kp-seller-avatar"><?= h($sellerInitials) ?></div>
                 <div>
@@ -399,8 +400,8 @@ $contactBlock = static function (string $formId = 'poruka') use (
                 <?php if ($sellerLocation !== ''): ?>
                     <a class="kp-browse-link" href="/index.php?location=<?= urlencode($sellerLocation) ?>"><?= h($sellerLocation) ?></a>
                 <?php endif; ?>
-                <?php if ($sellerUsername !== ''): ?>
-                    <a class="kp-browse-link" href="<?= h(shopUrl($sellerUsername)) ?>">Svi oglasi prodavca</a>
+                <?php if ($sellerShopUrl !== ''): ?>
+                    <a class="kp-browse-link" href="<?= h($sellerShopUrl) ?>">Svi oglasi prodavca</a>
                 <?php endif; ?>
             </div>
         </div>

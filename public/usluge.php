@@ -4,12 +4,18 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/config/bootstrap.php';
 
-$username = trim((string)($_GET['u'] ?? ''));
-$seller = $username !== '' ? findUserByUsername($username) : null;
+$param = trim((string)($_GET['u'] ?? ''));
+$seller = resolveShopUserFromParam($param);
 
 if (!$seller) {
     http_response_code(404);
     echo 'Stranica nije pronađena.';
+    exit;
+}
+
+$canonicalStorefront = storefrontUrlForUser($seller);
+if ($param !== '' && rawurldecode($param) !== userShopSlug($seller)) {
+    header('Location: ' . $canonicalStorefront, true, 301);
     exit;
 }
 
@@ -22,7 +28,7 @@ if (!$isActive && !$isOwner && !isAdmin()) {
 }
 
 $shopName = getSellerShopName($seller);
-$shopLink = shopUrl((string)$seller['username']);
+$shopLink = shopUrlForUser($seller);
 $ads = getPublicAdsByUserId((int)$seller['id'], true);
 $firstAdId = (int)($ads[0]['id'] ?? 0);
 $messageThreadUrl = '/poruke.php?with=' . (int)$seller['id'] . '&ad_id=' . ($firstAdId > 0 ? $firstAdId : 0);

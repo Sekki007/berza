@@ -200,7 +200,7 @@ function seoAdJsonLd(array $ad, ?array $seller = null): array
         $data['seller'] = [
             '@type' => 'Person',
             'name' => getSellerShopName($seller, [$ad]),
-            'url' => absoluteUrl(shopUrl((string)($seller['username'] ?? ''))),
+            'url' => absoluteUrl(shopUrlForUser($seller)),
         ];
     }
     return $data;
