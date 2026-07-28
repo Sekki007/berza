@@ -95,6 +95,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             : ($current['credit_topup_amounts'] ?? defaultCreditTopupAmounts()),
         'ad_renewal_credits' => (int)($_POST['ad_renewal_credits'] ?? $current['ad_renewal_credits'] ?? 200),
         'highlight_credits' => (int)($_POST['highlight_credits'] ?? $current['highlight_credits'] ?? 150),
+        'enable_shop_page_paid' => (string)($_POST['enable_shop_page_paid'] ?? '0') === '1',
+        'shop_page_price_credits' => (int)($_POST['shop_page_price_credits'] ?? $current['shop_page_price_credits'] ?? 1200),
+        'shop_page_duration_days' => (int)($_POST['shop_page_duration_days'] ?? $current['shop_page_duration_days'] ?? 30),
         'maintenance_mode' => (string)($_POST['maintenance_mode'] ?? '0') === '1',
         'maintenance_message' => trim((string)($_POST['maintenance_message'] ?? $current['maintenance_message'])),
         'cities' => parseLines((string)($_POST['cities'] ?? implode("\n", $current['cities']))),
@@ -343,6 +346,26 @@ require __DIR__ . '/partials/layout-start.php';
                     <div class="form-group">
                         <label>Cena plavog isticanja / 7 dana (din)</label>
                         <input type="number" min="0" name="highlight_credits" value="<?= (int)($settings['highlight_credits'] ?? 150) ?>">
+                    </div>
+                </div>
+
+                <h3 style="margin-top:22px;">Mini web stranica radnje (plaćeno)</h3>
+                <p class="form-hint">Dostupno samo verifikovanim firmama (PIB). Plaća se kreditima, na period koji odrediš.</p>
+                <div class="form-group form-checks">
+                    <input type="hidden" name="enable_shop_page_paid" value="0">
+                    <label class="type-chip" style="min-width:auto;flex:none;">
+                        <input type="checkbox" name="enable_shop_page_paid" value="1" <?= !empty($settings['enable_shop_page_paid']) ? 'checked' : '' ?>>
+                        Uključi mini stranicu radnje
+                    </label>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Cena paketa (krediti / din)</label>
+                        <input type="number" min="1" name="shop_page_price_credits" value="<?= (int)($settings['shop_page_price_credits'] ?? 1200) ?>">
+                    </div>
+                    <div class="form-group">
+                        <label>Trajanje paketa (dana)</label>
+                        <input type="number" min="1" max="365" name="shop_page_duration_days" value="<?= (int)($settings['shop_page_duration_days'] ?? 30) ?>">
                     </div>
                 </div>
             </div>

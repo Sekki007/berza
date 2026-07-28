@@ -48,6 +48,9 @@ function defaultSiteSettings(): array
         'credit_payment_info' => "Uplata kredita:\nPrimalac: TelefonBerza\nBroj računa: 160-0000000000000-00\nSvrha: KR-[BROJ] + tvoje korisničko ime\nPrimer: KR-12 marko",
         'ad_renewal_credits' => 200,
         'highlight_credits' => 150,
+        'enable_shop_page_paid' => true,
+        'shop_page_price_credits' => 1200,
+        'shop_page_duration_days' => 30,
         'maintenance_mode' => false,
         'maintenance_message' => 'Sajt je trenutno u održavanju. Pokušajte ponovo uskoro.',
         'cities' => [

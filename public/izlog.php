@@ -89,6 +89,9 @@ require __DIR__ . '/partials/layout-start.php';
             </div>
             <div class="shop-actions">
                 <button type="button" class="btn-message" data-copy-link data-copy-url="<?= h($shopLink) ?>">Kopiraj link izloga</button>
+                <?php if (storefrontIsActive($seller)): ?>
+                    <a class="btn-message" href="<?= h(storefrontUrlForUser($seller)) ?>" style="text-align:center;">Mini sajt radnje</a>
+                <?php endif; ?>
                 <?php if (!$isOwnShop): ?>
                     <a class="btn-message" href="/report.php?user=<?= (int)$sellerId ?>" style="text-align:center;">Prijavi korisnika</a>
                 <?php endif; ?>

@@ -1386,6 +1386,40 @@ a.rep-thumb:hover { opacity: 0.85; text-decoration: underline; }
 }
 .ad-desktop-extra { display: none; }
 
+/* Mini web stranica radnje */
+.account-check-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+.storefront-hero h1 { margin-bottom: 8px; }
+.storefront-tagline { margin: 0 0 8px; color: var(--text-muted); }
+.storefront-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.storefront-box h2 { margin-bottom: 10px; font-size: 16px; }
+.storefront-list { margin: 0; padding-left: 18px; }
+.storefront-list li { margin-bottom: 6px; }
+.storefront-pre {
+  white-space: pre-wrap;
+  line-height: 1.55;
+  color: var(--text);
+}
+.storefront-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.storefront-chip {
+  background: #eef3f8;
+  border: 1px solid #d7e1ec;
+  border-radius: 999px;
+  padding: 6px 10px;
+  font-size: 12px;
+}
+@media (max-width: 767px) {
+  .account-check-grid { grid-template-columns: 1fr; }
+  .storefront-grid { grid-template-columns: 1fr; }
+}
+
 /* ===== KP-style ad detail ===== */
 body.page-detail { background: #f0f0f0; }
 .page-detail .main-wrap.kp-detail-wrap { max-width: 1200px; }

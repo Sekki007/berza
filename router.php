@@ -17,6 +17,12 @@ if (preg_match('#^/izlog/([^/]+)/?$#', $uri, $m)) {
     exit;
 }
 
+if (preg_match('#^/usluge/([^/]+)/?$#', $uri, $m)) {
+    $_GET['u'] = rawurldecode($m[1]);
+    require __DIR__ . '/public/usluge.php';
+    exit;
+}
+
 if ($uri !== '/' && file_exists($filePath) && !is_dir($filePath)) {
     $ext = strtolower(pathinfo($filePath, PATHINFO_EXTENSION));
     $mimeMap = [

@@ -178,6 +178,35 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    if ($action === 'buy_shop_page') {
+        $result = storefrontPurchase($userId);
+        if (!empty($result['ok'])) {
+            setFlash('success', 'Mini stranica je aktivirana (−' . formatCredits((int)$result['cost']) . ') i važi ' . (int)$result['days'] . ' dana.');
+        } else {
+            setFlash('danger', (string)($result['error'] ?? 'Aktivacija mini stranice nije uspela.'));
+        }
+        header('Location: /nalog.php?tab=mini_sajt');
+        exit;
+    }
+
+    if ($action === 'save_shop_page') {
+        $freshUser = findUserById($userId) ?? $profile;
+        if (!storefrontEnabled()) {
+            setFlash('danger', 'Mini stranica trenutno nije dostupna.');
+        } elseif (!storefrontIsActive($freshUser)) {
+            setFlash('danger', 'Prvo aktiviraj mini stranicu kupovinom paketa.');
+        } else {
+            $payload = storefrontPayloadFromInput($_POST);
+            if (patchUser($userId, $payload)) {
+                setFlash('success', 'Mini stranica je sačuvana.');
+            } else {
+                setFlash('danger', 'Izmene mini stranice nisu sačuvane.');
+            }
+        }
+        header('Location: /nalog.php?tab=mini_sajt');
+        exit;
+    }
+
     if ($action === 'save_search') {
         $created = createSavedSearch($userId, $_POST, trim((string)($_POST['name'] ?? '')), !empty($_POST['alert_enabled']));
         if ($created) {
@@ -256,7 +285,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $tab = trim((string)($_GET['tab'] ?? 'pregled'));
-if (!in_array($tab, ['pregled', 'profil', 'oglasi', 'obavestenja', 'top', 'krediti', 'pretrage', 'statistika'], true)) {
+if (!in_array($tab, ['pregled', 'profil', 'oglasi', 'obavestenja', 'top', 'krediti', 'pretrage', 'statistika', 'mini_sajt'], true)) {
     $tab = 'pregled';
 }
 
@@ -289,6 +318,16 @@ $creditDeposits = $creditsOn ? getCreditDepositsForUser($userId) : [];
 $creditTx = $creditsOn ? getCreditTransactionsForUser($userId, 15) : [];
 $creditAmounts = $creditsOn ? creditTopupAmounts() : [];
 $creditPayInfo = $creditsOn ? creditPaymentInfo() : '';
+$storefrontOn = storefrontEnabled();
+$storefrontPrice = storefrontPriceCredits();
+$storefrontDays = storefrontDurationDays();
+$storefrontActive = storefrontIsActive($profile);
+$storefrontUntilTs = strtotime((string)($profile['shop_page_until'] ?? ''));
+$storefrontUntilLabel = $storefrontUntilTs ? date('d.m.Y.', $storefrontUntilTs) : '';
+$storefrontPublicUrl = storefrontUrlForUser($profile);
+if ($tab === 'mini_sajt' && !$storefrontOn) {
+    $tab = 'profil';
+}
 
 $pageTitle = 'Moj nalog — TelefonBerza';
 $activePage = 'nalog';
@@ -394,6 +433,9 @@ require __DIR__ . '/partials/layout-start.php';
             <a href="?tab=obavestenja" class="<?= $tab === 'obavestenja' ? 'active' : '' ?>">Obav.<?= $unreadNotifs > 0 ? ' · ' . $unreadNotifs : '' ?></a>
             <a href="?tab=pretrage" class="<?= $tab === 'pretrage' ? 'active' : '' ?>">Pretrage</a>
             <a href="?tab=statistika" class="<?= $tab === 'statistika' ? 'active' : '' ?>">Stat.</a>
+            <?php if ($storefrontOn): ?>
+                <a href="?tab=mini_sajt" class="<?= $tab === 'mini_sajt' ? 'active' : '' ?>">Mini sajt</a>
+            <?php endif; ?>
             <a href="?tab=profil" class="<?= $tab === 'profil' ? 'active' : '' ?>">Profil</a>
         </nav>
         <?php if ($tab === 'pregled'): ?>
@@ -896,6 +938,91 @@ require __DIR__ . '/partials/layout-start.php';
                             </div>
                         <?php endforeach; ?>
                     </div>
+                <?php endif; ?>
+            </section>
+
+        <?php elseif ($tab === 'mini_sajt' && $storefrontOn): ?>
+            <?php
+            $isBusiness = userAccountType($profile) === 'business';
+            $isBizVerified = isBusinessVerified($profile);
+            ?>
+            <section class="form-card">
+                <h2>Mini web stranica radnje</h2>
+                <p class="form-hint">Posebna stranica za firmu (PIB), sa podacima o trgovcu, kontaktom, radnim vremenom i uslugama.</p>
+
+                <?php if (!$isBusiness): ?>
+                    <div class="account-empty">
+                        <p>Mini stranica je dostupna samo za firmu. U profilu postavi tip naloga na <strong>Firma</strong>.</p>
+                        <a class="btn-sm btn-sm-primary" href="?tab=profil">Idi na profil</a>
+                    </div>
+                <?php elseif (!$isBizVerified): ?>
+                    <div class="account-empty">
+                        <p>Za mini stranicu moraš imati verifikovanu firmu (PIB + admin potvrda).</p>
+                        <a class="btn-sm btn-sm-primary" href="?tab=profil">Dopuni podatke firme</a>
+                    </div>
+                <?php elseif (!$storefrontActive): ?>
+                    <div class="account-top-banner">
+                        <div class="account-top-banner-text">
+                            <h2>Otključaj mini sajt</h2>
+                            <p>Cena: <strong><?= formatCredits($storefrontPrice) ?></strong> za <strong><?= (int)$storefrontDays ?> dana</strong>. Saldo: <strong><?= formatCredits($userCredits) ?></strong>.</p>
+                            <p class="form-hint">Posle kupovine dobijaš posebnu stranicu kao mini prezentaciju radnje.</p>
+                        </div>
+                        <form method="POST" onsubmit="return confirm('Aktivirati mini sajt za <?= formatCredits($storefrontPrice) ?>?');">
+                            <input type="hidden" name="action" value="buy_shop_page">
+                            <button class="btn-call" type="submit" style="width:auto;min-width:220px;" <?= (!$creditsOn || $userCredits < $storefrontPrice) ? 'disabled' : '' ?>>
+                                Aktiviraj mini sajt
+                            </button>
+                        </form>
+                    </div>
+                    <?php if (!$creditsOn || $userCredits < $storefrontPrice): ?>
+                        <p class="form-hint" style="margin-top:10px;">Nemaš dovoljno kredita. <a href="?tab=krediti">Dopuni saldo</a>.</p>
+                    <?php endif; ?>
+                <?php else: ?>
+                    <div class="profile-status profile-status-approved">
+                        <strong>Mini sajt je aktivan</strong>
+                        <span>Važi do <?= h($storefrontUntilLabel !== '' ? $storefrontUntilLabel : '—') ?> · <a href="<?= h($storefrontPublicUrl) ?>" target="_blank" rel="noopener">Otvori javnu stranicu</a></span>
+                    </div>
+
+                    <form method="POST" class="account-profile-form" style="margin-top:14px;">
+                        <input type="hidden" name="action" value="save_shop_page">
+                        <div class="form-group">
+                            <label>Naslov stranice</label>
+                            <input type="text" name="shop_page_title" value="<?= h((string)($profile['shop_page_title'] ?? '')) ?>" placeholder="npr. MobilServis Demo · Servis i prodaja telefona">
+                        </div>
+                        <div class="form-group">
+                            <label>Podnaslov</label>
+                            <input type="text" name="shop_page_tagline" value="<?= h((string)($profile['shop_page_tagline'] ?? '')) ?>" placeholder="Brza dijagnostika, originalni delovi, garancija">
+                        </div>
+                        <div class="form-group">
+                            <label>Adresa sedišta</label>
+                            <input type="text" name="shop_page_address" value="<?= h((string)($profile['shop_page_address'] ?? '')) ?>" placeholder="Ulica i broj, grad, poštanski broj">
+                        </div>
+                        <div class="form-group">
+                            <label>Radno vreme</label>
+                            <textarea name="shop_page_work_hours" rows="3" placeholder="Pon–Pet 09–17&#10;Sub 09–14&#10;Nedelja neradna"><?= h((string)($profile['shop_page_work_hours'] ?? '')) ?></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>Kontakt email</label>
+                            <input type="email" name="shop_page_contact_email" value="<?= h((string)($profile['shop_page_contact_email'] ?? '')) ?>" placeholder="podrska@tvojadomena.rs">
+                        </div>
+                        <div class="form-group">
+                            <label>Uslovi plaćanja</label>
+                            <div class="account-check-grid">
+                                <?php foreach (storefrontPaymentMethodsOptions() as $pmKey => $pmLabel): ?>
+                                    <?php $checked = in_array($pmKey, (array)($profile['shop_page_payment_methods'] ?? []), true); ?>
+                                    <label class="profile-check">
+                                        <input type="checkbox" name="shop_page_payment_methods[]" value="<?= h($pmKey) ?>" <?= $checked ? 'checked' : '' ?>>
+                                        <span><?= h($pmLabel) ?></span>
+                                    </label>
+                                <?php endforeach; ?>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Opis / usluge</label>
+                            <textarea name="shop_page_description" rows="8" placeholder="Opiši usluge, prednosti, šta tačno nudite..."><?= h((string)($profile['shop_page_description'] ?? '')) ?></textarea>
+                        </div>
+                        <button class="btn-call" type="submit" style="width:auto;min-width:220px;">Sačuvaj mini sajt</button>
+                    </form>
                 <?php endif; ?>
             </section>
 

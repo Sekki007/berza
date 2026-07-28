@@ -25,9 +25,10 @@ server {
     access_log /var/log/nginx/berza-access.log;
     error_log  /var/log/nginx/berza-error.log;
 
-    # Pretty URL: /oglas/123-slug  i  /izlog/username
+    # Pretty URL: /oglas/123-slug, /izlog/username, /usluge/username
     rewrite ^/oglas/(\d+)(?:-.*)?/?$ /oglas.php?id=$1 last;
     rewrite ^/izlog/([^/]+)/?$ /izlog.php?u=$1 last;
+    rewrite ^/usluge/([^/]+)/?$ /usluge.php?u=$1 last;
 
     location / {
         try_files $uri $uri/ /index.php?$query_string;
@@ -44,7 +45,7 @@ server {
 }
 ```
 
-Bez ova dva `rewrite` reda, klik na oglas ne otvara detalj (link ide na `/oglas/...` umesto `/oglas.php?id=`).
+Bez ova `rewrite` pravila, pretty URL linkovi neće raditi (otvaranje oglasa, izloga i mini sajta).
 
 
 ---
