@@ -272,7 +272,7 @@ $contactSel = is_array($ad['contact_methods'] ?? null) ? $ad['contact_methods'] 
 $pickupSel = is_array($ad['pickup_methods'] ?? null) ? $ad['pickup_methods'] : ['pickup'];
 $bizStatus = userBusinessStatus($profile);
 
-$pageTitle = ($isEdit ? 'Izmena oglasa' : 'Postavi oglas') . ' — TelefonBerza';
+$pageTitle = ($isEdit ? 'Izmena oglasa' : 'Postavi oglas') . ' — KupiTelefon';
 $activePage = 'dodaj';
 $bodyClass = 'page-ad-form';
 $showSearch = false;

@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-$pageTitle = 'Prijavi — TelefonBerza';
+$pageTitle = 'Prijavi — KupiTelefon';
 $activePage = 'oglasi';
 $showSearch = false;
 

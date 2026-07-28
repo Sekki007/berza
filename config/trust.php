@@ -289,8 +289,8 @@ function sendEmailVerification(int $userId): bool
 
     return sendRawEmail(
         $email,
-        'TelefonBerza: potvrdi email',
-        "Zdravo,\n\nPotvrdi svoj email klikom na link:\n{$link}\n\nAko nisi tražio/la ovo, ignoriši poruku.\n\nTelefonBerza"
+        'KupiTelefon: potvrdi email',
+        "Zdravo,\n\nPotvrdi svoj email klikom na link:\n{$link}\n\nAko nisi tražio/la ovo, ignoriši poruku.\n\nKupiTelefon"
     );
 }
 

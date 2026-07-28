@@ -41,7 +41,7 @@ if (($_GET['action'] ?? '') === 'clear') {
 }
 
 $ads = getCompareAds();
-$pageTitle = 'Uporedi oglase — TelefonBerza';
+$pageTitle = 'Uporedi oglase — KupiTelefon';
 $activePage = 'oglasi';
 $pageDescription = 'Uporedi do 3 oglasa: cena, stanje, grad i prodavac.';
 require __DIR__ . '/partials/layout-start.php';

@@ -7,7 +7,7 @@ requireAdmin();
 
 $stats = getDashboardStats();
 
-$pageTitle = 'Dashboard — TelefonBerza';
+$pageTitle = 'Dashboard — KupiTelefon';
 $activePage = 'nalog';
 $showSearch = false;
 $adminPage = 'dashboard';

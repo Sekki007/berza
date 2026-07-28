@@ -1,4 +1,4 @@
--- TelefonBerza — MySQL schema (utf8mb4)
+-- KupiTelefon — MySQL schema (utf8mb4)
 -- Import: mysql -u root -p < database/schema.sql
 -- Zatim: php tools/import_json_to_mysql.php
 

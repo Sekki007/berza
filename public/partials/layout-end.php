@@ -22,7 +22,7 @@ if ($user) {
                 <a href="/index.php" class="site-footer-logo">
                     <span class="logo-telefon"><?= h((string)$site['logo_telefon']) ?></span><span class="logo-berza"><?= h((string)$site['logo_berza']) ?></span>
                 </a>
-                <p class="site-footer-tag"><?= h((string)($site['topbar_text'] ?? 'Mobilni telefoni · Srbija')) ?></p>
+                <p class="site-footer-tag"><?= h((string)($site['topbar_text'] ?? 'Telefoni · tableti · satovi · servis · Srbija')) ?></p>
                 <?php
                 $footerPhone = trim((string)($site['contact_phone'] ?? ''));
                 $footerEmail = trim((string)($site['contact_email'] ?? ''));
@@ -77,7 +77,7 @@ if ($user) {
         <div class="site-footer-bottom">
             <div class="site-footer-bottom-inner">
                 <span><?= h((string)$site['footer_copyright']) ?></span>
-                <span class="site-footer-meta">Berza telefona i delova</span>
+                <span class="site-footer-meta">Telefoni, tableti, satovi i servis</span>
             </div>
         </div>
     </footer>

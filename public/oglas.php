@@ -96,7 +96,7 @@ $msgHref = $isOwnAd ? '/poruke.php' : (isLoggedIn() ? '#poruka' : '/login.php');
 $price = (float)($ad['price'] ?? 0);
 $priceOpen = isAdPriceOpen($ad);
 
-$pageTitle = (string)$ad['title'] . ' — TelefonBerza';
+$pageTitle = (string)$ad['title'] . ' — KupiTelefon';
 $activePage = 'oglasi';
 $bodyClass = 'page-detail';
 $showSearch = true;
@@ -360,7 +360,7 @@ $contactBlock = static function (string $formId = 'poruka') use (
 
         <div class="kp-card">
             <strong>Napomena</strong>
-            <p style="margin:6px 0 0;font-size:13px;color:#666;line-height:1.45;">Dogovor oko kupovine i plaćanja je između kupca i prodavca. TelefonBerza ne učestvuje u transakciji.</p>
+            <p style="margin:6px 0 0;font-size:13px;color:#666;line-height:1.45;">Dogovor oko kupovine i plaćanja je između kupca i prodavca. KupiTelefon ne učestvuje u transakciji.</p>
         </div>
 
         <?php

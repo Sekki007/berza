@@ -39,7 +39,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$pageTitle = 'Zaboravljena lozinka — TelefonBerza';
+$pageTitle = 'Zaboravljena lozinka — KupiTelefon';
 $activePage = 'nalog';
 $minimalHeader = true;
 $showSearch = false;

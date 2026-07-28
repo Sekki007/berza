@@ -107,7 +107,7 @@ function sendRawEmail(string $toEmail, string $subject, string $body): bool
     $settings = siteSettings();
     $from = trim((string)($settings['contact_email'] ?? ''));
     if ($from === '' || !filter_var($from, FILTER_VALIDATE_EMAIL)) {
-        $from = 'noreply@telefonberza.local';
+        $from = 'noreply@kupitelefon.local';
     }
     $headers = 'From: ' . $from . "\r\n" . 'Content-Type: text/plain; charset=UTF-8';
     return @mail($toEmail, '=?UTF-8?B?' . base64_encode($subject) . '?=', $body, $headers);
@@ -148,8 +148,8 @@ function notifyUser(int $userId, string $type, string $title, string $body, stri
                     . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
                 $emailBody .= "\n\n" . $host . $link;
             }
-            $emailBody .= "\n\nTelefonBerza";
-            sendUserEmail($userId, 'TelefonBerza: ' . $title, $emailBody);
+            $emailBody .= "\n\nKupiTelefon";
+            sendUserEmail($userId, 'KupiTelefon: ' . $title, $emailBody);
         }
     }
     return $id;

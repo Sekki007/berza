@@ -8,13 +8,13 @@
 $user = currentUser();
 $flash = getFlash();
 $site = siteSettings();
-$pageTitle = $pageTitle ?? ($site['site_name'] ?? 'TelefonBerza');
+$pageTitle = $pageTitle ?? ($site['site_name'] ?? 'KupiTelefon');
 $activePage = $activePage ?? 'oglasi';
 $bodyClass = trim($bodyClass ?? '');
 $minimalHeader = $minimalHeader ?? false;
 $showSearch = $showSearch ?? true;
 $searchValue = $searchValue ?? '';
-$pageDescription = $pageDescription ?? ((string)($site['topbar_text'] ?? '') . ' — ' . (string)($site['site_name'] ?? 'TelefonBerza'));
+$pageDescription = $pageDescription ?? ((string)($site['topbar_text'] ?? '') . ' — ' . (string)($site['site_name'] ?? 'KupiTelefon'));
 $pageImage = $pageImage ?? '';
 $canonicalUrl = $canonicalUrl ?? absoluteUrl(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/');
 $unreadMessages = ($user && !empty($site['enable_messages'])) ? getUnreadMessageCount((int)$user['id']) : 0;
@@ -34,7 +34,7 @@ $compareCount = count(compareIds());
     <meta property="og:title" content="<?= h($pageTitle) ?>">
     <meta property="og:description" content="<?= h($pageDescription) ?>">
     <meta property="og:url" content="<?= h($canonicalUrl) ?>">
-    <meta property="og:site_name" content="<?= h((string)($site['site_name'] ?? 'TelefonBerza')) ?>">
+    <meta property="og:site_name" content="<?= h((string)($site['site_name'] ?? 'KupiTelefon')) ?>">
     <?php if ($pageImage !== ''): ?>
         <meta property="og:image" content="<?= h($pageImage) ?>">
         <meta name="twitter:card" content="summary_large_image">
@@ -44,7 +44,7 @@ $compareCount = count(compareIds());
     <?php endif; ?>
     <meta name="twitter:title" content="<?= h($pageTitle) ?>">
     <meta name="twitter:description" content="<?= h($pageDescription) ?>">
-    <link rel="stylesheet" href="/assets/css/style.css?v=20260728d">
+    <link rel="stylesheet" href="/assets/css/style.css?v=20260728e">
 </head>
 <body class="<?= h($bodyClass) ?>" data-page="<?= h($activePage) ?>" data-unread-messages="<?= (int)$unreadMessages ?>" data-compare-count="<?= (int)$compareCount ?>">
 <?php if (!$minimalHeader): ?>

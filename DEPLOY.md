@@ -1,4 +1,4 @@
-# Deploy — TelefonBerza (PHP)
+# Deploy — KupiTelefon (PHP)
 
 ## Važno pre domena / IP putanje
 
@@ -6,7 +6,7 @@ Aplikacija koristi apsolutne URL-ove tipa `/index.php`, `/assets/...`.
 
 **Preporuka:** DocumentRoot = folder `public/` (sajt na root-u domena ili IP-a).
 
-Ne stavljaј projekat kao `http://IP/mobiberza.rs/` bez dodatnog BASE_PATH (linkovi bi se lomili).
+Ne stavljaј projekat kao `http://IP/kupitelefon.rs/` bez dodatnog BASE_PATH (linkovi bi se lomili).
 
 ---
 
@@ -17,13 +17,13 @@ PHP socket proveri: `ls /run/php/` (npr. `php8.3-fpm.sock`).
 ```nginx
 server {
     listen 80;
-    server_name berza.duckdns.org;
+    server_name kupitelefon.rs www.kupitelefon.rs;
 
     root /var/www/berza/public;
     index index.php index.html;
 
-    access_log /var/log/nginx/berza-access.log;
-    error_log  /var/log/nginx/berza-error.log;
+    access_log /var/log/nginx/kupitelefon-access.log;
+    error_log  /var/log/nginx/kupitelefon-error.log;
 
     # Pretty URL: /oglas/123-slug, /izlog/username, /usluge/username
     rewrite ^/oglas/(\d+)(?:-.*)?/?$ /oglas.php?id=$1 last;
@@ -60,15 +60,15 @@ Pristup: `http://TVOJA_IP/`
 
 ---
 
-## Opcija C — `http://IP/mobiberza/` (podfolder) — NE preporučeno sad
+## Opcija C — `http://IP/kupitelefon/` (podfolder) — NE preporučeno sad
 
 Moguće je, ali treba BASE_PATH u celom projektu. Bolje Opcija A ili B dok testiraš.
 
 Ako baš mora folder:
 
 ```bash
-# /var/www/html/mobiberza -> symlink na public
-ln -s /var/www/berza/public /var/www/html/mobiberza
+# /var/www/html/kupitelefon -> symlink na public
+ln -s /var/www/berza/public /var/www/html/kupitelefon
 ```
 
 …i onda sve linkove u kodu prilagoditi (kasnije).
@@ -111,7 +111,7 @@ Ne radi samo `README.md` — gurni ceo projekat:
 cd c:\Projekti\berza
 git init
 git add .
-git commit -m "Initial TelefonBerza commit"
+git commit -m "Initial KupiTelefon commit"
 git branch -M main
 git remote add origin git@github.com:Sekki007/berza.git
 git push -u origin main

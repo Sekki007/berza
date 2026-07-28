@@ -77,7 +77,7 @@ $codeVerified = !empty($_SESSION['password_reset_verified']) && canResetPassword
 $phoneDisplay = (string)($user['phone'] ?? '');
 $usernameDisplay = (string)($user['username'] ?? '');
 
-$pageTitle = 'Nova lozinka — TelefonBerza';
+$pageTitle = 'Nova lozinka — KupiTelefon';
 $activePage = 'nalog';
 $minimalHeader = true;
 $showSearch = false;

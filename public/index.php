@@ -65,7 +65,7 @@ $queryBase = array_filter([
     'sort' => $sort,
 ], static fn($v) => $v !== '');
 
-$pageTitle = 'TelefonBerza — Oglasi';
+$pageTitle = 'KupiTelefon — Oglasi';
 $activePage = 'oglasi';
 $searchValue = $search;
 

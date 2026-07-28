@@ -74,7 +74,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-$pageTitle = 'Registracija — TelefonBerza';
+$pageTitle = 'Registracija — KupiTelefon';
 $activePage = 'nalog';
 $minimalHeader = true;
 $showSearch = false;

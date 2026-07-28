@@ -9,7 +9,7 @@ $seller = $username !== '' ? findUserByUsername($username) : null;
 
 if (!$seller) {
     http_response_code(404);
-    $pageTitle = 'Izlog nije pronađen — TelefonBerza';
+    $pageTitle = 'Izlog nije pronađen — KupiTelefon';
     $activePage = 'oglasi';
     $showSearch = true;
     require __DIR__ . '/partials/layout-start.php';
@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'rate'
     exit;
 }
 
-$pageTitle = $shopName . ' — Izlog — TelefonBerza';
+$pageTitle = $shopName . ' — Izlog — KupiTelefon';
 $activePage = 'oglasi';
 $showSearch = true;
 

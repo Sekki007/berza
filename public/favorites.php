@@ -6,7 +6,7 @@ require_once dirname(__DIR__) . '/config/bootstrap.php';
 
 $ads = getFavoriteAds();
 
-$pageTitle = 'Omiljeni oglasi — TelefonBerza';
+$pageTitle = 'Omiljeni oglasi — KupiTelefon';
 $activePage = 'nalog';
 $showSearch = false;
 

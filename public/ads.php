@@ -7,7 +7,7 @@ requireAdmin();
 
 $ads = getAllAds();
 
-$pageTitle = 'Upravljanje oglasima — TelefonBerza';
+$pageTitle = 'Upravljanje oglasima — KupiTelefon';
 $activePage = 'nalog';
 $showSearch = false;
 $adminPage = 'ads';

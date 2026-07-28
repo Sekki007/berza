@@ -59,7 +59,7 @@ $phoneDisplay = (string)($user['phone'] ?? '');
 $hasPhone = normalizePhoneRs($phoneDisplay) !== null;
 $otpPending = (string)($user['otp_purpose'] ?? '') === 'phone_verify' && !empty($user['otp_sent_at']);
 
-$pageTitle = 'Verifikacija telefona — TelefonBerza';
+$pageTitle = 'Verifikacija telefona — KupiTelefon';
 $activePage = 'nalog';
 $minimalHeader = true;
 $showSearch = false;

@@ -54,7 +54,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-$pageTitle = 'Poruke — TelefonBerza';
+$pageTitle = 'Poruke — KupiTelefon';
 $activePage = 'poruke';
 $bodyClass = $viewThread ? 'page-chat' : '';
 $hideMobileBar = $viewThread;

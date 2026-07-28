@@ -331,7 +331,7 @@ if ($tab === 'mini_sajt' && !$storefrontOn) {
     $tab = 'profil';
 }
 
-$pageTitle = 'Moj nalog — TelefonBerza';
+$pageTitle = 'Moj nalog — KupiTelefon';
 $activePage = 'nalog';
 $showSearch = false;
 

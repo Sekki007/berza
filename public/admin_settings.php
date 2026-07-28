@@ -123,7 +123,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-$pageTitle = 'Podešavanja sajta — TelefonBerza';
+$pageTitle = 'Podešavanja sajta — KupiTelefon';
 $activePage = 'nalog';
 $showSearch = false;
 $adminPage = 'settings';
@@ -396,13 +396,13 @@ require __DIR__ . '/partials/layout-start.php';
                 </p>
                 <div class="form-group">
                     <label>Šablon — verifikacija telefona</label>
-                    <textarea name="sms_template_phone_verify" rows="2" maxlength="160"><?= h((string)($settings['sms_template_phone_verify'] ?? 'TelefonBerza kod: {code}. Vazi 10 min.')) ?></textarea>
-                    <p class="form-hint" style="margin-top:6px;">Primer: <code>TelefonBerza kod: {code}. Vazi 10 min.</code></p>
+                    <textarea name="sms_template_phone_verify" rows="2" maxlength="160"><?= h((string)($settings['sms_template_phone_verify'] ?? 'KupiTelefon kod: {code}. Vazi 10 min.')) ?></textarea>
+                    <p class="form-hint" style="margin-top:6px;">Primer: <code>KupiTelefon kod: {code}. Vazi 10 min.</code></p>
                 </div>
                 <div class="form-group">
                     <label>Šablon — reset lozinke</label>
-                    <textarea name="sms_template_password_reset" rows="2" maxlength="160"><?= h((string)($settings['sms_template_password_reset'] ?? 'TelefonBerza reset lozinke: {code}. Vazi 10 min.')) ?></textarea>
-                    <p class="form-hint" style="margin-top:6px;">Primer: <code>TelefonBerza reset lozinke: {code}. Vazi 10 min.</code></p>
+                    <textarea name="sms_template_password_reset" rows="2" maxlength="160"><?= h((string)($settings['sms_template_password_reset'] ?? 'KupiTelefon reset lozinke: {code}. Vazi 10 min.')) ?></textarea>
+                    <p class="form-hint" style="margin-top:6px;">Primer: <code>KupiTelefon reset lozinke: {code}. Vazi 10 min.</code></p>
                 </div>
             </div>
 

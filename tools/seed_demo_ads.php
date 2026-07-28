@@ -24,7 +24,7 @@ function downloadImage(string $url, string $dest): bool
         'http' => [
             'timeout' => 25,
             'follow_location' => 1,
-            'user_agent' => 'TelefonBerzaSeed/1.0',
+            'user_agent' => 'KupiTelefonSeed/1.0',
         ],
         'ssl' => [
             'verify_peer' => false,

@@ -5,12 +5,12 @@ declare(strict_types=1);
 function defaultSiteSettings(): array
 {
     return [
-        'site_name' => 'TelefonBerza',
-        'logo_telefon' => 'Telefon',
-        'logo_berza' => 'Berza',
-        'topbar_text' => 'Mobilni telefoni · Srbija',
-        'search_placeholder' => 'Pretraži model, deo ili servis...',
-        'footer_copyright' => 'TelefonBerza © 2026',
+        'site_name' => 'KupiTelefon',
+        'logo_telefon' => 'Kupi',
+        'logo_berza' => 'Telefon',
+        'topbar_text' => 'Telefoni · tableti · satovi · servis · Srbija',
+        'search_placeholder' => 'Pretraži telefon, tablet, sat ili servis...',
+        'footer_copyright' => 'KupiTelefon © 2026',
         'contact_email' => '',
         'contact_phone' => '',
         'items_per_page' => 20,
@@ -45,7 +45,7 @@ function defaultSiteSettings(): array
         'eur_rsd_rate' => 117.0,
         'eur_rsd_auto_nbs' => true,
         'credit_topup_amounts' => [500, 1000, 2000, 5000],
-        'credit_payment_info' => "Uplata kredita:\nPrimalac: TelefonBerza\nBroj računa: 160-0000000000000-00\nSvrha: KR-[BROJ] + tvoje korisničko ime\nPrimer: KR-12 marko",
+        'credit_payment_info' => "Uplata kredita:\nPrimalac: KupiTelefon\nBroj računa: 160-0000000000000-00\nSvrha: KR-[BROJ] + tvoje korisničko ime\nPrimer: KR-12 marko",
         'ad_renewal_credits' => 200,
         'highlight_credits' => 150,
         'enable_shop_page_paid' => true,
@@ -60,8 +60,8 @@ function defaultSiteSettings(): array
         ],
         'brands' => ['Apple', 'Samsung', 'Xiaomi', 'Huawei', 'Google', 'Motorola', 'Ostalo'],
         'conditions' => ['Novo', 'Kao novo', 'Polovno', 'Oštećeno/Za delove', 'Odlično', 'Servisirano'],
-        'sms_template_phone_verify' => 'TelefonBerza kod: {code}. Vazi 10 min.',
-        'sms_template_password_reset' => 'TelefonBerza reset lozinke: {code}. Vazi 10 min.',
+        'sms_template_phone_verify' => 'KupiTelefon kod: {code}. Vazi 10 min.',
+        'sms_template_password_reset' => 'KupiTelefon reset lozinke: {code}. Vazi 10 min.',
     ];
 }
 

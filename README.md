@@ -1,6 +1,6 @@
-# TelefonBerza (PHP + JSON + JavaScript)
+# KupiTelefon (PHP + JSON + JavaScript)
 
-Berza oglasa za mobilne telefone, delove i servisne usluge.
+Oglasnik za telefone, tablete, pametne satove, delove i servisne usluge.
 
 ## Pokretanje (lokalno)
 
@@ -14,7 +14,7 @@ Demo admin: `admin` / `admin123`
 
 ## Deploy
 
-Vidi [DEPLOY.md](DEPLOY.md) — Apache, domen `mobiberza.rs`, Git, MySQL.
+Vidi [DEPLOY.md](DEPLOY.md) — Nginx/Apache, domen `kupitelefon.rs`, Git, MySQL.
 
 ## MySQL
 

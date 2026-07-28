@@ -214,7 +214,7 @@ function buildOtpSmsText(string $purpose, string $code): string
     $settings = function_exists('siteSettings') ? siteSettings() : $defaults;
 
     $key = $purpose === 'password_reset' ? 'sms_template_password_reset' : 'sms_template_phone_verify';
-    $fallback = (string)($defaults[$key] ?? 'TelefonBerza kod: {code}. Vazi 10 min.');
+    $fallback = (string)($defaults[$key] ?? 'KupiTelefon kod: {code}. Vazi 10 min.');
     $tpl = trim((string)($settings[$key] ?? $fallback));
 
     if ($tpl === '' || !str_contains($tpl, '{code}')) {

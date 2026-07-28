@@ -46,7 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     exit;
 }
 
-$pageTitle = 'Prijava — TelefonBerza';
+$pageTitle = 'Prijava — KupiTelefon';
 $activePage = 'nalog';
 $minimalHeader = true;
 $showSearch = false;

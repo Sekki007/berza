@@ -80,7 +80,7 @@ function fetchNbsEurRsdRate(): array
         CURLOPT_TIMEOUT => 8,
         CURLOPT_HTTPHEADER => [
             'Accept: application/json',
-            'User-Agent: TelefonBerza/1.0',
+            'User-Agent: KupiTelefon/1.0',
         ],
     ]);
     $body = curl_exec($ch);
