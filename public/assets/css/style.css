@@ -1388,6 +1388,19 @@ a.rep-thumb:hover { opacity: 0.85; text-decoration: underline; }
 
 /* Mini web stranica radnje */
 .storefront-page { max-width: 1000px; }
+.storefront-cover-preview {
+  margin-bottom: 8px;
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f8fafc;
+}
+.storefront-cover-preview img {
+  width: 100%;
+  max-height: 180px;
+  object-fit: cover;
+  display: block;
+}
 .storefront-kicker {
   font-size: 12px;
   text-transform: uppercase;
@@ -1402,6 +1415,17 @@ a.rep-thumb:hover { opacity: 0.85; text-decoration: underline; }
 }
 .storefront-hero h1 { margin-bottom: 8px; }
 .storefront-tagline { margin: 0 0 8px; color: var(--text-muted); }
+.storefront-hero-cover {
+  margin: -16px -16px 14px;
+  border-bottom: 1px solid var(--border-light);
+  background: #f1f5f9;
+}
+.storefront-hero-cover img {
+  width: 100%;
+  max-height: 260px;
+  object-fit: cover;
+  display: block;
+}
 .storefront-layout {
   display: grid;
   grid-template-columns: 1fr 1fr;

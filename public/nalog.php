@@ -197,6 +197,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             setFlash('danger', 'Prvo aktiviraj mini stranicu kupovinom paketa.');
         } else {
             $payload = storefrontPayloadFromInput($_POST);
+            $payload['shop_page_cover'] = handleStorefrontCoverUpload($userId, (string)($freshUser['shop_page_cover'] ?? ''));
             if (patchUser($userId, $payload)) {
                 setFlash('success', 'Mini stranica je sačuvana.');
             } else {
@@ -987,9 +988,31 @@ require __DIR__ . '/partials/layout-start.php';
                         <span>Važi do <?= h($storefrontUntilLabel !== '' ? $storefrontUntilLabel : '—') ?> · <a href="<?= h($storefrontPublicUrl) ?>" target="_blank" rel="noopener">Otvori javnu stranicu</a></span>
                     </div>
 
-                    <form method="POST" class="account-profile-form" style="margin-top:14px;">
+                    <form method="POST" enctype="multipart/form-data" class="account-profile-form" style="margin-top:14px;">
                         <?= csrfField() ?>
                         <input type="hidden" name="action" value="save_shop_page">
+                        <div class="form-group">
+                            <label>Header / cover slika</label>
+                            <?php if (!empty($profile['shop_page_cover'])): ?>
+                                <div class="storefront-cover-preview">
+                                    <img src="<?= h((string)$profile['shop_page_cover']) ?>" alt="Cover">
+                                </div>
+                                <label class="profile-check" style="margin-top:8px;">
+                                    <input type="checkbox" name="shop_page_cover_remove" value="1">
+                                    <span>Ukloni trenutnu cover sliku</span>
+                                </label>
+                            <?php endif; ?>
+                            <input type="file" name="shop_page_cover" accept="image/jpeg,image/png,image/webp,image/gif">
+                            <p class="form-hint">Preporuka: 1600×500 (wide banner).</p>
+                        </div>
+                        <div class="form-group">
+                            <label>Pun naziv trgovca</label>
+                            <input type="text" name="shop_page_legal_name" value="<?= h((string)($profile['shop_page_legal_name'] ?? '')) ?>" placeholder="npr. MOBIFIX NP DOO">
+                        </div>
+                        <div class="form-group">
+                            <label>Matični broj</label>
+                            <input type="text" name="shop_page_registration_no" value="<?= h((string)($profile['shop_page_registration_no'] ?? '')) ?>" placeholder="npr. 12345678">
+                        </div>
                         <div class="form-group">
                             <label>Naslov stranice</label>
                             <input type="text" name="shop_page_title" value="<?= h((string)($profile['shop_page_title'] ?? '')) ?>" placeholder="npr. MobilServis Demo · Servis i prodaja telefona">

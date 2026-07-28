@@ -45,6 +45,11 @@ require __DIR__ . '/partials/layout-start.php';
         <div class="breadcrumb"><a href="/index.php">Početna</a> › <a href="<?= h($shopLink) ?>">Izlog</a> › Usluge</div>
 
         <section class="form-card storefront-hero">
+            <?php if (!empty($seller['shop_page_cover'])): ?>
+                <div class="storefront-hero-cover">
+                    <img src="<?= h((string)$seller['shop_page_cover']) ?>" alt="<?= h($shopName) ?>">
+                </div>
+            <?php endif; ?>
             <div class="storefront-kicker">Usluge za kupce</div>
             <h1><?= h((string)($seller['shop_page_title'] ?? $shopName)) ?></h1>
             <?php if (!empty($seller['shop_page_tagline'])): ?>
@@ -61,8 +66,11 @@ require __DIR__ . '/partials/layout-start.php';
                 <h2>Podaci o trgovcu</h2>
                 <div class="storefront-rows">
                     <div class="storefront-row"><span>Pun naziv trgovca:</span><strong><?= h($shopName) ?></strong></div>
-                    <?php if (!empty($seller['mb'])): ?>
-                        <div class="storefront-row"><span>Matični broj:</span><strong><?= h((string)$seller['mb']) ?></strong></div>
+                    <?php if (!empty($seller['shop_page_legal_name'])): ?>
+                        <div class="storefront-row"><span>Pravno lice:</span><strong><?= h((string)$seller['shop_page_legal_name']) ?></strong></div>
+                    <?php endif; ?>
+                    <?php if (!empty($seller['shop_page_registration_no'])): ?>
+                        <div class="storefront-row"><span>Matični broj:</span><strong><?= h((string)$seller['shop_page_registration_no']) ?></strong></div>
                     <?php endif; ?>
                     <div class="storefront-row"><span>PIB:</span><strong><?= h((string)($seller['pib'] ?? '')) ?></strong></div>
                     <?php if (!empty($seller['shop_page_address'])): ?>
