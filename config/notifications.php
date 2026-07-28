@@ -98,19 +98,36 @@ function markAllNotificationsRead(int $userId): void
     }
 }
 
-function sendRawEmail(string $toEmail, string $subject, string $body): bool
+function sendRawEmail(string $toEmail, string $subject, string $body, ?string $toName = null): bool
 {
+    require_once __DIR__ . '/mail.php';
+
     $toEmail = trim($toEmail);
     if ($toEmail === '' || !filter_var($toEmail, FILTER_VALIDATE_EMAIL)) {
         return false;
     }
+
+    // Prefer Zoho SMTP; fallback to PHP mail() only if SMTP disabled/missing.
+    if (mailIsConfigured()) {
+        $result = sendSmtpEmail($toEmail, $subject, $body, $toName);
+        return !empty($result['ok']);
+    }
+
     $settings = siteSettings();
     $from = trim((string)($settings['contact_email'] ?? ''));
+    $smtpFrom = trim((string)envValue('SMTP_FROM_EMAIL', 'podrska@kupitelefon.rs'));
     if ($from === '' || !filter_var($from, FILTER_VALIDATE_EMAIL)) {
-        $from = 'noreply@kupitelefon.local';
+        $from = filter_var($smtpFrom, FILTER_VALIDATE_EMAIL) ? $smtpFrom : 'podrska@kupitelefon.rs';
     }
-    $headers = 'From: ' . $from . "\r\n" . 'Content-Type: text/plain; charset=UTF-8';
-    return @mail($toEmail, '=?UTF-8?B?' . base64_encode($subject) . '?=', $body, $headers);
+    $fromName = trim((string)envValue('SMTP_FROM_NAME', 'KupiTelefon.rs'));
+    $headers = 'From: =?UTF-8?B?' . base64_encode($fromName) . '?= <' . $from . ">\r\n"
+        . 'Reply-To: ' . $from . "\r\n"
+        . 'Content-Type: text/plain; charset=UTF-8';
+    $ok = @mail($toEmail, '=?UTF-8?B?' . base64_encode($subject) . '?=', $body, $headers);
+    if (function_exists('mailLog')) {
+        mailLog((bool)$ok, $toEmail, $subject, $ok ? null : 'PHP mail() failed or SMTP not configured');
+    }
+    return (bool)$ok;
 }
 
 function userWantsEmailNotifications(?array $user): bool
@@ -144,18 +161,17 @@ function notifyUser(int $userId, string $type, string $title, string $body, stri
         if ($user && userWantsEmailNotifications($user)) {
             $emailBody = $body;
             if ($link !== '') {
-                $host = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http')
-                    . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
-                $emailBody .= "\n\n" . $host . $link;
+                $emailBody .= "\n\n" . appBaseUrl() . $link;
             }
-            $emailBody .= "\n\nKupiTelefon";
-            sendUserEmail($userId, 'KupiTelefon: ' . $title, $emailBody);
+            $emailBody .= "\n\n—\nKupiTelefon.rs\n" . appBaseUrl();
+            $name = trim((string)($user['full_name'] ?? $user['username'] ?? ''));
+            sendUserEmail($userId, 'KupiTelefon: ' . $title, $emailBody, $name !== '' ? $name : null);
         }
     }
     return $id;
 }
 
-function sendUserEmail(int $userId, string $subject, string $body): bool
+function sendUserEmail(int $userId, string $subject, string $body, ?string $toName = null): bool
 {
     if (!emailNotificationsEnabled()) {
         return false;
@@ -165,7 +181,11 @@ function sendUserEmail(int $userId, string $subject, string $body): bool
         return false;
     }
     $email = trim((string)($user['email'] ?? ''));
-    return sendRawEmail($email, $subject, $body);
+    $name = $toName;
+    if ($name === null) {
+        $name = trim((string)($user['full_name'] ?? $user['username'] ?? '')) ?: null;
+    }
+    return sendRawEmail($email, $subject, $body, $name);
 }
 
 function adMaxActiveDays(): int

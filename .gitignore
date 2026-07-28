@@ -6,6 +6,7 @@ Thumbs.db
 /public/uploads/ads/*
 !/public/uploads/ads/.gitkeep
 !/public/uploads/ads/seed_*.jpg
+/data/mail_log.json
 /data/*_state.json
 /data/sms_rate_limits.json
 /data/nbs_rate_cache.json

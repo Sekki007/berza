@@ -20,7 +20,14 @@ function envValue(string $key, ?string $default = null): ?string
                     }
 
                     [$k, $v] = array_pad(explode('=', $trimmed, 2), 2, '');
-                    $env[trim($k)] = trim($v);
+                    $v = trim($v);
+                    if (
+                        (str_starts_with($v, '"') && str_ends_with($v, '"')) ||
+                        (str_starts_with($v, "'") && str_ends_with($v, "'"))
+                    ) {
+                        $v = substr($v, 1, -1);
+                    }
+                    $env[trim($k)] = $v;
                 }
             }
         }

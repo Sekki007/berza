@@ -56,6 +56,32 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    if (isset($_POST['test_smtp_email'])) {
+        require_once dirname(__DIR__) . '/config/mail.php';
+        $to = trim((string)($_POST['test_smtp_to'] ?? ''));
+        if ($to === '' || !filter_var($to, FILTER_VALIDATE_EMAIL)) {
+            $admin = currentUser();
+            $to = trim((string)($admin['email'] ?? ''));
+        }
+        if ($to === '' || !filter_var($to, FILTER_VALIDATE_EMAIL)) {
+            setFlash('danger', 'Unesi validan email za test.');
+            header('Location: /admin_settings.php?tab=features');
+            exit;
+        }
+        $result = sendSmtpEmail(
+            $to,
+            'KupiTelefon — test email',
+            "Zdravo,\n\nOvo je test poruka sa KupiTelefon.rs SMTP (Zoho).\n\nAko vidiš ovaj mail, notifikacije su spremne.\n\n—\nKupiTelefon.rs\n" . appBaseUrl()
+        );
+        if (!empty($result['ok'])) {
+            setFlash('success', 'Test email poslat na ' . $to . '.');
+        } else {
+            setFlash('danger', 'Test email nije poslat: ' . (string)($result['error'] ?? 'nepoznata greška'));
+        }
+        header('Location: /admin_settings.php?tab=features');
+        exit;
+    }
+
     $current = siteSettings();
     $payload = array_merge($current, [
         'site_name' => trim((string)($_POST['site_name'] ?? $current['site_name'])),
@@ -259,6 +285,35 @@ require __DIR__ . '/partials/layout-start.php';
                     <input type="hidden" name="enable_email_notifications" value="0">
                     <label class="type-chip" style="min-width:auto;flex:none;"><input type="checkbox" name="enable_email_notifications" value="1" <?= !empty($settings['enable_email_notifications']) || (!isset($settings['enable_email_notifications']) && !empty($settings['enable_expiry_email'])) ? 'checked' : '' ?>> Email obaveštenja (poruke, alerti, istek…)</label>
                 </div>
+
+                <?php
+                require_once dirname(__DIR__) . '/config/mail.php';
+                $mailStatus = mailStatusSummary();
+                $adminEmail = trim((string)(currentUser()['email'] ?? ''));
+                ?>
+                <h3 style="margin-top:22px;">Email SMTP (Zoho)</h3>
+                <p class="form-hint">
+                    Lozinka ide samo u <code>.env</code> kao <code>ZOHO_SMTP_PASSWORD</code> (nikad u admin formu).
+                    From: <strong><?= h($mailStatus['from_name']) ?></strong> &lt;<?= h($mailStatus['from_email']) ?>&gt;
+                </p>
+                <p class="form-hint" style="margin-top:6px;">
+                    Status:
+                    <?php if (!empty($mailStatus['ok'])): ?>
+                        <strong style="color:var(--kp-green-dark,#2d7a3e);"><?= h($mailStatus['message']) ?></strong>
+                    <?php else: ?>
+                        <strong style="color:#b91c1c;"><?= h($mailStatus['message']) ?></strong>
+                    <?php endif; ?>
+                </p>
+                <div class="form-row" style="align-items:end;margin-top:10px;">
+                    <div class="form-group" style="flex:1;">
+                        <label>Test email na</label>
+                        <input type="email" name="test_smtp_to" value="<?= h($adminEmail) ?>" placeholder="tvoj@email.com">
+                    </div>
+                    <div class="form-group" style="flex:0;">
+                        <button type="submit" name="test_smtp_email" value="1" class="btn-message">Pošalji test</button>
+                    </div>
+                </div>
+
                 <div class="form-row">
                     <div class="form-group">
                         <label>Maksimalno dana aktivan</label>
