@@ -970,13 +970,13 @@ require __DIR__ . '/partials/layout-start.php';
                         <form method="POST" onsubmit="return confirm('Aktivirati mini sajt za <?= formatCredits($storefrontPrice) ?>?');">
                             <?= csrfField() ?>
                             <input type="hidden" name="action" value="buy_shop_page">
-                            <button class="btn-call" type="submit" style="width:auto;min-width:220px;" <?= (!$creditsOn || $userCredits < $storefrontPrice) ? 'disabled' : '' ?>>
+                            <button class="btn-call" type="submit" style="width:auto;min-width:220px;">
                                 Aktiviraj mini sajt
                             </button>
                         </form>
                     </div>
                     <?php if (!$creditsOn || $userCredits < $storefrontPrice): ?>
-                        <p class="form-hint" style="margin-top:10px;">Nemaš dovoljno kredita. <a href="?tab=krediti">Dopuni saldo</a>.</p>
+                        <p class="form-hint" style="margin-top:10px;color:#b42318;">Nemaš dovoljno kredita za aktivaciju. <a href="?tab=krediti">Dopuni saldo</a>.</p>
                     <?php endif; ?>
                 <?php else: ?>
                     <div class="profile-status profile-status-approved">
