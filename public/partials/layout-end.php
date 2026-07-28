@@ -29,17 +29,16 @@ if ($user) {
                 <?php
                 $footerPhone = trim((string)($site['contact_phone'] ?? ''));
                 $footerEmail = trim((string)($site['contact_email'] ?? ''));
-                if ($footerPhone !== '' || $footerEmail !== ''):
+                if ($footerEmail === '' || !filter_var($footerEmail, FILTER_VALIDATE_EMAIL)) {
+                    $footerEmail = 'podrska@kupitelefon.rs';
+                }
                 ?>
                     <div class="site-footer-contact">
                         <?php if ($footerPhone !== ''): ?>
                             <a href="tel:<?= h(preg_replace('/\s+/', '', $footerPhone) ?? $footerPhone) ?>"><?= h($footerPhone) ?></a>
                         <?php endif; ?>
-                        <?php if ($footerEmail !== ''): ?>
-                            <a href="mailto:<?= h($footerEmail) ?>"><?= h($footerEmail) ?></a>
-                        <?php endif; ?>
+                        <a href="mailto:<?= h($footerEmail) ?>"><?= h($footerEmail) ?></a>
                     </div>
-                <?php endif; ?>
             </div>
 
             <nav class="site-footer-nav" aria-label="Footer">
@@ -74,6 +73,7 @@ if ($user) {
                         <a href="/register.php">Napravi nalog</a>
                         <a href="/kako-radi.php">Pomoć</a>
                     <?php endif; ?>
+                    <a href="mailto:podrska@kupitelefon.rs">Podrška</a>
                 </div>
             </nav>
         </div>
