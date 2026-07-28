@@ -9,6 +9,7 @@ $user = currentUser();
 $userId = (int)$user['id'];
 $profile = findUserById($userId) ?? $user;
 $site = siteSettings();
+$csrfValue = csrfToken();
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     requireCsrf('/nalog.php');
@@ -1231,4 +1232,18 @@ require __DIR__ . '/partials/layout-start.php';
     </main>
 </div>
 
+<script>
+(() => {
+  const token = <?= json_encode($csrfValue, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+  if (!token) return;
+  document.querySelectorAll('form[method="POST"], form[method="post"]').forEach((form) => {
+    if (form.querySelector('input[name="_csrf"]')) return;
+    const input = document.createElement('input');
+    input.type = 'hidden';
+    input.name = '_csrf';
+    input.value = token;
+    form.appendChild(input);
+  });
+})();
+</script>
 <?php require __DIR__ . '/partials/layout-end.php'; ?>
