@@ -1414,7 +1414,27 @@ a.rep-thumb:hover { opacity: 0.85; text-decoration: underline; }
   gap: 8px;
 }
 .storefront-hero h1 { margin-bottom: 8px; }
-.storefront-tagline { margin: 0 0 8px; color: var(--text-muted); }
+.storefront-tagline { margin: 0 0 10px; color: var(--text-muted); }
+.storefront-hero {
+  padding-bottom: 14px;
+}
+.storefront-hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin: 0 0 10px;
+}
+.storefront-hero-owner {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.storefront-hero-edit {
+  margin: 8px 0 0;
+}
 .storefront-hero-cover {
   margin: -16px -16px 14px;
   border-bottom: 1px solid var(--border-light);
@@ -1463,10 +1483,18 @@ a.rep-thumb:hover { opacity: 0.85; text-decoration: underline; }
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 10px;
-  margin-top: 10px;
+  margin: 0;
+  align-items: stretch;
 }
 .storefront-cta .btn-outline,
-.storefront-cta .btn-call { width: 100%; text-align: center; }
+.storefront-cta .btn-call {
+  width: 100%;
+  text-align: center;
+  min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
 .storefront-open-badge {
   display: inline-flex;
   align-items: center;
@@ -1591,6 +1619,7 @@ a.rep-thumb:hover { opacity: 0.85; text-decoration: underline; }
   .storefront-gallery { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .storefront-gallery-edit { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .storefront-cta { grid-template-columns: 1fr; }
+  .storefront-hero-meta { align-items: flex-start; }
   .storefront-sticky-contact { display: flex; }
 }
 

@@ -97,8 +97,10 @@ require __DIR__ . '/partials/layout-start.php';
             <?php if (!empty($seller['shop_page_tagline'])): ?>
                 <p class="storefront-tagline"><?= h((string)$seller['shop_page_tagline']) ?></p>
             <?php endif; ?>
-            <p><span class="storefront-open-badge <?= !empty($openStatus['open']) ? 'open' : 'closed' ?>"><?= h((string)$openStatus['label']) ?></span></p>
-            <p class="form-hint">Objavio: <a href="<?= h($shopLink) ?>"><?= h($shopName) ?></a> <?= renderSellerBadges($seller) ?></p>
+            <div class="storefront-hero-meta">
+                <span class="storefront-open-badge <?= !empty($openStatus['open']) ? 'open' : 'closed' ?>"><?= h((string)$openStatus['label']) ?></span>
+                <p class="form-hint storefront-hero-owner">Objavio: <a href="<?= h($shopLink) ?>"><?= h($shopName) ?></a> <?= renderSellerBadges($seller) ?></p>
+            </div>
             <div class="storefront-cta">
                 <?php if (!empty($seller['phone'])): ?>
                     <a class="btn-call" href="tel:<?= h((string)$seller['phone']) ?>">Pozovi odmah</a>
@@ -106,7 +108,7 @@ require __DIR__ . '/partials/layout-start.php';
                 <a class="btn-outline" href="/poruke.php?with=<?= (int)$seller['id'] ?>&ad_id=<?= $firstAdId > 0 ? $firstAdId : 0 ?>">Pošalji poruku</a>
             </div>
             <?php if ($isOwner): ?>
-                <p class="form-hint">Uredi podatke na <a href="/nalog.php?tab=mini_sajt">Moj nalog → Mini sajt</a>.</p>
+                <p class="form-hint storefront-hero-edit">Uredi podatke na <a href="/nalog.php?tab=mini_sajt">Moj nalog → Mini sajt</a>.</p>
             <?php endif; ?>
         </section>
 
