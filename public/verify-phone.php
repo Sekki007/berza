@@ -25,7 +25,6 @@ if (isPhoneVerified($user)) {
 
 $_SESSION['pending_phone_verify_user_id'] = $userId;
 $error = '';
-$info = '';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     requireCsrf('/verify-phone.php');
@@ -33,13 +32,23 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($action === 'send' || $action === 'resend') {
         $phoneInput = trim((string)($_POST['phone'] ?? (string)($user['phone'] ?? '')));
-        $result = sendUserOtp($userId, 'phone_verify', $phoneInput !== '' ? $phoneInput : null);
+        $result = sendUserOtp($userId, 'phone_verify', $phoneInput !== '' ? $phoneInput : null, 'sms');
         if (!empty($result['ok'])) {
             setFlash('success', 'SMS kod je poslat. Unesi ga ispod.');
             header('Location: /verify-phone.php');
             exit;
         }
         $error = (string)($result['error'] ?? 'SMS nije poslat.');
+        $user = findUserById($userId) ?? $user;
+    } elseif ($action === 'send_email') {
+        $emailInput = trim((string)($_POST['email'] ?? (string)($user['email'] ?? '')));
+        $result = sendUserOtp($userId, 'phone_verify', null, 'email', $emailInput !== '' ? $emailInput : null);
+        if (!empty($result['ok'])) {
+            setFlash('success', 'Kod je poslat na email. Unesi ga ispod.');
+            header('Location: /verify-phone.php');
+            exit;
+        }
+        $error = (string)($result['error'] ?? 'Email nije poslat.');
         $user = findUserById($userId) ?? $user;
     } elseif ($action === 'verify') {
         $code = trim((string)($_POST['code'] ?? ''));
@@ -56,8 +65,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $phoneDisplay = (string)($user['phone'] ?? '');
+$emailDisplay = trim((string)($user['email'] ?? ''));
 $hasPhone = normalizePhoneRs($phoneDisplay) !== null;
 $otpPending = (string)($user['otp_purpose'] ?? '') === 'phone_verify' && !empty($user['otp_sent_at']);
+$smsCount = getOtpSmsSendCount($userId, 'phone_verify');
+$offerEmail = canOfferOtpEmail($userId, 'phone_verify');
 
 $pageTitle = 'Verifikacija telefona — KupiTelefon';
 $activePage = 'nalog';
@@ -74,6 +86,9 @@ require __DIR__ . '/partials/layout-start.php';
             <h2>Verifikacija telefona</h2>
             <p style="font-size:14px;color:var(--text-muted);margin-bottom:16px;">
                 Poslaćemo ti 6-cifreni kod SMS-om na srpski mobilni broj (+381).
+                <?php if ($smsCount > 0): ?>
+                    <br>SMS pokušaja: <strong><?= (int)$smsCount ?></strong><?= $offerEmail ? ' — možeš zatražiti kod i na email.' : '' ?>
+                <?php endif; ?>
             </p>
 
             <?php if ($error !== ''): ?>
@@ -101,7 +116,7 @@ require __DIR__ . '/partials/layout-start.php';
                     <?= csrfField() ?>
                     <input type="hidden" name="action" value="verify">
                     <div class="form-group">
-                        <label>SMS kod</label>
+                        <label>Kod (SMS ili email)</label>
                         <input type="text" name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required placeholder="123456" autocomplete="one-time-code">
                     </div>
                     <button class="btn-call" type="submit">Potvrdi kod</button>
@@ -109,8 +124,26 @@ require __DIR__ . '/partials/layout-start.php';
                 <form method="POST" style="margin-top:12px;">
                     <?= csrfField() ?>
                     <input type="hidden" name="action" value="resend">
-                    <button class="btn-sm btn-sm-primary" type="submit">Pošalji kod ponovo</button>
+                    <button class="btn-sm btn-sm-primary" type="submit">Pošalji SMS ponovo</button>
                 </form>
+
+                <?php if ($offerEmail): ?>
+                    <form method="POST" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
+                        <?= csrfField() ?>
+                        <input type="hidden" name="action" value="send_email">
+                        <p class="form-hint" style="margin-bottom:10px;">SMS nije stigao? Pošalji isti tip koda na email.</p>
+                        <div class="form-group">
+                            <label>Email</label>
+                            <input type="email" name="email" required value="<?= h($emailDisplay) ?>" placeholder="tvoj@email.com" autocomplete="email">
+                        </div>
+                        <button class="btn-sm btn-sm-primary" type="submit">Pošalji kod na email</button>
+                    </form>
+                <?php elseif ($smsCount > 0 && $smsCount < OTP_SMS_BEFORE_EMAIL): ?>
+                    <p class="form-hint" style="margin-top:14px;">
+                        Ako SMS ne stigne, posle <?= (int)OTP_SMS_BEFORE_EMAIL ?> pokušaja pojaviće se opcija za email.
+                        (Još <?= (int)(OTP_SMS_BEFORE_EMAIL - $smsCount) ?>)
+                    </p>
+                <?php endif; ?>
             <?php endif; ?>
 
             <p style="margin-top:14px;font-size:13px;color:var(--text-muted);">

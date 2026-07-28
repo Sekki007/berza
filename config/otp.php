@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 const OTP_TTL_SECONDS = 600;
 const OTP_MAX_ATTEMPTS = 5;
+/** Posle ovoliko uspešnih SMS-ova ponuda „Pošalji na email”. */
+const OTP_SMS_BEFORE_EMAIL = 2;
 
 function isPhoneVerified(?array $user): bool
 {
@@ -21,15 +23,52 @@ function generateOtpCode(): string
     return str_pad((string)random_int(0, 999999), 6, '0', STR_PAD_LEFT);
 }
 
+function otpFlowSessionKey(int $userId, string $purpose): string
+{
+    return 'otp_sms_sends_' . $userId . '_' . $purpose;
+}
+
+function getOtpSmsSendCount(int $userId, string $purpose): int
+{
+    return max(0, (int)($_SESSION[otpFlowSessionKey($userId, $purpose)] ?? 0));
+}
+
+function bumpOtpSmsSendCount(int $userId, string $purpose): void
+{
+    $key = otpFlowSessionKey($userId, $purpose);
+    $_SESSION[$key] = getOtpSmsSendCount($userId, $purpose) + 1;
+}
+
+function resetOtpSmsSendCount(int $userId, string $purpose): void
+{
+    unset($_SESSION[otpFlowSessionKey($userId, $purpose)]);
+}
+
+function userHasValidEmail(?array $user): bool
+{
+    $email = trim((string)($user['email'] ?? ''));
+    return $email !== '' && (bool)filter_var($email, FILTER_VALIDATE_EMAIL);
+}
+
+function canOfferOtpEmail(int $userId, string $purpose): bool
+{
+    if (!function_exists('mailIsConfigured') || !mailIsConfigured()) {
+        return false;
+    }
+    return getOtpSmsSendCount($userId, $purpose) >= OTP_SMS_BEFORE_EMAIL;
+}
+
 /**
  * @param 'phone_verify'|'password_reset' $purpose
- * @return array{ok: bool, error?: string, code_sent?: bool}
+ * @param 'sms'|'email' $channel
+ * @return array{ok: bool, error?: string, code_sent?: bool, channel?: string}
  */
-function sendUserOtp(int $userId, string $purpose, ?string $phoneOverride = null): array
+function sendUserOtp(int $userId, string $purpose, ?string $phoneOverride = null, string $channel = 'sms', ?string $emailOverride = null): array
 {
     if (!in_array($purpose, ['phone_verify', 'password_reset'], true)) {
         return ['ok' => false, 'error' => 'Nepoznata namena koda.'];
     }
+    $channel = $channel === 'email' ? 'email' : 'sms';
 
     $user = findUserById($userId);
     if (!$user) {
@@ -44,6 +83,39 @@ function sendUserOtp(int $userId, string $purpose, ?string $phoneOverride = null
 
     if ($purpose === 'password_reset' && !isPhoneVerified($user)) {
         return ['ok' => false, 'error' => 'Telefon na nalogu nije verifikovan.'];
+    }
+
+    $emailForSend = '';
+    if ($channel === 'email') {
+        if (!canOfferOtpEmail($userId, $purpose)) {
+            return [
+                'ok' => false,
+                'error' => 'Email kod je dostupan tek posle ' . OTP_SMS_BEFORE_EMAIL . ' SMS pokušaja.',
+            ];
+        }
+        if (!function_exists('mailIsConfigured') || !mailIsConfigured()) {
+            return ['ok' => false, 'error' => 'Email slanje nije podešeno na serveru.'];
+        }
+
+        $emailForSend = trim((string)($emailOverride ?? ''));
+        if ($emailForSend === '') {
+            $emailForSend = trim((string)($user['email'] ?? ''));
+        }
+        if ($emailForSend === '' || !filter_var($emailForSend, FILTER_VALIDATE_EMAIL)) {
+            return ['ok' => false, 'error' => 'Unesi validan email da pošaljemo kod.'];
+        }
+
+        // Za reset lozinke: samo email koji je već na nalogu (anti-hijack)
+        if ($purpose === 'password_reset') {
+            $accountEmail = trim((string)($user['email'] ?? ''));
+            if ($accountEmail === '' || !filter_var($accountEmail, FILTER_VALIDATE_EMAIL)) {
+                return ['ok' => false, 'error' => 'Na nalogu nema sačuvanog emaila. Dodaj email u profilu ili kontaktiraj podršku.'];
+            }
+            if (strcasecmp($accountEmail, $emailForSend) !== 0) {
+                return ['ok' => false, 'error' => 'Kod može ići samo na email sa naloga.'];
+            }
+            $emailForSend = $accountEmail;
+        }
     }
 
     $code = generateOtpCode();
@@ -61,18 +133,36 @@ function sendUserOtp(int $userId, string $purpose, ?string $phoneOverride = null
         if ($oldPhone !== $phone || empty($user['phone_verified_at'])) {
             $fields['phone_verified_at'] = null;
         }
+        if ($channel === 'email' && $emailForSend !== '') {
+            $fields['email'] = $emailForSend;
+        }
     }
 
     if (!patchUser($userId, $fields)) {
         return ['ok' => false, 'error' => 'Nije moguće sačuvati kod.'];
     }
 
+    if ($channel === 'email') {
+        $subject = $purpose === 'password_reset'
+            ? 'KupiTelefon: kod za reset lozinke'
+            : 'KupiTelefon: kod za verifikaciju';
+        $body = "Zdravo,\n\nTvoj kod je: {$code}\n\nVaži 10 minuta.\nAko nisi tražio/la ovaj kod, ignoriši poruku.\n\n—\nKupiTelefon.rs\n" . appBaseUrl();
+        $sent = sendRawEmail($emailForSend, $subject, $body, trim((string)($user['full_name'] ?? $user['username'] ?? '')) ?: null);
+        if (!$sent) {
+            return ['ok' => false, 'error' => 'Email nije poslat. Proveri SMTP podešavanja.'];
+        }
+        return ['ok' => true, 'code_sent' => true, 'channel' => 'email'];
+    }
+
+    // Brojimo pokušaj SMS-a i kad gateway padne — da email fallback ipak postane dostupan
+    bumpOtpSmsSendCount($userId, $purpose);
+
     $sent = sendOtpSms($phone, $code, $purpose);
     if (empty($sent['ok'])) {
         return ['ok' => false, 'error' => (string)($sent['error'] ?? 'SMS nije poslat.')];
     }
 
-    return ['ok' => true, 'code_sent' => true];
+    return ['ok' => true, 'code_sent' => true, 'channel' => 'sms'];
 }
 
 /**
@@ -92,18 +182,18 @@ function verifyUserOtp(int $userId, string $purpose, string $code): array
     }
 
     if ((string)($user['otp_purpose'] ?? '') !== $purpose) {
-        return ['ok' => false, 'error' => 'Nema važećeg koda. Zatraži novi SMS.'];
+        return ['ok' => false, 'error' => 'Nema važećeg koda. Zatraži novi.'];
     }
 
     $hash = (string)($user['otp_hash'] ?? '');
     $sentAt = strtotime((string)($user['otp_sent_at'] ?? ''));
     if ($hash === '' || $sentAt === false) {
-        return ['ok' => false, 'error' => 'Nema važećeg koda. Zatraži novi SMS.'];
+        return ['ok' => false, 'error' => 'Nema važećeg koda. Zatraži novi.'];
     }
 
     if ((time() - $sentAt) > OTP_TTL_SECONDS) {
         clearUserOtp($userId);
-        return ['ok' => false, 'error' => 'Kod je istekao. Zatraži novi SMS.'];
+        return ['ok' => false, 'error' => 'Kod je istekao. Zatraži novi.'];
     }
 
     $attempts = (int)($user['otp_attempts'] ?? 0);
@@ -131,12 +221,13 @@ function verifyUserOtp(int $userId, string $purpose, string $code): array
             'otp_sent_at' => null,
             'otp_attempts' => 0,
         ]);
+        resetOtpSmsSendCount($userId, $purpose);
     } else {
-        // password_reset: keep purpose until password is changed; mark verified via session
         patchUser($userId, [
             'otp_attempts' => 0,
             'otp_verified_at' => date('Y-m-d H:i:s'),
         ]);
+        resetOtpSmsSendCount($userId, $purpose);
     }
 
     return ['ok' => true];
@@ -144,6 +235,8 @@ function verifyUserOtp(int $userId, string $purpose, string $code): array
 
 function clearUserOtp(int $userId): void
 {
+    $user = findUserById($userId);
+    $purpose = (string)($user['otp_purpose'] ?? '');
     patchUser($userId, [
         'otp_purpose' => null,
         'otp_hash' => null,
@@ -151,6 +244,9 @@ function clearUserOtp(int $userId): void
         'otp_attempts' => 0,
         'otp_verified_at' => null,
     ]);
+    if ($purpose !== '' && $userId > 0) {
+        resetOtpSmsSendCount($userId, $purpose);
+    }
 }
 
 /**

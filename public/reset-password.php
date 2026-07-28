@@ -27,7 +27,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = trim((string)($_POST['action'] ?? ''));
 
     if ($action === 'resend') {
-        $result = sendUserOtp($userId, 'password_reset');
+        $result = sendUserOtp($userId, 'password_reset', null, 'sms');
         if (!empty($result['ok'])) {
             unset($_SESSION['password_reset_verified']);
             $codeVerified = false;
@@ -36,6 +36,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
         $error = (string)($result['error'] ?? 'SMS nije poslat.');
+    } elseif ($action === 'send_email') {
+        $result = sendUserOtp($userId, 'password_reset', null, 'email');
+        if (!empty($result['ok'])) {
+            unset($_SESSION['password_reset_verified']);
+            $codeVerified = false;
+            setFlash('success', 'Kod je poslat na email sa naloga.');
+            header('Location: /reset-password.php');
+            exit;
+        }
+        $error = (string)($result['error'] ?? 'Email nije poslat.');
     } elseif ($action === 'verify_code') {
         $code = trim((string)($_POST['code'] ?? ''));
         $verified = verifyUserOtp($userId, 'password_reset', $code);
@@ -76,6 +86,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 $codeVerified = !empty($_SESSION['password_reset_verified']) && canResetPasswordWithOtp($userId);
 $phoneDisplay = (string)($user['phone'] ?? '');
 $usernameDisplay = (string)($user['username'] ?? '');
+$smsCount = getOtpSmsSendCount($userId, 'password_reset');
+$offerEmail = canOfferOtpEmail($userId, 'password_reset');
+$hasAccountEmail = userHasValidEmail($user);
+$accountEmailMasked = '';
+if ($hasAccountEmail) {
+    $em = (string)$user['email'];
+    $at = strpos($em, '@');
+    $accountEmailMasked = $at !== false
+        ? substr($em, 0, 1) . '***' . substr($em, $at)
+        : '***';
+}
 
 $pageTitle = 'Nova lozinka — KupiTelefon';
 $activePage = 'nalog';
@@ -90,9 +111,12 @@ require __DIR__ . '/partials/layout-start.php';
         <div class="breadcrumb"><a href="/index.php">Početna</a> › Nova lozinka</div>
         <div class="form-card">
             <?php if (!$codeVerified): ?>
-                <h2>Unesi SMS kod</h2>
+                <h2>Unesi kod</h2>
                 <p style="font-size:14px;color:var(--text-muted);margin-bottom:16px;">
-                    Korak 2/3 — unesi kod poslat na <strong><?= h($phoneDisplay) ?></strong>.
+                    Korak 2/3 — unesi kod poslat na <strong><?= h($phoneDisplay) ?></strong>
+                    <?php if ($smsCount > 0): ?>
+                        <br>SMS pokušaja: <strong><?= (int)$smsCount ?></strong>
+                    <?php endif; ?>
                 </p>
 
                 <?php if ($error !== ''): ?>
@@ -103,7 +127,7 @@ require __DIR__ . '/partials/layout-start.php';
                     <?= csrfField() ?>
                     <input type="hidden" name="action" value="verify_code">
                     <div class="form-group">
-                        <label>SMS kod</label>
+                        <label>Kod (SMS ili email)</label>
                         <input type="text" name="code" inputmode="numeric" pattern="[0-9]{6}" maxlength="6" required placeholder="123456" autocomplete="one-time-code" autofocus>
                     </div>
                     <button class="btn-call" type="submit">Potvrdi kod</button>
@@ -111,8 +135,31 @@ require __DIR__ . '/partials/layout-start.php';
                 <form method="POST" style="margin-top:12px;">
                     <?= csrfField() ?>
                     <input type="hidden" name="action" value="resend">
-                    <button class="btn-sm btn-sm-primary" type="submit">Pošalji kod ponovo</button>
+                    <button class="btn-sm btn-sm-primary" type="submit">Pošalji SMS ponovo</button>
                 </form>
+
+                <?php if ($offerEmail): ?>
+                    <?php if ($hasAccountEmail): ?>
+                        <form method="POST" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
+                            <?= csrfField() ?>
+                            <input type="hidden" name="action" value="send_email">
+                            <p class="form-hint" style="margin-bottom:10px;">
+                                SMS nije stigao? Pošalji kod na email sa naloga (<strong><?= h($accountEmailMasked) ?></strong>).
+                            </p>
+                            <button class="btn-sm btn-sm-primary" type="submit">Pošalji kod na email</button>
+                        </form>
+                    <?php else: ?>
+                        <p class="form-hint" style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
+                            Email fallback nije dostupan — na nalogu nema sačuvanog emaila.
+                            Dodaj email u profilu posle prijave, ili piši na podrška@kupitelefon.rs.
+                        </p>
+                    <?php endif; ?>
+                <?php elseif ($smsCount > 0 && $smsCount < OTP_SMS_BEFORE_EMAIL): ?>
+                    <p class="form-hint" style="margin-top:14px;">
+                        Ako SMS ne stigne, posle <?= (int)OTP_SMS_BEFORE_EMAIL ?> pokušaja pojaviće se opcija za email.
+                        (Još <?= (int)(OTP_SMS_BEFORE_EMAIL - $smsCount) ?>)
+                    </p>
+                <?php endif; ?>
             <?php else: ?>
                 <h2>Nova lozinka</h2>
                 <p style="font-size:14px;color:var(--text-muted);margin-bottom:16px;">
