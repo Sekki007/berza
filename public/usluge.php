@@ -25,6 +25,9 @@ $shopName = getSellerShopName($seller);
 $shopLink = shopUrl((string)$seller['username']);
 $ads = getPublicAdsByUserId((int)$seller['id'], true);
 $firstAdId = (int)($ads[0]['id'] ?? 0);
+$messageThreadUrl = '/poruke.php?with=' . (int)$seller['id'] . '&ad_id=' . ($firstAdId > 0 ? $firstAdId : 0);
+$loginNext = '/login.php?next=' . rawurlencode($_SERVER['REQUEST_URI'] ?? storefrontUrlForUser($seller));
+$canQuickMessage = isLoggedIn() && !$isOwner && $firstAdId > 0;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string)($_POST['action'] ?? '') === 'shop_contact_send') {
     csrfVerify();
@@ -105,7 +108,13 @@ require __DIR__ . '/partials/layout-start.php';
                 <?php if (!empty($seller['phone'])): ?>
                     <a class="btn-call" href="tel:<?= h((string)$seller['phone']) ?>">Pozovi odmah</a>
                 <?php endif; ?>
-                <a class="btn-outline" href="/poruke.php?with=<?= (int)$seller['id'] ?>&ad_id=<?= $firstAdId > 0 ? $firstAdId : 0 ?>">Pošalji poruku</a>
+                <?php if ($canQuickMessage): ?>
+                    <button type="button" class="btn-outline js-open-shop-contact">Pošalji poruku</button>
+                <?php elseif (!isLoggedIn()): ?>
+                    <a class="btn-outline" href="<?= h($loginNext) ?>">Pošalji poruku</a>
+                <?php elseif (!$isOwner && $firstAdId > 0): ?>
+                    <a class="btn-outline" href="<?= h($messageThreadUrl) ?>">Pošalji poruku</a>
+                <?php endif; ?>
             </div>
             <?php if ($isOwner): ?>
                 <p class="form-hint storefront-hero-edit">Uredi podatke na <a href="/nalog.php?tab=mini_sajt">Moj nalog → Mini sajt</a>.</p>
@@ -313,10 +322,75 @@ require __DIR__ . '/partials/layout-start.php';
         <?php if (!empty($seller['phone'])): ?>
             <div class="storefront-sticky-contact">
                 <a class="call" href="tel:<?= h((string)$seller['phone']) ?>">Pozovi</a>
-                <a class="msg" href="/poruke.php?with=<?= (int)$seller['id'] ?>&ad_id=<?= $firstAdId > 0 ? $firstAdId : 0 ?>">Poruka</a>
+                <?php if ($canQuickMessage): ?>
+                    <button type="button" class="msg js-open-shop-contact">Poruka</button>
+                <?php elseif (!isLoggedIn()): ?>
+                    <a class="msg" href="<?= h($loginNext) ?>">Poruka</a>
+                <?php elseif (!$isOwner && $firstAdId > 0): ?>
+                    <a class="msg" href="<?= h($messageThreadUrl) ?>">Poruka</a>
+                <?php endif; ?>
             </div>
         <?php endif; ?>
     </main>
 </div>
+
+<?php if ($canQuickMessage): ?>
+    <div class="storefront-modal" id="shopContactModal" hidden>
+        <div class="storefront-modal-backdrop js-close-shop-contact"></div>
+        <div class="storefront-modal-card" role="dialog" aria-modal="true" aria-labelledby="shopContactTitle">
+            <button type="button" class="storefront-modal-close js-close-shop-contact" aria-label="Zatvori">×</button>
+            <h3 id="shopContactTitle">Pošalji poruku prodavcu</h3>
+            <p class="form-hint">Poruka ide direktno korisniku <strong><?= h($shopName) ?></strong>.</p>
+            <form method="post">
+                <?= csrfField() ?>
+                <input type="hidden" name="action" value="shop_contact_send">
+                <div class="form-group">
+                    <label for="shopContactMessage">Vaša poruka</label>
+                    <textarea id="shopContactMessage" name="message" rows="5" required placeholder="Npr. Da li je moguća ugradnja u subotu?"></textarea>
+                </div>
+                <div class="storefront-modal-actions">
+                    <button type="button" class="btn-outline js-close-shop-contact">Otkaži</button>
+                    <button type="submit" class="btn-call">Pošalji</button>
+                </div>
+            </form>
+        </div>
+    </div>
+    <script>
+        (function () {
+            var modal = document.getElementById('shopContactModal');
+            if (!modal) return;
+            var openers = document.querySelectorAll('.js-open-shop-contact');
+            var closers = modal.querySelectorAll('.js-close-shop-contact');
+            var messageField = document.getElementById('shopContactMessage');
+            var lastFocus = null;
+
+            function openModal() {
+                lastFocus = document.activeElement;
+                modal.hidden = false;
+                document.body.classList.add('modal-open');
+                setTimeout(function () {
+                    if (messageField) messageField.focus();
+                }, 0);
+            }
+            function closeModal() {
+                modal.hidden = true;
+                document.body.classList.remove('modal-open');
+                if (lastFocus && typeof lastFocus.focus === 'function') {
+                    lastFocus.focus();
+                }
+            }
+
+            openers.forEach(function (btn) {
+                btn.addEventListener('click', openModal);
+            });
+            closers.forEach(function (btn) {
+                btn.addEventListener('click', closeModal);
+            });
+            document.addEventListener('keydown', function (e) {
+                if (e.key === 'Escape' && !modal.hidden) closeModal();
+            });
+        })();
+    </script>
+<?php endif; ?>
 
 <?php require __DIR__ . '/partials/layout-end.php'; ?>

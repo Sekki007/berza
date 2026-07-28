@@ -1611,6 +1611,50 @@ a.rep-thumb:hover { opacity: 0.85; text-decoration: underline; }
 }
 .storefront-sticky-contact .call { background: #16a34a; color: #fff; }
 .storefront-sticky-contact .msg { background: #0ea5e9; color: #fff; }
+.storefront-sticky-contact .msg {
+  border: 0;
+  cursor: pointer;
+}
+.storefront-modal[hidden] { display: none; }
+.storefront-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+}
+.storefront-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 23, 42, .52);
+}
+.storefront-modal-card {
+  position: relative;
+  width: min(560px, calc(100% - 24px));
+  margin: 7vh auto 0;
+  background: #fff;
+  border-radius: 14px;
+  padding: 16px;
+  box-shadow: 0 24px 50px rgba(0, 0, 0, .24);
+}
+.storefront-modal-card h3 {
+  margin: 0 0 8px;
+}
+.storefront-modal-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  border: 0;
+  background: transparent;
+  font-size: 24px;
+  line-height: 1;
+  color: #64748b;
+  cursor: pointer;
+}
+.storefront-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+body.modal-open { overflow: hidden; }
 @media (max-width: 767px) {
   .account-check-grid { grid-template-columns: 1fr; }
   .storefront-layout { grid-template-columns: 1fr; }
@@ -1620,6 +1664,10 @@ a.rep-thumb:hover { opacity: 0.85; text-decoration: underline; }
   .storefront-gallery-edit { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .storefront-cta { grid-template-columns: 1fr; }
   .storefront-hero-meta { align-items: flex-start; }
+  .storefront-modal-card { margin-top: 10vh; padding: 14px; }
+  .storefront-modal-actions { flex-direction: column-reverse; }
+  .storefront-modal-actions .btn-outline,
+  .storefront-modal-actions .btn-call { width: 100%; text-align: center; }
   .storefront-sticky-contact { display: flex; }
 }
 
