@@ -40,6 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string)($_POST['action'] ?? '') ==
     $fromId = (int)($viewer['id'] ?? 0);
     $toId = (int)($seller['id'] ?? 0);
     $body = mb_substr(trim((string)($_POST['message'] ?? '')), 0, 1200);
+    $redirectTo = storefrontUrlForUser($seller);
     if ($fromId <= 0 || $toId <= 0 || $fromId === $toId || $firstAdId <= 0 || $body === '') {
         setFlash('danger', 'Poruka nije poslata. Proveri da li si uneo tekst.');
     } else {
@@ -52,8 +53,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && (string)($_POST['action'] ?? '') ==
             'body' => '[Mini sajt upit] ' . $body,
         ]);
         setFlash($saved ? 'success' : 'danger', $saved ? 'Poruka je poslata.' : 'Poruka nije poslata.');
+        if ($saved) {
+            $redirectTo = $messageThreadUrl;
+        }
     }
-    header('Location: ' . storefrontUrlForUser($seller));
+    header('Location: ' . $redirectTo);
     exit;
 }
 
