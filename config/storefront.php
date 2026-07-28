@@ -60,10 +60,6 @@ function storefrontPurchase(int $userId): array
     if (!isBusinessVerified($user)) {
         return ['ok' => false, 'error' => 'Mini stranica je dostupna samo za verifikovane firme (PIB).'];
     }
-    if (!creditsEnabled()) {
-        return ['ok' => false, 'error' => 'Krediti su trenutno isključeni.'];
-    }
-
     $cost = storefrontPriceCredits();
     $balance = getUserCredits($userId);
     if ($balance < $cost) {

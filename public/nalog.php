@@ -313,7 +313,7 @@ $topOn = topPurchaseEnabled();
 $topPackages = $topOn ? topPackages() : [];
 $topPaymentInfo = (string)(siteSettings()['top_payment_info'] ?? '');
 $creditsOn = creditsEnabled();
-$userCredits = $creditsOn ? getUserCredits($userId) : 0;
+$userCredits = getUserCredits($userId);
 $creditDeposits = $creditsOn ? getCreditDepositsForUser($userId) : [];
 $creditTx = $creditsOn ? getCreditTransactionsForUser($userId, 15) : [];
 $creditAmounts = $creditsOn ? creditTopupAmounts() : [];
@@ -966,6 +966,9 @@ require __DIR__ . '/partials/layout-start.php';
                             <h2>Otključaj mini sajt</h2>
                             <p>Cena: <strong><?= formatCredits($storefrontPrice) ?></strong> za <strong><?= (int)$storefrontDays ?> dana</strong>. Saldo: <strong><?= formatCredits($userCredits) ?></strong>.</p>
                             <p class="form-hint">Posle kupovine dobijaš posebnu stranicu kao mini prezentaciju radnje.</p>
+                            <?php if (!$creditsOn): ?>
+                                <p class="form-hint" style="color:#b42318;">Napomena: sistem kredita je globalno isključen u admin podešavanjima.</p>
+                            <?php endif; ?>
                         </div>
                         <form method="POST" onsubmit="return confirm('Aktivirati mini sajt za <?= formatCredits($storefrontPrice) ?>?');">
                             <?= csrfField() ?>
