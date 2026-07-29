@@ -172,7 +172,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             setFlash('danger', 'Telegram notifikacije trenutno nisu dostupne.');
         } else {
             $link = startTelegramLink($userId);
-            if ($link) {
+            if ($link && trim((string)($link['bot_link'] ?? '')) !== '') {
+                setFlash('success', 'Preusmeren si na Telegram bot. Klikni Start za povezivanje.');
+                header('Location: ' . (string)$link['bot_link']);
+                exit;
+            } elseif ($link) {
                 setFlash('success', 'Telegram kod je generisan. Pošalji ga botu da povežeš nalog.');
             } else {
                 setFlash('danger', 'Generisanje Telegram koda nije uspelo.');
@@ -380,6 +384,9 @@ $telegramLinkExpTs = strtotime($telegramLinkExpRaw);
 $telegramCodeActive = $telegramLinkCode !== '' && $telegramLinkExpTs !== false && $telegramLinkExpTs > time();
 $telegramBotUsername = telegramBotUsername();
 $telegramBotLink = $telegramBotUsername !== '' ? ('https://t.me/' . $telegramBotUsername) : '';
+$telegramConnectLink = ($telegramCodeActive && $telegramBotUsername !== '')
+    ? ('https://t.me/' . $telegramBotUsername . '?start=link_' . rawurlencode($telegramLinkCode))
+    : '';
 if ($tab === 'mini_sajt' && !$storefrontOn) {
     $tab = 'profil';
 }
@@ -1344,12 +1351,14 @@ require __DIR__ . '/partials/layout-start.php';
 
                             <?php if ($telegramCodeActive): ?>
                                 <div class="form-hint" style="margin-top:8px;">
-                                    Kod za povezivanje: <strong><?= h($telegramLinkCode) ?></strong>
-                                    (važi do <?= h(date('d.m.Y. H:i', $telegramLinkExpTs ?: time())) ?>)
-                                    <?php if ($telegramBotLink !== ''): ?>
-                                        · <a href="<?= h($telegramBotLink) ?>" target="_blank" rel="noopener">Otvori bot</a>
+                                    Start link važi do <?= h(date('d.m.Y. H:i', $telegramLinkExpTs ?: time())) ?>.
+                                    <?php if ($telegramConnectLink !== ''): ?>
+                                        <a href="<?= h($telegramConnectLink) ?>" target="_blank" rel="noopener">Otvori bot direktno</a>
+                                    <?php elseif ($telegramBotLink !== ''): ?>
+                                        <a href="<?= h($telegramBotLink) ?>" target="_blank" rel="noopener">Otvori bot</a>
                                     <?php endif; ?>
                                 </div>
+                                <div class="form-hint" style="margin-top:4px;">Ako Telegram ne prosledi start parametar, pošalji botu kod: <strong><?= h($telegramLinkCode) ?></strong>.</div>
                             <?php endif; ?>
 
                             <label class="profile-check" style="margin-top:10px;">
@@ -1383,8 +1392,8 @@ require __DIR__ . '/partials/layout-start.php';
                         <?php if (!$telegramLinked): ?>
                             <form method="POST" class="profile-action-row">
                                 <input type="hidden" name="action" value="telegram_link">
-                                <button class="btn-sm btn-sm-primary" type="submit">Generiši Telegram kod</button>
-                                <span class="form-hint">Pošalji kod botu da povežeš nalog.</span>
+                                <button class="btn-sm btn-sm-primary" type="submit">Poveži Telegram (1 klik)</button>
+                                <span class="form-hint">Otvoriće bot automatski, zatim klikni Start.</span>
                             </form>
                         <?php else: ?>
                             <form method="POST" class="profile-action-row">
