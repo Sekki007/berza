@@ -1000,6 +1000,29 @@ function markThreadRead(int $userId, int $adId, int $partnerId): void
     }
 }
 
+function deleteThread(int $userId, int $adId, int $partnerId): int
+{
+    $messages = readJsonFile('messages.json');
+    $count = count($messages);
+    $messages = array_values(array_filter($messages, static function ($msg) use ($userId, $adId, $partnerId) {
+        if ((int)($msg['ad_id'] ?? 0) !== $adId) {
+            return true;
+        }
+        $from = (int)($msg['from_user_id'] ?? 0);
+        $to = (int)($msg['to_user_id'] ?? 0);
+        $pair = [$from, $to];
+        sort($pair);
+        $expected = [$userId, $partnerId];
+        sort($expected);
+        return $pair !== $expected;
+    }));
+    $deleted = $count - count($messages);
+    if ($deleted > 0) {
+        writeJsonFile('messages.json', $messages);
+    }
+    return $deleted;
+}
+
 function saveMessage(array $payload): ?int
 {
     $from = (int)($payload['from_user_id'] ?? 0);

@@ -33,6 +33,10 @@ $ratings = getSellerRatings($sellerId);
 $shopSeo = seoShopMeta($seller, $shopName);
 $pageDescription = $shopSeo['description'];
 $canonicalUrl = absoluteUrl($shopLink);
+$shopCover = trim((string)($seller['shop_page_cover'] ?? ''));
+if ($shopCover !== '') {
+    $pageImage = absoluteUrl($shopCover);
+}
 $currentUser = currentUser();
 $isOwnShop = isLoggedIn() && (int)$currentUser['id'] === $sellerId;
 $eligibility = isLoggedIn() && !$isOwnShop

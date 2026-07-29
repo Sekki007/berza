@@ -20,6 +20,21 @@ $viewThread = $adId > 0 && $withId > 0;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     requireCsrf('/poruke.php');
+    $action = (string)($_POST['action'] ?? 'send');
+
+    if ($action === 'delete_thread') {
+        $delAd = (int)($_POST['ad_id'] ?? 0);
+        $delWith = (int)($_POST['with_user_id'] ?? 0);
+        if ($delAd > 0 && $delWith > 0) {
+            $deleted = deleteThread($userId, $delAd, $delWith);
+            setFlash('success', 'Konverzacija je obrisana (' . $deleted . ' poruka).');
+        } else {
+            setFlash('danger', 'Konverzacija nije pronađena.');
+        }
+        header('Location: /poruke.php');
+        exit;
+    }
+
     $replyAd = (int)($_POST['ad_id'] ?? 0);
     $replyTo = (int)($_POST['to_user_id'] ?? 0);
     $body = trim((string)($_POST['message'] ?? ''));
@@ -89,7 +104,16 @@ if ($viewThread) {
                         <h2><?= h($partnerName) ?></h2>
                         <a class="chat-ad-link" href="/oglas.php?id=<?= $adId ?>"><?= h((string)$ad['title']) ?></a>
                     </div>
-                    <a class="btn-sm" href="/poruke.php">← Inbox</a>
+                    <div class="chat-head-actions">
+                        <a class="btn-sm" href="/poruke.php">← Inbox</a>
+                        <form method="POST" action="/poruke.php" onsubmit="return confirm('Obrisati celu konverzaciju? Ovo se ne može poništiti.')">
+                            <?= csrfField() ?>
+                            <input type="hidden" name="action" value="delete_thread">
+                            <input type="hidden" name="ad_id" value="<?= $adId ?>">
+                            <input type="hidden" name="with_user_id" value="<?= $withId ?>">
+                            <button type="submit" class="btn-sm btn-danger-sm">🗑 Obriši</button>
+                        </form>
+                    </div>
                 </div>
 
                 <div class="chat-thread" data-chat-thread data-user-id="<?= $userId ?>">
@@ -148,18 +172,27 @@ require __DIR__ . '/partials/layout-start.php';
 
             <div class="inbox-list" data-live-inbox>
                 <?php foreach ($threads as $thread): ?>
-                    <a class="msg-item <?= $thread['unread'] > 0 ? 'unread' : '' ?>" href="/poruke.php?ad=<?= (int)$thread['ad_id'] ?>&with=<?= (int)$thread['partner_id'] ?>" data-thread-key="<?= h((string)$thread['key']) ?>">
-                        <div class="msg-avatar"><?= h(mb_strtoupper(mb_substr($thread['partner_name'], 0, 1))) ?></div>
-                        <div class="msg-preview">
-                            <strong>
-                                <?= h($thread['partner_name']) ?>
-                                <span data-thread-badge><?php if ($thread['unread'] > 0): ?><?= renderUnreadBadge((int)$thread['unread']) ?><?php endif; ?></span>
-                            </strong>
-                            <span class="msg-ad"><?= h($thread['ad_title']) ?></span>
-                            <span data-thread-preview><?= h($thread['last_body']) ?></span>
-                        </div>
-                        <div class="msg-time" data-thread-time><?= h(formatRelativeTime((string)$thread['last_at'])) ?></div>
-                    </a>
+                    <div class="msg-item-wrap">
+                        <a class="msg-item <?= $thread['unread'] > 0 ? 'unread' : '' ?>" href="/poruke.php?ad=<?= (int)$thread['ad_id'] ?>&with=<?= (int)$thread['partner_id'] ?>" data-thread-key="<?= h((string)$thread['key']) ?>">
+                            <div class="msg-avatar"><?= h(mb_strtoupper(mb_substr($thread['partner_name'], 0, 1))) ?></div>
+                            <div class="msg-preview">
+                                <strong>
+                                    <?= h($thread['partner_name']) ?>
+                                    <span data-thread-badge><?php if ($thread['unread'] > 0): ?><?= renderUnreadBadge((int)$thread['unread']) ?><?php endif; ?></span>
+                                </strong>
+                                <span class="msg-ad"><?= h($thread['ad_title']) ?></span>
+                                <span data-thread-preview><?= h($thread['last_body']) ?></span>
+                            </div>
+                            <div class="msg-time" data-thread-time><?= h(formatRelativeTime((string)$thread['last_at'])) ?></div>
+                        </a>
+                        <form method="POST" action="/poruke.php" class="msg-delete-form" onsubmit="return confirm('Obrisati konverzaciju sa <?= h($thread['partner_name']) ?>?')">
+                            <?= csrfField() ?>
+                            <input type="hidden" name="action" value="delete_thread">
+                            <input type="hidden" name="ad_id" value="<?= (int)$thread['ad_id'] ?>">
+                            <input type="hidden" name="with_user_id" value="<?= (int)$thread['partner_id'] ?>">
+                            <button type="submit" class="msg-delete-btn" title="Obriši konverzaciju">✕</button>
+                        </form>
+                    </div>
                 <?php endforeach; ?>
             </div>
         </div>

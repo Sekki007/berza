@@ -475,7 +475,16 @@ body.page-ad-form {
 .steps{display:flex;gap:4px;margin-bottom:16px;} .step{flex:1;text-align:center;font-size:11px;color:var(--text-light);} .step-bar{height:4px;background:var(--border);border-radius:2px;margin-bottom:4px;}
 .step.active .step-bar{background:var(--kp-green);} .step.active{color:var(--kp-green-dark);font-weight:bold;}
 .page-card{padding:24px 16px;text-align:center;color:var(--text-muted);} .page-card h2{font-size:18px;color:var(--text);margin-bottom:8px;}
-.msg-item{display:flex;gap:12px;padding:14px;background:#fff;border:1px solid var(--border);border-radius:4px;margin-bottom:8px;color:inherit;text-decoration:none;align-items:flex-start;}
+.msg-item-wrap{position:relative;margin-bottom:8px;}
+.msg-item-wrap .msg-item{margin-bottom:0;}
+.msg-delete-form{position:absolute;top:8px;right:8px;z-index:2;}
+.msg-delete-btn{background:none;border:none;color:var(--text-light);cursor:pointer;font-size:16px;padding:4px 6px;border-radius:4px;line-height:1;opacity:0;transition:opacity .15s;}
+.msg-item-wrap:hover .msg-delete-btn{opacity:1;}
+.msg-delete-btn:hover{background:#fee;color:#c00;}
+.chat-head-actions{display:flex;gap:8px;align-items:center;}
+.btn-danger-sm{background:#dc3545;color:#fff;border:1px solid #dc3545;border-radius:4px;padding:4px 10px;font-size:12px;cursor:pointer;}
+.btn-danger-sm:hover{background:#b02a37;}
+.msg-item{display:flex;gap:12px;padding:14px;background:#fff;border:1px solid var(--border);border-radius:4px;color:inherit;text-decoration:none;align-items:flex-start;}
 .msg-item.unread{border-left:3px solid var(--kp-green);background:#f7fff8;} .msg-preview{flex:1;min-width:0;} .msg-preview strong{display:flex;align-items:center;gap:8px;font-size:14px;margin-bottom:4px;} .msg-preview span{font-size:13px;color:var(--text-muted);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;} .msg-time{font-size:11px;color:var(--text-light);white-space:nowrap;}
 .msg-avatar{width:40px;height:40px;border-radius:50%;background:var(--kp-green);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:bold;flex-shrink:0;}
 .msg-ad{font-size:12px !important;color:var(--link) !important;margin-bottom:2px;}
@@ -1045,6 +1054,7 @@ body.page-chat .footer,body.page-chat .site-footer{display:none;}
   }
 
   .msg-item { padding: 14px 12px; }
+  .msg-delete-btn{opacity:0.6;}
   .chat-bubble { max-width: 88%; }
 
   .mobile-menu-btn { min-height: var(--touch-min); }

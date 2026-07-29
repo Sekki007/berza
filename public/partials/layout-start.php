@@ -16,6 +16,9 @@ $showSearch = $showSearch ?? true;
 $searchValue = $searchValue ?? '';
 $pageDescription = $pageDescription ?? (siteTagline() . ' — ' . (string)($site['site_name'] ?? 'KupiTelefon'));
 $pageImage = $pageImage ?? '';
+if ($pageImage === '') {
+    $pageImage = absoluteUrl('/assets/img/og-default.png');
+}
 $canonicalUrl = $canonicalUrl ?? absoluteUrl(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/');
 $unreadMessages = ($user && !empty($site['enable_messages'])) ? getUnreadMessageCount((int)$user['id']) : 0;
 $unreadNotifications = $user ? getUnreadNotificationCount((int)$user['id']) : 0;
@@ -35,16 +38,15 @@ $compareCount = count(compareIds());
     <meta property="og:description" content="<?= h($pageDescription) ?>">
     <meta property="og:url" content="<?= h($canonicalUrl) ?>">
     <meta property="og:site_name" content="<?= h((string)($site['site_name'] ?? 'KupiTelefon')) ?>">
-    <?php if ($pageImage !== ''): ?>
-        <meta property="og:image" content="<?= h($pageImage) ?>">
-        <meta name="twitter:card" content="summary_large_image">
-        <meta name="twitter:image" content="<?= h($pageImage) ?>">
-    <?php else: ?>
-        <meta name="twitter:card" content="summary">
-    <?php endif; ?>
+    <meta property="og:locale" content="sr_RS">
+    <meta property="og:image" content="<?= h($pageImage) ?>">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:image" content="<?= h($pageImage) ?>">
     <meta name="twitter:title" content="<?= h($pageTitle) ?>">
     <meta name="twitter:description" content="<?= h($pageDescription) ?>">
-    <link rel="stylesheet" href="/assets/css/style.css?v=20260728i">
+    <link rel="stylesheet" href="/assets/css/style.css?v=20260729a">
     <link rel="icon" type="image/png" href="/assets/img/favicon.png">
     <link rel="apple-touch-icon" href="/assets/img/logo-mark.png">
     <?php if (!empty($jsonLd) && is_array($jsonLd)): ?>
