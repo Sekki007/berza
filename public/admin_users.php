@@ -8,8 +8,56 @@ requireAdmin();
 $action = trim((string)($_POST['action'] ?? $_GET['action'] ?? ''));
 $userId = (int)($_POST['user_id'] ?? $_GET['user_id'] ?? 0);
 
+$q = trim((string)($_GET['q'] ?? ''));
+$filterStatus = trim((string)($_GET['status'] ?? 'all'));
+$filterFirma = trim((string)($_GET['firma'] ?? 'all'));
+$filterVerified = trim((string)($_GET['verified'] ?? 'all'));
+$filterKind = trim((string)($_GET['kind'] ?? 'all'));
+
+if (!in_array($filterStatus, ['all', 'active', 'blocked'], true)) {
+    $filterStatus = 'all';
+}
+if (!in_array($filterFirma, ['all', 'private', 'business', 'pending', 'approved', 'rejected'], true)) {
+    $filterFirma = 'all';
+}
+if (!in_array($filterVerified, ['all', 'yes', 'no'], true)) {
+    $filterVerified = 'all';
+}
+if (!in_array($filterKind, ['all', 'service', 'shop', 'both'], true)) {
+    $filterKind = 'all';
+}
+
+function adminUsersFilterQuery(array $overrides = []): string
+{
+    $params = [
+        'q' => $overrides['q'] ?? trim((string)($_GET['q'] ?? '')),
+        'status' => $overrides['status'] ?? trim((string)($_GET['status'] ?? 'all')),
+        'firma' => $overrides['firma'] ?? trim((string)($_GET['firma'] ?? 'all')),
+        'verified' => $overrides['verified'] ?? trim((string)($_GET['verified'] ?? 'all')),
+        'kind' => $overrides['kind'] ?? trim((string)($_GET['kind'] ?? 'all')),
+    ];
+    foreach ($params as $k => $v) {
+        if ($v === '' || $v === 'all') {
+            unset($params[$k]);
+        }
+    }
+    if ($params === []) {
+        return '/admin_users.php';
+    }
+    return '/admin_users.php?' . http_build_query($params);
+}
+
+function adminUsersReturnUrl(): string
+{
+    $return = trim((string)($_POST['return'] ?? ''));
+    if ($return !== '' && str_starts_with($return, '/admin_users.php')) {
+        return $return;
+    }
+    return '/admin_users.php';
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && $userId > 0) {
-    requireCsrf('/admin_users.php');
+    requireCsrf(adminUsersReturnUrl());
     if ($action === 'block') {
         $reason = trim((string)($_POST['reason'] ?? ''));
         if (setUserBlocked($userId, true, $reason !== '' ? $reason : 'Blokiran od administratora')) {
@@ -60,11 +108,68 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && $userId > 0) {
             setFlash('danger', 'Brisanje nije uspelo (admin se ne briše).');
         }
     }
-    header('Location: /admin_users.php');
+    header('Location: ' . adminUsersReturnUrl());
     exit;
 }
 
-$users = getUsers();
+$allUsers = getUsers();
+$pendingBusiness = count(array_filter($allUsers, static fn($u) => userBusinessStatus($u) === 'pending'));
+$approvedBusiness = count(array_filter($allUsers, static fn($u) => userBusinessStatus($u) === 'approved'));
+$blockedCount = count(array_filter($allUsers, static fn($u) => !empty($u['is_blocked'])));
+
+$users = array_values(array_filter($allUsers, static function (array $u) use ($q, $filterStatus, $filterFirma, $filterVerified, $filterKind): bool {
+    if ($filterStatus === 'active' && !empty($u['is_blocked'])) {
+        return false;
+    }
+    if ($filterStatus === 'blocked' && empty($u['is_blocked'])) {
+        return false;
+    }
+
+    $bizStatus = userBusinessStatus($u);
+    $accountType = userAccountType($u);
+    if ($filterFirma === 'private' && $accountType === 'business') {
+        return false;
+    }
+    if ($filterFirma === 'business' && $accountType !== 'business') {
+        return false;
+    }
+    if (in_array($filterFirma, ['pending', 'approved', 'rejected'], true) && $bizStatus !== $filterFirma) {
+        return false;
+    }
+
+    if ($filterVerified === 'yes' && empty($u['verified_seller'])) {
+        return false;
+    }
+    if ($filterVerified === 'no' && !empty($u['verified_seller'])) {
+        return false;
+    }
+
+    if ($filterKind !== 'all') {
+        if ($accountType !== 'business' || userBusinessKind($u) !== $filterKind) {
+            return false;
+        }
+    }
+
+    if ($q === '') {
+        return true;
+    }
+
+    $hay = mb_strtolower(implode(' ', [
+        (string)($u['id'] ?? ''),
+        (string)($u['full_name'] ?? ''),
+        (string)($u['username'] ?? ''),
+        (string)($u['phone'] ?? ''),
+        (string)($u['email'] ?? ''),
+        (string)($u['shop_name'] ?? ''),
+        (string)($u['shop_slug'] ?? ''),
+        (string)($u['pib'] ?? ''),
+        (string)($u['location'] ?? ''),
+    ]), 'UTF-8');
+
+    $needle = mb_strtolower($q, 'UTF-8');
+    return $needle !== '' && mb_strpos($hay, $needle) !== false;
+}));
+
 usort($users, static function ($a, $b) {
     $ap = userBusinessStatus($a) === 'pending' ? 1 : 0;
     $bp = userBusinessStatus($b) === 'pending' ? 1 : 0;
@@ -74,7 +179,14 @@ usort($users, static function ($a, $b) {
     return ((int)($b['id'] ?? 0)) <=> ((int)($a['id'] ?? 0));
 });
 
-$pendingBusiness = count(array_filter($users, static fn($u) => userBusinessStatus($u) === 'pending'));
+$returnUrl = adminUsersFilterQuery([
+    'q' => $q,
+    'status' => $filterStatus,
+    'firma' => $filterFirma,
+    'verified' => $filterVerified,
+    'kind' => $filterKind,
+]);
+$hasFilters = $q !== '' || $filterStatus !== 'all' || $filterFirma !== 'all' || $filterVerified !== 'all' || $filterKind !== 'all';
 
 $pageTitle = 'Korisnici — Admin';
 $activePage = 'nalog';
@@ -88,12 +200,78 @@ require __DIR__ . '/partials/layout-start.php';
     <?php require __DIR__ . '/partials/admin-sidebar.php'; ?>
     <main class="content">
         <div class="breadcrumb"><a href="/dashboard.php">Admin</a> › Korisnici</div>
-        <h2 style="font-size:18px;margin-bottom:12px;">Upravljanje korisnicima (<?= count($users) ?>)</h2>
-        <?php if ($pendingBusiness > 0): ?>
-            <p class="form-hint" style="margin-bottom:12px;color:#b45309;">
-                Čeka potvrdu firme: <strong><?= (int)$pendingBusiness ?></strong>
-            </p>
-        <?php endif; ?>
+        <h2 style="font-size:18px;margin-bottom:12px;">
+            Upravljanje korisnicima
+            <span style="color:var(--text-muted);font-weight:normal;">
+                (<?= count($users) ?><?= $hasFilters ? ' / ' . count($allUsers) : '' ?>)
+            </span>
+        </h2>
+
+        <div class="admin-user-stats">
+            <a class="admin-user-stat<?= $filterFirma === 'pending' ? ' is-on' : '' ?>" href="<?= h(adminUsersFilterQuery(['firma' => 'pending', 'status' => 'all', 'verified' => 'all', 'kind' => 'all', 'q' => ''])) ?>">
+                Čeka firmu <strong><?= (int)$pendingBusiness ?></strong>
+            </a>
+            <a class="admin-user-stat<?= $filterFirma === 'approved' ? ' is-on' : '' ?>" href="<?= h(adminUsersFilterQuery(['firma' => 'approved', 'status' => 'all', 'verified' => 'all', 'kind' => 'all', 'q' => ''])) ?>">
+                Potvrđene firme <strong><?= (int)$approvedBusiness ?></strong>
+            </a>
+            <a class="admin-user-stat<?= $filterStatus === 'blocked' ? ' is-on' : '' ?>" href="<?= h(adminUsersFilterQuery(['status' => 'blocked', 'firma' => 'all', 'verified' => 'all', 'kind' => 'all', 'q' => ''])) ?>">
+                Blokirani <strong><?= (int)$blockedCount ?></strong>
+            </a>
+            <?php if ($hasFilters): ?>
+                <a class="admin-user-stat" href="/admin_users.php">Prikaži sve</a>
+            <?php endif; ?>
+        </div>
+
+        <form method="GET" action="/admin_users.php" class="form-card admin-user-filters">
+            <div class="admin-user-filters-row">
+                <div class="form-group" style="margin:0;flex:1 1 220px;">
+                    <label for="admin-user-q">Pretraga</label>
+                    <input type="search" name="q" id="admin-user-q" value="<?= h($q) ?>" placeholder="Ime, @user, telefon, PIB, izlog, email, ID…" autocomplete="off">
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label for="admin-user-status">Status</label>
+                    <select name="status" id="admin-user-status">
+                        <option value="all" <?= $filterStatus === 'all' ? 'selected' : '' ?>>Svi</option>
+                        <option value="active" <?= $filterStatus === 'active' ? 'selected' : '' ?>>Aktivni</option>
+                        <option value="blocked" <?= $filterStatus === 'blocked' ? 'selected' : '' ?>>Blokirani</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label for="admin-user-firma">Firma</label>
+                    <select name="firma" id="admin-user-firma">
+                        <option value="all" <?= $filterFirma === 'all' ? 'selected' : '' ?>>Sve</option>
+                        <option value="private" <?= $filterFirma === 'private' ? 'selected' : '' ?>>Fizičko lice</option>
+                        <option value="business" <?= $filterFirma === 'business' ? 'selected' : '' ?>>Sve firme</option>
+                        <option value="pending" <?= $filterFirma === 'pending' ? 'selected' : '' ?>>Čeka potvrdu</option>
+                        <option value="approved" <?= $filterFirma === 'approved' ? 'selected' : '' ?>>Potvrđene</option>
+                        <option value="rejected" <?= $filterFirma === 'rejected' ? 'selected' : '' ?>>Odbijene</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label for="admin-user-kind">Vrsta firme</label>
+                    <select name="kind" id="admin-user-kind">
+                        <option value="all" <?= $filterKind === 'all' ? 'selected' : '' ?>>Sve</option>
+                        <option value="shop" <?= $filterKind === 'shop' ? 'selected' : '' ?>>Mobile Shop</option>
+                        <option value="service" <?= $filterKind === 'service' ? 'selected' : '' ?>>Servis</option>
+                        <option value="both" <?= $filterKind === 'both' ? 'selected' : '' ?>>Servis & Shop</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin:0;">
+                    <label for="admin-user-verified">Proveren</label>
+                    <select name="verified" id="admin-user-verified">
+                        <option value="all" <?= $filterVerified === 'all' ? 'selected' : '' ?>>Svi</option>
+                        <option value="yes" <?= $filterVerified === 'yes' ? 'selected' : '' ?>>Da</option>
+                        <option value="no" <?= $filterVerified === 'no' ? 'selected' : '' ?>>Ne</option>
+                    </select>
+                </div>
+                <div class="admin-user-filters-actions">
+                    <button class="btn-call" type="submit">Filtriraj</button>
+                    <?php if ($hasFilters): ?>
+                        <a class="btn-message" href="/admin_users.php">Reset</a>
+                    <?php endif; ?>
+                </div>
+            </div>
+        </form>
 
         <div class="form-card table-scroll" style="padding:0;">
             <table class="admin-table">
@@ -110,6 +288,11 @@ require __DIR__ . '/partials/layout-start.php';
                 </tr>
                 </thead>
                 <tbody>
+                <?php if ($users === []): ?>
+                    <tr>
+                        <td colspan="8" style="padding:18px;color:var(--text-muted);">Nema korisnika za ovaj filter.</td>
+                    </tr>
+                <?php endif; ?>
                 <?php foreach ($users as $u): ?>
                     <?php
                     $uid = (int)$u['id'];
@@ -163,6 +346,8 @@ require __DIR__ . '/partials/layout-start.php';
                                     <a class="btn-sm" href="<?= h(shopUrlForUser($u)) ?>">Izlog</a>
                                     <?php if ($bizStatus === 'pending' || $bizStatus === 'rejected'): ?>
                                         <form method="POST" style="display:inline;">
+                                            <?= csrfField() ?>
+                                            <input type="hidden" name="return" value="<?= h($returnUrl) ?>">
                                             <input type="hidden" name="user_id" value="<?= $uid ?>">
                                             <input type="hidden" name="action" value="approve_business">
                                             <button class="btn-sm btn-sm-primary" type="submit">Potvrdi firmu</button>
@@ -170,6 +355,8 @@ require __DIR__ . '/partials/layout-start.php';
                                     <?php endif; ?>
                                     <?php if ($bizStatus === 'pending' || $bizStatus === 'approved'): ?>
                                         <form method="POST" style="display:inline;" onsubmit="return confirm('Odbiti zahtev za firmu?');">
+                                            <?= csrfField() ?>
+                                            <input type="hidden" name="return" value="<?= h($returnUrl) ?>">
                                             <input type="hidden" name="user_id" value="<?= $uid ?>">
                                             <input type="hidden" name="action" value="reject_business">
                                             <input type="hidden" name="reason" value="Zahtev odbijen od administratora.">
@@ -178,12 +365,16 @@ require __DIR__ . '/partials/layout-start.php';
                                     <?php endif; ?>
                                     <?php if (!empty($u['verified_seller'])): ?>
                                         <form method="POST" style="display:inline;">
+                                            <?= csrfField() ?>
+                                            <input type="hidden" name="return" value="<?= h($returnUrl) ?>">
                                             <input type="hidden" name="user_id" value="<?= $uid ?>">
                                             <input type="hidden" name="action" value="unverify_seller">
                                             <button class="btn-sm" type="submit">Ukloni Proveren</button>
                                         </form>
                                     <?php else: ?>
                                         <form method="POST" style="display:inline;">
+                                            <?= csrfField() ?>
+                                            <input type="hidden" name="return" value="<?= h($returnUrl) ?>">
                                             <input type="hidden" name="user_id" value="<?= $uid ?>">
                                             <input type="hidden" name="action" value="verify_seller">
                                             <button class="btn-sm btn-sm-primary" type="submit">Proveren</button>
@@ -191,12 +382,16 @@ require __DIR__ . '/partials/layout-start.php';
                                     <?php endif; ?>
                                     <?php if ($blocked): ?>
                                         <form method="POST" style="display:inline;">
+                                            <?= csrfField() ?>
+                                            <input type="hidden" name="return" value="<?= h($returnUrl) ?>">
                                             <input type="hidden" name="user_id" value="<?= $uid ?>">
                                             <input type="hidden" name="action" value="unblock">
                                             <button class="btn-sm btn-sm-primary" type="submit">Odblokiraj</button>
                                         </form>
                                     <?php else: ?>
                                         <form method="POST" style="display:inline;" onsubmit="return confirm('Blokirati korisnika?');">
+                                            <?= csrfField() ?>
+                                            <input type="hidden" name="return" value="<?= h($returnUrl) ?>">
                                             <input type="hidden" name="user_id" value="<?= $uid ?>">
                                             <input type="hidden" name="action" value="block">
                                             <input type="hidden" name="reason" value="Blokiran od administratora">
@@ -204,6 +399,8 @@ require __DIR__ . '/partials/layout-start.php';
                                         </form>
                                     <?php endif; ?>
                                     <form method="POST" style="display:inline;" onsubmit="return confirm('Trajno obrisati korisnika? Oglasi će biti deaktivirani.');">
+                                        <?= csrfField() ?>
+                                        <input type="hidden" name="return" value="<?= h($returnUrl) ?>">
                                         <input type="hidden" name="user_id" value="<?= $uid ?>">
                                         <input type="hidden" name="action" value="delete">
                                         <button class="btn-sm btn-sm-danger" type="submit">Obriši</button>

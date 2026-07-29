@@ -1103,6 +1103,20 @@ body.page-chat .footer,body.page-chat .site-footer{display:none;}
 .admin-table th { background: #f8f8f8; font-weight: bold; }
 .admin-table tr:last-child td { border-bottom: none; }
 .admin-actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.admin-user-stats{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 12px;}
+.admin-user-stat{display:inline-flex;align-items:center;gap:6px;padding:7px 11px;border:1px solid var(--border);border-radius:6px;background:#fff;font-size:13px;color:var(--text);text-decoration:none;}
+.admin-user-stat strong{font-weight:700;}
+.admin-user-stat.is-on{border-color:var(--kp-green,#2e7d32);background:#e8f5e9;}
+.admin-user-filters{margin-bottom:12px;padding:12px 14px;}
+.admin-user-filters-row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;}
+.admin-user-filters .form-group label{font-size:12px;margin-bottom:4px;}
+.admin-user-filters select,.admin-user-filters input[type="search"]{min-width:140px;}
+.admin-user-filters-actions{display:flex;gap:8px;align-items:center;padding-bottom:2px;}
+@media (max-width:700px){
+  .admin-user-filters select,.admin-user-filters input[type="search"]{min-width:0;width:100%;}
+  .admin-user-filters .form-group{flex:1 1 100%;}
+}
+
 .btn-sm { padding: 6px 10px; font-size: 12px; border-radius: 4px; border: 1px solid var(--border); background: #fff; cursor: pointer; text-decoration: none; color: var(--text); }
 .btn-sm-primary { background: var(--kp-green); color: #fff; border-color: var(--kp-green-dark); }
 .btn-sm-danger { background: #fdecea; color: #b42318; border-color: #f5c2c0; }
