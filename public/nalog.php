@@ -693,7 +693,7 @@ require __DIR__ . '/partials/layout-start.php';
                             <div class="account-ad-row account-ad-row-full <?= $hiActive ? 'is-highlighted-row' : '' ?>">
                                 <div class="account-ad-thumb">
                                     <?php if ($img): ?>
-                                        <img src="<?= h($img) ?>" alt="">
+                                        <img class="account-ad-thumb-img" src="<?= h($img) ?>" alt="" width="72" height="72" loading="lazy">
                                     <?php else: ?>
                                         <span><?= h(mb_strtoupper(mb_substr(adCategoryLabel($ad), 0, 1))) ?></span>
                                     <?php endif; ?>
