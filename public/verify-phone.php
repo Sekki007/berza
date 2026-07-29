@@ -55,8 +55,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $result = verifyUserOtp($userId, 'phone_verify', $code);
         if (!empty($result['ok'])) {
             unset($_SESSION['pending_phone_verify_user_id']);
-            setFlash('success', 'Telefon je potvrđen. Sada se možeš prijaviti.');
-            header('Location: /login.php');
+            $verifiedUser = findUserById($userId);
+            if ($verifiedUser) {
+                $isAdminUser = !empty($verifiedUser['is_admin']);
+                $_SESSION['user'] = [
+                    'id' => (int)$verifiedUser['id'],
+                    'username' => $verifiedUser['username'],
+                    'full_name' => $verifiedUser['full_name'],
+                    'is_admin' => $isAdminUser,
+                ];
+                setFlash('success', 'Telefon je potvrđen. Dobrodošao!');
+                header('Location: ' . ($isAdminUser ? '/dashboard.php' : '/nalog.php'));
+            } else {
+                setFlash('success', 'Telefon je potvrđen. Sada se možeš prijaviti.');
+                header('Location: /login.php');
+            }
             exit;
         }
         $error = (string)($result['error'] ?? 'Verifikacija nije uspela.');
