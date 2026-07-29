@@ -20,6 +20,7 @@ $form = [
     'full_name' => '',
     'username' => '',
     'phone' => '',
+    'email' => '',
 ];
 $formError = '';
 
@@ -29,11 +30,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = (string)($_POST['password'] ?? '');
     $fullName = trim((string)($_POST['full_name'] ?? ''));
     $phone = trim((string)($_POST['phone'] ?? ''));
+    $email = trim((string)($_POST['email'] ?? ''));
 
     $form = [
         'full_name' => $fullName,
         'username' => $username,
         'phone' => $phone,
+        'email' => $email,
     ];
 
     $normalized = normalizePhoneRs($phone);
@@ -52,6 +55,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($userId === false) {
             $formError = 'Registracija nije uspela. Proveri podatke i pokušaj ponovo.';
         } else {
+            if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL)) {
+                patchUser($userId, ['email' => $email]);
+            }
             $_SESSION['pending_phone_verify_user_id'] = $userId;
 
             if (!smsEnabled()) {
@@ -66,7 +72,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!empty($otp['ok'])) {
                 setFlash('success', 'Nalog je kreiran. Unesi SMS kod koji smo poslali.');
             } else {
-                setFlash('danger', 'Nalog je kreiran, ali SMS nije poslat: ' . (string)($otp['error'] ?? 'greška') . '. Možeš zatražiti kod ponovo.');
+                $fallbackSent = false;
+                if ($email !== '' && filter_var($email, FILTER_VALIDATE_EMAIL) && function_exists('mailIsConfigured') && mailIsConfigured()) {
+                    $emailOtp = sendUserOtp($userId, 'phone_verify', null, 'email', $email);
+                    $fallbackSent = !empty($emailOtp['ok']);
+                }
+                if ($fallbackSent) {
+                    setFlash('success', 'Nalog je kreiran. SMS trenutno ne radi, pa smo poslali OTP kod na email.');
+                } else {
+                    setFlash('danger', 'Nalog je kreiran, ali SMS nije poslat: ' . (string)($otp['error'] ?? 'greška') . '. Na verifikaciji možeš odmah izabrati slanje koda na email.');
+                }
             }
             header('Location: /verify-phone.php');
             exit;
@@ -110,6 +125,10 @@ require __DIR__ . '/partials/layout-start.php';
                     <label>Mobilni telefon</label>
                     <input type="text" name="phone" required placeholder="06x xxx xxxx" value="<?= h($form['phone']) ?>">
                     <p class="form-hint" style="margin-top:6px;">Samo srpski mobilni brojevi (+3816…).</p>
+                </div>
+                <div class="form-group">
+                    <label>Email (opciono, za OTP fallback)</label>
+                    <input type="email" name="email" value="<?= h($form['email']) ?>" placeholder="tvoj@email.com" autocomplete="email">
                 </div>
                 <div class="form-group">
                     <label>Lozinka</label>

@@ -28,6 +28,11 @@ function otpFlowSessionKey(int $userId, string $purpose): string
     return 'otp_sms_sends_' . $userId . '_' . $purpose;
 }
 
+function otpSmsFailureSessionKey(int $userId, string $purpose): string
+{
+    return 'otp_sms_failed_' . $userId . '_' . $purpose;
+}
+
 function getOtpSmsSendCount(int $userId, string $purpose): int
 {
     return max(0, (int)($_SESSION[otpFlowSessionKey($userId, $purpose)] ?? 0));
@@ -42,6 +47,7 @@ function bumpOtpSmsSendCount(int $userId, string $purpose): void
 function resetOtpSmsSendCount(int $userId, string $purpose): void
 {
     unset($_SESSION[otpFlowSessionKey($userId, $purpose)]);
+    unset($_SESSION[otpSmsFailureSessionKey($userId, $purpose)]);
 }
 
 function userHasValidEmail(?array $user): bool
@@ -54,6 +60,9 @@ function canOfferOtpEmail(int $userId, string $purpose): bool
 {
     if (!function_exists('mailIsConfigured') || !mailIsConfigured()) {
         return false;
+    }
+    if (!empty($_SESSION[otpSmsFailureSessionKey($userId, $purpose)])) {
+        return true;
     }
     return getOtpSmsSendCount($userId, $purpose) >= OTP_SMS_BEFORE_EMAIL;
 }
@@ -166,8 +175,11 @@ function sendUserOtp(int $userId, string $purpose, ?string $phoneOverride = null
 
     $sent = sendOtpSms($phone, $code, $purpose);
     if (empty($sent['ok'])) {
+        $_SESSION[otpSmsFailureSessionKey($userId, $purpose)] = true;
         return ['ok' => false, 'error' => (string)($sent['error'] ?? 'SMS nije poslat.')];
     }
+
+    unset($_SESSION[otpSmsFailureSessionKey($userId, $purpose)]);
 
     return ['ok' => true, 'code_sent' => true, 'channel' => 'sms'];
 }
