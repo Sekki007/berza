@@ -710,6 +710,8 @@ function saveAd(array $payload, ?int $adId = null): int
                 $payload['views'] = (int)($ad['views'] ?? $payload['views']);
                 $payload['updated_at'] = date('Y-m-d H:i:s');
                 $payload['images'] = handleAdImageUploads($adId, $payload['images'] ?? ($ad['images'] ?? []));
+                invalidateAdOgImage($adId);
+                ensureAdOgImage($payload, true);
                 $payload['expires_at'] = $ad['expires_at'] ?? ($payload['expires_at'] ?? null);
                 $payload['expiry_warned_at'] = $ad['expiry_warned_at'] ?? ($payload['expiry_warned_at'] ?? null);
                 if (!array_key_exists('promoted_until', $payload)) {
@@ -736,6 +738,7 @@ function saveAd(array $payload, ?int $adId = null): int
     $payload['created_at'] = date('Y-m-d H:i:s');
     $payload['updated_at'] = date('Y-m-d H:i:s');
     $payload['images'] = handleAdImageUploads($newId, $payload['images'] ?? []);
+    ensureAdOgImage($payload, true);
     if (adExpiryEnabled()) {
         $payload['expires_at'] = computeAdExpiresAt($payload['created_at']);
         $payload['expiry_warned_at'] = null;

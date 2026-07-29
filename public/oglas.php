@@ -114,7 +114,20 @@ $bodyClass = 'page-detail';
 $showSearch = true;
 $pageDescription = $pageSeo['description'];
 $primaryImg = adPrimaryImage($ad);
-$pageImage = $primaryImg ? absoluteUrl($primaryImg) : '';
+$ogRel = ensureAdOgImage($ad);
+$ogCachedRel = adOgImagePath((int)$ad['id']);
+if ($ogRel !== '' && $ogRel === $ogCachedRel) {
+    $pageImage = absoluteUrl($ogRel);
+    $ogImageWidth = 1200;
+    $ogImageHeight = 630;
+    $ogImageType = 'image/jpeg';
+} elseif ($ogRel !== '') {
+    $pageImage = absoluteUrl($ogRel);
+} elseif ($primaryImg) {
+    $pageImage = absoluteUrl($primaryImg);
+} else {
+    $pageImage = '';
+}
 $canonicalUrl = absoluteUrl(adUrl($ad));
 $ogType = 'product';
 $jsonLd = seoAdJsonLd($ad, $seller);

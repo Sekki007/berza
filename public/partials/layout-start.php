@@ -19,6 +19,9 @@ $pageImage = $pageImage ?? '';
 if ($pageImage === '') {
     $pageImage = absoluteUrl('/assets/img/og-default.png');
 }
+$ogImageType = $ogImageType ?? (str_ends_with(strtolower(parse_url($pageImage, PHP_URL_PATH) ?: ''), '.png') ? 'image/png' : 'image/jpeg');
+$ogImageWidth = isset($ogImageWidth) ? (int)$ogImageWidth : 1200;
+$ogImageHeight = isset($ogImageHeight) ? (int)$ogImageHeight : 630;
 $canonicalUrl = $canonicalUrl ?? absoluteUrl(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/');
 $unreadMessages = ($user && !empty($site['enable_messages'])) ? getUnreadMessageCount((int)$user['id']) : 0;
 $unreadNotifications = $user ? getUnreadNotificationCount((int)$user['id']) : 0;
@@ -40,8 +43,11 @@ $compareCount = count(compareIds());
     <meta property="og:site_name" content="<?= h((string)($site['site_name'] ?? 'KupiTelefon')) ?>">
     <meta property="og:locale" content="sr_RS">
     <meta property="og:image" content="<?= h($pageImage) ?>">
-    <meta property="og:image:width" content="1200">
-    <meta property="og:image:height" content="630">
+    <meta property="og:image:secure_url" content="<?= h($pageImage) ?>">
+    <meta property="og:image:type" content="<?= h($ogImageType) ?>">
+    <meta property="og:image:width" content="<?= $ogImageWidth ?>">
+    <meta property="og:image:height" content="<?= $ogImageHeight ?>">
+    <meta property="og:image:alt" content="<?= h($pageTitle) ?>">
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:image" content="<?= h($pageImage) ?>">
     <meta name="twitter:title" content="<?= h($pageTitle) ?>">

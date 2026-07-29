@@ -10,6 +10,9 @@ Allow: /
 User-agent: TelegramBot
 Allow: /
 
+User-agent: Viber
+Allow: /
+
 User-agent: *
 Allow: /
 

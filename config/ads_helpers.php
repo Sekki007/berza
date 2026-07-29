@@ -142,6 +142,129 @@ function compressAndSaveImage(string $tmpPath, string $destPath, string $mime): 
     return (bool)$ok;
 }
 
+/** Relativna putanja keširanog OG share slike (1200×630). */
+function adOgImagePath(int $adId): string
+{
+    return '/uploads/ads/' . max(1, $adId) . '/og.jpg';
+}
+
+function adOgImageFilesystemPath(int $adId): string
+{
+    return uploadsDir() . '/' . max(1, $adId) . '/og.jpg';
+}
+
+/**
+ * Učitaj lokalnu upload sliku u GD resource.
+ * @return \GdImage|resource|false
+ */
+function loadImageResourceFromPath(string $path)
+{
+    if (!is_file($path) || !function_exists('imagecreatetruecolor')) {
+        return false;
+    }
+    $mime = function_exists('mime_content_type') ? (mime_content_type($path) ?: '') : '';
+    if ($mime === '') {
+        $ext = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        $mime = match ($ext) {
+            'png' => 'image/png',
+            'webp' => 'image/webp',
+            'gif' => 'image/gif',
+            default => 'image/jpeg',
+        };
+    }
+    return match ($mime) {
+        'image/png' => @imagecreatefrompng($path),
+        'image/webp' => function_exists('imagecreatefromwebp') ? @imagecreatefromwebp($path) : false,
+        'image/gif' => @imagecreatefromgif($path),
+        default => @imagecreatefromjpeg($path),
+    };
+}
+
+/**
+ * Pravi landscape 1200×630 JPEG za Viber/FB/WhatsApp preview.
+ * Vraća relativni URL ili prazan string.
+ */
+function ensureAdOgImage(array $ad, bool $force = false): string
+{
+    $adId = (int)($ad['id'] ?? 0);
+    if ($adId <= 0) {
+        return '';
+    }
+
+    $primary = adPrimaryImage($ad);
+    if ($primary === null || $primary === '') {
+        return '';
+    }
+
+    $publicPath = adOgImagePath($adId);
+    $dest = adOgImageFilesystemPath($adId);
+    $srcRel = str_replace('\\', '/', (string)$primary);
+    if (!str_starts_with($srcRel, '/uploads/ads/')) {
+        return $srcRel;
+    }
+    $srcFs = dirname(__DIR__) . '/public' . $srcRel;
+
+    if (!$force && is_file($dest) && is_file($srcFs) && filemtime($dest) >= filemtime($srcFs)) {
+        return $publicPath;
+    }
+
+    if (!function_exists('imagecreatetruecolor') || !is_file($srcFs)) {
+        return $srcRel;
+    }
+
+    $src = loadImageResourceFromPath($srcFs);
+    if ($src === false) {
+        return $srcRel;
+    }
+
+    $tw = 1200;
+    $th = 630;
+    $canvas = imagecreatetruecolor($tw, $th);
+    if ($canvas === false) {
+        imagedestroy($src);
+        return $srcRel;
+    }
+
+    // Blaga svetla pozadina (brand-friendly, bez ljubičastog AI klompa)
+    $bg = imagecolorallocate($canvas, 245, 246, 245);
+    imagefilledrectangle($canvas, 0, 0, $tw, $th, $bg);
+
+    $sw = imagesx($src);
+    $sh = imagesy($src);
+    if ($sw < 1 || $sh < 1) {
+        imagedestroy($src);
+        imagedestroy($canvas);
+        return $srcRel;
+    }
+
+    // Cover: popuni ceo kadar
+    $scale = max($tw / $sw, $th / $sh);
+    $nw = (int)round($sw * $scale);
+    $nh = (int)round($sh * $scale);
+    $dx = (int)round(($tw - $nw) / 2);
+    $dy = (int)round(($th - $nh) / 2);
+    imagecopyresampled($canvas, $src, $dx, $dy, 0, 0, $nw, $nh, $sw, $sh);
+    imagedestroy($src);
+
+    $dir = dirname($dest);
+    if (!is_dir($dir)) {
+        mkdir($dir, 0777, true);
+    }
+    $ok = imagejpeg($canvas, $dest, 85);
+    imagedestroy($canvas);
+
+    return $ok ? $publicPath : $srcRel;
+}
+
+/** Obriši keš OG slike (npr. posle izmene fotografija). */
+function invalidateAdOgImage(int $adId): void
+{
+    $path = adOgImageFilesystemPath($adId);
+    if (is_file($path)) {
+        @unlink($path);
+    }
+}
+
 function incrementAdViews(int $adId): void
 {
     if ($adId <= 0) {

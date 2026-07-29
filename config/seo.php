@@ -85,9 +85,12 @@ function seoAdMeta(array $ad): array
     $descSource = trim((string)($ad['description'] ?? ''));
     if ($descSource === '') {
         $descSource = $title . ($bits ? ' — ' . implode(', ', $bits) : '');
+    } elseif ($price !== '') {
+        // Cena na početku — bolji preview u Viber/FB
+        $descSource = $price . ' · ' . $descSource;
     }
     return [
-        'title' => $title . ($location !== '' ? ' · ' . $location : '') . ' — ' . $name,
+        'title' => $title . ($price !== '' ? ' · ' . $price : '') . ($location !== '' ? ' · ' . $location : '') . ' — ' . $name,
         'description' => seoTruncate($descSource),
     ];
 }
