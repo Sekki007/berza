@@ -1130,6 +1130,7 @@ require_once __DIR__ . '/saved_searches.php';
 require_once __DIR__ . '/compare.php';
 require_once __DIR__ . '/ad_stats.php';
 require_once __DIR__ . '/storefront.php';
+require_once __DIR__ . '/facebook_pixel.php';
 ensureJsonDataFiles();
 ensureUploadsDir();
 ensureCreditFiles();

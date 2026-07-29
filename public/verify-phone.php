@@ -65,9 +65,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     'is_admin' => $isAdminUser,
                 ];
                 setFlash('success', 'Telefon je potvrđen. Dobrodošao!');
+                queueFacebookPixelEvent('CompleteRegistration', ['status' => 'verified']);
                 header('Location: ' . ($isAdminUser ? '/dashboard.php' : '/nalog.php'));
             } else {
                 setFlash('success', 'Telefon je potvrđen. Sada se možeš prijaviti.');
+                queueFacebookPixelEvent('CompleteRegistration', ['status' => 'verified']);
                 header('Location: /login.php');
             }
             exit;

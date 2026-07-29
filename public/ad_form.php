@@ -243,6 +243,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $msg .= ' ' . implode(' ', $promoNotes);
         }
         setFlash('success', $msg);
+        queueFacebookPixelEvent('PostAd', [
+            'content_ids' => [(string)$newId],
+            'content_type' => 'product',
+            'content_name' => (string)($payload['title'] ?? ''),
+        ], true);
         header('Location: /nalog.php?tab=oglasi');
         exit;
     }

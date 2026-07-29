@@ -63,6 +63,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if (!smsEnabled()) {
                 patchUser($userId, ['phone_verified_at' => date('Y-m-d H:i:s')]);
                 unset($_SESSION['pending_phone_verify_user_id']);
+                queueFacebookPixelEvent('CompleteRegistration', ['status' => 'auto']);
                 setFlash('success', 'Nalog je kreiran (SMS je isključen — telefon automatski označen kao potvrđen).');
                 header('Location: /login.php');
                 exit;

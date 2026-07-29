@@ -2199,6 +2199,50 @@ body.kp-lightbox-open {
   }
 }
 
+.kp-cookie-banner {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 12000;
+  background: #111;
+  color: #fff;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0,0,0,.25);
+}
+.kp-cookie-banner-inner {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+}
+.kp-cookie-banner p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.4;
+  max-width: 720px;
+  color: #eee;
+}
+.kp-cookie-banner-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.kp-cookie-banner .btn-sm {
+  background: #333;
+  color: #fff;
+  border-color: #444;
+}
+.kp-cookie-banner .btn-sm-primary {
+  background: var(--kp-green, #1a7a3a);
+  border-color: var(--kp-green, #1a7a3a);
+}
+@media (max-width: 767px) {
+  .kp-cookie-banner { bottom: 72px; }
+}
+
 @media (min-width: 768px) and (max-width: 1023px) {
   .kp-detail-wrap.main-wrap {
     grid-template-columns: minmax(0, 1fr) 260px;

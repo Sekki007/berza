@@ -248,5 +248,6 @@ if ($user) {
     </a>
 
     <script src="/assets/js/app.js?v=20260728h"></script>
+    <?= renderFacebookPixelBootstrap() ?>
 </body>
 </html>

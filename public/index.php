@@ -82,6 +82,13 @@ if ($queryBase === []) {
 $activePage = 'oglasi';
 $searchValue = $search;
 
+if ($search !== '') {
+    facebookPixelPageEvent('Search', [
+        'search_string' => $search,
+        'content_category' => $type !== '' ? $type : 'all',
+    ]);
+}
+
 require __DIR__ . '/partials/layout-start.php';
 ?>
 

@@ -32,7 +32,7 @@ function parseTopPackagesPost(): array
 
 $settings = siteSettings();
 $tab = trim((string)($_GET['tab'] ?? 'general'));
-$validTabs = ['general', 'homepage', 'lists', 'features', 'email', 'sms', 'maintenance'];
+$validTabs = ['general', 'homepage', 'lists', 'features', 'email', 'sms', 'marketing', 'maintenance'];
 if (!in_array($tab, $validTabs, true)) {
     $tab = 'general';
 }
@@ -148,6 +148,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'conditions' => parseLines((string)($_POST['conditions'] ?? implode("\n", $current['conditions']))),
         'sms_template_phone_verify' => trim((string)($_POST['sms_template_phone_verify'] ?? $current['sms_template_phone_verify'] ?? '')),
         'sms_template_password_reset' => trim((string)($_POST['sms_template_password_reset'] ?? $current['sms_template_password_reset'] ?? '')),
+        'facebook_pixel_enabled' => (string)($_POST['facebook_pixel_enabled'] ?? '0') === '1',
+        'facebook_pixel_id' => preg_replace('/\D+/', '', (string)($_POST['facebook_pixel_id'] ?? $current['facebook_pixel_id'] ?? '')) ?? '',
+        'facebook_pixel_require_consent' => (string)($_POST['facebook_pixel_require_consent'] ?? '0') === '1',
     ]);
 
     $defaultsSms = defaultSiteSettings();
@@ -192,6 +195,7 @@ require __DIR__ . '/partials/layout-start.php';
             <a href="?tab=features" class="<?= $tab === 'features' ? 'active' : '' ?>">Funkcije</a>
             <a href="?tab=email" class="<?= $tab === 'email' ? 'active' : '' ?>">Email šabloni</a>
             <a href="?tab=sms" class="<?= $tab === 'sms' ? 'active' : '' ?>">SMS</a>
+            <a href="?tab=marketing" class="<?= $tab === 'marketing' ? 'active' : '' ?>">Marketing / Pixel</a>
             <a href="?tab=maintenance" class="<?= $tab === 'maintenance' ? 'active' : '' ?>">Održavanje</a>
         </div>
 
@@ -493,6 +497,64 @@ require __DIR__ . '/partials/layout-start.php';
                     <textarea name="sms_template_password_reset" rows="2" maxlength="160"><?= h((string)($settings['sms_template_password_reset'] ?? 'KupiTelefon reset lozinke: {code}. Vazi 10 min.')) ?></textarea>
                     <p class="form-hint" style="margin-top:6px;">Primer: <code>KupiTelefon reset lozinke: {code}. Vazi 10 min.</code></p>
                 </div>
+            </div>
+
+            <div class="admin-tab-panel <?= $tab === 'marketing' ? 'active' : '' ?>">
+                <h3>Facebook Pixel</h3>
+                <p class="form-hint" style="margin-bottom:14px;">
+                    Pixel meri posete, registracije i objavljene oglase sa Facebook/Instagram reklama.
+                    Bez Pixel-a FB ne zna šta radi tvoja publika na sajtu.
+                </p>
+
+                <div class="form-group form-checks">
+                    <input type="hidden" name="facebook_pixel_enabled" value="0">
+                    <label class="type-chip" style="min-width:auto;flex:none;">
+                        <input type="checkbox" name="facebook_pixel_enabled" value="1" <?= !empty($settings['facebook_pixel_enabled']) ? 'checked' : '' ?>>
+                        Uključi Facebook Pixel
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label>Pixel ID</label>
+                    <input name="facebook_pixel_id" inputmode="numeric" pattern="[0-9]*" value="<?= h((string)($settings['facebook_pixel_id'] ?? '')) ?>" placeholder="npr. 123456789012345">
+                    <p class="form-hint" style="margin-top:6px;">
+                        Kako da nađeš ID:<br>
+                        1) Otvori <a href="https://business.facebook.com/events_manager" target="_blank" rel="noopener">Meta Events Manager</a><br>
+                        2) Izaberi ili kreiraj Pixel (Data sources → Connect data → Web → Meta Pixel)<br>
+                        3) Kopiraj Pixel ID (samo brojevi) i nalepi ovde
+                    </p>
+                </div>
+
+                <div class="form-group form-checks">
+                    <input type="hidden" name="facebook_pixel_require_consent" value="0">
+                    <label class="type-chip" style="min-width:auto;flex:none;">
+                        <input type="checkbox" name="facebook_pixel_require_consent" value="1" <?= !empty($settings['facebook_pixel_require_consent']) || !isset($settings['facebook_pixel_require_consent']) ? 'checked' : '' ?>>
+                        Traži pristanak za marketing kolačiće (preporučeno)
+                    </label>
+                </div>
+
+                <div class="form-group" style="padding:12px;border:1px solid var(--border);border-radius:6px;background:#fafafa;">
+                    <strong style="display:block;margin-bottom:8px;">Šta se automatski meri</strong>
+                    <ul style="margin:0;padding-left:18px;font-size:13px;color:var(--text-muted);line-height:1.55;">
+                        <li><code>PageView</code> — svaka stranica</li>
+                        <li><code>CompleteRegistration</code> — uspešna registracija / verifikacija</li>
+                        <li><code>ViewContent</code> — otvoren oglas</li>
+                        <li><code>Search</code> — pretraga na početnoj</li>
+                        <li><code>Lead</code> — poslata poruka prodavcu</li>
+                        <li><code>PostAd</code> — novi oglas objavljen (custom event)</li>
+                    </ul>
+                </div>
+
+                <p class="form-hint" style="margin-top:12px;">
+                    Posle čuvanja: otvori sajt u Chrome-u → prihvati kolačiće → u Meta Events Manager klikni
+                    <strong>Test events</strong> i proveri da li stižu PageView eventi.
+                    Status sada:
+                    <?php if (!empty($settings['facebook_pixel_enabled']) && trim((string)($settings['facebook_pixel_id'] ?? '')) !== ''): ?>
+                        <strong style="color:var(--kp-green-dark);">spreman</strong>
+                    <?php else: ?>
+                        <strong style="color:#b45309;">isključen / nema ID</strong>
+                    <?php endif; ?>
+                </p>
             </div>
 
             <div class="admin-tab-panel <?= $tab === 'maintenance' ? 'active' : '' ?>">

@@ -63,6 +63,9 @@ function defaultSiteSettings(): array
         'sms_template_phone_verify' => 'KupiTelefon kod: {code}. Vazi 10 min.',
         'sms_template_password_reset' => 'KupiTelefon reset lozinke: {code}. Vazi 10 min.',
         'email_templates' => [],
+        'facebook_pixel_enabled' => false,
+        'facebook_pixel_id' => '',
+        'facebook_pixel_require_consent' => true,
     ];
 }
 

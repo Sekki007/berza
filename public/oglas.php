@@ -58,6 +58,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     if ($saved) {
         setFlash('success', 'Poruka je poslata. Otvori inbox da pratiš odgovor.');
+        queueFacebookPixelEvent('Lead', [
+            'content_ids' => [(string)((int)$ad['id'])],
+            'content_name' => (string)($ad['title'] ?? ''),
+            'content_category' => getAdType($ad),
+        ]);
         header('Location: /poruke.php?ad=' . (int)$ad['id'] . '&with=' . $toUserId);
         exit;
     }
@@ -111,6 +116,18 @@ $jsonLd = seoAdJsonLd($ad, $seller);
 $inCompare = isInCompare($id);
 $adBrand = (string)($ad['brand'] ?? '');
 $adCategory = (string)($ad['category'] ?? '');
+
+$fbViewParams = [
+    'content_ids' => [(string)$id],
+    'content_type' => 'product',
+    'content_name' => (string)($ad['title'] ?? ''),
+    'content_category' => getAdType($ad),
+];
+if (!isAdPriceOpen($ad) && adPriceEur($ad) > 0) {
+    $fbViewParams['value'] = round(adPriceEur($ad), 2);
+    $fbViewParams['currency'] = 'EUR';
+}
+facebookPixelPageEvent('ViewContent', $fbViewParams);
 
 require __DIR__ . '/partials/layout-start.php';
 
