@@ -184,7 +184,20 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $formError = 'Unesi cenu ili označi Po dogovoru.';
     } elseif ($payload['price'] < 0) {
         $formError = 'Cena nije validna.';
-    } else {
+    } elseif ($payload['price_type'] === 'fixed') {
+        $priceConfirmed = !empty($_POST['price_confirmed']);
+        $priceErr = validateAdPrice(
+            (float)$payload['price'],
+            (string)$payload['currency'],
+            (string)$payload['ad_type'],
+            $priceConfirmed
+        );
+        if ($priceErr !== null) {
+            $formError = $priceErr;
+        }
+    }
+
+    if ($formError === '') {
         if ($payload['shop_name'] === '') {
             $payload['shop_name'] = trim((string)(($profile['shop_name'] ?? '') ?: getSellerShopName($profile)));
         }

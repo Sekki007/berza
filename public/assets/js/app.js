@@ -162,6 +162,8 @@
         if (selected.value === 'delovi') opt.classList.add('selected-parts');
         if (selected.value === 'servis') opt.classList.add('selected-service');
         syncAdFormByType(selected.value);
+        const priceInput = one('[data-price-input]');
+        if (priceInput) priceInput.dispatchEvent(new Event('change', { bubbles: true }));
       });
     });
     const current = one('[data-form-type]:checked');
@@ -289,6 +291,9 @@
       const priceInput = one('[data-price-input]', form);
       const hint = one('[data-price-hint]', form);
       const convert = one('[data-price-convert]', form);
+      const sanity = one('[data-price-sanity]', form);
+      const confirmWrap = one('[data-price-confirm-wrap]', form);
+      const confirmCb = one('[data-price-confirm]', form);
       const fixed = type === 'fixed';
 
       form.querySelectorAll('.price-type-option').forEach(function (lab) {
@@ -313,30 +318,100 @@
         hint.textContent = fixed ? 'Na sajtu se cena prikazuje u eurima.' : 'Polje za cenu je isključeno.';
       }
 
+      function fmt(n) {
+        return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+      }
+
+      function currentAdType() {
+        const t = one('[data-form-type]:checked', form);
+        return t ? t.value : 'telefon';
+      }
+
+      function maxEurForType(adType) {
+        if (!amountRow) return 5000;
+        const key = 'data-price-max-' + (adType || 'telefon');
+        const v = parseFloat(amountRow.getAttribute(key) || '');
+        return v > 0 ? v : 5000;
+      }
+
       if (convert) {
         if (!fixed) {
           convert.setAttribute('hidden', '');
           convert.textContent = '';
-          return;
-        }
-        const curEl = one('[data-price-currency]:checked', form);
-        const currency = curEl ? curEl.value : 'eur';
-        const amount = parseFloat((priceInput && priceInput.value) || '0');
-        const rate = parseFloat((amountRow && amountRow.getAttribute('data-eur-rsd-rate')) || '117') || 117;
-        if (!amount || amount <= 0) {
-          convert.setAttribute('hidden', '');
-          convert.textContent = '';
-          return;
-        }
-        function fmt(n) {
-          return Math.round(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
-        }
-        if (currency === 'eur') {
-          convert.textContent = '≈ ' + fmt(amount * rate) + ' din (kurs ' + fmt(rate) + ')';
         } else {
-          convert.textContent = '≈ ' + fmt(amount / rate) + ' € (kurs ' + fmt(rate) + ')';
+          const curEl = one('[data-price-currency]:checked', form);
+          const currency = curEl ? curEl.value : 'eur';
+          const amount = parseFloat((priceInput && priceInput.value) || '0');
+          const rate = parseFloat((amountRow && amountRow.getAttribute('data-eur-rsd-rate')) || '117') || 117;
+          if (!amount || amount <= 0) {
+            convert.setAttribute('hidden', '');
+            convert.textContent = '';
+          } else {
+            if (currency === 'eur') {
+              convert.textContent = '≈ ' + fmt(amount * rate) + ' din (kurs ' + fmt(rate) + ')';
+            } else {
+              convert.textContent = '≈ ' + fmt(amount / rate) + ' € (kurs ' + fmt(rate) + ')';
+            }
+            convert.removeAttribute('hidden');
+          }
         }
-        convert.removeAttribute('hidden');
+      }
+
+      if (sanity || confirmWrap) {
+        if (!fixed) {
+          if (sanity) {
+            sanity.setAttribute('hidden', '');
+            sanity.textContent = '';
+            sanity.classList.remove('is-warn', 'is-error');
+          }
+          if (confirmWrap) confirmWrap.setAttribute('hidden', '');
+          if (confirmCb) {
+            confirmCb.checked = false;
+            confirmCb.required = false;
+          }
+        } else {
+          const curEl = one('[data-price-currency]:checked', form);
+          const currency = curEl ? curEl.value : 'eur';
+          const amount = parseFloat((priceInput && priceInput.value) || '0');
+          const rate = parseFloat((amountRow && amountRow.getAttribute('data-eur-rsd-rate')) || '117') || 117;
+          const warnEur = parseFloat((amountRow && amountRow.getAttribute('data-price-warn-eur')) || '2000') || 2000;
+          const adType = currentAdType();
+          const maxEur = maxEurForType(adType);
+          const eur = amount > 0 ? (currency === 'rsd' ? amount / rate : amount) : 0;
+
+          if (sanity) {
+            sanity.classList.remove('is-warn', 'is-error');
+            if (eur > maxEur) {
+              let msg = 'Cena od ~' + fmt(eur) + ' € je iznad limita (' + fmt(maxEur) + ' €). Proveri iznos i valutu.';
+              if (currency === 'eur' && amount >= 10000) {
+                msg = 'Cena od ' + fmt(amount) + ' € deluje kao greška — možda si uneo dinare u polje za evre? Maksimum je ' + fmt(maxEur) + ' €.';
+              }
+              sanity.textContent = msg;
+              sanity.classList.add('is-error');
+              sanity.removeAttribute('hidden');
+            } else if (eur > warnEur) {
+              sanity.textContent = 'Cena od ~' + fmt(eur) + ' € izgleda visoko. Potvrdi ispod da nije greška u kucanju.';
+              sanity.classList.add('is-warn');
+              sanity.removeAttribute('hidden');
+            } else {
+              sanity.setAttribute('hidden', '');
+              sanity.textContent = '';
+            }
+          }
+
+          if (confirmWrap) {
+            if (eur > warnEur && eur <= maxEur) {
+              confirmWrap.removeAttribute('hidden');
+              if (confirmCb) confirmCb.required = true;
+            } else {
+              confirmWrap.setAttribute('hidden', '');
+              if (confirmCb) {
+                confirmCb.checked = false;
+                confirmCb.required = false;
+              }
+            }
+          }
+        }
       }
     }
 

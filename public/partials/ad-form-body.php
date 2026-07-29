@@ -125,7 +125,20 @@
                             <span>Po dogovoru</span>
                         </label>
                     </div>
-                    <div class="price-amount-row" data-price-amount-row <?= $currentPriceType !== 'fixed' ? 'hidden' : '' ?> data-eur-rsd-rate="<?= h((string)eurRsdRate()) ?>">
+                    <?php
+                    $priceWarnEur = warnAdPriceEur();
+                    $priceMaxEur = maxAdPriceEur($currentType);
+                    $priceEurNow = ($currentPriceType === 'fixed' && (float)($ad['price'] ?? 0) > 0)
+                        ? amountToEur((float)$ad['price'], $currentCurrency)
+                        : 0.0;
+                    $showPriceConfirm = $priceEurNow > $priceWarnEur && $priceEurNow <= $priceMaxEur;
+                    ?>
+                    <div class="price-amount-row" data-price-amount-row <?= $currentPriceType !== 'fixed' ? 'hidden' : '' ?>
+                         data-eur-rsd-rate="<?= h((string)eurRsdRate()) ?>"
+                         data-price-warn-eur="<?= h((string)$priceWarnEur) ?>"
+                         data-price-max-telefon="<?= h((string)maxAdPriceEur('telefon')) ?>"
+                         data-price-max-delovi="<?= h((string)maxAdPriceEur('delovi')) ?>"
+                         data-price-max-servis="<?= h((string)maxAdPriceEur('servis')) ?>">
                         <input type="number" step="1" min="1" name="price" inputmode="numeric" data-price-input value="<?= $currentPriceType === 'fixed' ? h((string)$ad['price']) : '' ?>" placeholder="Iznos" <?= $currentPriceType === 'fixed' ? 'required' : 'disabled' ?>>
                         <div class="price-currency-toggle" role="group" aria-label="Valuta">
                             <label class="price-cur-option <?= $currentCurrency === 'eur' ? 'is-on' : '' ?>">
@@ -139,6 +152,11 @@
                         </div>
                     </div>
                     <p class="form-hint price-convert-hint" data-price-convert hidden></p>
+                    <p class="form-hint price-sanity-hint" data-price-sanity hidden></p>
+                    <label class="price-confirm-label" data-price-confirm-wrap <?= $showPriceConfirm ? '' : 'hidden' ?>>
+                        <input type="checkbox" name="price_confirmed" value="1" data-price-confirm <?= $showPriceConfirm && !empty($_POST['price_confirmed']) ? 'checked' : '' ?>>
+                        <span>Potvrđujem da je cena tačna (nije greška u kucanju / pogrešna valuta)</span>
+                    </label>
                     <p class="form-hint" data-price-hint><?= $currentPriceType === 'fixed' ? 'Na sajtu se cena prikazuje u eurima.' : 'Polje za cenu je isključeno.' ?></p>
                 </div>
             </section>

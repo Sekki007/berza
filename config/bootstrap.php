@@ -614,6 +614,61 @@ function adPriceEur(array $ad): float
     return $price;
 }
 
+/** Iznos u EUR ekvivalentu (nezavisno od oglasa). */
+function amountToEur(float $amount, string $currency): float
+{
+    if ($amount <= 0) {
+        return 0.0;
+    }
+    return normalizeAdCurrency($currency) === 'rsd' ? $amount / eurRsdRate() : $amount;
+}
+
+/** Soft upozorenje — traži eksplicitnu potvrdu iznad ovoga. */
+function warnAdPriceEur(): float
+{
+    return 2000.0;
+}
+
+/** Hard maksimum cene u EUR (sprečava greške tipa dinari u EUR polju). */
+function maxAdPriceEur(string $adType = 'telefon'): float
+{
+    return match ($adType) {
+        'servis' => 15000.0,
+        'delovi' => 5000.0,
+        default => 5000.0,
+    };
+}
+
+/**
+ * Validacija cene oglasa. Vraća poruku greške ili null.
+ *
+ * @param bool $confirmed korisnik je potvrdio da visoka cena nije greška
+ */
+function validateAdPrice(float $amount, string $currency, string $adType, bool $confirmed = false): ?string
+{
+    if ($amount <= 0) {
+        return 'Unesi cenu ili označi Po dogovoru.';
+    }
+    $eur = amountToEur($amount, $currency);
+    $max = maxAdPriceEur($adType);
+    $maxFmt = number_format($max, 0, ',', '.');
+    $amtFmt = number_format($amount, 0, ',', '.');
+
+    if ($eur > $max) {
+        if (normalizeAdCurrency($currency) === 'eur' && $amount >= 10000) {
+            return "Cena od {$amtFmt} € deluje kao greška (možda si uneo dinare u polje za evre, ili višak nula?). Maksimum je {$maxFmt} €.";
+        }
+        return "Cena je previsoka (maks. {$maxFmt} €). Proveri iznos i valutu (EUR / RSD).";
+    }
+
+    if ($eur > warnAdPriceEur() && !$confirmed) {
+        $eurFmt = number_format($eur, 0, ',', '.');
+        return "Cena od ~{$eurFmt} € izgleda visoko. Potvrdi ispod da nije greška u kucanju, ili smanji iznos.";
+    }
+
+    return null;
+}
+
 function getAllAds(): array
 {
     $ads = readJsonFile('ads.json');
