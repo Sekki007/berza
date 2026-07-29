@@ -50,7 +50,15 @@ if (!$owned) {
 }
 
 $url = trim((string)($_POST['url'] ?? ''));
-$result = kpImportFromUrl($url, $userId);
+try {
+    $result = kpImportFromUrl($url, $userId);
+} catch (Throwable $e) {
+    kpImportJsonOut([
+        'ok' => false,
+        'error' => 'exception',
+        'message' => 'Greška pri uvozu: ' . $e->getMessage(),
+    ], 500);
+}
 
 if (empty($result['ok'])) {
     kpImportJsonOut([

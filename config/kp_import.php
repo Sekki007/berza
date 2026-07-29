@@ -66,6 +66,11 @@ function kpImportNormalizeUrl(string $url): ?string
     if ($url === '') {
         return null;
     }
+    // Često se nalepi tekst oko linka
+    if (preg_match('~https?://[^\s<>"\']+~i', $url, $m)) {
+        $url = $m[0];
+    }
+    $url = rtrim($url, '.,);]');
     if (!preg_match('~^https?://~i', $url)) {
         $url = 'https://' . ltrim($url, '/');
     }
@@ -75,54 +80,89 @@ function kpImportNormalizeUrl(string $url): ?string
     }
     $host = strtolower((string)$parts['host']);
     $host = preg_replace('/^www\./', '', $host) ?? $host;
+    $host = preg_replace('/^m\./', '', $host) ?? $host;
     if ($host !== 'kupujemprodajem.com') {
         return null;
     }
     $path = (string)$parts['path'];
-    if (!preg_match('~/oglas/(\d+)/?$~', $path, $m)) {
+    if (!preg_match('~/oglas/(\d+)/?~', $path, $m)) {
         return null;
     }
-    return 'https://www.kupujemprodajem.com' . preg_replace('~/+~', '/', $path);
+    $adId = $m[1];
+    // Prefer canonical path from paste; fallback /oglas/{id}
+    if (preg_match('~^(/[^?#]*?/oglas/' . preg_quote($adId, '~') . ')/?~', $path, $pm)) {
+        $canon = $pm[1];
+    } else {
+        $canon = '/oglas/' . $adId;
+    }
+    return 'https://www.kupujemprodajem.com' . preg_replace('~/+~', '/', $canon);
 }
 
 function kpImportFetchHtml(string $url): array
 {
     $ua = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36';
+    $headers = [
+        'Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8',
+        'Accept-Language: sr-RS,sr;q=0.9,en-US;q=0.8,en;q=0.7',
+        'Cache-Control: no-cache',
+        'Pragma: no-cache',
+        'Upgrade-Insecure-Requests: 1',
+    ];
+
     $html = '';
     $status = 0;
     $err = '';
 
     if (function_exists('curl_init')) {
-        $ch = curl_init($url);
-        curl_setopt_array($ch, [
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_FOLLOWLOCATION => true,
-            CURLOPT_MAXREDIRS => 5,
-            CURLOPT_CONNECTTIMEOUT => 8,
-            CURLOPT_TIMEOUT => 20,
-            CURLOPT_USERAGENT => $ua,
-            CURLOPT_HTTPHEADER => [
-                'Accept: text/html,application/xhtml+xml;q=0.9,*/*;q=0.8',
-                'Accept-Language: sr-RS,sr;q=0.9,en;q=0.8',
-            ],
-            CURLOPT_SSL_VERIFYPEER => true,
-            CURLOPT_ENCODING => '',
-        ]);
-        $body = curl_exec($ch);
-        $status = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        if ($body === false) {
-            $err = (string)curl_error($ch);
-        } else {
-            $html = (string)$body;
+        $cookie = sys_get_temp_dir() . '/kp_import_cookies_' . md5($url) . '.txt';
+        $attempts = [
+            ['verify' => true],
+            ['verify' => false], // shared hosting često nema ažuran CA bundle
+        ];
+        foreach ($attempts as $attempt) {
+            $ch = curl_init($url);
+            curl_setopt_array($ch, [
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_FOLLOWLOCATION => true,
+                CURLOPT_MAXREDIRS => 8,
+                CURLOPT_CONNECTTIMEOUT => 12,
+                CURLOPT_TIMEOUT => 35,
+                CURLOPT_USERAGENT => $ua,
+                CURLOPT_HTTPHEADER => $headers,
+                CURLOPT_ENCODING => '',
+                CURLOPT_COOKIEJAR => $cookie,
+                CURLOPT_COOKIEFILE => $cookie,
+                CURLOPT_SSL_VERIFYPEER => !empty($attempt['verify']),
+                CURLOPT_SSL_VERIFYHOST => !empty($attempt['verify']) ? 2 : 0,
+            ]);
+            if (defined('CURL_IPRESOLVE_V4')) {
+                curl_setopt($ch, CURLOPT_IPRESOLVE, CURL_IPRESOLVE_V4);
+            }
+            $body = curl_exec($ch);
+            $status = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+            $cerr = (string)curl_error($ch);
+            curl_close($ch);
+
+            if ($body !== false && $body !== '' && $status > 0 && $status < 500) {
+                $html = (string)$body;
+                $err = '';
+                break;
+            }
+            $err = $cerr !== '' ? $cerr : ('http_' . $status);
+            $html = is_string($body) ? $body : '';
         }
-        curl_close($ch);
+        @unlink($cookie);
     } else {
         $ctx = stream_context_create([
             'http' => [
                 'method' => 'GET',
-                'header' => "User-Agent: {$ua}\r\nAccept: text/html\r\n",
-                'timeout' => 20,
+                'header' => "User-Agent: {$ua}\r\nAccept: text/html\r\nAccept-Language: sr-RS,sr;q=0.9\r\n",
+                'timeout' => 35,
                 'follow_location' => 1,
+            ],
+            'ssl' => [
+                'verify_peer' => false,
+                'verify_peer_name' => false,
             ],
         ]);
         $body = @file_get_contents($url, false, $ctx);
@@ -149,7 +189,8 @@ function kpImportExtractJsonLdProducts(string $html): array
         if (!is_array($data)) {
             continue;
         }
-        $nodes = isset($data['@type']) ? [$data] : (array_is_list($data) ? $data : [$data]);
+        $isList = function_exists('array_is_list') ? array_is_list($data) : (array_keys($data) === range(0, count($data) - 1));
+        $nodes = isset($data['@type']) ? [$data] : ($isList ? $data : [$data]);
         foreach ($nodes as $node) {
             if (!is_array($node)) {
                 continue;
@@ -167,13 +208,62 @@ function kpImportExtractJsonLdProducts(string $html): array
     return $out;
 }
 
-function kpImportExtractNextDataLocation(string $html): string
+/** @return array<string,mixed>|null */
+function kpImportExtractNextDataAd(string $html, ?string $adId = null): ?array
 {
     if (!preg_match('~<script[^>]*id=["\']__NEXT_DATA__["\'][^>]*>(.*?)</script>~is', $html, $m)) {
-        return '';
+        return null;
     }
-    $json = (string)$m[1];
-    if (preg_match('~"location"\s*:\s*"([^"]{2,80})"~u', $json, $loc)) {
+    $data = json_decode((string)$m[1], true);
+    if (!is_array($data)) {
+        return null;
+    }
+    $byId = $data['props']['initialReduxState']['ad']['byId'] ?? null;
+    if (!is_array($byId) || $byId === []) {
+        return null;
+    }
+    if ($adId !== null && $adId !== '' && isset($byId[$adId]) && is_array($byId[$adId])) {
+        return $byId[$adId];
+    }
+    // numeric keys may be int-cast in JSON
+    foreach ($byId as $key => $ad) {
+        if ($adId !== null && (string)$key === (string)$adId && is_array($ad)) {
+            return $ad;
+        }
+    }
+    foreach ($byId as $ad) {
+        if (is_array($ad) && !empty($ad['name'])) {
+            return $ad;
+        }
+    }
+    return null;
+}
+
+function kpImportStripHtml(string $html): string
+{
+    $text = html_entity_decode($html, ENT_QUOTES | ENT_HTML5, 'UTF-8');
+    $text = preg_replace('~<br\s*/?>~i', "\n", $text) ?? $text;
+    $text = preg_replace('~</p>\s*<p[^>]*>~i', "\n\n", $text) ?? $text;
+    $text = strip_tags($text);
+    $text = preg_replace("/[ \t]+/u", ' ', $text) ?? $text;
+    $text = preg_replace("/\n{3,}/u", "\n\n", $text) ?? $text;
+    return trim($text);
+}
+
+function kpImportExtractNextDataLocation(string $html): string
+{
+    $ad = kpImportExtractNextDataAd($html);
+    if (is_array($ad)) {
+        $loc = trim((string)($ad['location'] ?? ''));
+        if ($loc !== '') {
+            return $loc;
+        }
+        $userLoc = trim((string)($ad['user']['userLocation'] ?? ''));
+        if ($userLoc !== '') {
+            return $userLoc;
+        }
+    }
+    if (preg_match('~"location"\s*:\s*"([^"]{2,80})"~u', $html, $loc)) {
         return trim(stripcslashes($loc[1]));
     }
     return '';
@@ -347,12 +437,14 @@ function kpImportMatchCity(string $raw): string
  */
 function kpImportParseHtml(string $html, string $url): array
 {
-    if ($html === '' || strlen($html) < 500) {
-        return ['ok' => false, 'error' => 'KP nije vratio oglas; nalepi ručno ili pokušaj kasnije.'];
+    if ($html === '' || strlen($html) < 400) {
+        return ['ok' => false, 'error' => 'KP nije vratio oglas (prazan odgovor). Proveri link ili pokušaj kasnije.'];
     }
 
-    $products = kpImportExtractJsonLdProducts($html);
-    $product = $products[0] ?? null;
+    $adId = null;
+    if (preg_match('~/oglas/(\d+)~', $url, $um)) {
+        $adId = $um[1];
+    }
 
     $title = '';
     $description = '';
@@ -360,34 +452,84 @@ function kpImportParseHtml(string $html, string $url): array
     $currency = 'eur';
     $images = [];
     $conditionSchema = '';
+    $conditionText = '';
+    $locationRaw = '';
 
-    if (is_array($product)) {
-        $title = trim((string)($product['name'] ?? ''));
-        $description = trim((string)($product['description'] ?? ''));
-        $imgs = $product['image'] ?? [];
-        if (is_string($imgs)) {
-            $imgs = [$imgs];
+    // 1) NEXT_DATA (najkompletnije)
+    $nextAd = kpImportExtractNextDataAd($html, $adId);
+    if (is_array($nextAd)) {
+        $title = trim((string)($nextAd['name'] ?? $nextAd['formattedName'] ?? ''));
+        $description = kpImportStripHtml((string)($nextAd['description'] ?? ''));
+        $price = (float)($nextAd['priceNumber'] ?? $nextAd['price'] ?? 0);
+        $cur = strtolower(trim((string)($nextAd['currencyAcronym'] ?? 'eur')));
+        $currency = $cur === 'rsd' ? 'rsd' : 'eur';
+        $conditionText = trim((string)($nextAd['condition'] ?? ''));
+        $condId = strtolower(trim((string)($nextAd['conditionId'] ?? '')));
+        if ($condId === 'new') {
+            $conditionSchema = 'https://schema.org/NewCondition';
+        } elseif ($condId === 'used') {
+            $conditionSchema = 'https://schema.org/UsedCondition';
         }
-        if (is_array($imgs)) {
-            foreach ($imgs as $img) {
-                $img = trim((string)$img);
-                if ($img !== '' && str_starts_with($img, 'http')) {
+        $locationRaw = trim((string)($nextAd['location'] ?? ''));
+        $photos = $nextAd['photos'] ?? [];
+        if (is_array($photos)) {
+            foreach ($photos as $ph) {
+                if (!is_array($ph)) {
+                    continue;
+                }
+                $img = trim((string)($ph['original'] ?? $ph['fullscreen'] ?? ''));
+                if ($img !== '' && str_starts_with($img, 'http') && !str_contains($img, 'undefined')) {
                     $images[] = $img;
                 }
             }
         }
-        $offer = $product['offers'] ?? null;
-        if (is_array($offer)) {
-            if (isset($offer[0]) && is_array($offer[0])) {
-                $offer = $offer[0];
+    }
+
+    // 2) JSON-LD Product
+    if ($title === '' || $price <= 0 || $images === []) {
+        $products = kpImportExtractJsonLdProducts($html);
+        $product = $products[0] ?? null;
+        if (is_array($product)) {
+            if ($title === '') {
+                $title = trim((string)($product['name'] ?? ''));
             }
-            $price = (float)($offer['price'] ?? 0);
-            $cur = strtolower(trim((string)($offer['priceCurrency'] ?? 'EUR')));
-            $currency = $cur === 'rsd' ? 'rsd' : 'eur';
-            $conditionSchema = (string)($offer['itemCondition'] ?? '');
+            if ($description === '') {
+                $description = trim((string)($product['description'] ?? ''));
+            }
+            if ($images === []) {
+                $imgs = $product['image'] ?? [];
+                if (is_string($imgs)) {
+                    $imgs = [$imgs];
+                }
+                if (is_array($imgs)) {
+                    foreach ($imgs as $img) {
+                        $img = trim((string)$img);
+                        if ($img !== '' && str_starts_with($img, 'http')) {
+                            $images[] = $img;
+                        }
+                    }
+                }
+            }
+            $offer = $product['offers'] ?? null;
+            if (is_array($offer)) {
+                if (isset($offer[0]) && is_array($offer[0])) {
+                    $offer = $offer[0];
+                }
+                if ($price <= 0) {
+                    $price = (float)($offer['price'] ?? 0);
+                }
+                $cur = strtolower(trim((string)($offer['priceCurrency'] ?? 'EUR')));
+                if ($cur === 'rsd') {
+                    $currency = 'rsd';
+                }
+                if ($conditionSchema === '') {
+                    $conditionSchema = (string)($offer['itemCondition'] ?? '');
+                }
+            }
         }
     }
 
+    // 3) Open Graph fallback
     if ($title === '') {
         $og = kpImportMetaContent($html, 'og:title');
         $title = trim(preg_replace('/\s*-\s*KupujemProdajem\s*$/u', '', $og) ?? $og);
@@ -400,24 +542,28 @@ function kpImportParseHtml(string $html, string $url): array
     }
     if ($images === []) {
         $ogImg = kpImportMetaContent($html, 'og:image');
-        if ($ogImg !== '') {
+        if ($ogImg !== '' && !str_contains($ogImg, 'undefined')) {
             $images[] = $ogImg;
         }
     }
 
-    // Prefer "big-" image URLs; dedupe
     $images = array_values(array_unique(array_filter($images, static function ($u) {
-        return is_string($u) && $u !== '' && !str_contains($u, 'tmb-');
+        return is_string($u) && $u !== '' && !str_contains($u, 'tmb-') && !str_contains($u, 'undefined');
     })));
     $images = array_slice($images, 0, 10);
 
     if ($title === '') {
-        return ['ok' => false, 'error' => 'KP nije vratio oglas; nalepi ručno ili pokušaj kasnije.'];
+        $hint = (str_contains($html, 'captcha') || str_contains($html, 'Cloudflare') || str_contains($html, 'cf-challenge'))
+            ? 'KP blokira automatski pristup sa servera.'
+            : 'Stranica nema podatke oglasa.';
+        return ['ok' => false, 'error' => $hint . ' Nalepi ručno ili pokušaj kasnije.'];
     }
 
     $blob = $title . "\n" . $description;
     $bm = kpImportGuessBrandModelFromUrl($url);
-    $locationRaw = kpImportExtractNextDataLocation($html);
+    if ($locationRaw === '') {
+        $locationRaw = kpImportExtractNextDataLocation($html);
+    }
     if ($locationRaw === '') {
         $locationRaw = $description;
     }
@@ -436,6 +582,8 @@ function kpImportParseHtml(string $html, string $url): array
         $model = trim($tm[1]);
     }
 
+    $condition = kpImportMapCondition($conditionSchema, $conditionText !== '' ? $conditionText : $blob);
+
     $draft = [
         'ad_type' => 'telefon',
         'category_group' => 'phones',
@@ -446,13 +594,13 @@ function kpImportParseHtml(string $html, string $url): array
         'price_type' => $price > 0 ? 'fixed' : 'negotiable',
         'price' => $price > 0 ? $price : 0,
         'currency' => $currency,
-        'condition_state' => kpImportMapCondition($conditionSchema, $blob),
+        'condition_state' => $condition,
         'brand' => $brand,
         'model' => mb_substr($model, 0, 80),
         'storage' => kpImportExtractStorage($blob),
         'battery_health' => kpImportExtractBatteryHealth($blob),
         'accessories' => kpImportGuessAccessories($blob),
-        'location' => kpImportMatchCity($locationRaw !== '' ? $locationRaw : $description),
+        'location' => kpImportMatchCity($locationRaw),
         'source_url' => $url,
         'remote_images' => $images,
     ];
@@ -478,33 +626,38 @@ function kpImportDownloadImages(int $userId, array $urls): array
             break;
         }
         $url = trim((string)$url);
-        if ($url === '' || !preg_match('~^https://images\.kupujemprodajem\.com/~i', $url)) {
-            // allow only KP CDN by default; also tolerate other https images from same scrape
-            if (!preg_match('~^https://~i', $url)) {
-                continue;
-            }
-            $host = strtolower((string)(parse_url($url, PHP_URL_HOST) ?? ''));
-            if (!str_ends_with($host, 'kupujemprodajem.com')) {
-                continue;
-            }
+        if ($url === '' || !preg_match('~^https://~i', $url)) {
+            continue;
+        }
+        $host = strtolower((string)(parse_url($url, PHP_URL_HOST) ?? ''));
+        if (!str_ends_with($host, 'kupujemprodajem.com')) {
+            continue;
         }
 
         $bin = false;
         if (function_exists('curl_init')) {
-            $ch = curl_init($url);
-            curl_setopt_array($ch, [
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_FOLLOWLOCATION => true,
-                CURLOPT_CONNECTTIMEOUT => 6,
-                CURLOPT_TIMEOUT => 25,
-                CURLOPT_USERAGENT => $ua,
-                CURLOPT_SSL_VERIFYPEER => true,
-            ]);
-            $bin = curl_exec($ch);
-            $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            curl_close($ch);
-            if ($code < 200 || $code >= 300) {
-                $bin = false;
+            foreach ([true, false] as $verify) {
+                $ch = curl_init($url);
+                $opts = [
+                    CURLOPT_RETURNTRANSFER => true,
+                    CURLOPT_FOLLOWLOCATION => true,
+                    CURLOPT_CONNECTTIMEOUT => 6,
+                    CURLOPT_TIMEOUT => 25,
+                    CURLOPT_USERAGENT => $ua,
+                    CURLOPT_SSL_VERIFYPEER => $verify,
+                    CURLOPT_SSL_VERIFYHOST => $verify ? 2 : 0,
+                ];
+                if (defined('CURL_IPRESOLVE_V4')) {
+                    $opts[CURLOPT_IPRESOLVE] = CURL_IPRESOLVE_V4;
+                }
+                curl_setopt_array($ch, $opts);
+                $body = curl_exec($ch);
+                $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+                curl_close($ch);
+                if ($body !== false && $code >= 200 && $code < 300 && strlen((string)$body) >= 100) {
+                    $bin = $body;
+                    break;
+                }
             }
         } else {
             $bin = @file_get_contents($url);
@@ -517,7 +670,19 @@ function kpImportDownloadImages(int $userId, array $urls): array
         if (file_put_contents($tmp, $bin) === false) {
             continue;
         }
-        $mime = mime_content_type($tmp) ?: '';
+        $mime = function_exists('mime_content_type') ? (mime_content_type($tmp) ?: '') : '';
+        if ($mime === '') {
+            $head = substr((string)$bin, 0, 16);
+            if (str_starts_with($head, "\xFF\xD8")) {
+                $mime = 'image/jpeg';
+            } elseif (str_starts_with($head, "\x89PNG")) {
+                $mime = 'image/png';
+            } elseif (str_starts_with($head, 'RIFF') && str_contains($head, 'WEBP')) {
+                $mime = 'image/webp';
+            } elseif (str_starts_with($head, 'GIF8')) {
+                $mime = 'image/gif';
+            }
+        }
         $allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
         if (!in_array($mime, $allowed, true)) {
             @unlink($tmp);
@@ -525,9 +690,8 @@ function kpImportDownloadImages(int $userId, array $urls): array
         }
         $name = 'img_' . time() . '_' . $i . '.jpg';
         $dest = $dir . '/' . $name;
-        $ok = compressAndSaveImage($tmp, $dest, $mime);
+        $ok = function_exists('compressAndSaveImage') && compressAndSaveImage($tmp, $dest, $mime);
         if (!$ok && is_file($tmp)) {
-            // GD nedostupan ili neuspeo — sačuvaj originalni bajt stream kao .jpg ime (browser i dalje čita webp/png)
             $ok = @copy($tmp, $dest);
         }
         if ($ok && is_file($dest)) {
@@ -613,11 +777,20 @@ function kpImportFromUrl(string $url, int $userId): array
     }
 
     $fetched = kpImportFetchHtml($normalized);
-    if ($fetched['status'] === 404 || ($fetched['html'] === '' && $fetched['status'] >= 400)) {
-        return ['ok' => false, 'error' => 'KP nije vratio oglas; nalepi ručno ili pokušaj kasnije.'];
-    }
     if ($fetched['html'] === '') {
-        return ['ok' => false, 'error' => 'KP nije vratio oglas; nalepi ručno ili pokušaj kasnije.'];
+        $detail = trim((string)($fetched['error'] ?? ''));
+        $msg = 'Ne mogu da dostignem KupujemProdajem sa servera';
+        if ($detail !== '') {
+            $msg .= ' (' . $detail . ')';
+        }
+        $msg .= '. Probaj kasnije ili nalepi podatke ručno.';
+        return ['ok' => false, 'error' => $msg];
+    }
+    if ((int)$fetched['status'] === 404) {
+        return ['ok' => false, 'error' => 'KP kaže da oglas ne postoji (404). Proveri link.'];
+    }
+    if ((int)$fetched['status'] >= 400) {
+        return ['ok' => false, 'error' => 'KP je vratio grešku HTTP ' . (int)$fetched['status'] . '. Pokušaj kasnije.'];
     }
 
     $parsed = kpImportParseHtml($fetched['html'], $normalized);
@@ -630,8 +803,13 @@ function kpImportFromUrl(string $url, int $userId): array
     unset($draft['remote_images']);
 
     $localImages = [];
-    if ($remote !== []) {
-        $localImages = kpImportDownloadImages($userId, $remote);
+    try {
+        if ($remote !== []) {
+            $localImages = kpImportDownloadImages($userId, $remote);
+        }
+    } catch (Throwable $e) {
+        // Slike su bonus — draft i dalje vraćamo
+        $localImages = [];
     }
 
     return [
