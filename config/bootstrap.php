@@ -1113,5 +1113,6 @@ ensureCreditFiles();
 checkMaintenanceMode();
 requireNotBlocked();
 processAdExpirations();
+refreshNbsEurRsdRateIfStale(12);
 processTopExpirations();
 processSavedSearchAlerts();
