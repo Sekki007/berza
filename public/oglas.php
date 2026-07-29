@@ -125,13 +125,16 @@ $sellerBlock = static function () use (
     $sellerAdsCount
 ): void {
     if ($sellerShopUrl !== ''): ?>
-        <a class="kp-card kp-seller-card" href="<?= h($sellerShopUrl) ?>">
+        <div class="kp-card kp-seller-card">
             <div class="kp-seller-top">
                 <div class="kp-seller-avatar"><?= h($sellerInitials) ?></div>
                 <div>
-                    <div class="kp-seller-name"><?= h($sellerName) ?> <?= renderSellerBadges($seller) ?></div>
+                    <div class="kp-seller-name">
+                        <a class="kp-seller-name-link" href="<?= h($sellerShopUrl) ?>"><?= h($sellerName) ?></a>
+                        <?= renderSellerBadges($seller) ?>
+                    </div>
                 </div>
-                <span class="kp-seller-chevron">›</span>
+                <a class="kp-seller-chevron" href="<?= h($sellerShopUrl) ?>" aria-label="Otvori izlog prodavca">›</a>
             </div>
             <div class="kp-seller-meta">
                 <?php if ($memberSince !== ''): ?>Član od: <?= h($memberSince) ?><?php endif; ?>
@@ -140,9 +143,9 @@ $sellerBlock = static function () use (
             <div class="kp-seller-rating">
                 <span class="kp-thumb-up">👍 <?= (int)($sellerSummary['positive'] ?? 0) ?></span>
                 <span class="kp-thumb-down">👎 <?= (int)($sellerSummary['negative'] ?? 0) ?></span>
-                <span style="font-weight:400;color:#888;font-size:12px;">Svi oglasi (<?= $sellerAdsCount ?>)</span>
+                <a class="kp-seller-all-link" href="<?= h($sellerShopUrl) ?>">Svi oglasi (<?= $sellerAdsCount ?>)</a>
             </div>
-        </a>
+        </div>
     <?php else: ?>
         <div class="kp-card">
             <div class="kp-seller-top">

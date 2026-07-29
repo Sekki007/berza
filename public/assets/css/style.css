@@ -2041,6 +2041,8 @@ body.kp-lightbox-open {
   font-size: 18px;
 }
 .kp-seller-name { font-weight: 700; font-size: 15px; color: #1a6bb5; }
+.kp-seller-name-link { color: #1a6bb5; text-decoration: none; }
+.kp-seller-name-link:hover { text-decoration: underline; }
 .kp-seller-meta { font-size: 12px; color: #888; margin-bottom: 8px; }
 .kp-seller-rating {
   display: flex;
@@ -2052,6 +2054,14 @@ body.kp-lightbox-open {
 .kp-thumb-up { color: #2e7d32; }
 .kp-thumb-down { color: #c62828; }
 .kp-seller-chevron { margin-left: auto; color: #999; }
+.kp-seller-all-link {
+  margin-left: auto;
+  font-weight: 400;
+  color: #666;
+  font-size: 12px;
+  text-decoration: underline;
+}
+.kp-seller-all-link:hover { color: #1a6bb5; }
 .kp-desc-card .kp-section-title {
   margin: 0 0 10px;
   font-size: 16px;
