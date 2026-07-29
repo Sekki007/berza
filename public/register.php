@@ -127,7 +127,7 @@ require __DIR__ . '/partials/layout-start.php';
                     <p class="form-hint" style="margin-top:6px;">Samo srpski mobilni brojevi (+3816…).</p>
                 </div>
                 <div class="form-group">
-                    <label>Email (opciono, za OTP fallback)</label>
+                    <label>Email</label>
                     <input type="email" name="email" value="<?= h($form['email']) ?>" placeholder="tvoj@email.com" autocomplete="email">
                 </div>
                 <div class="form-group">
