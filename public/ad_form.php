@@ -248,6 +248,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'content_type' => 'product',
             'content_name' => (string)($payload['title'] ?? ''),
         ], true);
+        queueGoogleTagEvent('post_ad', [
+            'content_id' => (string)$newId,
+            'content_type' => 'product',
+            'content_name' => (string)($payload['title'] ?? ''),
+        ]);
         header('Location: /nalog.php?tab=oglasi');
         exit;
     }

@@ -66,6 +66,10 @@ function defaultSiteSettings(): array
         'facebook_pixel_enabled' => false,
         'facebook_pixel_id' => '',
         'facebook_pixel_require_consent' => true,
+        'google_tag_enabled' => false,
+        'google_tag_ga4_id' => '',
+        'google_tag_ads_id' => '',
+        'google_tag_require_consent' => true,
     ];
 }
 

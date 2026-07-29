@@ -340,9 +340,10 @@
                     </div>
                 <?php endif; ?>
                 <label class="ad-photo-add" data-photo-drop>
-                    <input type="file" name="images[]" accept="image/*" multiple data-photo-input>
+                    <input type="file" name="images[]" accept="image/jpeg,image/png,image/webp,image/gif" multiple data-photo-input>
                     <span>+ Dodaj fotografije<br><small>ili prevuci ovde</small></span>
                 </label>
+                <p class="form-hint" style="margin-top:8px;">Velike slike se automatski smanjuju pre slanja (max ~1600px). Preporuka: JPG/PNG, do 20 MB po slici.</p>
                 <div class="photo-upload" data-photo-preview></div>
                 <div class="form-group" style="margin-top:14px;">
                     <label>Detaljan opis</label>

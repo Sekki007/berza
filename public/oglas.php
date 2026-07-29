@@ -63,6 +63,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'content_name' => (string)($ad['title'] ?? ''),
             'content_category' => getAdType($ad),
         ]);
+        queueGoogleTagEvent('generate_lead', [
+            'content_id' => (string)((int)$ad['id']),
+            'content_name' => (string)($ad['title'] ?? ''),
+            'content_category' => getAdType($ad),
+        ]);
         header('Location: /poruke.php?ad=' . (int)$ad['id'] . '&with=' . $toUserId);
         exit;
     }
@@ -128,6 +133,13 @@ if (!isAdPriceOpen($ad) && adPriceEur($ad) > 0) {
     $fbViewParams['currency'] = 'EUR';
 }
 facebookPixelPageEvent('ViewContent', $fbViewParams);
+googleTagPageEvent('view_item', [
+    'item_id' => (string)$id,
+    'item_name' => (string)($ad['title'] ?? ''),
+    'item_category' => getAdType($ad),
+    'currency' => 'EUR',
+    'value' => (!isAdPriceOpen($ad) && adPriceEur($ad) > 0) ? round(adPriceEur($ad), 2) : 0,
+]);
 
 require __DIR__ . '/partials/layout-start.php';
 

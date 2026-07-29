@@ -66,10 +66,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 ];
                 setFlash('success', 'Telefon je potvrđen. Dobrodošao!');
                 queueFacebookPixelEvent('CompleteRegistration', ['status' => 'verified']);
+                queueGoogleTagEvent('sign_up', ['method' => 'phone_otp', 'status' => 'verified']);
                 header('Location: ' . ($isAdminUser ? '/dashboard.php' : '/nalog.php'));
             } else {
                 setFlash('success', 'Telefon je potvrđen. Sada se možeš prijaviti.');
                 queueFacebookPixelEvent('CompleteRegistration', ['status' => 'verified']);
+                queueGoogleTagEvent('sign_up', ['method' => 'phone_otp', 'status' => 'verified']);
                 header('Location: /login.php');
             }
             exit;

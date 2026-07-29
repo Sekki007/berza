@@ -87,6 +87,10 @@ if ($search !== '') {
         'search_string' => $search,
         'content_category' => $type !== '' ? $type : 'all',
     ]);
+    googleTagPageEvent('search', [
+        'search_term' => $search,
+        'content_category' => $type !== '' ? $type : 'all',
+    ]);
 }
 
 require __DIR__ . '/partials/layout-start.php';

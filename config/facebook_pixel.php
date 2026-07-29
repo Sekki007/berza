@@ -21,6 +21,26 @@ function facebookPixelRequireConsent(): bool
     return !empty(siteSettings()['facebook_pixel_require_consent']);
 }
 
+function renderMarketingConsentBanner(): string
+{
+    static $rendered = false;
+    if ($rendered) {
+        return '';
+    }
+    $rendered = true;
+    return <<<'HTML'
+<div id="kp-cookie-banner" class="kp-cookie-banner" hidden>
+  <div class="kp-cookie-banner-inner">
+    <p>Koristimo kolačiće za analitiku i reklame (Meta/Google), da merimo registracije i oglase. Možeš prihvatiti ili odbiti marketing kolačiće.</p>
+    <div class="kp-cookie-banner-actions">
+      <button type="button" class="btn-sm" data-kp-cookie="necessary">Samo neophodni</button>
+      <button type="button" class="btn-sm btn-sm-primary" data-kp-cookie="all">Prihvati sve</button>
+    </div>
+  </div>
+</div>
+HTML;
+}
+
 /**
  * Queue a Pixel event to fire on the next page render (after redirect).
  *
@@ -118,20 +138,7 @@ function renderFacebookPixelBootstrap(): string
         $json = '{}';
     }
 
-    $banner = '';
-    if ($requireConsent) {
-        $banner = <<<'HTML'
-<div id="kp-cookie-banner" class="kp-cookie-banner" hidden>
-  <div class="kp-cookie-banner-inner">
-    <p>Koristimo kolačiće za analitiku i Facebook reklame (Pixel), da merimo registracije i oglase. Možeš prihvatiti ili odbiti marketing kolačiće.</p>
-    <div class="kp-cookie-banner-actions">
-      <button type="button" class="btn-sm" data-kp-cookie="necessary">Samo neophodni</button>
-      <button type="button" class="btn-sm btn-sm-primary" data-kp-cookie="all">Prihvati sve</button>
-    </div>
-  </div>
-</div>
-HTML;
-    }
+    $banner = $requireConsent ? renderMarketingConsentBanner() : '';
 
     return $banner . "\n" . '<script id="kp-fb-pixel-config" type="application/json">' . $json . '</script>' . "\n"
         . '<script src="/assets/js/facebook-pixel.js?v=20260729a" defer></script>';

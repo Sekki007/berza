@@ -758,15 +758,165 @@
     const input = one('[data-photo-input]');
     const preview = one('[data-photo-preview]');
     if (!input || !preview) return;
-    input.addEventListener('change', function () {
+
+    const MAX_EDGE = 1600;
+    const JPEG_QUALITY = 0.82;
+    const WARN_RAW_MB = 20;
+    const HARD_REJECT_MB = 40;
+
+    function loadImage(file) {
+      return new Promise(function (resolve, reject) {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = function () {
+          URL.revokeObjectURL(url);
+          resolve(img);
+        };
+        img.onerror = function () {
+          URL.revokeObjectURL(url);
+          reject(new Error('unsupported'));
+        };
+        img.src = url;
+      });
+    }
+
+    function canvasToBlob(canvas, type, quality) {
+      return new Promise(function (resolve) {
+        canvas.toBlob(function (blob) { resolve(blob); }, type, quality);
+      });
+    }
+
+    async function compressFile(file) {
+      if (!file || !file.type || file.type.indexOf('image/') !== 0) {
+        return { file: file, compressed: false, error: null };
+      }
+      // Skip tiny already-small images
+      if (file.size < 900 * 1024 && file.type === 'image/jpeg') {
+        return { file: file, compressed: false, error: null };
+      }
+      try {
+        const img = await loadImage(file);
+        let w = img.naturalWidth || img.width;
+        let h = img.naturalHeight || img.height;
+        if (!w || !h) {
+          return { file: file, compressed: false, error: 'read' };
+        }
+        const scale = Math.min(1, MAX_EDGE / Math.max(w, h));
+        const nw = Math.max(1, Math.round(w * scale));
+        const nh = Math.max(1, Math.round(h * scale));
+        const canvas = document.createElement('canvas');
+        canvas.width = nw;
+        canvas.height = nh;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(0, 0, nw, nh);
+        ctx.drawImage(img, 0, 0, nw, nh);
+        let blob = await canvasToBlob(canvas, 'image/jpeg', JPEG_QUALITY);
+        if (!blob) {
+          return { file: file, compressed: false, error: 'encode' };
+        }
+        // If still large, try stronger compression
+        if (blob.size > 2.5 * 1024 * 1024) {
+          blob = await canvasToBlob(canvas, 'image/jpeg', 0.7) || blob;
+        }
+        if (blob.size > 4 * 1024 * 1024) {
+          blob = await canvasToBlob(canvas, 'image/jpeg', 0.55) || blob;
+        }
+        const base = (file.name || 'photo').replace(/\.[^.]+$/, '');
+        const out = new File([blob], base + '.jpg', { type: 'image/jpeg', lastModified: Date.now() });
+        return { file: out, compressed: out.size < file.size, error: null, originalMb: file.size / (1024 * 1024) };
+      } catch (err) {
+        return { file: file, compressed: false, error: 'unsupported' };
+      }
+    }
+
+    function renderPreview(files) {
       preview.innerHTML = '';
-      Array.from(input.files || []).slice(0, 10).forEach(function (file) {
+      Array.from(files || []).slice(0, 10).forEach(function (file) {
         const url = URL.createObjectURL(file);
         const slot = document.createElement('div');
         slot.className = 'photo-slot';
         slot.innerHTML = '<img src="' + url + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:4px;">';
         preview.appendChild(slot);
       });
+    }
+
+    function ensureHint() {
+      let hint = one('[data-photo-compress-hint]');
+      if (hint) return hint;
+      hint = document.createElement('p');
+      hint.className = 'form-hint';
+      hint.setAttribute('data-photo-compress-hint', '1');
+      hint.style.marginTop = '8px';
+      const wrap = input.closest('.ad-form-section') || input.parentElement;
+      if (wrap) wrap.appendChild(hint);
+      return hint;
+    }
+
+    input.addEventListener('change', async function () {
+      const files = Array.from(input.files || []).slice(0, 10);
+      if (!files.length) {
+        preview.innerHTML = '';
+        const h = one('[data-photo-compress-hint]');
+        if (h) h.textContent = '';
+        return;
+      }
+
+      const hint = ensureHint();
+      hint.style.color = 'var(--text-muted)';
+      hint.textContent = 'Smanjujem fotografije pre slanja…';
+      input.disabled = true;
+
+      const dt = new DataTransfer();
+      const notes = [];
+      let rejected = 0;
+
+      for (let i = 0; i < files.length; i++) {
+        const raw = files[i];
+        const rawMb = raw.size / (1024 * 1024);
+        if (rawMb > HARD_REJECT_MB) {
+          rejected++;
+          notes.push((raw.name || 'slika') + ' je prevelika (>' + HARD_REJECT_MB + ' MB) i nije dodata.');
+          continue;
+        }
+        if (rawMb > WARN_RAW_MB) {
+          notes.push((raw.name || 'slika') + ' je bila ' + rawMb.toFixed(1) + ' MB — smanjujem automatski.');
+        }
+        const result = await compressFile(raw);
+        if (result.error === 'unsupported') {
+          notes.push((raw.name || 'slika') + ' nije podržana (npr. HEIC). Sačuvaj kao JPG/PNG.');
+          rejected++;
+          continue;
+        }
+        if (result.file.size > 8 * 1024 * 1024) {
+          notes.push((raw.name || 'slika') + ' i posle smanjenja je prevelika. Probaj drugu fotografiju.');
+          rejected++;
+          continue;
+        }
+        dt.items.add(result.file);
+      }
+
+      try {
+        input.files = dt.files;
+      } catch (e) {}
+      renderPreview(input.files);
+      input.disabled = false;
+
+      if (!dt.files.length) {
+        hint.style.color = '#b91c1c';
+        hint.textContent = notes.join(' ') || 'Nijedna fotografija nije dodata.';
+        return;
+      }
+
+      const parts = [];
+      if (notes.length) parts.push(notes.join(' '));
+      parts.push('Fotografije su spremne (automatski smanjene za brži upload).');
+      if (rejected > 0) {
+        hint.style.color = '#b45309';
+      } else {
+        hint.style.color = 'var(--kp-green-dark, #15803d)';
+      }
+      hint.textContent = parts.join(' ');
     });
   }
 

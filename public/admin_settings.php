@@ -151,6 +151,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'facebook_pixel_enabled' => (string)($_POST['facebook_pixel_enabled'] ?? '0') === '1',
         'facebook_pixel_id' => preg_replace('/\D+/', '', (string)($_POST['facebook_pixel_id'] ?? $current['facebook_pixel_id'] ?? '')) ?? '',
         'facebook_pixel_require_consent' => (string)($_POST['facebook_pixel_require_consent'] ?? '0') === '1',
+        'google_tag_enabled' => (string)($_POST['google_tag_enabled'] ?? '0') === '1',
+        'google_tag_ga4_id' => strtoupper(trim((string)($_POST['google_tag_ga4_id'] ?? $current['google_tag_ga4_id'] ?? ''))),
+        'google_tag_ads_id' => strtoupper(trim((string)($_POST['google_tag_ads_id'] ?? $current['google_tag_ads_id'] ?? ''))),
+        'google_tag_require_consent' => (string)($_POST['google_tag_require_consent'] ?? '0') === '1',
     ]);
 
     $defaultsSms = defaultSiteSettings();
@@ -533,6 +537,43 @@ require __DIR__ . '/partials/layout-start.php';
                     </label>
                 </div>
 
+                <hr style="margin:14px 0;border:none;border-top:1px solid var(--border-light);">
+
+                <h3 style="font-size:16px;margin-bottom:8px;">Google tag (GA4 + Ads)</h3>
+                <p class="form-hint" style="margin-bottom:12px;">
+                    Google tag meri saobraćaj i konverzije za Google Analytics i Google Ads kampanje.
+                </p>
+
+                <div class="form-group form-checks">
+                    <input type="hidden" name="google_tag_enabled" value="0">
+                    <label class="type-chip" style="min-width:auto;flex:none;">
+                        <input type="checkbox" name="google_tag_enabled" value="1" <?= !empty($settings['google_tag_enabled']) ? 'checked' : '' ?>>
+                        Uključi Google tag
+                    </label>
+                </div>
+
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>GA4 Measurement ID</label>
+                        <input name="google_tag_ga4_id" value="<?= h((string)($settings['google_tag_ga4_id'] ?? '')) ?>" placeholder="npr. G-ABC123DEF4">
+                    </div>
+                    <div class="form-group">
+                        <label>Google Ads ID</label>
+                        <input name="google_tag_ads_id" value="<?= h((string)($settings['google_tag_ads_id'] ?? '')) ?>" placeholder="npr. AW-1234567890">
+                    </div>
+                </div>
+                <p class="form-hint" style="margin-top:-8px;">
+                    ID-jeve nađeš u Google Analytics (Admin → Data Streams) i Google Ads (Tools → Conversions / Tag setup).
+                </p>
+
+                <div class="form-group form-checks">
+                    <input type="hidden" name="google_tag_require_consent" value="0">
+                    <label class="type-chip" style="min-width:auto;flex:none;">
+                        <input type="checkbox" name="google_tag_require_consent" value="1" <?= !empty($settings['google_tag_require_consent']) || !isset($settings['google_tag_require_consent']) ? 'checked' : '' ?>>
+                        Traži pristanak za Google marketing kolačiće
+                    </label>
+                </div>
+
                 <div class="form-group" style="padding:12px;border:1px solid var(--border);border-radius:6px;background:#fafafa;">
                     <strong style="display:block;margin-bottom:8px;">Šta se automatski meri</strong>
                     <ul style="margin:0;padding-left:18px;font-size:13px;color:var(--text-muted);line-height:1.55;">
@@ -550,6 +591,12 @@ require __DIR__ . '/partials/layout-start.php';
                     <strong>Test events</strong> i proveri da li stižu PageView eventi.
                     Status sada:
                     <?php if (!empty($settings['facebook_pixel_enabled']) && trim((string)($settings['facebook_pixel_id'] ?? '')) !== ''): ?>
+                        <strong style="color:var(--kp-green-dark);">spreman</strong>
+                    <?php else: ?>
+                        <strong style="color:#b45309;">isključen / nema ID</strong>
+                    <?php endif; ?>
+                    · Google:
+                    <?php if (!empty($settings['google_tag_enabled']) && (trim((string)($settings['google_tag_ga4_id'] ?? '')) !== '' || trim((string)($settings['google_tag_ads_id'] ?? '')) !== '')): ?>
                         <strong style="color:var(--kp-green-dark);">spreman</strong>
                     <?php else: ?>
                         <strong style="color:#b45309;">isključen / nema ID</strong>
