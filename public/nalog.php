@@ -145,7 +145,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             setFlash('danger', 'Email nije poslat. Proveri adresu i admin podešavanja.');
         }
-        header('Location: /nalog.php?tab=kanali');
+        header('Location: /nalog.php?tab=podesavanja');
         exit;
     }
 
@@ -182,7 +182,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 setFlash('danger', 'Generisanje Telegram koda nije uspelo.');
             }
         }
-        header('Location: /nalog.php?tab=kanali');
+        header('Location: /nalog.php?tab=podesavanja');
         exit;
     }
 
@@ -192,7 +192,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             setFlash('danger', 'Odvezivanje Telegram naloga nije uspelo.');
         }
-        header('Location: /nalog.php?tab=kanali');
+        header('Location: /nalog.php?tab=podesavanja');
         exit;
     }
 
@@ -202,10 +202,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'system',
             'Test Telegram poruke',
             'Povezivanje je uspešno i Telegram notifikacije rade.',
-            '/nalog.php?tab=kanali'
+            '/nalog.php?tab=podesavanja'
         );
         setFlash($sent ? 'success' : 'danger', $sent ? 'Test poruka je poslata na Telegram.' : 'Test poruka nije poslata. Proveri povezivanje.');
-        header('Location: /nalog.php?tab=kanali');
+        header('Location: /nalog.php?tab=podesavanja');
         exit;
     }
 
@@ -296,7 +296,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'notify_telegram_system' => !empty($_POST['notify_telegram_system']),
         ]);
         setFlash($ok ? 'success' : 'danger', $ok ? 'Podešavanja notifikacija su sačuvana.' : 'Podešavanja nisu sačuvana.');
-        header('Location: /nalog.php?tab=kanali');
+        header('Location: /nalog.php?tab=podesavanja');
         exit;
     }
 
@@ -342,7 +342,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $tab = trim((string)($_GET['tab'] ?? 'pregled'));
-if (!in_array($tab, ['pregled', 'profil', 'oglasi', 'obavestenja', 'kanali', 'top', 'krediti', 'pretrage', 'statistika', 'mini_sajt'], true)) {
+if (!in_array($tab, ['pregled', 'profil', 'oglasi', 'obavestenja', 'podesavanja', 'top', 'krediti', 'pretrage', 'statistika', 'mini_sajt'], true)) {
     $tab = 'pregled';
 }
 
@@ -501,7 +501,7 @@ require __DIR__ . '/partials/layout-start.php';
                 <a href="?tab=krediti" class="<?= $tab === 'krediti' ? 'active' : '' ?>">Krediti</a>
             <?php endif; ?>
             <a href="?tab=obavestenja" class="<?= $tab === 'obavestenja' ? 'active' : '' ?>">Obav.<?= $unreadNotifs > 0 ? ' · ' . $unreadNotifs : '' ?></a>
-            <a href="?tab=kanali" class="<?= $tab === 'kanali' ? 'active' : '' ?>">Kanali</a>
+            <a href="?tab=podesavanja" class="<?= $tab === 'podesavanja' ? 'active' : '' ?>">Podešavanja</a>
             <a href="?tab=pretrage" class="<?= $tab === 'pretrage' ? 'active' : '' ?>">Pretrage</a>
             <a href="?tab=statistika" class="<?= $tab === 'statistika' ? 'active' : '' ?>">Stat.</a>
             <?php if ($storefrontOn): ?>
@@ -1193,7 +1193,7 @@ require __DIR__ . '/partials/layout-start.php';
                 <?php endif; ?>
             </section>
 
-        <?php elseif ($tab === 'kanali'): ?>
+        <?php elseif ($tab === 'podesavanja'): ?>
             <?php
             $emailOk = isEmailVerified($profile);
             $hasEmail = trim((string)($profile['email'] ?? '')) !== '';
@@ -1201,7 +1201,7 @@ require __DIR__ . '/partials/layout-start.php';
             <section class="form-card account-profile-card">
                 <div class="profile-head">
                     <div>
-                        <h2>Kanali obaveštenja</h2>
+                        <h2>Podešavanja obaveštenja</h2>
                         <p class="profile-head-sub">Uključi ili isključi gde želiš da stižu obaveštenja.</p>
                     </div>
                 </div>
