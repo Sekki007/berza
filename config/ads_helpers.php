@@ -71,15 +71,6 @@ function handleAdImageUploads(int $adId, array $existing = []): array
         array_unshift($images, $cover);
     }
 
-    // KP import: privremene slike → uploads/ads/{id}/
-    $kpTemps = $_POST['kp_import_images'] ?? [];
-    if (is_array($kpTemps) && $kpTemps !== [] && function_exists('kpImportPromoteImages')) {
-        $userId = (int)(currentUser()['id'] ?? 0);
-        if ($userId > 0) {
-            $images = kpImportPromoteImages($userId, $adId, $kpTemps, $images);
-        }
-    }
-
     if (!isset($_FILES['images']) || !is_array($_FILES['images']['name'])) {
         return array_values(array_slice($images, 0, 10));
     }
