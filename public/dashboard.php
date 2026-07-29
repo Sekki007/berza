@@ -7,6 +7,11 @@ requireAdmin();
 
 $stats = getDashboardStats();
 
+$allUsers = getUsers();
+$telegramLinkedUsers = array_values(array_filter($allUsers, static fn($u) => trim((string)($u['telegram_chat_id'] ?? '')) !== ''));
+$telegramEnabledUsers = array_values(array_filter($telegramLinkedUsers, static fn($u) => !empty($u['notify_telegram'])));
+usort($telegramLinkedUsers, static fn($a, $b) => strcmp((string)($b['telegram_linked_at'] ?? ''), (string)($a['telegram_linked_at'] ?? '')));
+
 $pageTitle = 'Dashboard — KupiTelefon';
 $activePage = 'nalog';
 $showSearch = false;
@@ -40,6 +45,60 @@ require __DIR__ . '/partials/layout-start.php';
             <a href="/ads.php">Upravljanje oglasima</a>
             <a href="/admin_settings.php">Podešavanja sajta</a>
         </div>
+
+        <?php if (telegramEnabled()): ?>
+        <div class="form-card" style="margin-top:12px;">
+            <h2 style="padding:16px 16px 0;font-size:16px;">Telegram notifikacije</h2>
+            <div class="stats-grid" style="padding:12px 16px 16px;gap:8px;">
+                <div class="stat-card">
+                    <div class="label">Povezanih naloga</div>
+                    <div class="value"><?= count($telegramLinkedUsers) ?></div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Notifikacije uključene</div>
+                    <div class="value"><?= count($telegramEnabledUsers) ?></div>
+                </div>
+                <div class="stat-card">
+                    <div class="label">Bot</div>
+                    <div class="value" style="font-size:13px;">@<?= h(telegramBotUsername()) ?></div>
+                </div>
+            </div>
+            <?php if ($telegramLinkedUsers): ?>
+                <div class="table-scroll">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Korisnik</th>
+                                <th>Telegram</th>
+                                <th>Chat ID</th>
+                                <th>Notif.</th>
+                                <th>Poruke</th>
+                                <th>Alerti</th>
+                                <th>Sistem</th>
+                                <th>Povezano</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        <?php foreach ($telegramLinkedUsers as $tu): ?>
+                            <tr>
+                                <td><a href="/admin_user_edit.php?id=<?= (int)$tu['id'] ?>"><?= h((string)($tu['full_name'] ?? $tu['username'] ?? '—')) ?></a><br><small style="color:var(--text-muted)">@<?= h((string)$tu['username']) ?></small></td>
+                                <td><?= trim((string)($tu['telegram_username'] ?? '')) !== '' ? '@' . h((string)$tu['telegram_username']) : '—' ?></td>
+                                <td style="font-size:12px;color:var(--text-muted)"><?= h((string)($tu['telegram_chat_id'] ?? '')) ?></td>
+                                <td style="text-align:center"><?= !empty($tu['notify_telegram']) ? '✓' : '—' ?></td>
+                                <td style="text-align:center"><?= !array_key_exists('notify_telegram_messages', $tu) || !empty($tu['notify_telegram_messages']) ? '✓' : '—' ?></td>
+                                <td style="text-align:center"><?= !array_key_exists('notify_telegram_alerts', $tu) || !empty($tu['notify_telegram_alerts']) ? '✓' : '—' ?></td>
+                                <td style="text-align:center"><?= !array_key_exists('notify_telegram_system', $tu) || !empty($tu['notify_telegram_system']) ? '✓' : '—' ?></td>
+                                <td style="font-size:12px"><?= h((string)($tu['telegram_linked_at'] ?? '—')) ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+            <?php else: ?>
+                <p style="padding:0 16px 16px;color:var(--text-muted)">Još nijedan korisnik nije povezao Telegram nalog.</p>
+            <?php endif; ?>
+        </div>
+        <?php endif; ?>
 
         <div class="form-card table-scroll" style="margin-top:12px;">
             <h2 style="padding:16px 16px 0;">Poslednji oglasi</h2>
