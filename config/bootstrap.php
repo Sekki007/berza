@@ -1120,7 +1120,7 @@ function saveMessage(array $payload): ?int
         $to,
         'new_message',
         'Nova poruka',
-        "{$fromName} ti je poslao/la poruku za „{$adTitle}”: {$preview}",
+        "{$fromName} ti je poslao poruku za „{$adTitle}”:\n{$preview}",
         '/poruke.php?ad_id=' . $adId . '&with=' . $from
     );
 

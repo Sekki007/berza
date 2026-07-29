@@ -122,7 +122,12 @@ function renderEmailTemplate(string $key, array $vars = []): array
         '{link_block}' => $linkBlock,
     ];
 
+    // Dodatni placeholderi iz vars — ne pregazi rezervisane (npr. {link} mora ostati apsolutan URL).
+    $reserved = ['site', 'url', 'name', 'name_hello', 'code', 'title', 'body', 'link', 'link_block'];
     foreach ($vars as $k => $v) {
+        if (!is_string($k) || in_array($k, $reserved, true)) {
+            continue;
+        }
         if (is_scalar($v) || $v === null) {
             $map['{' . $k . '}'] = (string)$v;
         }
