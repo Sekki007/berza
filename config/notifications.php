@@ -156,6 +156,9 @@ function emailNotificationsEnabled(): bool
 function notifyUser(int $userId, string $type, string $title, string $body, string $link = '', bool $emailToo = true): int
 {
     $id = createNotification($userId, $type, $title, $body, $link);
+    if (function_exists('telegramEnabled') && telegramEnabled()) {
+        sendUserTelegramNotification($userId, $type, $title, $body, $link);
+    }
     if ($emailToo && emailNotificationsEnabled()) {
         $user = findUserById($userId);
         if ($user && userWantsEmailNotifications($user)) {

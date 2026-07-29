@@ -396,6 +396,18 @@ function updateUserProfile(int $userId, array $data): bool
         if (array_key_exists('notify_email', $data)) {
             $user['notify_email'] = !empty($data['notify_email']);
         }
+        if (array_key_exists('notify_telegram', $data)) {
+            $user['notify_telegram'] = !empty($data['notify_telegram']);
+        }
+        if (array_key_exists('notify_telegram_messages', $data)) {
+            $user['notify_telegram_messages'] = !empty($data['notify_telegram_messages']);
+        }
+        if (array_key_exists('notify_telegram_alerts', $data)) {
+            $user['notify_telegram_alerts'] = !empty($data['notify_telegram_alerts']);
+        }
+        if (array_key_exists('notify_telegram_system', $data)) {
+            $user['notify_telegram_system'] = !empty($data['notify_telegram_system']);
+        }
         writeJsonFile('users.json', $users);
         $sessionId = (int)($_SESSION['user']['id'] ?? 0);
         if ($sessionId === $userId) {
@@ -405,6 +417,18 @@ function updateUserProfile(int $userId, array $data): bool
             }
             if (array_key_exists('notify_email', $user)) {
                 $_SESSION['user']['notify_email'] = $user['notify_email'];
+            }
+            if (array_key_exists('notify_telegram', $user)) {
+                $_SESSION['user']['notify_telegram'] = $user['notify_telegram'];
+            }
+            if (array_key_exists('notify_telegram_messages', $user)) {
+                $_SESSION['user']['notify_telegram_messages'] = $user['notify_telegram_messages'];
+            }
+            if (array_key_exists('notify_telegram_alerts', $user)) {
+                $_SESSION['user']['notify_telegram_alerts'] = $user['notify_telegram_alerts'];
+            }
+            if (array_key_exists('notify_telegram_system', $user)) {
+                $_SESSION['user']['notify_telegram_system'] = $user['notify_telegram_system'];
             }
         }
         return true;
@@ -1072,6 +1096,7 @@ require_once __DIR__ . '/seo.php';
 require_once __DIR__ . '/admin_helpers.php';
 require_once __DIR__ . '/mail.php';
 require_once __DIR__ . '/email_templates.php';
+require_once __DIR__ . '/telegram.php';
 require_once __DIR__ . '/notifications.php';
 require_once __DIR__ . '/credits.php';
 require_once __DIR__ . '/promotion.php';
