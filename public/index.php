@@ -82,6 +82,56 @@ if ($queryBase === []) {
 $activePage = 'oglasi';
 $searchValue = $search;
 
+$typeLabels = [
+    'telefon' => 'Uređaji',
+    'delovi' => 'Oprema',
+    'servis' => 'Servis',
+];
+$hasFilters = $search !== '' || $brand !== '' || $model !== '' || $location !== '' || $condition !== '' || $type !== '' || $deviceType !== '' || $minPrice !== '' || $maxPrice !== '' || $categoryGroup !== '';
+$activeFilterCount = 0;
+foreach ([$brand, $model, $location, $condition, $type, $deviceType, $minPrice, $maxPrice, $categoryGroup] as $fv) {
+    if ($fv !== '') {
+        $activeFilterCount++;
+    }
+}
+$resetFiltersUrl = '/index.php' . ($search !== '' ? ('?' . http_build_query(['q' => $search])) : '');
+$activeChips = [];
+$chipDefs = [
+    ['key' => 'type', 'value' => $type, 'label' => $typeLabels[$type] ?? $type],
+    ['key' => 'device_type', 'value' => $deviceType, 'label' => (string)($schema['device_types'][$deviceType] ?? $deviceType)],
+    ['key' => 'brand', 'value' => $brand, 'label' => $brand],
+    ['key' => 'model', 'value' => $model, 'label' => $model],
+    ['key' => 'location', 'value' => $location, 'label' => $location],
+    ['key' => 'condition', 'value' => $condition, 'label' => $condition],
+];
+foreach ($chipDefs as $chip) {
+    if ($chip['value'] === '') {
+        continue;
+    }
+    $params = $queryBase;
+    unset($params[$chip['key']], $params['page']);
+    $qs = buildFilterQuery($params);
+    $activeChips[] = [
+        'label' => $chip['label'],
+        'href' => '/index.php' . ($qs !== '' ? ('?' . $qs) : ''),
+    ];
+}
+if ($minPrice !== '' || $maxPrice !== '') {
+    $priceLabel = ($minPrice !== '' ? $minPrice : '0') . '–' . ($maxPrice !== '' ? $maxPrice . '€' : '…€');
+    if ($minPrice !== '' && $maxPrice === '') {
+        $priceLabel = 'od ' . $minPrice . '€';
+    } elseif ($minPrice === '' && $maxPrice !== '') {
+        $priceLabel = 'do ' . $maxPrice . '€';
+    }
+    $params = $queryBase;
+    unset($params['min_price'], $params['max_price'], $params['page']);
+    $qs = buildFilterQuery($params);
+    $activeChips[] = [
+        'label' => $priceLabel,
+        'href' => '/index.php' . ($qs !== '' ? ('?' . $qs) : ''),
+    ];
+}
+
 if ($search !== '') {
     facebookPixelPageEvent('Search', [
         'search_string' => $search,
@@ -98,75 +148,49 @@ require __DIR__ . '/partials/layout-start.php';
 
 <div class="main-wrap">
     <aside class="sidebar">
-        <form method="GET" class="filter-box">
-            <div class="filter-head">Filteri</div>
-            <div class="filter-body">
-                <?php foreach ($queryBase as $k => $v): if (in_array($k, ['sort', 'type', 'device_type', 'brand', 'location', 'condition', 'min_price', 'max_price', 'model'], true)) continue; ?>
-                    <input type="hidden" name="<?= h($k) ?>" value="<?= h((string)$v) ?>">
-                <?php endforeach; ?>
-
-                <select class="filter-select" name="type">
-                    <option value="">Svi tipovi oglasa</option>
-                    <option value="telefon" <?= $type === 'telefon' ? 'selected' : '' ?>>Uređaji</option>
-                    <option value="delovi" <?= $type === 'delovi' ? 'selected' : '' ?>>Oprema</option>
-                    <option value="servis" <?= $type === 'servis' ? 'selected' : '' ?>>Servisne usluge</option>
-                </select>
-
-                <select class="filter-select" name="device_type">
-                    <option value="">Tip uređaja (sve)</option>
-                    <?php foreach ($schema['device_types'] as $dtKey => $dtLabel): ?>
-                        <option value="<?= h($dtKey) ?>" <?= $deviceType === $dtKey ? 'selected' : '' ?>><?= h($dtLabel) ?></option>
-                    <?php endforeach; ?>
-                </select>
-
-                <select class="filter-select" name="brand">
-                    <option value="">Svi brendovi</option>
-                    <?php foreach ($cfg['brands'] as $b): ?>
-                        <option value="<?= h($b) ?>" <?= $brand === $b ? 'selected' : '' ?>><?= h($b) ?></option>
-                    <?php endforeach; ?>
-                </select>
-
-                <select class="filter-select" name="location">
-                    <option value="">Svi gradovi</option>
-                    <?php foreach ($cfg['cities'] as $city): ?>
-                        <option value="<?= h($city) ?>" <?= $location === $city ? 'selected' : '' ?>><?= h($city) ?></option>
-                    <?php endforeach; ?>
-                </select>
-
-                <?php if ($categoryGroup !== '' && !empty($cfg['groups'][$categoryGroup]['models'])): ?>
-                    <select class="filter-select" name="model">
-                        <option value="">Svi modeli</option>
-                        <?php foreach ($cfg['groups'][$categoryGroup]['models'] as $m): ?>
-                            <option value="<?= h($m) ?>" <?= $model === $m ? 'selected' : '' ?>><?= h($m) ?></option>
-                        <?php endforeach; ?>
-                    </select>
+        <form method="GET" class="filter-box filter-panel" data-filter-form>
+            <div class="filter-head">
+                <span>Filteri</span>
+                <?php if ($activeFilterCount > 0): ?>
+                    <a class="filter-reset-link" href="<?= h($resetFiltersUrl) ?>">Poništi</a>
                 <?php endif; ?>
-
-                <select class="filter-select" name="condition">
-                    <option value="">Sva stanja</option>
-                    <?php foreach ($cfg['conditions'] as $st): ?>
-                        <option value="<?= h($st) ?>" <?= $condition === $st ? 'selected' : '' ?>><?= h($st) ?></option>
-                    <?php endforeach; ?>
-                </select>
-
-                <input class="filter-select" type="number" name="min_price" placeholder="Cena od (€)" value="<?= h($minPrice) ?>">
-                <input class="filter-select" type="number" name="max_price" placeholder="Cena do (€)" value="<?= h($maxPrice) ?>">
-
-                <select class="filter-select" name="sort">
-                    <option value="newest" <?= $sort === 'newest' ? 'selected' : '' ?>>Najnovije</option>
-                    <option value="price_asc" <?= $sort === 'price_asc' ? 'selected' : '' ?>>Cena rastuće</option>
-                    <option value="price_desc" <?= $sort === 'price_desc' ? 'selected' : '' ?>>Cena opadajuće</option>
-                </select>
-
-                <button class="filter-apply" type="submit">Primeni filtere</button>
-                <a href="/index.php" class="btn-message" style="display:block;text-align:center;margin-top:8px;">Poništi filtere</a>
+            </div>
+            <div class="filter-body">
+                <?php $filterLayout = 'sidebar'; require __DIR__ . '/partials/filter-fields.php'; ?>
+            </div>
+            <div class="filter-panel-actions">
+                <button class="filter-apply" type="submit">Prikaži <?= (int)$pagination['total'] ?> oglasa</button>
             </div>
         </form>
     </aside>
 
     <main class="content">
         <div class="breadcrumb"><a href="/index.php">Početna</a> › Oglasi (<?= (int)$pagination['total'] ?>)</div>
-        <button class="mobile-filter-btn" data-open-filters>Filteri i sortiranje</button>
+        <div class="listing-toolbar">
+            <button class="mobile-filter-btn" type="button" data-open-filters>
+                Filteri<?php if ($activeFilterCount > 0): ?> <span class="filter-btn-badge"><?= (int)$activeFilterCount ?></span><?php endif; ?>
+            </button>
+            <form method="GET" class="sort-bar" aria-label="Sortiranje">
+                <?php foreach ($queryBase as $k => $v): if ($k === 'sort' || $k === 'page') continue; ?>
+                    <input type="hidden" name="<?= h($k) ?>" value="<?= h((string)$v) ?>">
+                <?php endforeach; ?>
+                <label class="sort-bar-label" for="listing-sort">Sortiraj</label>
+                <select class="sort-select" id="listing-sort" name="sort" onchange="this.form.submit()">
+                    <option value="newest" <?= $sort === 'newest' ? 'selected' : '' ?>>Najnovije</option>
+                    <option value="price_asc" <?= $sort === 'price_asc' ? 'selected' : '' ?>>Cena rastuće</option>
+                    <option value="price_desc" <?= $sort === 'price_desc' ? 'selected' : '' ?>>Cena opadajuće</option>
+                </select>
+            </form>
+        </div>
+
+        <?php if ($activeChips !== []): ?>
+            <div class="active-filters" aria-label="Aktivni filteri">
+                <?php foreach ($activeChips as $chip): ?>
+                    <a class="active-filter-chip" href="<?= h($chip['href']) ?>"><?= h($chip['label']) ?> <span aria-hidden="true">×</span></a>
+                <?php endforeach; ?>
+                <a class="active-filter-clear" href="<?= h($resetFiltersUrl) ?>">Poništi sve</a>
+            </div>
+        <?php endif; ?>
 
         <?php if ($promotedAds && $page === 1 && $search === '' && $brand === '' && $location === ''): ?>
             <div class="promo-section">
@@ -195,10 +219,7 @@ require __DIR__ . '/partials/layout-start.php';
         <div class="results-bar">
             <span class="results-count">Pronađeno: <strong data-results-count><?= (int)$pagination['total'] ?></strong> oglasa</span>
             <div class="results-bar-right">
-                <?php
-                $hasFilters = $search !== '' || $brand !== '' || $model !== '' || $location !== '' || $condition !== '' || $type !== '' || $deviceType !== '' || $minPrice !== '' || $maxPrice !== '' || $categoryGroup !== '';
-                if ($hasFilters):
-                ?>
+                <?php if ($hasFilters): ?>
                     <?php if (isLoggedIn()): ?>
                         <form method="POST" action="/nalog.php" class="save-search-form">
                             <input type="hidden" name="action" value="save_search">
@@ -249,51 +270,26 @@ require __DIR__ . '/partials/layout-start.php';
 </div>
 
 <div class="filter-overlay"></div>
-<div class="filter-drawer">
-    <div class="filter-drawer-head"><h3>Filteri</h3><button class="filter-drawer-close" data-close-filters>×</button></div>
-    <div class="filter-drawer-body">
-        <form method="GET">
-            <input type="hidden" name="q" value="<?= h($search) ?>">
-            <select class="filter-select" name="type">
-                <option value="">Svi tipovi oglasa</option>
-                <option value="telefon" <?= $type === 'telefon' ? 'selected' : '' ?>>Uređaji</option>
-                <option value="delovi" <?= $type === 'delovi' ? 'selected' : '' ?>>Oprema</option>
-                <option value="servis" <?= $type === 'servis' ? 'selected' : '' ?>>Servisne usluge</option>
-            </select>
-            <select class="filter-select" name="device_type">
-                <option value="">Tip uređaja (sve)</option>
-                <?php foreach ($schema['device_types'] as $dtKey => $dtLabel): ?>
-                    <option value="<?= h($dtKey) ?>" <?= $deviceType === $dtKey ? 'selected' : '' ?>><?= h($dtLabel) ?></option>
-                <?php endforeach; ?>
-            </select>
-            <select class="filter-select" name="sort">
-                <option value="newest" <?= $sort === 'newest' ? 'selected' : '' ?>>Najnovije</option>
-                <option value="price_asc" <?= $sort === 'price_asc' ? 'selected' : '' ?>>Cena rastuće</option>
-                <option value="price_desc" <?= $sort === 'price_desc' ? 'selected' : '' ?>>Cena opadajuće</option>
-            </select>
-            <select class="filter-select" name="brand">
-                <option value="">Svi brendovi</option>
-                <?php foreach ($cfg['brands'] as $b): ?>
-                    <option value="<?= h($b) ?>" <?= $brand === $b ? 'selected' : '' ?>><?= h($b) ?></option>
-                <?php endforeach; ?>
-            </select>
-            <select class="filter-select" name="location">
-                <option value="">Svi gradovi</option>
-                <?php foreach ($cfg['cities'] as $city): ?>
-                    <option value="<?= h($city) ?>" <?= $location === $city ? 'selected' : '' ?>><?= h($city) ?></option>
-                <?php endforeach; ?>
-            </select>
-            <select class="filter-select" name="condition">
-                <option value="">Sva stanja</option>
-                <?php foreach ($cfg['conditions'] as $st): ?>
-                    <option value="<?= h($st) ?>" <?= $condition === $st ? 'selected' : '' ?>><?= h($st) ?></option>
-                <?php endforeach; ?>
-            </select>
-            <input class="filter-select" type="number" name="min_price" placeholder="Cena od (€)" value="<?= h($minPrice) ?>">
-            <input class="filter-select" type="number" name="max_price" placeholder="Cena do (€)" value="<?= h($maxPrice) ?>">
-            <button class="filter-apply" type="submit">Primeni filtere</button>
-        </form>
-    </div>
+<div class="filter-drawer" role="dialog" aria-modal="true" aria-labelledby="filter-drawer-title">
+    <form method="GET" class="filter-drawer-form" data-filter-form>
+        <div class="filter-drawer-handle" aria-hidden="true"></div>
+        <div class="filter-drawer-head">
+            <h3 id="filter-drawer-title">Filteri</h3>
+            <div class="filter-drawer-head-actions">
+                <?php if ($activeFilterCount > 0): ?>
+                    <a class="filter-reset-link" href="<?= h($resetFiltersUrl) ?>">Poništi sve</a>
+                <?php endif; ?>
+                <button class="filter-drawer-close" type="button" data-close-filters aria-label="Zatvori">×</button>
+            </div>
+        </div>
+        <div class="filter-drawer-body">
+            <?php $filterLayout = 'drawer'; require __DIR__ . '/partials/filter-fields.php'; ?>
+        </div>
+        <div class="filter-drawer-footer">
+            <a class="filter-drawer-reset" href="<?= h($resetFiltersUrl) ?>">Poništi</a>
+            <button class="filter-apply" type="submit">Prikaži <?= (int)$pagination['total'] ?> oglasa</button>
+        </div>
+    </form>
 </div>
 
 <?php require __DIR__ . '/partials/layout-end.php'; ?>

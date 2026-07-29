@@ -127,6 +127,43 @@
     });
   }
 
+  function initListingFilters() {
+    all('[data-filter-form]').forEach(function (form) {
+      form.querySelectorAll('.filter-chip input[type="radio"]').forEach(function (input) {
+        input.addEventListener('change', function () {
+          const group = input.closest('.filter-chips');
+          if (!group) return;
+          group.querySelectorAll('.filter-chip').forEach(function (chip) {
+            chip.classList.toggle('is-active', chip.querySelector('input') === input && input.checked);
+          });
+        });
+      });
+
+      const presets = form.querySelector('[data-price-presets]');
+      if (!presets) return;
+      const minInput = form.querySelector('input[name="min_price"]');
+      const maxInput = form.querySelector('input[name="max_price"]');
+      presets.querySelectorAll('.filter-preset').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          if (minInput) minInput.value = btn.getAttribute('data-min') || '';
+          if (maxInput) maxInput.value = btn.getAttribute('data-max') || '';
+          presets.querySelectorAll('.filter-preset').forEach(function (b) {
+            b.classList.toggle('is-active', b === btn);
+          });
+        });
+      });
+      function syncPresetActive() {
+        const min = minInput ? minInput.value : '';
+        const max = maxInput ? maxInput.value : '';
+        presets.querySelectorAll('.filter-preset').forEach(function (b) {
+          b.classList.toggle('is-active', (b.getAttribute('data-min') || '') === min && (b.getAttribute('data-max') || '') === max);
+        });
+      }
+      if (minInput) minInput.addEventListener('input', syncPresetActive);
+      if (maxInput) maxInput.addEventListener('input', syncPresetActive);
+    });
+  }
+
   function initFocusSearch() {
     function focusSearch() {
       const input = one('[data-search-input]');
@@ -1508,6 +1545,7 @@
   document.addEventListener('DOMContentLoaded', function () {
     initTypeFilters();
     initDrawer();
+    initListingFilters();
     initFocusSearch();
     initFormTypeSelect();
     initAdFormExtras();
