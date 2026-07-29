@@ -134,6 +134,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    if ($action === 'delete_notification') {
+        $nId = (int)($_POST['notification_id'] ?? 0);
+        if ($nId > 0) {
+            deleteNotification($nId, $userId);
+        }
+        header('Location: /nalog.php?tab=obavestenja');
+        exit;
+    }
+
+    if ($action === 'delete_all_notifications') {
+        $deleted = deleteAllNotificationsForUser($userId);
+        setFlash('success', 'Obrisano ' . $deleted . ' obaveštenja.');
+        header('Location: /nalog.php?tab=obavestenja');
+        exit;
+    }
+
     if ($action === 'verify_email') {
         $profileNow = findUserById($userId) ?? $profile;
         if (isEmailVerified($profileNow)) {
@@ -909,12 +925,22 @@ require __DIR__ . '/partials/layout-start.php';
             <section class="form-card">
                 <div class="account-section-head">
                     <h2>Obaveštenja</h2>
-                    <?php if ($unreadNotifs > 0): ?>
-                        <form method="POST" class="inline-form">
-                            <input type="hidden" name="action" value="mark_notifications">
-                            <button type="submit" class="btn-sm">Označi pročitano</button>
-                        </form>
-                    <?php endif; ?>
+                    <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+                        <?php if ($unreadNotifs > 0): ?>
+                            <form method="POST" class="inline-form">
+                                <?= csrfField() ?>
+                                <input type="hidden" name="action" value="mark_notifications">
+                                <button type="submit" class="btn-sm">Označi pročitano</button>
+                            </form>
+                        <?php endif; ?>
+                        <?php if ($notifications): ?>
+                            <form method="POST" class="inline-form" onsubmit="return confirm('Obrisati sva obaveštenja?')">
+                                <?= csrfField() ?>
+                                <input type="hidden" name="action" value="delete_all_notifications">
+                                <button type="submit" class="btn-sm btn-danger-sm">Obriši sva</button>
+                            </form>
+                        <?php endif; ?>
+                    </div>
                 </div>
                 <?php if (!$notifications): ?>
                     <div class="account-empty"><p>Nemaš obaveštenja.</p></div>
@@ -924,7 +950,15 @@ require __DIR__ . '/partials/layout-start.php';
                             <div class="notif-item <?= empty($n['is_read']) ? 'is-unread' : '' ?>">
                                 <div class="notif-item-head">
                                     <strong><?= h((string)$n['title']) ?></strong>
-                                    <span><?= h(formatRelativeTime((string)$n['created_at'])) ?></span>
+                                    <div style="display:flex;align-items:center;gap:8px;">
+                                        <span><?= h(formatRelativeTime((string)$n['created_at'])) ?></span>
+                                        <form method="POST" class="inline-form">
+                                            <?= csrfField() ?>
+                                            <input type="hidden" name="action" value="delete_notification">
+                                            <input type="hidden" name="notification_id" value="<?= (int)$n['id'] ?>">
+                                            <button type="submit" class="notif-delete-btn" title="Obriši">✕</button>
+                                        </form>
+                                    </div>
                                 </div>
                                 <p><?= h((string)$n['body']) ?></p>
                                 <?php if (!empty($n['link'])): ?>

@@ -477,14 +477,14 @@ body.page-ad-form {
 .page-card{padding:24px 16px;text-align:center;color:var(--text-muted);} .page-card h2{font-size:18px;color:var(--text);margin-bottom:8px;}
 .msg-item-wrap{position:relative;margin-bottom:8px;}
 .msg-item-wrap .msg-item{margin-bottom:0;}
-.msg-delete-form{position:absolute;top:8px;right:8px;z-index:2;}
-.msg-delete-btn{background:none;border:none;color:var(--text-light);cursor:pointer;font-size:16px;padding:4px 6px;border-radius:4px;line-height:1;opacity:0;transition:opacity .15s;}
+.msg-delete-form{position:absolute;top:50%;right:10px;z-index:2;transform:translateY(-50%);}
+.msg-delete-btn{background:#f8f8f8;border:1px solid var(--border);color:#888;cursor:pointer;font-size:12px;padding:5px 10px;border-radius:6px;line-height:1;opacity:0;transition:all .15s;white-space:nowrap;}
 .msg-item-wrap:hover .msg-delete-btn{opacity:1;}
-.msg-delete-btn:hover{background:#fee;color:#c00;}
+.msg-delete-btn:hover{background:#dc3545;color:#fff;border-color:#dc3545;}
 .chat-head-actions{display:flex;gap:8px;align-items:center;}
 .btn-danger-sm{background:#dc3545;color:#fff;border:1px solid #dc3545;border-radius:4px;padding:4px 10px;font-size:12px;cursor:pointer;}
 .btn-danger-sm:hover{background:#b02a37;}
-.msg-item{display:flex;gap:12px;padding:14px;background:#fff;border:1px solid var(--border);border-radius:4px;color:inherit;text-decoration:none;align-items:flex-start;}
+.msg-item{display:flex;gap:12px;padding:14px 70px 14px 14px;background:#fff;border:1px solid var(--border);border-radius:4px;color:inherit;text-decoration:none;align-items:flex-start;}
 .msg-item.unread{border-left:3px solid var(--kp-green);background:#f7fff8;} .msg-preview{flex:1;min-width:0;} .msg-preview strong{display:flex;align-items:center;gap:8px;font-size:14px;margin-bottom:4px;} .msg-preview span{font-size:13px;color:var(--text-muted);display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;} .msg-time{font-size:11px;color:var(--text-light);white-space:nowrap;}
 .msg-avatar{width:40px;height:40px;border-radius:50%;background:var(--kp-green);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:bold;flex-shrink:0;}
 .msg-ad{font-size:12px !important;color:var(--link) !important;margin-bottom:2px;}
@@ -775,6 +775,8 @@ a.account-ov-stat:hover {
 .notif-item.is-unread { border-left: 3px solid var(--kp-green); background: #f7fbf8; }
 .notif-item-head { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 6px; font-size: 13px; }
 .notif-item-head span { color: var(--text-muted); font-size: 12px; white-space: nowrap; }
+.notif-delete-btn { background: none; border: none; color: var(--text-light); cursor: pointer; font-size: 13px; padding: 2px 5px; border-radius: 3px; line-height: 1; }
+.notif-delete-btn:hover { background: #fee; color: #c00; }
 .notif-item p { margin: 0 0 8px; font-size: 13px; color: var(--text); line-height: 1.45; }
 .notif-item a { font-size: 13px; font-weight: bold; }
 

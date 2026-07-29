@@ -190,7 +190,7 @@ require __DIR__ . '/partials/layout-start.php';
                             <input type="hidden" name="action" value="delete_thread">
                             <input type="hidden" name="ad_id" value="<?= (int)$thread['ad_id'] ?>">
                             <input type="hidden" name="with_user_id" value="<?= (int)$thread['partner_id'] ?>">
-                            <button type="submit" class="msg-delete-btn" title="Obriši konverzaciju">✕</button>
+                            <button type="submit" class="msg-delete-btn" title="Obriši konverzaciju">Obriši</button>
                         </form>
                     </div>
                 <?php endforeach; ?>

@@ -38,5 +38,35 @@
         "link": "\/nalog.php?tab=krediti",
         "is_read": true,
         "created_at": "2026-07-23 12:54:55"
+    },
+    {
+        "id": 5,
+        "user_id": 1,
+        "type": "top_expired",
+        "title": "TOP isticanje je isteklo",
+        "body": "Oglas „iPhone 14 Pro 128GB Deep Purple” više nije istaknut. Možeš ponovo naručiti TOP.",
+        "link": "\/nalog.php?tab=oglasi",
+        "is_read": false,
+        "created_at": "2026-07-29 09:54:33"
+    },
+    {
+        "id": 6,
+        "user_id": 1,
+        "type": "top_expired",
+        "title": "TOP isticanje je isteklo",
+        "body": "Oglas „Xiaomi 13T Pro 512GB” više nije istaknut. Možeš ponovo naručiti TOP.",
+        "link": "\/nalog.php?tab=oglasi",
+        "is_read": false,
+        "created_at": "2026-07-29 09:54:35"
+    },
+    {
+        "id": 7,
+        "user_id": 1,
+        "type": "top_expired",
+        "title": "TOP isticanje je isteklo",
+        "body": "Oglas „iPhone 15 128GB crni” više nije istaknut. Možeš ponovo naručiti TOP.",
+        "link": "\/nalog.php?tab=oglasi",
+        "is_read": false,
+        "created_at": "2026-07-29 09:54:37"
     }
 ]

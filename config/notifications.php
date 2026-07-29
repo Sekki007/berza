@@ -82,6 +82,30 @@ function markNotificationRead(int $notificationId, int $userId): bool
     return $changed;
 }
 
+function deleteNotification(int $notificationId, int $userId): bool
+{
+    $items = readJsonFile('notifications.json');
+    $filtered = array_values(array_filter($items, static fn($item) =>
+        !((int)($item['id'] ?? 0) === $notificationId && (int)($item['user_id'] ?? 0) === $userId)
+    ));
+    if (count($filtered) === count($items)) {
+        return false;
+    }
+    writeJsonFile('notifications.json', $filtered);
+    return true;
+}
+
+function deleteAllNotificationsForUser(int $userId): int
+{
+    $items = readJsonFile('notifications.json');
+    $filtered = array_values(array_filter($items, static fn($item) => (int)($item['user_id'] ?? 0) !== $userId));
+    $deleted = count($items) - count($filtered);
+    if ($deleted > 0) {
+        writeJsonFile('notifications.json', $filtered);
+    }
+    return $deleted;
+}
+
 function markAllNotificationsRead(int $userId): void
 {
     $items = readJsonFile('notifications.json');
