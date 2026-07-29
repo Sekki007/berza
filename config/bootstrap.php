@@ -549,14 +549,14 @@ function formatAdPrice(array $ad): string
 {
     $type = adPriceType($ad);
     if ($type === 'negotiable') {
-        return 'Po dogovoru';
+        return 'Cena: po dogovoru';
     }
     if ($type === 'contact') {
-        return 'Na kontakt';
+        return 'Cena: na kontakt';
     }
     $eur = adPriceEur($ad);
     if ($eur <= 0) {
-        return 'Po dogovoru';
+        return 'Cena: po dogovoru';
     }
     // Na sajtu uvek prikazujemo EUR (RSD unos se pretvara kursom).
     return formatPrice($eur, 'eur');
