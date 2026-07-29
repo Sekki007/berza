@@ -145,7 +145,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             setFlash('danger', 'Email nije poslat. Proveri adresu i admin podešavanja.');
         }
-        header('Location: /nalog.php?tab=profil');
+        header('Location: /nalog.php?tab=kanali');
         exit;
     }
 
@@ -182,7 +182,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 setFlash('danger', 'Generisanje Telegram koda nije uspelo.');
             }
         }
-        header('Location: /nalog.php?tab=profil');
+        header('Location: /nalog.php?tab=kanali');
         exit;
     }
 
@@ -192,7 +192,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         } else {
             setFlash('danger', 'Odvezivanje Telegram naloga nije uspelo.');
         }
-        header('Location: /nalog.php?tab=profil');
+        header('Location: /nalog.php?tab=kanali');
         exit;
     }
 
@@ -202,10 +202,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'system',
             'Test Telegram poruke',
             'Povezivanje je uspešno i Telegram notifikacije rade.',
-            '/nalog.php?tab=obavestenja'
+            '/nalog.php?tab=kanali'
         );
         setFlash($sent ? 'success' : 'danger', $sent ? 'Test poruka je poslata na Telegram.' : 'Test poruka nije poslata. Proveri povezivanje.');
-        header('Location: /nalog.php?tab=profil');
+        header('Location: /nalog.php?tab=kanali');
         exit;
     }
 
@@ -287,6 +287,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    if ($action === 'save_notification_channels') {
+        $ok = updateUserProfile($userId, [
+            'notify_email' => !empty($_POST['notify_email']),
+            'notify_telegram' => !empty($_POST['notify_telegram']),
+            'notify_telegram_messages' => !empty($_POST['notify_telegram_messages']),
+            'notify_telegram_alerts' => !empty($_POST['notify_telegram_alerts']),
+            'notify_telegram_system' => !empty($_POST['notify_telegram_system']),
+        ]);
+        setFlash($ok ? 'success' : 'danger', $ok ? 'Podešavanja notifikacija su sačuvana.' : 'Podešavanja nisu sačuvana.');
+        header('Location: /nalog.php?tab=kanali');
+        exit;
+    }
+
     $phoneInput = trim((string)($_POST['phone'] ?? ''));
     if ($phoneInput !== '' && normalizePhoneRs($phoneInput) === null) {
         setFlash('danger', 'Unesi validan srpski mobilni broj (npr. 06x xxx xxxx).');
@@ -310,11 +323,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'shop_bio' => $shopBio,
         'shop_slug' => trim((string)($_POST['shop_slug'] ?? '')),
         'location' => trim((string)($_POST['location'] ?? '')),
-        'notify_email' => !empty($_POST['notify_email']),
-        'notify_telegram' => !empty($_POST['notify_telegram']),
-        'notify_telegram_messages' => !empty($_POST['notify_telegram_messages']),
-        'notify_telegram_alerts' => !empty($_POST['notify_telegram_alerts']),
-        'notify_telegram_system' => !empty($_POST['notify_telegram_system']),
         'account_type' => $accountTypePost,
         'business_kind' => trim((string)($_POST['business_kind'] ?? '')),
         'pib' => trim((string)($_POST['pib'] ?? '')),
@@ -334,7 +342,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $tab = trim((string)($_GET['tab'] ?? 'pregled'));
-if (!in_array($tab, ['pregled', 'profil', 'oglasi', 'obavestenja', 'top', 'krediti', 'pretrage', 'statistika', 'mini_sajt'], true)) {
+if (!in_array($tab, ['pregled', 'profil', 'oglasi', 'obavestenja', 'kanali', 'top', 'krediti', 'pretrage', 'statistika', 'mini_sajt'], true)) {
     $tab = 'pregled';
 }
 
@@ -493,6 +501,7 @@ require __DIR__ . '/partials/layout-start.php';
                 <a href="?tab=krediti" class="<?= $tab === 'krediti' ? 'active' : '' ?>">Krediti</a>
             <?php endif; ?>
             <a href="?tab=obavestenja" class="<?= $tab === 'obavestenja' ? 'active' : '' ?>">Obav.<?= $unreadNotifs > 0 ? ' · ' . $unreadNotifs : '' ?></a>
+            <a href="?tab=kanali" class="<?= $tab === 'kanali' ? 'active' : '' ?>">Kanali</a>
             <a href="?tab=pretrage" class="<?= $tab === 'pretrage' ? 'active' : '' ?>">Pretrage</a>
             <a href="?tab=statistika" class="<?= $tab === 'statistika' ? 'active' : '' ?>">Stat.</a>
             <?php if ($storefrontOn): ?>
@@ -1184,6 +1193,113 @@ require __DIR__ . '/partials/layout-start.php';
                 <?php endif; ?>
             </section>
 
+        <?php elseif ($tab === 'kanali'): ?>
+            <?php
+            $emailOk = isEmailVerified($profile);
+            $hasEmail = trim((string)($profile['email'] ?? '')) !== '';
+            ?>
+            <section class="form-card account-profile-card">
+                <div class="profile-head">
+                    <div>
+                        <h2>Kanali obaveštenja</h2>
+                        <p class="profile-head-sub">Uključi ili isključi gde želiš da stižu obaveštenja.</p>
+                    </div>
+                </div>
+
+                <form method="POST" class="account-profile-form">
+
+                    <div class="profile-section">
+                        <h3 class="profile-section-title">Email</h3>
+                        <p class="form-hint">Email adresa se menja u tabu Profil.</p>
+                        <div class="profile-status <?= $hasEmail && $emailOk ? 'profile-status-approved' : 'profile-status-idle' ?>" style="margin-top:8px;">
+                            <strong><?= $hasEmail ? h((string)$profile['email']) : 'Email nije unet' ?></strong>
+                            <span>
+                                <?php if (!$hasEmail): ?>
+                                    Unesi email u profilu da aktiviraš email obaveštenja.
+                                <?php elseif ($emailOk): ?>
+                                    Email je potvrđen.
+                                <?php else: ?>
+                                    Email nije potvrđen.
+                                <?php endif; ?>
+                            </span>
+                        </div>
+                        <?php if ($hasEmail && !$emailOk): ?>
+                            <div style="margin-top:8px;">
+                                <button class="btn-sm btn-sm-primary" type="submit" name="action" value="verify_email">Pošalji link za potvrdu emaila</button>
+                            </div>
+                        <?php endif; ?>
+                        <label class="profile-check" style="margin-top:10px;">
+                            <input type="checkbox" name="notify_email" value="1" <?= !isset($profile['notify_email']) || !empty($profile['notify_email']) ? 'checked' : '' ?> <?= $hasEmail ? '' : 'disabled' ?>>
+                            <span>Email obaveštenja (poruke, alerti, istek oglasa)</span>
+                        </label>
+                    </div>
+
+                    <?php if ($telegramOn): ?>
+                        <div class="profile-section">
+                            <h3 class="profile-section-title">Telegram</h3>
+                            <div class="profile-status <?= $telegramLinked ? 'profile-status-approved' : 'profile-status-idle' ?>" style="margin-top:8px;">
+                                <?php if ($telegramLinked): ?>
+                                    <strong>Telegram povezan<?= $telegramUsername !== '' ? ' (@' . h($telegramUsername) . ')' : '' ?></strong>
+                                    <span>Chat ID: <?= h($telegramChatId) ?></span>
+                                <?php else: ?>
+                                    <strong>Telegram nije povezan</strong>
+                                    <span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                                        <span>Poveži nalog jednim klikom.</span>
+                                        <button class="btn-sm btn-sm-primary" type="submit" name="action" value="telegram_link">Poveži Telegram</button>
+                                    </span>
+                                <?php endif; ?>
+                            </div>
+
+                            <?php if ($telegramCodeActive): ?>
+                                <div class="form-hint" style="margin-top:8px;">
+                                    Start link važi do <?= h(date('d.m.Y. H:i', $telegramLinkExpTs ?: time())) ?>.
+                                    <?php if ($telegramConnectLink !== ''): ?>
+                                        <a href="<?= h($telegramConnectLink) ?>" target="_blank" rel="noopener">Otvori bot direktno</a>
+                                    <?php elseif ($telegramBotLink !== ''): ?>
+                                        <a href="<?= h($telegramBotLink) ?>" target="_blank" rel="noopener">Otvori bot</a>
+                                    <?php endif; ?>
+                                </div>
+                                <div class="form-hint" style="margin-top:4px;">Ako Telegram ne prosledi start parametar, pošalji botu kod: <strong><?= h($telegramLinkCode) ?></strong>.</div>
+                            <?php endif; ?>
+
+                            <label class="profile-check" style="margin-top:10px;">
+                                <input type="checkbox" name="notify_telegram" value="1" <?= !empty($profile['notify_telegram']) ? 'checked' : '' ?> <?= $telegramLinked ? '' : 'disabled' ?>>
+                                <span>Telegram obaveštenja (uključeno/isključeno)</span>
+                            </label>
+                            <div class="account-check-grid" style="margin-top:8px;">
+                                <label class="profile-check">
+                                    <input type="checkbox" name="notify_telegram_messages" value="1" <?= !array_key_exists('notify_telegram_messages', $profile) || !empty($profile['notify_telegram_messages']) ? 'checked' : '' ?> <?= $telegramLinked ? '' : 'disabled' ?>>
+                                    <span>Nove poruke</span>
+                                </label>
+                                <label class="profile-check">
+                                    <input type="checkbox" name="notify_telegram_alerts" value="1" <?= !array_key_exists('notify_telegram_alerts', $profile) || !empty($profile['notify_telegram_alerts']) ? 'checked' : '' ?> <?= $telegramLinked ? '' : 'disabled' ?>>
+                                    <span>Alerti (istek oglasa, sačuvane pretrage)</span>
+                                </label>
+                                <label class="profile-check">
+                                    <input type="checkbox" name="notify_telegram_system" value="1" <?= !array_key_exists('notify_telegram_system', $profile) || !empty($profile['notify_telegram_system']) ? 'checked' : '' ?> <?= $telegramLinked ? '' : 'disabled' ?>>
+                                    <span>Sistemske notifikacije</span>
+                                </label>
+                            </div>
+
+                            <?php if ($telegramLinked): ?>
+                                <div class="profile-side-actions" style="margin-top:12px;">
+                                    <div class="profile-action-row">
+                                        <button class="btn-sm btn-sm-primary" type="submit" name="action" value="telegram_test">Pošalji test poruku</button>
+                                    </div>
+                                    <div class="profile-action-row">
+                                        <button class="btn-sm btn-sm-danger" type="submit" name="action" value="telegram_unlink" onclick="return confirm('Odvezati Telegram nalog?');">Odveži Telegram</button>
+                                    </div>
+                                </div>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
+
+                    <div class="profile-actions">
+                        <button class="btn-call" type="submit" name="action" value="save_notification_channels">Sačuvaj podešavanja kanala</button>
+                    </div>
+                </form>
+            </section>
+
         <?php elseif ($tab === 'profil'): ?>
             <?php
             $bizStatus = userBusinessStatus($profile);
@@ -1333,65 +1449,7 @@ require __DIR__ . '/partials/layout-start.php';
                                     <?php endif; ?>
                                 </p>
                             <?php endif; ?>
-                            <?php if ($hasEmail && !$emailOk): ?>
-                                <form method="POST" style="margin-top:8px;">
-                                    <input type="hidden" name="action" value="verify_email">
-                                    <button class="btn-sm btn-sm-primary" type="submit">Pošalji link za potvrdu emaila</button>
-                                </form>
-                            <?php endif; ?>
                         </div>
-                        <label class="profile-check">
-                            <input type="checkbox" name="notify_email" value="1" <?= !isset($profile['notify_email']) || !empty($profile['notify_email']) ? 'checked' : '' ?>>
-                            <span>Email obaveštenja (poruke, alerti, istek oglasa)</span>
-                        </label>
-                        <?php if ($telegramOn): ?>
-                            <div class="profile-status <?= $telegramLinked ? 'profile-status-approved' : 'profile-status-idle' ?>" style="margin-top:10px;">
-                                <?php if ($telegramLinked): ?>
-                                    <strong>Telegram povezan<?= $telegramUsername !== '' ? ' (@' . h($telegramUsername) . ')' : '' ?></strong>
-                                    <span>Chat ID: <?= h($telegramChatId) ?></span>
-                                <?php else: ?>
-                                    <strong>Telegram nije povezan</strong>
-                                    <span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-                                        <span>Poveži nalog jednim klikom.</span>
-                                        <form method="POST" style="display:inline;">
-                                            <input type="hidden" name="action" value="telegram_link">
-                                            <button class="btn-sm btn-sm-primary" type="submit">Poveži Telegram</button>
-                                        </form>
-                                    </span>
-                                <?php endif; ?>
-                            </div>
-
-                            <?php if ($telegramCodeActive): ?>
-                                <div class="form-hint" style="margin-top:8px;">
-                                    Start link važi do <?= h(date('d.m.Y. H:i', $telegramLinkExpTs ?: time())) ?>.
-                                    <?php if ($telegramConnectLink !== ''): ?>
-                                        <a href="<?= h($telegramConnectLink) ?>" target="_blank" rel="noopener">Otvori bot direktno</a>
-                                    <?php elseif ($telegramBotLink !== ''): ?>
-                                        <a href="<?= h($telegramBotLink) ?>" target="_blank" rel="noopener">Otvori bot</a>
-                                    <?php endif; ?>
-                                </div>
-                                <div class="form-hint" style="margin-top:4px;">Ako Telegram ne prosledi start parametar, pošalji botu kod: <strong><?= h($telegramLinkCode) ?></strong>.</div>
-                            <?php endif; ?>
-
-                            <label class="profile-check" style="margin-top:10px;">
-                                <input type="checkbox" name="notify_telegram" value="1" <?= !empty($profile['notify_telegram']) ? 'checked' : '' ?> <?= $telegramLinked ? '' : 'disabled' ?>>
-                                <span>Telegram obaveštenja (uključeno/isključeno)</span>
-                            </label>
-                            <div class="account-check-grid" style="margin-top:8px;">
-                                <label class="profile-check">
-                                    <input type="checkbox" name="notify_telegram_messages" value="1" <?= !array_key_exists('notify_telegram_messages', $profile) || !empty($profile['notify_telegram_messages']) ? 'checked' : '' ?> <?= $telegramLinked ? '' : 'disabled' ?>>
-                                    <span>Nove poruke</span>
-                                </label>
-                                <label class="profile-check">
-                                    <input type="checkbox" name="notify_telegram_alerts" value="1" <?= !array_key_exists('notify_telegram_alerts', $profile) || !empty($profile['notify_telegram_alerts']) ? 'checked' : '' ?> <?= $telegramLinked ? '' : 'disabled' ?>>
-                                    <span>Alerti (istek oglasa, sačuvane pretrage)</span>
-                                </label>
-                                <label class="profile-check">
-                                    <input type="checkbox" name="notify_telegram_system" value="1" <?= !array_key_exists('notify_telegram_system', $profile) || !empty($profile['notify_telegram_system']) ? 'checked' : '' ?> <?= $telegramLinked ? '' : 'disabled' ?>>
-                                    <span>Sistemske notifikacije</span>
-                                </label>
-                            </div>
-                        <?php endif; ?>
                     </div>
 
                     <div class="profile-actions">
@@ -1400,18 +1458,6 @@ require __DIR__ . '/partials/layout-start.php';
                 </form>
 
                 <div class="profile-side-actions">
-                    <?php if ($telegramOn): ?>
-                        <?php if ($telegramLinked): ?>
-                            <form method="POST" class="profile-action-row">
-                                <input type="hidden" name="action" value="telegram_test">
-                                <button class="btn-sm btn-sm-primary" type="submit">Pošalji test poruku</button>
-                            </form>
-                            <form method="POST" class="profile-action-row" onsubmit="return confirm('Odvezati Telegram nalog?');">
-                                <input type="hidden" name="action" value="telegram_unlink">
-                                <button class="btn-sm btn-sm-danger" type="submit">Odveži Telegram</button>
-                            </form>
-                        <?php endif; ?>
-                    <?php endif; ?>
                     <?php if ($canRequestBusiness): ?>
                         <form method="POST" class="profile-action-row">
                             <input type="hidden" name="action" value="request_business">
