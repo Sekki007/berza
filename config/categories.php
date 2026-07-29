@@ -23,6 +23,12 @@ return [
             'brand' => 'Samsung',
             'models' => ['Galaxy S21 Ultra', 'Galaxy S22 Ultra', 'Galaxy S23 Ultra', 'Galaxy S24 Ultra', 'Galaxy A52', 'Galaxy A54'],
         ],
+        'other_parts' => [
+            'label' => 'Ostalo — delovi i oprema',
+            'ad_type' => 'delovi',
+            'brand' => '',
+            'models' => [],
+        ],
         'phones' => [
             'label' => 'Uređaji',
             'ad_type' => 'telefon',
