@@ -456,8 +456,8 @@
         if (typeEl) syncAdFormByType(typeEl.value);
       });
     }
-    wireMore('[data-phone-more-toggle]', '[data-phone-more]', 'Manje detalja ▴', 'Više detalja (RAM, boja, SIM…) ▾');
-    wireMore('[data-contact-more-toggle]', '[data-contact-more]', 'Manje opcija ▴', 'Dodatne opcije ▾');
+    wireMore('[data-phone-more-toggle]', '[data-phone-more]', 'Manje detalja ▴', 'Više detalja (RAM, BH, oprema…) ▾');
+    wireMore('[data-contact-more-toggle]', '[data-contact-more]', 'Manje opcija ▴', 'Dodatne opcije (tip oglasa, kontakt…) ▾');
 
     const err = one('[data-form-error]', form);
     if (err) {
