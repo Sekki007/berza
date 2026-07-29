@@ -1333,6 +1333,12 @@ require __DIR__ . '/partials/layout-start.php';
                                     <?php endif; ?>
                                 </p>
                             <?php endif; ?>
+                            <?php if ($hasEmail && !$emailOk): ?>
+                                <form method="POST" style="margin-top:8px;">
+                                    <input type="hidden" name="action" value="verify_email">
+                                    <button class="btn-sm btn-sm-primary" type="submit">Pošalji link za potvrdu emaila</button>
+                                </form>
+                            <?php endif; ?>
                         </div>
                         <label class="profile-check">
                             <input type="checkbox" name="notify_email" value="1" <?= !isset($profile['notify_email']) || !empty($profile['notify_email']) ? 'checked' : '' ?>>
@@ -1345,7 +1351,13 @@ require __DIR__ . '/partials/layout-start.php';
                                     <span>Chat ID: <?= h($telegramChatId) ?></span>
                                 <?php else: ?>
                                     <strong>Telegram nije povezan</strong>
-                                    <span>Generiši kod ispod i pošalji ga botu.</span>
+                                    <span style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                                        <span>Poveži nalog jednim klikom.</span>
+                                        <form method="POST" style="display:inline;">
+                                            <input type="hidden" name="action" value="telegram_link">
+                                            <button class="btn-sm btn-sm-primary" type="submit">Poveži Telegram</button>
+                                        </form>
+                                    </span>
                                 <?php endif; ?>
                             </div>
 
@@ -1389,13 +1401,7 @@ require __DIR__ . '/partials/layout-start.php';
 
                 <div class="profile-side-actions">
                     <?php if ($telegramOn): ?>
-                        <?php if (!$telegramLinked): ?>
-                            <form method="POST" class="profile-action-row">
-                                <input type="hidden" name="action" value="telegram_link">
-                                <button class="btn-sm btn-sm-primary" type="submit">Poveži Telegram (1 klik)</button>
-                                <span class="form-hint">Otvoriće bot automatski, zatim klikni Start.</span>
-                            </form>
-                        <?php else: ?>
+                        <?php if ($telegramLinked): ?>
                             <form method="POST" class="profile-action-row">
                                 <input type="hidden" name="action" value="telegram_test">
                                 <button class="btn-sm btn-sm-primary" type="submit">Pošalji test poruku</button>
@@ -1411,12 +1417,6 @@ require __DIR__ . '/partials/layout-start.php';
                             <input type="hidden" name="action" value="request_business">
                             <button class="btn-sm btn-sm-primary" type="submit">Pošalji zahtev za bedž firme</button>
                             <span class="form-hint">Sačuvaj profil pa pošalji zahtev.</span>
-                        </form>
-                    <?php endif; ?>
-                    <?php if ($hasEmail && !$emailOk): ?>
-                        <form method="POST" class="profile-action-row">
-                            <input type="hidden" name="action" value="verify_email">
-                            <button class="btn-sm btn-sm-primary" type="submit">Pošalji link za potvrdu emaila</button>
                         </form>
                     <?php endif; ?>
                     <?php if (!$phoneOk && normalizePhoneRs((string)($profile['phone'] ?? '')) !== null): ?>
