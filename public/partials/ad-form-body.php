@@ -37,6 +37,22 @@
                 <p class="form-hint ad-form-error" data-form-error><?= h($formError) ?></p>
             <?php endif; ?>
 
+            <?php if (!$isEdit): ?>
+                <section class="ad-form-section kp-import-section" data-kp-import>
+                    <h3 class="ad-form-section-title">Uvezi sa KupujemProdajem</h3>
+                    <p class="form-hint" style="margin-top:0;">Nalepi link svog KP oglasa — popunićemo formu. Proveri podatke pre objave. Import može prestati da radi ako KP promeni sajt.</p>
+                    <div class="kp-import-row">
+                        <input type="url" data-kp-import-url placeholder="https://www.kupujemprodajem.com/…/oglas/123456" autocomplete="off" inputmode="url">
+                        <button type="button" class="btn-message" data-kp-import-btn>Uvezi</button>
+                    </div>
+                    <label class="price-confirm-label kp-import-owned">
+                        <input type="checkbox" data-kp-import-owned value="1">
+                        <span>Potvrđujem da sam vlasnik ovog oglasa / sadržaja i da imam pravo da ga objavim na KupiTelefon.</span>
+                    </label>
+                    <p class="form-hint kp-import-status" data-kp-import-status hidden></p>
+                </section>
+            <?php endif; ?>
+
             <div class="form-group" data-category-wrap hidden>
                 <label>Podkategorija</label>
                 <select name="category_group" id="ad-category" data-keep-enabled="1" data-group-map="<?= h(json_encode($groupMeta, JSON_UNESCAPED_UNICODE)) ?>">
@@ -363,6 +379,7 @@
                 </label>
                 <p class="form-hint" style="margin-top:8px;">Velike slike se automatski smanjuju pre slanja (max ~1600px). Preporuka: JPG/PNG, do 20 MB po slici.</p>
                 <div class="photo-upload" data-photo-preview></div>
+                <div class="photo-existing kp-import-photos" data-kp-import-photos hidden></div>
                 <div class="form-group" style="margin-top:14px;">
                     <label>Detaljan opis</label>
                     <textarea name="description" rows="5" placeholder="Stanje, šta ide uz oglas, napomene..."><?= h((string)$ad['description']) ?></textarea>

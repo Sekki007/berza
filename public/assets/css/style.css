@@ -439,6 +439,13 @@ body.page-ad-form {
 .price-confirm-label{display:flex;align-items:flex-start;gap:8px;margin:8px 0 10px;font-size:13px;line-height:1.35;cursor:pointer;}
 .price-confirm-label[hidden]{display:none !important;}
 .price-confirm-label input{margin-top:2px;flex-shrink:0;}
+.kp-import-section{border:1px dashed var(--border, #d0d5dd);border-radius:10px;padding:14px 16px;background:rgba(0,0,0,.02);}
+.kp-import-row{display:flex;gap:8px;flex-wrap:wrap;align-items:stretch;}
+.kp-import-row input[type="url"]{flex:1 1 220px;min-width:0;}
+.kp-import-status.is-ok{color:var(--kp-green-dark,#166534);font-weight:600;}
+.kp-import-status.is-err{color:#b91c1c;font-weight:600;}
+.kp-import-photos{margin-top:10px;}
+.kp-import-photos[hidden]{display:none !important;}
 .kp-price-rsd{font-size:13px;color:var(--text-muted);margin-top:2px;font-weight:normal;}
 .listing-price-rsd{display:block;font-size:12px;font-weight:normal;color:var(--text-muted);margin-top:2px;}
 .kp-list-price .listing-price-rsd{font-size:11px;}
