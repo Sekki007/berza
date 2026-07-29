@@ -1,4 +1,22 @@
+# KupiTelefon.rs — kompletan robots.txt
+# Namena: jednom podesiti, ne dirati bez potrebe.
+# Napomena: Cloudflare može da ubaci svoj "Managed content" blok iznad ovoga.
+
+# =============================================================================
+# Share / link-preview crawlovi — eksplicitno dozvoljeni
+# (Viber, WhatsApp, FB, TG… često proveravaju robots pre OG kartice)
+# =============================================================================
+
 User-agent: facebookexternalhit
+Allow: /
+
+User-agent: Facebot
+Allow: /
+
+User-agent: meta-externalagent
+Allow: /
+
+User-agent: Meta-ExternalFetcher
 Allow: /
 
 User-agent: Twitterbot
@@ -13,28 +31,107 @@ Allow: /
 User-agent: Viber
 Allow: /
 
+User-agent: ViberBot
+Allow: /
+
+User-agent: LinkedInBot
+Allow: /
+
+User-agent: Discordbot
+Allow: /
+
+User-agent: Slackbot
+Allow: /
+
+User-agent: Slackbot-LinkExpanding
+Allow: /
+
+User-agent: SkypeUriPreview
+Allow: /
+
+User-agent: Pinterest
+Allow: /
+
+User-agent: Pinterestbot
+Allow: /
+
+User-agent: Redditbot
+Allow: /
+
+User-agent: Embedly
+Allow: /
+
+User-agent: Iframely
+Allow: /
+
+User-agent: Quora-Bot
+Allow: /
+
+User-agent: Tumblr
+Allow: /
+
+User-agent: vkShare
+Allow: /
+
+User-agent: BitlyBot
+Allow: /
+
+User-agent: Applebot
+Allow: /
+
+User-agent: BingPreview
+Allow: /
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: Googlebot-Image
+Allow: /
+
+User-agent: bingbot
+Allow: /
+
+User-agent: DuckDuckBot
+Allow: /
+
+User-agent: Yandex
+Allow: /
+
+# =============================================================================
+# Svi ostali botovi
+# =============================================================================
+
 User-agent: *
 Allow: /
 
-Disallow: /admin_users.php
-Disallow: /admin_user_edit.php
-Disallow: /admin_settings.php
-Disallow: /admin_credits.php
-Disallow: /admin_top.php
-Disallow: /admin_reports.php
+# --- Admin (prefix pokriva sve admin_*.php) ---
+Disallow: /admin_
+
+# --- API / webhook / interno ---
+Disallow: /api/
+Disallow: /partials/
+
+# --- Nalog, auth, privatne stranice ---
 Disallow: /dashboard.php
 Disallow: /ads.php
 Disallow: /ad_form.php
+Disallow: /ad_delete.php
+Disallow: /ad_toggle.php
 Disallow: /nalog.php
 Disallow: /login.php
+Disallow: /logout.php
 Disallow: /register.php
 Disallow: /poruke.php
 Disallow: /favorites.php
+Disallow: /favorite.php
 Disallow: /uporedi.php
 Disallow: /report.php
 Disallow: /forgot-password.php
 Disallow: /reset-password.php
 Disallow: /verify-phone.php
-Disallow: /api/
+Disallow: /verify-email.php
+
+# Javno (dozvoljeno preko Allow: / iznad — ne dirati):
+# /  /oglas  /oglas.php  /izlog  /usluge  /kako-radi  /sitemap.php  /uploads/  /assets/
 
 Sitemap: https://kupitelefon.rs/sitemap.xml
