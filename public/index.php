@@ -82,6 +82,13 @@ if ($queryBase === []) {
 $activePage = 'oglasi';
 $searchValue = $search;
 
+// LCP: prva listing slika (ili prvi TOP oglas) — preload + eager
+$lcpAd = $promotedAds[0] ?? ($ads[0] ?? null);
+$lcpThumb = $lcpAd ? adPrimaryListingThumb($lcpAd) : null;
+if ($lcpThumb) {
+    $preloadImage = $lcpThumb;
+}
+
 $typeLabels = [
     'telefon' => 'Uređaji',
     'delovi' => 'Oprema',
@@ -196,8 +203,8 @@ require __DIR__ . '/partials/layout-start.php';
             <div class="promo-section">
                 <div class="promo-section-head">⭐ Istaknuti oglasi</div>
                 <div class="listings compact-list">
-                    <?php foreach ($promotedAds as $ad): ?>
-                        <?php require __DIR__ . '/partials/ad-card.php'; ?>
+                    <?php foreach ($promotedAds as $pi => $ad): ?>
+                        <?php $cardImgPriority = $pi < 2; require __DIR__ . '/partials/ad-card.php'; $cardImgPriority = false; ?>
                     <?php endforeach; ?>
                 </div>
             </div>
@@ -249,8 +256,8 @@ require __DIR__ . '/partials/layout-start.php';
         </div>
 
         <div class="listings view-list" data-listings>
-            <?php foreach ($ads as $ad): ?>
-                <?php require __DIR__ . '/partials/ad-card.php'; ?>
+            <?php foreach ($ads as $ai => $ad): ?>
+                <?php $cardImgPriority = $ai < 3 && $promotedAds === []; require __DIR__ . '/partials/ad-card.php'; $cardImgPriority = false; ?>
             <?php endforeach; ?>
         </div>
 

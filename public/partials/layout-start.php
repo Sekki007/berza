@@ -52,9 +52,13 @@ $compareCount = count(compareIds());
     <meta name="twitter:image" content="<?= h($pageImage) ?>">
     <meta name="twitter:title" content="<?= h($pageTitle) ?>">
     <meta name="twitter:description" content="<?= h($pageDescription) ?>">
-    <link rel="stylesheet" href="/assets/css/style.css?v=20260729j">
+    <link rel="preload" href="/assets/css/style.css?v=20260730a" as="style">
+    <link rel="stylesheet" href="/assets/css/style.css?v=20260730a">
     <link rel="icon" type="image/png" href="/assets/img/favicon.png">
     <link rel="apple-touch-icon" href="/assets/img/logo-mark.png">
+    <?php if (!empty($preloadImage)): ?>
+        <link rel="preload" as="image" href="<?= h((string)$preloadImage) ?>" fetchpriority="high">
+    <?php endif; ?>
     <?php if (!empty($jsonLd) && is_array($jsonLd)): ?>
         <?php
         $jsonLdBlocks = (isset($jsonLd[0]) && is_array($jsonLd[0]) && !isset($jsonLd['@context']))

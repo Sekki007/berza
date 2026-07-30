@@ -46,32 +46,33 @@ function adImagePublicPath(string $url): string
 }
 
 /**
- * URL male slike za listing kartice (~400px, WebP ako je moguće).
- * Ako thumb ne postoji, pravi ga iz originala (za stare oglase).
+ * URL derivata slike (WebP/JPEG). $suffix npr. "_t" ili "_d".
+ * Ako ne postoji, pravi ga iz originala.
  */
-function adListingThumbUrl(string $imageUrl): string
+function adImageVariantUrl(string $imageUrl, string $suffix, int $maxEdge = 400, int $quality = 78): string
 {
     $imageUrl = trim($imageUrl);
-    if ($imageUrl === '' || !str_starts_with($imageUrl, '/uploads/')) {
+    $suffix = trim($suffix);
+    if ($imageUrl === '' || $suffix === '' || !str_starts_with($imageUrl, '/uploads/')) {
         return $imageUrl;
     }
 
     $info = pathinfo($imageUrl);
     $dir = (string)($info['dirname'] ?? '');
     $base = (string)($info['filename'] ?? '');
-    if ($dir === '' || $base === '' || str_ends_with($base, '_t')) {
+    if ($dir === '' || $base === '' || str_ends_with($base, '_t') || str_ends_with($base, '_d')) {
         return $imageUrl;
     }
 
-    $thumbWebp = $dir . '/' . $base . '_t.webp';
-    $thumbJpg = $dir . '/' . $base . '_t.jpg';
-    $fsWebp = adImagePublicPath($thumbWebp);
-    $fsJpg = adImagePublicPath($thumbJpg);
+    $webpUrl = $dir . '/' . $base . $suffix . '.webp';
+    $jpgUrl = $dir . '/' . $base . $suffix . '.jpg';
+    $fsWebp = adImagePublicPath($webpUrl);
+    $fsJpg = adImagePublicPath($jpgUrl);
     if (is_file($fsWebp)) {
-        return $thumbWebp;
+        return $webpUrl;
     }
     if (is_file($fsJpg)) {
-        return $thumbJpg;
+        return $jpgUrl;
     }
 
     $srcFs = adImagePublicPath($imageUrl);
@@ -81,11 +82,23 @@ function adListingThumbUrl(string $imageUrl): string
 
     $preferWebp = function_exists('imagewebp');
     $destFs = $preferWebp ? $fsWebp : $fsJpg;
-    $destUrl = $preferWebp ? $thumbWebp : $thumbJpg;
-    if (createImageDerivative($srcFs, $destFs, 400, 78)) {
+    $destUrl = $preferWebp ? $webpUrl : $jpgUrl;
+    if (createImageDerivative($srcFs, $destFs, $maxEdge, $quality)) {
         return $destUrl;
     }
     return $imageUrl;
+}
+
+/** Listing kartice (~400px). */
+function adListingThumbUrl(string $imageUrl): string
+{
+    return adImageVariantUrl($imageUrl, '_t', 400, 78);
+}
+
+/** Galerija na detail stranici (~800px); lightbox i dalje koristi original. */
+function adGalleryDisplayUrl(string $imageUrl): string
+{
+    return adImageVariantUrl($imageUrl, '_d', 800, 80);
 }
 
 function adPrimaryListingThumb(array $ad): ?string
@@ -213,12 +226,9 @@ function handleAdImageUploads(int $adId, array $existing = []): array
         $dest = $targetDir . '/' . $name;
         if (compressAndSaveImage($tmp, $dest, $type)) {
             $url = '/uploads/ads/' . $adId . '/' . $name;
-            // Listing thumb (~400px) — WebP ako je dostupno
-            if (function_exists('imagewebp')) {
-                createImageDerivative($dest, $targetDir . '/img_' . $stamp . '_t.webp', 400, 78);
-            } else {
-                createImageDerivative($dest, $targetDir . '/img_' . $stamp . '_t.jpg', 400, 78);
-            }
+            $ext = function_exists('imagewebp') ? 'webp' : 'jpg';
+            createImageDerivative($dest, $targetDir . '/img_' . $stamp . '_t.' . $ext, 400, 78);
+            createImageDerivative($dest, $targetDir . '/img_' . $stamp . '_d.' . $ext, 800, 80);
             $images[] = $url;
         }
     }

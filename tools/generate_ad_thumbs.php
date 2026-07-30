@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 /**
- * Jednokratno: napravi listing thumb-ove za postojeće oglase.
+ * Jednokratno: napravi listing (_t) i gallery (_d) derivate za postojeće oglase.
  * Pokretanje: php tools/generate_ad_thumbs.php
  */
 
@@ -20,21 +20,29 @@ foreach ($ads as $ad) {
         if (!is_string($img) || $img === '') {
             continue;
         }
-        $before = $img;
-        $thumb = adListingThumbUrl($img);
-        if ($thumb !== $before && $thumb !== '') {
-            $done++;
-            echo "OK  {$img} -> {$thumb}\n";
-        } elseif ($thumb === $before) {
-            $src = adImagePublicPath($img);
-            if (!is_file($src)) {
-                $fail++;
-                echo "MISS {$img}\n";
-            } else {
-                $skip++;
+        $src = adImagePublicPath($img);
+        if (!is_file($src)) {
+            $fail++;
+            echo "MISS {$img}\n";
+            continue;
+        }
+        $variants = [
+            adListingThumbUrl($img),
+            adGalleryDisplayUrl($img),
+        ];
+        $made = false;
+        foreach ($variants as $variant) {
+            if ($variant !== $img && $variant !== '') {
+                $made = true;
+                echo "OK  {$img} -> {$variant}\n";
             }
+        }
+        if ($made) {
+            $done++;
+        } else {
+            $skip++;
         }
     }
 }
 
-echo "\nDone. created/updated≈{$done}, already_ok≈{$skip}, missing≈{$fail}\n";
+echo "\nDone. images_with_variants≈{$done}, already_ok≈{$skip}, missing≈{$fail}\n";

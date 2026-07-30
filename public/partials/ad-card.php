@@ -3,6 +3,7 @@
 $type = getAdType($ad);
 $img = adPrimaryListingThumb($ad);
 $isSold = !empty($ad['is_sold']);
+$cardImgPriority = !empty($cardImgPriority);
 $isPromoted = function_exists('isAdTopActive') ? isAdTopActive($ad) : !empty($ad['is_promoted']);
 $isHighlighted = function_exists('isAdHighlighted') ? isAdHighlighted($ad) : !empty($ad['is_highlighted']);
 $adHref = adUrl($ad);
@@ -30,8 +31,9 @@ $rsdHint = !$priceOpen ? formatAdPriceRsd($ad) : '';
                         alt=""
                         width="400"
                         height="400"
-                        loading="lazy"
+                        loading="<?= $cardImgPriority ? 'eager' : 'lazy' ?>"
                         decoding="async"
+                        <?php if ($cardImgPriority): ?>fetchpriority="high"<?php endif; ?>
                         class="listing-thumb-img"
                     >
                 <?php else: ?>

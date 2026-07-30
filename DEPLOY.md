@@ -35,6 +35,14 @@ server {
         try_files $uri $uri/ /index.php?$query_string;
     }
 
+    # Dugo keširanje statičkih fajlova (PageSpeed: cache policy)
+    location ~* ^/(assets|uploads)/ {
+        expires 30d;
+        add_header Cache-Control "public, max-age=2592000";
+        access_log off;
+        try_files $uri =404;
+    }
+
     location ~ \.php$ {
         include snippets/fastcgi-php.conf;
         fastcgi_pass unix:/run/php/php8.3-fpm.sock;

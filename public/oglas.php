@@ -128,6 +128,10 @@ if ($ogRel !== '' && $ogRel === $ogCachedRel) {
 } else {
     $pageImage = '';
 }
+$galleryDisplay = array_map(static fn($img) => adGalleryDisplayUrl((string)$img), $images);
+if ($galleryDisplay !== []) {
+    $preloadImage = $galleryDisplay[0];
+}
 $canonicalUrl = absoluteUrl(adUrl($ad));
 $ogType = 'product';
 $jsonLd = seoAdJsonLd($ad, $seller);
@@ -289,9 +293,17 @@ $contactBlock = static function (string $formId = 'poruka') use (
             <?php if ($images): ?>
                 <div class="kp-gallery-track" id="gallery-track">
                     <?php foreach ($images as $i => $img): ?>
+                        <?php $displaySrc = $galleryDisplay[$i] ?? (string)$img; ?>
                         <div class="kp-gallery-slide">
                             <button type="button" class="kp-gallery-zoom" data-lightbox-open="<?= $i ?>" aria-label="Uvećaj sliku">
-                                <img src="<?= h((string)$img) ?>" alt="<?= h((string)$ad['title']) ?>" <?= $i === 0 ? 'id="gallery-main"' : '' ?>>
+                                <img
+                                    src="<?= h($displaySrc) ?>"
+                                    alt="<?= h((string)$ad['title']) ?>"
+                                    width="800"
+                                    height="800"
+                                    decoding="async"
+                                    <?= $i === 0 ? 'id="gallery-main" fetchpriority="high"' : 'loading="lazy"' ?>
+                                >
                             </button>
                         </div>
                     <?php endforeach; ?>
