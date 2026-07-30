@@ -1,7 +1,7 @@
 <?php
 /** @var array $ad */
 $type = getAdType($ad);
-$img = adPrimaryImage($ad);
+$img = adPrimaryListingThumb($ad);
 $isSold = !empty($ad['is_sold']);
 $isPromoted = function_exists('isAdTopActive') ? isAdTopActive($ad) : !empty($ad['is_promoted']);
 $isHighlighted = function_exists('isAdHighlighted') ? isAdHighlighted($ad) : !empty($ad['is_highlighted']);
@@ -25,7 +25,15 @@ $rsdHint = !$priceOpen ? formatAdPriceRsd($ad) : '';
         <div class="listing-inner kp-list-inner">
             <div class="listing-thumb kp-list-thumb">
                 <?php if ($img): ?>
-                    <img src="<?= h($img) ?>" alt="" loading="lazy" class="listing-thumb-img">
+                    <img
+                        src="<?= h($img) ?>"
+                        alt=""
+                        width="400"
+                        height="400"
+                        loading="lazy"
+                        decoding="async"
+                        class="listing-thumb-img"
+                    >
                 <?php else: ?>
                     <div class="<?= $type === 'telefon' ? 'phone-silhouette' : 'parts-icon' ?>">
                         <?= $type === 'telefon' ? '' : strtoupper($categoryLabel) ?>

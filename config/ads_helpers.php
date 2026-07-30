@@ -38,6 +38,121 @@ function adPrimaryImage(array $ad): ?string
     return null;
 }
 
+/** Apsolutna putanja fajla u public/ za /uploads/... URL. */
+function adImagePublicPath(string $url): string
+{
+    $url = '/' . ltrim(str_replace('\\', '/', $url), '/');
+    return dirname(__DIR__) . '/public' . $url;
+}
+
+/**
+ * URL male slike za listing kartice (~400px, WebP ako je moguće).
+ * Ako thumb ne postoji, pravi ga iz originala (za stare oglase).
+ */
+function adListingThumbUrl(string $imageUrl): string
+{
+    $imageUrl = trim($imageUrl);
+    if ($imageUrl === '' || !str_starts_with($imageUrl, '/uploads/')) {
+        return $imageUrl;
+    }
+
+    $info = pathinfo($imageUrl);
+    $dir = (string)($info['dirname'] ?? '');
+    $base = (string)($info['filename'] ?? '');
+    if ($dir === '' || $base === '' || str_ends_with($base, '_t')) {
+        return $imageUrl;
+    }
+
+    $thumbWebp = $dir . '/' . $base . '_t.webp';
+    $thumbJpg = $dir . '/' . $base . '_t.jpg';
+    $fsWebp = adImagePublicPath($thumbWebp);
+    $fsJpg = adImagePublicPath($thumbJpg);
+    if (is_file($fsWebp)) {
+        return $thumbWebp;
+    }
+    if (is_file($fsJpg)) {
+        return $thumbJpg;
+    }
+
+    $srcFs = adImagePublicPath($imageUrl);
+    if (!is_file($srcFs)) {
+        return $imageUrl;
+    }
+
+    $preferWebp = function_exists('imagewebp');
+    $destFs = $preferWebp ? $fsWebp : $fsJpg;
+    $destUrl = $preferWebp ? $thumbWebp : $thumbJpg;
+    if (createImageDerivative($srcFs, $destFs, 400, 78)) {
+        return $destUrl;
+    }
+    return $imageUrl;
+}
+
+function adPrimaryListingThumb(array $ad): ?string
+{
+    $img = adPrimaryImage($ad);
+    if ($img === null || $img === '') {
+        return null;
+    }
+    return adListingThumbUrl($img);
+}
+
+/**
+ * Pravi umanjeni derivat (JPEG ili WebP po ekstenziji destinacije).
+ */
+function createImageDerivative(string $srcPath, string $destPath, int $maxEdge = 400, int $quality = 78): bool
+{
+    if (!function_exists('imagecreatetruecolor') || !is_file($srcPath)) {
+        return false;
+    }
+
+    $mime = mime_content_type($srcPath) ?: '';
+    $src = match (true) {
+        str_contains($mime, 'png') => @imagecreatefrompng($srcPath),
+        str_contains($mime, 'webp') && function_exists('imagecreatefromwebp') => @imagecreatefromwebp($srcPath),
+        str_contains($mime, 'gif') => @imagecreatefromgif($srcPath),
+        default => @imagecreatefromjpeg($srcPath),
+    };
+    if ($src === false) {
+        return false;
+    }
+
+    $w = imagesx($src);
+    $h = imagesy($src);
+    if ($w < 1 || $h < 1) {
+        imagedestroy($src);
+        return false;
+    }
+
+    $scale = min(1.0, $maxEdge / max($w, $h));
+    $nw = max(1, (int)round($w * $scale));
+    $nh = max(1, (int)round($h * $scale));
+    $dst = imagecreatetruecolor($nw, $nh);
+    if ($dst === false) {
+        imagedestroy($src);
+        return false;
+    }
+    $white = imagecolorallocate($dst, 255, 255, 255);
+    imagefilledrectangle($dst, 0, 0, $nw, $nh, $white);
+    imagecopyresampled($dst, $src, 0, 0, 0, 0, $nw, $nh, $w, $h);
+    imagedestroy($src);
+
+    $dir = dirname($destPath);
+    if (!is_dir($dir)) {
+        mkdir($dir, 0777, true);
+    }
+
+    $ext = strtolower(pathinfo($destPath, PATHINFO_EXTENSION));
+    $ok = false;
+    if ($ext === 'webp' && function_exists('imagewebp')) {
+        $ok = @imagewebp($dst, $destPath, $quality);
+    } else {
+        $ok = @imagejpeg($dst, $destPath, $quality);
+    }
+    imagedestroy($dst);
+    return (bool)$ok;
+}
+
 function handleAdImageUploads(int $adId, array $existing = []): array
 {
     ensureUploadsDir();
@@ -93,10 +208,18 @@ function handleAdImageUploads(int $adId, array $existing = []): array
             continue;
         }
 
-        $name = 'img_' . time() . '_' . $i . '.jpg';
+        $stamp = time() . '_' . $i;
+        $name = 'img_' . $stamp . '.jpg';
         $dest = $targetDir . '/' . $name;
         if (compressAndSaveImage($tmp, $dest, $type)) {
-            $images[] = '/uploads/ads/' . $adId . '/' . $name;
+            $url = '/uploads/ads/' . $adId . '/' . $name;
+            // Listing thumb (~400px) — WebP ako je dostupno
+            if (function_exists('imagewebp')) {
+                createImageDerivative($dest, $targetDir . '/img_' . $stamp . '_t.webp', 400, 78);
+            } else {
+                createImageDerivative($dest, $targetDir . '/img_' . $stamp . '_t.jpg', 400, 78);
+            }
+            $images[] = $url;
         }
     }
 
@@ -104,7 +227,7 @@ function handleAdImageUploads(int $adId, array $existing = []): array
 }
 
 /**
- * Kompresuje i smanjuje sliku (max 1600px, JPEG ~82%). Fallback: move_uploaded_file.
+ * Kompresuje i smanjuje sliku (max 1200px, JPEG ~78%). Fallback: move_uploaded_file.
  */
 function compressAndSaveImage(string $tmpPath, string $destPath, string $mime): bool
 {
@@ -124,7 +247,7 @@ function compressAndSaveImage(string $tmpPath, string $destPath, string $mime): 
 
     $w = imagesx($src);
     $h = imagesy($src);
-    $max = 1600;
+    $max = 1200;
     if ($w > $max || $h > $max) {
         $ratio = min($max / max(1, $w), $max / max(1, $h));
         $nw = max(1, (int)round($w * $ratio));
@@ -137,7 +260,7 @@ function compressAndSaveImage(string $tmpPath, string $destPath, string $mime): 
         $src = $dst;
     }
 
-    $ok = imagejpeg($src, $destPath, 82);
+    $ok = imagejpeg($src, $destPath, 78);
     imagedestroy($src);
     return (bool)$ok;
 }

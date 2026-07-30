@@ -681,7 +681,7 @@ require __DIR__ . '/partials/layout-start.php';
                             $type = getAdType($ad);
                             $statusLabel = !empty($ad['is_sold']) ? 'Prodato' : ((int)($ad['is_active'] ?? 0) === 1 ? 'Aktivan' : 'Neaktivan');
                             $statusClass = !empty($ad['is_sold']) ? 'is-sold' : ((int)($ad['is_active'] ?? 0) === 1 ? 'is-active' : 'is-off');
-                            $img = adPrimaryImage($ad);
+                            $img = adPrimaryListingThumb($ad);
                             $daysLeft = $expiryOn ? adDaysRemaining($ad) : null;
                             $topActive = isAdTopActive($ad);
                             $hiActive = isAdHighlighted($ad);

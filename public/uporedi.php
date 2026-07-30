@@ -70,7 +70,7 @@ require __DIR__ . '/partials/layout-start.php';
                             <?php foreach ($ads as $ad): ?>
                                 <th>
                                     <a href="<?= h(adUrl($ad)) ?>">
-                                        <?php $img = adPrimaryImage($ad); ?>
+                                        <?php $img = adPrimaryListingThumb($ad); ?>
                                         <?php if ($img): ?>
                                             <img class="compare-thumb" src="<?= h($img) ?>" alt="">
                                         <?php endif; ?>
