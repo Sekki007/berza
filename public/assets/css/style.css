@@ -121,21 +121,21 @@ body.account-menu-open{overflow:hidden;}
 
 /* Početna — brzi ulaz u kategorije */
 .home-cat-tiles{
-  display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;
-  margin:0 0 12px;padding:0;
+  display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;
+  margin:0 0 10px;padding:0;
 }
 .home-cat-tile{
-  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:6px;
-  min-height:78px;padding:12px 8px;background:#fff;border:1px solid var(--border);
-  border-radius:12px;text-decoration:none;color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.04);
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+  min-height:64px;padding:8px 4px;background:#fff;border:1px solid var(--border);
+  border-radius:10px;text-decoration:none;color:var(--text);box-shadow:0 1px 2px rgba(0,0,0,.04);
   transition:border-color .15s ease, background .15s ease, transform .15s ease;
 }
 .home-cat-tile:hover{text-decoration:none;transform:translateY(-1px);}
 .home-cat-tile-icon{
-  width:40px;height:40px;border-radius:10px;display:inline-flex;align-items:center;justify-content:center;
+  width:32px;height:32px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;
 }
-.home-cat-tile-icon svg{width:24px;height:24px;display:block;}
-.home-cat-tile-label{font-size:13px;font-weight:700;line-height:1.2;text-align:center;}
+.home-cat-tile-icon svg{width:18px;height:18px;display:block;}
+.home-cat-tile-label{font-size:11px;font-weight:700;line-height:1.15;text-align:center;}
 .home-cat-tile.is-phone .home-cat-tile-icon{background:var(--cat-phone);color:var(--cat-phone-text);}
 .home-cat-tile.is-parts .home-cat-tile-icon{background:var(--cat-parts);color:var(--cat-parts-text);}
 .home-cat-tile.is-gear .home-cat-tile-icon{background:#e0f7fa;color:#006978;}
@@ -145,8 +145,8 @@ body.account-menu-open{overflow:hidden;}
 .home-cat-tile.is-gear.is-active,.home-cat-tile.is-gear:hover{border-color:#00838f;background:#f0fbfd;}
 .home-cat-tile.is-service.is-active,.home-cat-tile.is-service:hover{border-color:#d4a800;background:#fffdf5;}
 @media (min-width:700px){
-  .home-cat-tiles{grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-bottom:14px;}
-  .home-cat-tile{min-height:92px;padding:14px 10px;border-radius:14px;}
+  .home-cat-tiles{gap:12px;margin-bottom:14px;}
+  .home-cat-tile{min-height:92px;padding:14px 10px;border-radius:14px;gap:6px;}
   .home-cat-tile-icon{width:48px;height:48px;border-radius:12px;}
   .home-cat-tile-icon svg{width:28px;height:28px;}
   .home-cat-tile-label{font-size:14px;}
