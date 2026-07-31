@@ -232,7 +232,7 @@ if ($user) {
         <nav class="mobile-bar">
             <a href="/index.php" data-nav="oglasi" class="<?= $activePage === 'oglasi' ? 'active' : '' ?>"><span class="mobile-bar-icon">🏠</span><span>Oglasi</span></a>
             <a href="/index.php#search" data-nav="pretraga" data-focus-search class="<?= $activePage === 'pretraga' ? 'active' : '' ?>"><span class="mobile-bar-icon">🔎</span><span>Pretraga</span></a>
-            <a href="<?= $user ? '/ad_form.php' : '/login.php' ?>" data-nav="dodaj" class="<?= $activePage === 'dodaj' ? 'active' : '' ?>"><span class="mobile-bar-icon">＋</span><span>Dodaj</span></a>
+            <a href="<?= $user ? '/ad_form.php' : '/login.php' ?>" data-nav="dodaj" class="mobile-bar-add <?= $activePage === 'dodaj' ? 'active' : '' ?>"><span class="mobile-bar-icon">＋</span><span>Dodaj</span></a>
             <a href="<?= $user ? '/poruke.php' : '/login.php' ?>" data-nav="poruke" class="nav-with-badge <?= $activePage === 'poruke' ? 'active' : '' ?>"><span class="mobile-bar-icon">💬</span><span>Poruke</span><?= $user ? renderUnreadBadge($unreadMessages) : '' ?></a>
             <button type="button" data-nav="nalog" data-open-account-menu class="mobile-bar-account nav-with-badge <?= $activePage === 'nalog' ? 'active' : '' ?>" aria-label="Nalog meni" aria-expanded="false" aria-controls="mobile-account-menu">
                 <span class="mobile-bar-icon">👤</span>
