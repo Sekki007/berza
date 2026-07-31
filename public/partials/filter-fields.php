@@ -28,6 +28,9 @@ $uid = $filterLayout === 'drawer' ? 'm' : 'd';
 <?php if ($categoryGroup !== ''): ?>
     <input type="hidden" name="category_group" value="<?= h($categoryGroup) ?>">
 <?php endif; ?>
+<?php if (!empty($equipmentGroup)): ?>
+    <input type="hidden" name="equipment_group" value="<?= h((string)$equipmentGroup) ?>">
+<?php endif; ?>
 
 <div class="filter-field">
     <span class="filter-label" id="filter-type-<?= h($uid) ?>">Tip oglasa</span>

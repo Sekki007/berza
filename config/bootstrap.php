@@ -466,6 +466,34 @@ function getAdType(array $ad): string
     return adTypeFromCategory((string)($ad['category'] ?? ''));
 }
 
+/** Tipovi opreme koji spadaju u „Delovi“ (rezervni delovi). */
+function equipmentPartsTypes(): array
+{
+    return ['Rezervni delovi'];
+}
+
+/** Tipovi opreme koji spadaju u „Oprema“ (maske, punjači…). */
+function equipmentOpremaTypes(): array
+{
+    return ['Maska/Futrola', 'Zaštitno staklo', 'Punjač/Kabl', 'Slušalice', 'PowerBank', 'Ostalo'];
+}
+
+/**
+ * Podgrupa za tip=delovi: parts | oprema.
+ * Rezervni delovi → parts; sve ostalo (uključujući prazno) → oprema.
+ */
+function adEquipmentGroup(array $ad): string
+{
+    if (getAdType($ad) !== 'delovi') {
+        return '';
+    }
+    $eq = trim((string)($ad['equipment_type'] ?? ''));
+    if (in_array($eq, equipmentPartsTypes(), true)) {
+        return 'parts';
+    }
+    return 'oprema';
+}
+
 function adTypeLabel(string $type): string
 {
     return match ($type) {
@@ -830,6 +858,16 @@ function getPublicAds(array $filters = []): array
     if ($deviceType !== '') {
         $ads = array_filter($ads, static function ($ad) use ($deviceType) {
             return getAdType($ad) === 'telefon' && getAdDeviceType($ad) === $deviceType;
+        });
+    }
+
+    $equipmentGroup = trim((string)($filters['equipment_group'] ?? ''));
+    if (in_array($equipmentGroup, ['parts', 'oprema'], true)) {
+        $ads = array_filter($ads, static function ($ad) use ($equipmentGroup) {
+            if (getAdType($ad) !== 'delovi') {
+                return false;
+            }
+            return adEquipmentGroup($ad) === $equipmentGroup;
         });
     }
 

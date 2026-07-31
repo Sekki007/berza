@@ -16,12 +16,19 @@ $condition = trim((string)($_GET['condition'] ?? ''));
 $categoryGroup = trim((string)($_GET['category_group'] ?? ''));
 $type = trim((string)($_GET['type'] ?? ''));
 $deviceType = trim((string)($_GET['device_type'] ?? ''));
+$equipmentGroup = trim((string)($_GET['equipment_group'] ?? ''));
 $schema = adFormSchema();
 if (!in_array($type, ['telefon', 'delovi', 'servis'], true)) {
     $type = '';
 }
 if ($deviceType !== '' && !in_array($deviceType, allowedDeviceTypes(), true)) {
     $deviceType = '';
+}
+if (!in_array($equipmentGroup, ['parts', 'oprema'], true)) {
+    $equipmentGroup = '';
+}
+if ($equipmentGroup !== '' && $type === '') {
+    $type = 'delovi';
 }
 $sort = trim((string)($_GET['sort'] ?? 'newest'));
 $page = max(1, (int)($_GET['page'] ?? 1));
@@ -37,6 +44,7 @@ $filters = [
     'condition' => $condition,
     'category_group' => $categoryGroup,
     'device_type' => $deviceType,
+    'equipment_group' => $equipmentGroup,
     'types' => $type !== '' ? [$type] : [],
     'sort' => $sort,
 ];
@@ -61,6 +69,7 @@ $queryBase = array_filter([
     'condition' => $condition,
     'category_group' => $categoryGroup,
     'device_type' => $deviceType,
+    'equipment_group' => $equipmentGroup,
     'type' => $type,
     'sort' => $sort,
 ], static fn($v) => $v !== '');
@@ -90,33 +99,45 @@ if ($lcpThumb) {
 }
 
 $typeLabels = [
-    'telefon' => 'Uređaji',
-    'delovi' => 'Oprema',
+    'telefon' => 'Telefoni',
+    'delovi' => 'Delovi / oprema',
     'servis' => 'Servis',
 ];
-$hasFilters = $search !== '' || $brand !== '' || $model !== '' || $location !== '' || $condition !== '' || $type !== '' || $deviceType !== '' || $minPrice !== '' || $maxPrice !== '' || $categoryGroup !== '';
+$equipmentGroupLabels = [
+    'parts' => 'Delovi',
+    'oprema' => 'Oprema',
+];
+$hasFilters = $search !== '' || $brand !== '' || $model !== '' || $location !== '' || $condition !== '' || $type !== '' || $deviceType !== '' || $equipmentGroup !== '' || $minPrice !== '' || $maxPrice !== '' || $categoryGroup !== '';
 $activeFilterCount = 0;
-foreach ([$brand, $model, $location, $condition, $type, $deviceType, $minPrice, $maxPrice, $categoryGroup] as $fv) {
+foreach ([$brand, $model, $location, $condition, $type, $deviceType, $equipmentGroup, $minPrice, $maxPrice, $categoryGroup] as $fv) {
     if ($fv !== '') {
         $activeFilterCount++;
     }
 }
 $resetFiltersUrl = '/index.php' . ($search !== '' ? ('?' . http_build_query(['q' => $search])) : '');
 $activeChips = [];
-$chipDefs = [
-    ['key' => 'type', 'value' => $type, 'label' => $typeLabels[$type] ?? $type],
+$chipDefs = [];
+if ($equipmentGroup !== '') {
+    $chipDefs[] = ['key' => 'equipment_group', 'value' => $equipmentGroup, 'label' => $equipmentGroupLabels[$equipmentGroup] ?? $equipmentGroup, 'also_unset' => ['type']];
+} elseif ($type !== '') {
+    $chipDefs[] = ['key' => 'type', 'value' => $type, 'label' => $typeLabels[$type] ?? $type];
+}
+$chipDefs = array_merge($chipDefs, [
     ['key' => 'device_type', 'value' => $deviceType, 'label' => (string)($schema['device_types'][$deviceType] ?? $deviceType)],
     ['key' => 'brand', 'value' => $brand, 'label' => $brand],
     ['key' => 'model', 'value' => $model, 'label' => $model],
     ['key' => 'location', 'value' => $location, 'label' => $location],
     ['key' => 'condition', 'value' => $condition, 'label' => $condition],
-];
+]);
 foreach ($chipDefs as $chip) {
     if ($chip['value'] === '') {
         continue;
     }
     $params = $queryBase;
     unset($params[$chip['key']], $params['page']);
+    foreach ((array)($chip['also_unset'] ?? []) as $extraKey) {
+        unset($params[$extraKey]);
+    }
     $qs = buildFilterQuery($params);
     $activeChips[] = [
         'label' => $chip['label'],
@@ -177,26 +198,42 @@ require __DIR__ . '/partials/layout-start.php';
             $homeCats = [
                 [
                     'type' => 'telefon',
+                    'equipment_group' => '',
                     'label' => 'Telefoni',
                     'class' => 'is-phone',
                     'icon' => '<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><rect x="10" y="6" width="18" height="32" rx="3" fill="none" stroke="currentColor" stroke-width="2.4"/><rect x="20" y="12" width="18" height="32" rx="3" fill="currentColor" opacity=".92"/><rect x="25" y="16" width="8" height="2.2" rx="1" fill="#fff" opacity=".9"/></svg>',
                 ],
                 [
                     'type' => 'delovi',
+                    'equipment_group' => 'parts',
                     'label' => 'Delovi',
                     'class' => 'is-parts',
-                    'icon' => '<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><rect x="6" y="10" width="16" height="28" rx="2.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M28 18h8.5a3 3 0 0 1 3 3v2.5H44v5h-4.5V31a3 3 0 0 1-3 3H28" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M28 22h6v8h-6" fill="currentColor"/></svg>',
+                    'icon' => '<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><rect x="8" y="8" width="14" height="26" rx="2" fill="none" stroke="currentColor" stroke-width="2.3"/><path d="M28 14h12v6H28zm2 10h8v14h-8z" fill="currentColor"/><circle cx="15" cy="37" r="2.2" fill="currentColor"/></svg>',
+                ],
+                [
+                    'type' => 'delovi',
+                    'equipment_group' => 'oprema',
+                    'label' => 'Oprema',
+                    'class' => 'is-gear',
+                    'icon' => '<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M14 10h12a3 3 0 0 1 3 3v22a3 3 0 0 1-3 3H14a3 3 0 0 1-3-3V13a3 3 0 0 1 3-3z" fill="none" stroke="currentColor" stroke-width="2.3"/><path d="M30 18h10.5a2.5 2.5 0 0 1 2.5 2.5V24H46v6h-3v3.5a2.5 2.5 0 0 1-2.5 2.5H30" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/><path d="M30 22h8v10h-8z" fill="currentColor"/></svg>',
                 ],
                 [
                     'type' => 'servis',
+                    'equipment_group' => '',
                     'label' => 'Servis',
                     'class' => 'is-service',
-                    'icon' => '<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M16 10a7 7 0 0 1 8 6.7L34 27l-4.5 4.5-10-10A7 7 0 1 1 16 10Z" fill="currentColor"/><path d="M12 32l7-7 4 4-7 7h-4v-4Z" fill="currentColor"/><path d="M28 12l2.5 2.5-14 14L14 26l14-14Z" fill="currentColor" opacity=".88"/><path d="M31.5 8.5l8 8-3 3-8-8 3-3Z" fill="currentColor"/></svg>',
+                    'icon' => '<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M18 11a7 7 0 0 1 9 6.2L36 26.2 31.2 31 22.4 22.2A7 7 0 1 1 18 11Z" fill="currentColor"/><path d="M14 33.5 20.5 27l3.8 3.8-6.5 6.5H14v-3.8Z" fill="currentColor" opacity=".9"/><rect x="29" y="10" width="3.2" height="14" rx="1.2" transform="rotate(45 30.6 17)" fill="currentColor"/></svg>',
                 ],
             ];
             foreach ($homeCats as $cat):
-                $catHref = '/index.php?type=' . urlencode($cat['type']);
-                $isActive = $type === $cat['type'];
+                $catParams = ['type' => $cat['type']];
+                if ($cat['equipment_group'] !== '') {
+                    $catParams['equipment_group'] = $cat['equipment_group'];
+                }
+                $catHref = '/index.php?' . http_build_query($catParams);
+                $isActive = $type === $cat['type']
+                    && (($cat['equipment_group'] === '' && $equipmentGroup === '')
+                        || $equipmentGroup === $cat['equipment_group']);
             ?>
                 <a class="home-cat-tile <?= h($cat['class']) ?><?= $isActive ? ' is-active' : '' ?>" href="<?= h($catHref) ?>">
                     <span class="home-cat-tile-icon"><?= $cat['icon'] ?></span>
@@ -270,6 +307,7 @@ require __DIR__ . '/partials/layout-start.php';
                             <input type="hidden" name="condition" value="<?= h($condition) ?>">
                             <input type="hidden" name="type" value="<?= h($type) ?>">
                             <input type="hidden" name="device_type" value="<?= h($deviceType) ?>">
+                            <input type="hidden" name="equipment_group" value="<?= h($equipmentGroup) ?>">
                             <input type="hidden" name="min_price" value="<?= h($minPrice) ?>">
                             <input type="hidden" name="max_price" value="<?= h($maxPrice) ?>">
                             <input type="hidden" name="category_group" value="<?= h($categoryGroup) ?>">
