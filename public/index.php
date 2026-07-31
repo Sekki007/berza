@@ -242,22 +242,59 @@ require __DIR__ . '/partials/layout-start.php';
             <?php endforeach; ?>
         </nav>
 
-        <div class="breadcrumb"><a href="/index.php">Početna</a> › Oglasi (<?= (int)$pagination['total'] ?>)</div>
-        <div class="listing-toolbar">
-            <button class="mobile-filter-btn" type="button" data-open-filters>
-                Filteri<?php if ($activeFilterCount > 0): ?> <span class="filter-btn-badge"><?= (int)$activeFilterCount ?></span><?php endif; ?>
-            </button>
-            <form method="GET" class="sort-bar" aria-label="Sortiranje">
-                <?php foreach ($queryBase as $k => $v): if ($k === 'sort' || $k === 'page') continue; ?>
-                    <input type="hidden" name="<?= h($k) ?>" value="<?= h((string)$v) ?>">
-                <?php endforeach; ?>
-                <label class="sort-bar-label" for="listing-sort">Sortiraj</label>
-                <select class="sort-select" id="listing-sort" name="sort" onchange="this.form.submit()">
-                    <option value="newest" <?= $sort === 'newest' ? 'selected' : '' ?>>Najnovije</option>
-                    <option value="price_asc" <?= $sort === 'price_asc' ? 'selected' : '' ?>>Cena rastuće</option>
-                    <option value="price_desc" <?= $sort === 'price_desc' ? 'selected' : '' ?>>Cena opadajuće</option>
-                </select>
-            </form>
+        <div class="breadcrumb listing-breadcrumb"><a href="/index.php">Početna</a> › Oglasi (<?= (int)$pagination['total'] ?>)</div>
+
+        <div class="listing-controls">
+            <div class="listing-toolbar">
+                <button class="mobile-filter-btn" type="button" data-open-filters>
+                    Filteri<?php if ($activeFilterCount > 0): ?> <span class="filter-btn-badge"><?= (int)$activeFilterCount ?></span><?php endif; ?>
+                </button>
+                <form method="GET" class="sort-bar" aria-label="Sortiranje">
+                    <?php foreach ($queryBase as $k => $v): if ($k === 'sort' || $k === 'page') continue; ?>
+                        <input type="hidden" name="<?= h($k) ?>" value="<?= h((string)$v) ?>">
+                    <?php endforeach; ?>
+                    <label class="sort-bar-label" for="listing-sort">Sortiraj</label>
+                    <select class="sort-select" id="listing-sort" name="sort" onchange="this.form.submit()">
+                        <option value="newest" <?= $sort === 'newest' ? 'selected' : '' ?>>Najnovije</option>
+                        <option value="price_asc" <?= $sort === 'price_asc' ? 'selected' : '' ?>>Cena rastuće</option>
+                        <option value="price_desc" <?= $sort === 'price_desc' ? 'selected' : '' ?>>Cena opadajuće</option>
+                    </select>
+                </form>
+                <div class="view-toggle" data-view-toggle aria-label="Prikaz oglasa">
+                    <button type="button" class="view-toggle-btn active" data-view="list" title="Lista" aria-label="Lista" aria-pressed="true">
+                        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/></svg>
+                    </button>
+                    <button type="button" class="view-toggle-btn" data-view="grid" title="Mreža" aria-label="Mreža" aria-pressed="false">
+                        <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M4 4h7v7H4zm9 0h7v7h-7zM4 13h7v7H4zm9 0h7v7h-7z"/></svg>
+                    </button>
+                </div>
+            </div>
+
+            <div class="results-meta">
+                <span class="results-count"><strong data-results-count><?= (int)$pagination['total'] ?></strong> oglasa</span>
+                <?php if ($hasFilters): ?>
+                    <?php if (isLoggedIn()): ?>
+                        <form method="POST" action="/nalog.php" class="save-search-form">
+                            <input type="hidden" name="action" value="save_search">
+                            <input type="hidden" name="q" value="<?= h($search) ?>">
+                            <input type="hidden" name="brand" value="<?= h($brand) ?>">
+                            <input type="hidden" name="model" value="<?= h($model) ?>">
+                            <input type="hidden" name="location" value="<?= h($location) ?>">
+                            <input type="hidden" name="condition" value="<?= h($condition) ?>">
+                            <input type="hidden" name="type" value="<?= h($type) ?>">
+                            <input type="hidden" name="device_type" value="<?= h($deviceType) ?>">
+                            <input type="hidden" name="equipment_group" value="<?= h($equipmentGroup) ?>">
+                            <input type="hidden" name="min_price" value="<?= h($minPrice) ?>">
+                            <input type="hidden" name="max_price" value="<?= h($maxPrice) ?>">
+                            <input type="hidden" name="category_group" value="<?= h($categoryGroup) ?>">
+                            <input type="hidden" name="alert_enabled" value="1">
+                            <button class="results-save-link" type="submit">Sačuvaj pretragu</button>
+                        </form>
+                    <?php else: ?>
+                        <a class="results-save-link" href="/login.php">Sačuvaj pretragu</a>
+                    <?php endif; ?>
+                <?php endif; ?>
+            </div>
         </div>
 
         <?php if ($activeChips !== []): ?>
@@ -292,39 +329,6 @@ require __DIR__ . '/partials/layout-start.php';
             </div>
             <?php endif; ?>
         <?php endif; ?>
-
-        <div class="results-bar">
-            <span class="results-count">Pronađeno: <strong data-results-count><?= (int)$pagination['total'] ?></strong> oglasa</span>
-            <div class="results-bar-right">
-                <?php if ($hasFilters): ?>
-                    <?php if (isLoggedIn()): ?>
-                        <form method="POST" action="/nalog.php" class="save-search-form">
-                            <input type="hidden" name="action" value="save_search">
-                            <input type="hidden" name="q" value="<?= h($search) ?>">
-                            <input type="hidden" name="brand" value="<?= h($brand) ?>">
-                            <input type="hidden" name="model" value="<?= h($model) ?>">
-                            <input type="hidden" name="location" value="<?= h($location) ?>">
-                            <input type="hidden" name="condition" value="<?= h($condition) ?>">
-                            <input type="hidden" name="type" value="<?= h($type) ?>">
-                            <input type="hidden" name="device_type" value="<?= h($deviceType) ?>">
-                            <input type="hidden" name="equipment_group" value="<?= h($equipmentGroup) ?>">
-                            <input type="hidden" name="min_price" value="<?= h($minPrice) ?>">
-                            <input type="hidden" name="max_price" value="<?= h($maxPrice) ?>">
-                            <input type="hidden" name="category_group" value="<?= h($categoryGroup) ?>">
-                            <input type="hidden" name="alert_enabled" value="1">
-                            <button class="btn-sm" type="submit" title="Sačuvaj pretragu i alert">Sačuvaj pretragu</button>
-                        </form>
-                    <?php else: ?>
-                        <a class="btn-sm" href="/login.php">Sačuvaj pretragu</a>
-                    <?php endif; ?>
-                <?php endif; ?>
-                <div class="view-toggle" data-view-toggle aria-label="Prikaz oglasa">
-                    <button type="button" class="view-toggle-btn active" data-view="list" title="Lista" aria-pressed="true">Lista</button>
-                    <button type="button" class="view-toggle-btn" data-view="grid" title="Mreža" aria-pressed="false">Mreža</button>
-                </div>
-                <span class="results-page">Strana <?= (int)$pagination['page'] ?> / <?= (int)$pagination['pages'] ?></span>
-            </div>
-        </div>
 
         <div class="listings view-list" data-listings>
             <?php foreach ($ads as $ai => $ad): ?>
