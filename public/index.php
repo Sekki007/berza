@@ -172,6 +172,39 @@ require __DIR__ . '/partials/layout-start.php';
     </aside>
 
     <main class="content">
+        <nav class="home-cat-tiles" aria-label="Kategorije">
+            <?php
+            $homeCats = [
+                [
+                    'type' => 'telefon',
+                    'label' => 'Telefoni',
+                    'class' => 'is-phone',
+                    'icon' => '<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><rect x="10" y="6" width="18" height="32" rx="3" fill="none" stroke="currentColor" stroke-width="2.4"/><rect x="20" y="12" width="18" height="32" rx="3" fill="currentColor" opacity=".92"/><rect x="25" y="16" width="8" height="2.2" rx="1" fill="#fff" opacity=".9"/></svg>',
+                ],
+                [
+                    'type' => 'delovi',
+                    'label' => 'Delovi',
+                    'class' => 'is-parts',
+                    'icon' => '<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><rect x="6" y="10" width="16" height="28" rx="2.5" fill="none" stroke="currentColor" stroke-width="2.4"/><path d="M28 18h8.5a3 3 0 0 1 3 3v2.5H44v5h-4.5V31a3 3 0 0 1-3 3H28" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M28 22h6v8h-6" fill="currentColor"/></svg>',
+                ],
+                [
+                    'type' => 'servis',
+                    'label' => 'Servis',
+                    'class' => 'is-service',
+                    'icon' => '<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M16 10a7 7 0 0 1 8 6.7L34 27l-4.5 4.5-10-10A7 7 0 1 1 16 10Z" fill="currentColor"/><path d="M12 32l7-7 4 4-7 7h-4v-4Z" fill="currentColor"/><path d="M28 12l2.5 2.5-14 14L14 26l14-14Z" fill="currentColor" opacity=".88"/><path d="M31.5 8.5l8 8-3 3-8-8 3-3Z" fill="currentColor"/></svg>',
+                ],
+            ];
+            foreach ($homeCats as $cat):
+                $catHref = '/index.php?type=' . urlencode($cat['type']);
+                $isActive = $type === $cat['type'];
+            ?>
+                <a class="home-cat-tile <?= h($cat['class']) ?><?= $isActive ? ' is-active' : '' ?>" href="<?= h($catHref) ?>">
+                    <span class="home-cat-tile-icon"><?= $cat['icon'] ?></span>
+                    <span class="home-cat-tile-label"><?= h($cat['label']) ?></span>
+                </a>
+            <?php endforeach; ?>
+        </nav>
+
         <div class="breadcrumb"><a href="/index.php">Početna</a> › Oglasi (<?= (int)$pagination['total'] ?>)</div>
         <div class="listing-toolbar">
             <button class="mobile-filter-btn" type="button" data-open-filters>
