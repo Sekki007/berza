@@ -112,17 +112,20 @@ body.account-menu-open{overflow:hidden;}
 .search-suggest-item strong{display:block;font-size:14px;line-height:1.25;}
 .search-suggest-item small{display:block;margin-top:2px;font-size:12px;color:var(--text-muted);}
 .search-suggest-type{font-size:11px;color:var(--text-light);white-space:nowrap;margin-top:2px;}
-.quick-city-chips{display:none;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+.quick-city-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
 .quick-chip{padding:7px 12px;background:#fff;border:1px solid var(--border);border-radius:16px;font-size:12px;color:var(--text);text-decoration:none;}
 .quick-chip.active,.quick-chip:hover{border-color:var(--kp-green);background:#f3faf4;text-decoration:none;color:var(--kp-green-dark);}
 @media (min-width: 768px) {
-  .quick-city-chips{display:flex;}
+  .quick-city-chips{display:none;}
 }
 
 /* Početna — brzi ulaz u kategorije */
+.home-cat-wrap{
+  max-width:1100px;margin:0 auto;padding:12px 12px 0;
+}
 .home-cat-tiles{
   display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px;
-  margin:0 0 10px;padding:0;
+  margin:0;padding:0;
 }
 .home-cat-tile{
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
@@ -145,11 +148,12 @@ body.account-menu-open{overflow:hidden;}
 .home-cat-tile.is-gear.is-active,.home-cat-tile.is-gear:hover{border-color:#00838f;background:#f0fbfd;}
 .home-cat-tile.is-service.is-active,.home-cat-tile.is-service:hover{border-color:#d4a800;background:#fffdf5;}
 @media (min-width:700px){
-  .home-cat-tiles{gap:12px;margin-bottom:14px;}
-  .home-cat-tile{min-height:92px;padding:14px 10px;border-radius:14px;gap:6px;}
-  .home-cat-tile-icon{width:48px;height:48px;border-radius:12px;}
-  .home-cat-tile-icon svg{width:28px;height:28px;}
-  .home-cat-tile-label{font-size:14px;}
+  .home-cat-wrap{padding:14px 12px 0;}
+  .home-cat-tiles{gap:10px;}
+  .home-cat-tile{min-height:84px;padding:12px 10px;border-radius:12px;gap:6px;}
+  .home-cat-tile-icon{width:44px;height:44px;border-radius:12px;}
+  .home-cat-tile-icon svg{width:26px;height:26px;}
+  .home-cat-tile-label{font-size:13px;}
 }
 
 .account-ad-status.is-hi{color:#1565c0;}
@@ -299,9 +303,10 @@ body.account-menu-open{overflow:hidden;}
 .type-chip.checked-service{border-color:#d4a800;background:var(--cat-service);color:var(--cat-service-text);}
 .main-wrap{display:flex;gap:16px;padding-top:12px;padding-bottom:20px;} .sidebar{display:none;} .content{flex:1;min-width:0;}
 .breadcrumb{font-size:12px;color:var(--text-light);margin-bottom:10px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
-.listing-breadcrumb{display:none;}
-.listing-controls{margin-bottom:10px;}
-.listing-toolbar{display:flex;gap:8px;align-items:center;margin-bottom:6px;}
+.listing-controls{
+  display:flex;flex-direction:column;gap:6px;margin-bottom:10px;
+}
+.listing-toolbar{display:flex;gap:8px;align-items:center;order:-1;}
 .mobile-filter-btn{
   width:auto;flex:0 0 auto;padding:0 12px;background:#fff;border:1px solid var(--border);
   border-radius:8px;font-size:13px;font-weight:bold;cursor:pointer;display:inline-flex;
@@ -323,7 +328,7 @@ body.account-menu-open{overflow:hidden;}
 .view-toggle-btn svg{display:block;}
 .results-meta{
   display:flex;align-items:center;justify-content:space-between;gap:10px;
-  padding:0 2px;font-size:12px;color:var(--text-muted);
+  padding:0 2px;font-size:12px;color:var(--text-muted);order:0;
 }
 .results-count{color:var(--text-muted);}
 .results-count strong{color:var(--text);font-weight:700;}
@@ -1011,14 +1016,22 @@ body.page-chat .footer,body.page-chat .site-footer{display:none;}
   .account-tabs{flex-wrap:wrap;overflow:visible;mask-image:none;-webkit-mask-image:none;margin-bottom:14px;padding:0;}
   .search-area{flex:1;min-width:280px;} .search-input{font-size:14px;} .btn-post{width:auto;display:inline-block;} .type-filter{padding:12px 16px;} .type-chip{flex:0 1 auto;min-width:140px;}
   .mobile-filter-btn{display:none;} .sidebar{display:block;width:260px;flex-shrink:0;} .sidebar .filter-box{background:#fff;border:1px solid var(--border);border-radius:8px;margin-bottom:12px;overflow:hidden;}
-  .listing-breadcrumb{display:block;margin-bottom:10px;}
-  .listing-controls{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px;}
-  .listing-toolbar{margin-bottom:0;justify-content:flex-end;flex:0 0 auto;margin-left:auto;}
-  .results-meta{order:-1;margin-right:auto;padding:0;gap:12px;font-size:13px;}
-  .sort-bar{flex:0 0 auto;margin-left:0;}
+  .listing-controls{
+    flex-direction:row;align-items:center;justify-content:space-between;gap:12px;
+    margin-bottom:12px;padding:8px 12px;background:#fff;border:1px solid var(--border);border-radius:8px;
+  }
+  .listing-toolbar{order:0;margin:0;gap:10px;}
+  .results-meta{order:0;margin:0;padding:0;gap:12px;font-size:13px;justify-content:flex-start;}
+  .sort-bar{flex:0 0 auto;}
   .sort-bar-label{display:inline;font-size:12px;font-weight:bold;color:var(--text-muted);white-space:nowrap;}
-  .sort-bar .sort-select{width:auto;min-width:150px;font-size:14px;}
-  .sidebar .filter-head{background:#f8f8f8;padding:10px 12px;border-bottom:1px solid var(--border);margin-bottom:0;} .sidebar .filter-body{padding:10px 12px;}
+  .sort-bar .sort-select{width:auto;min-width:150px;min-height:36px;font-size:14px;}
+  .view-toggle-btn{width:36px;height:36px;}
+  .sidebar .filter-head{background:#f8f8f8;padding:10px 12px;border-bottom:1px solid var(--border);margin-bottom:0;}
+  .sidebar .filter-body{padding:10px 12px;}
+  .sidebar .filter-chips{flex-wrap:wrap;overflow:visible;gap:6px;}
+  .sidebar .filter-chip{min-height:34px;padding:6px 10px;font-size:12px;}
+  .sidebar .filter-field{margin-bottom:14px;}
+  .main-wrap{padding-top:12px;}
   .listings.view-list .listing-inner,.listings:not(.view-grid) .listing-inner{flex-direction:row;}
   .listings.view-list .listing-thumb,.listings:not(.view-grid) .listing-thumb{width:130px;height:auto;min-height:120px;border-right:1px solid var(--border-light);border-bottom:none;}
   .listings.view-list .listing-body,.listings:not(.view-grid) .listing-body{flex:1;}

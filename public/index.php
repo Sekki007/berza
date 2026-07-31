@@ -172,7 +172,58 @@ if ($search !== '') {
 }
 
 require __DIR__ . '/partials/layout-start.php';
+
+$homeCats = [
+    [
+        'type' => 'telefon',
+        'equipment_group' => '',
+        'label' => 'Telefoni',
+        'class' => 'is-phone',
+        'icon' => '<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><rect x="10" y="6" width="18" height="32" rx="3" fill="none" stroke="currentColor" stroke-width="2.4"/><rect x="20" y="12" width="18" height="32" rx="3" fill="currentColor" opacity=".92"/><rect x="25" y="16" width="8" height="2.2" rx="1" fill="#fff" opacity=".9"/></svg>',
+    ],
+    [
+        'type' => 'delovi',
+        'equipment_group' => 'parts',
+        'label' => 'Delovi',
+        'class' => 'is-parts',
+        'icon' => '<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><rect x="8" y="8" width="14" height="26" rx="2" fill="none" stroke="currentColor" stroke-width="2.3"/><path d="M28 14h12v6H28zm2 10h8v14h-8z" fill="currentColor"/><circle cx="15" cy="37" r="2.2" fill="currentColor"/></svg>',
+    ],
+    [
+        'type' => 'delovi',
+        'equipment_group' => 'oprema',
+        'label' => 'Oprema',
+        'class' => 'is-gear',
+        'icon' => '<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M14 10h12a3 3 0 0 1 3 3v22a3 3 0 0 1-3 3H14a3 3 0 0 1-3-3V13a3 3 0 0 1 3-3z" fill="none" stroke="currentColor" stroke-width="2.3"/><path d="M30 18h10.5a2.5 2.5 0 0 1 2.5 2.5V24H46v6h-3v3.5a2.5 2.5 0 0 1-2.5 2.5H30" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/><path d="M30 22h8v10h-8z" fill="currentColor"/></svg>',
+    ],
+    [
+        'type' => 'servis',
+        'equipment_group' => '',
+        'label' => 'Servis',
+        'class' => 'is-service',
+        'icon' => '<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M18 11a7 7 0 0 1 9 6.2L36 26.2 31.2 31 22.4 22.2A7 7 0 1 1 18 11Z" fill="currentColor"/><path d="M14 33.5 20.5 27l3.8 3.8-6.5 6.5H14v-3.8Z" fill="currentColor" opacity=".9"/><rect x="29" y="10" width="3.2" height="14" rx="1.2" transform="rotate(45 30.6 17)" fill="currentColor"/></svg>',
+    ],
+];
 ?>
+
+<div class="home-cat-wrap">
+    <nav class="home-cat-tiles" aria-label="Kategorije">
+        <?php foreach ($homeCats as $cat):
+            $catParams = ['type' => $cat['type']];
+            if ($cat['equipment_group'] !== '') {
+                $catParams['equipment_group'] = $cat['equipment_group'];
+            }
+            $catHref = '/index.php?' . http_build_query($catParams);
+            $isActive = $type === $cat['type']
+                && (($cat['equipment_group'] === '' && $equipmentGroup === '')
+                    || $equipmentGroup === $cat['equipment_group']);
+        ?>
+            <a class="home-cat-tile <?= h($cat['class']) ?><?= $isActive ? ' is-active' : '' ?>" href="<?= h($catHref) ?>">
+                <span class="home-cat-tile-icon"><?= $cat['icon'] ?></span>
+                <span class="home-cat-tile-label"><?= h($cat['label']) ?></span>
+            </a>
+        <?php endforeach; ?>
+    </nav>
+</div>
 
 <div class="main-wrap">
     <aside class="sidebar">
@@ -193,58 +244,32 @@ require __DIR__ . '/partials/layout-start.php';
     </aside>
 
     <main class="content">
-        <nav class="home-cat-tiles" aria-label="Kategorije">
-            <?php
-            $homeCats = [
-                [
-                    'type' => 'telefon',
-                    'equipment_group' => '',
-                    'label' => 'Telefoni',
-                    'class' => 'is-phone',
-                    'icon' => '<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><rect x="10" y="6" width="18" height="32" rx="3" fill="none" stroke="currentColor" stroke-width="2.4"/><rect x="20" y="12" width="18" height="32" rx="3" fill="currentColor" opacity=".92"/><rect x="25" y="16" width="8" height="2.2" rx="1" fill="#fff" opacity=".9"/></svg>',
-                ],
-                [
-                    'type' => 'delovi',
-                    'equipment_group' => 'parts',
-                    'label' => 'Delovi',
-                    'class' => 'is-parts',
-                    'icon' => '<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><rect x="8" y="8" width="14" height="26" rx="2" fill="none" stroke="currentColor" stroke-width="2.3"/><path d="M28 14h12v6H28zm2 10h8v14h-8z" fill="currentColor"/><circle cx="15" cy="37" r="2.2" fill="currentColor"/></svg>',
-                ],
-                [
-                    'type' => 'delovi',
-                    'equipment_group' => 'oprema',
-                    'label' => 'Oprema',
-                    'class' => 'is-gear',
-                    'icon' => '<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M14 10h12a3 3 0 0 1 3 3v22a3 3 0 0 1-3 3H14a3 3 0 0 1-3-3V13a3 3 0 0 1 3-3z" fill="none" stroke="currentColor" stroke-width="2.3"/><path d="M30 18h10.5a2.5 2.5 0 0 1 2.5 2.5V24H46v6h-3v3.5a2.5 2.5 0 0 1-2.5 2.5H30" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"/><path d="M30 22h8v10h-8z" fill="currentColor"/></svg>',
-                ],
-                [
-                    'type' => 'servis',
-                    'equipment_group' => '',
-                    'label' => 'Servis',
-                    'class' => 'is-service',
-                    'icon' => '<svg viewBox="0 0 48 48" aria-hidden="true" focusable="false"><path d="M18 11a7 7 0 0 1 9 6.2L36 26.2 31.2 31 22.4 22.2A7 7 0 1 1 18 11Z" fill="currentColor"/><path d="M14 33.5 20.5 27l3.8 3.8-6.5 6.5H14v-3.8Z" fill="currentColor" opacity=".9"/><rect x="29" y="10" width="3.2" height="14" rx="1.2" transform="rotate(45 30.6 17)" fill="currentColor"/></svg>',
-                ],
-            ];
-            foreach ($homeCats as $cat):
-                $catParams = ['type' => $cat['type']];
-                if ($cat['equipment_group'] !== '') {
-                    $catParams['equipment_group'] = $cat['equipment_group'];
-                }
-                $catHref = '/index.php?' . http_build_query($catParams);
-                $isActive = $type === $cat['type']
-                    && (($cat['equipment_group'] === '' && $equipmentGroup === '')
-                        || $equipmentGroup === $cat['equipment_group']);
-            ?>
-                <a class="home-cat-tile <?= h($cat['class']) ?><?= $isActive ? ' is-active' : '' ?>" href="<?= h($catHref) ?>">
-                    <span class="home-cat-tile-icon"><?= $cat['icon'] ?></span>
-                    <span class="home-cat-tile-label"><?= h($cat['label']) ?></span>
-                </a>
-            <?php endforeach; ?>
-        </nav>
-
-        <div class="breadcrumb listing-breadcrumb"><a href="/index.php">Početna</a> › Oglasi (<?= (int)$pagination['total'] ?>)</div>
-
         <div class="listing-controls">
+            <div class="results-meta">
+                <span class="results-count"><strong data-results-count data-results-total="<?= (int)$pagination['total'] ?>"><?= (int)$pagination['total'] ?></strong> oglasa</span>
+                <?php if ($hasFilters): ?>
+                    <?php if (isLoggedIn()): ?>
+                        <form method="POST" action="/nalog.php" class="save-search-form">
+                            <input type="hidden" name="action" value="save_search">
+                            <input type="hidden" name="q" value="<?= h($search) ?>">
+                            <input type="hidden" name="brand" value="<?= h($brand) ?>">
+                            <input type="hidden" name="model" value="<?= h($model) ?>">
+                            <input type="hidden" name="location" value="<?= h($location) ?>">
+                            <input type="hidden" name="condition" value="<?= h($condition) ?>">
+                            <input type="hidden" name="type" value="<?= h($type) ?>">
+                            <input type="hidden" name="device_type" value="<?= h($deviceType) ?>">
+                            <input type="hidden" name="equipment_group" value="<?= h($equipmentGroup) ?>">
+                            <input type="hidden" name="min_price" value="<?= h($minPrice) ?>">
+                            <input type="hidden" name="max_price" value="<?= h($maxPrice) ?>">
+                            <input type="hidden" name="category_group" value="<?= h($categoryGroup) ?>">
+                            <input type="hidden" name="alert_enabled" value="1">
+                            <button class="results-save-link" type="submit">Sačuvaj pretragu</button>
+                        </form>
+                    <?php else: ?>
+                        <a class="results-save-link" href="/login.php">Sačuvaj pretragu</a>
+                    <?php endif; ?>
+                <?php endif; ?>
+            </div>
             <div class="listing-toolbar">
                 <button class="mobile-filter-btn" type="button" data-open-filters>
                     Filteri<?php if ($activeFilterCount > 0): ?> <span class="filter-btn-badge"><?= (int)$activeFilterCount ?></span><?php endif; ?>
@@ -268,32 +293,6 @@ require __DIR__ . '/partials/layout-start.php';
                         <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true" focusable="false"><path fill="currentColor" d="M4 4h7v7H4zm9 0h7v7h-7zM4 13h7v7H4zm9 0h7v7h-7z"/></svg>
                     </button>
                 </div>
-            </div>
-
-            <div class="results-meta">
-                <span class="results-count"><strong data-results-count><?= (int)$pagination['total'] ?></strong> oglasa</span>
-                <?php if ($hasFilters): ?>
-                    <?php if (isLoggedIn()): ?>
-                        <form method="POST" action="/nalog.php" class="save-search-form">
-                            <input type="hidden" name="action" value="save_search">
-                            <input type="hidden" name="q" value="<?= h($search) ?>">
-                            <input type="hidden" name="brand" value="<?= h($brand) ?>">
-                            <input type="hidden" name="model" value="<?= h($model) ?>">
-                            <input type="hidden" name="location" value="<?= h($location) ?>">
-                            <input type="hidden" name="condition" value="<?= h($condition) ?>">
-                            <input type="hidden" name="type" value="<?= h($type) ?>">
-                            <input type="hidden" name="device_type" value="<?= h($deviceType) ?>">
-                            <input type="hidden" name="equipment_group" value="<?= h($equipmentGroup) ?>">
-                            <input type="hidden" name="min_price" value="<?= h($minPrice) ?>">
-                            <input type="hidden" name="max_price" value="<?= h($maxPrice) ?>">
-                            <input type="hidden" name="category_group" value="<?= h($categoryGroup) ?>">
-                            <input type="hidden" name="alert_enabled" value="1">
-                            <button class="results-save-link" type="submit">Sačuvaj pretragu</button>
-                        </form>
-                    <?php else: ?>
-                        <a class="results-save-link" href="/login.php">Sačuvaj pretragu</a>
-                    <?php endif; ?>
-                <?php endif; ?>
             </div>
         </div>
 

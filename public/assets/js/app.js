@@ -71,6 +71,7 @@
   function filterAds() {
     const selected = selectedTypes();
     const ads = all('.listing-card[data-category]');
+    if (!ads.length) return;
     let visible = 0;
     ads.forEach(function (ad) {
       const show = selected.length === 0 || selected.includes(ad.getAttribute('data-category'));
@@ -78,12 +79,20 @@
       if (show) visible++;
     });
     const count = one('[data-results-count]');
-    if (count) count.textContent = String(visible);
+    if (count) {
+      const total = count.getAttribute('data-results-total');
+      if (selected.length === 0 && total) {
+        count.textContent = total;
+      } else {
+        count.textContent = String(visible);
+      }
+    }
     const empty = one('.empty-state');
     if (empty) empty.classList.toggle('visible', visible === 0);
   }
 
   function initTypeFilters() {
+    if (!all('[data-type-filter]').length) return;
     all('[data-type-filter]').forEach(function (cb) {
       cb.addEventListener('change', function () {
         syncTypeCheckboxes(cb);
