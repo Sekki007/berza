@@ -1551,6 +1551,112 @@
     });
   }
 
+  function isNativeApp() {
+    try {
+      return !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function pushPlugin() {
+    try {
+      if (window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.PushNotifications) {
+        return window.Capacitor.Plugins.PushNotifications;
+      }
+    } catch (e) {}
+    return null;
+  }
+
+  function registerPushTokenOnServer(token) {
+    if (!token || !document.body || !document.body.getAttribute('data-logged-in')) return;
+    var fd = new FormData();
+    fd.append('action', 'register');
+    fd.append('token', token);
+    fd.append('platform', 'android');
+    appendCsrf(fd);
+    fetch('/api/push_token.php', {
+      method: 'POST',
+      body: fd,
+      credentials: 'same-origin',
+      headers: csrfHeaders()
+    }).catch(function () {});
+  }
+
+  function openPushLink(link) {
+    if (!link) return;
+    try {
+      if (/^https?:\/\//i.test(link)) {
+        var u = new URL(link, window.location.origin);
+        if (u.origin === window.location.origin) {
+          window.location.href = u.pathname + u.search + u.hash;
+          return;
+        }
+      }
+      if (link.charAt(0) === '/') {
+        window.location.href = link;
+        return;
+      }
+      window.location.href = link;
+    } catch (e) {
+      window.location.href = link;
+    }
+  }
+
+  function initPushNotifications() {
+    if (!isNativeApp()) return;
+    var Push = pushPlugin();
+    if (!Push) return;
+
+    var loggedIn = !!(document.body && document.body.getAttribute('data-logged-in'));
+
+    Push.addListener('registration', function (token) {
+      var value = (token && (token.value || token.token)) || '';
+      if (value) {
+        try { localStorage.setItem('kt_push_token', value); } catch (e) {}
+        if (loggedIn) registerPushTokenOnServer(value);
+      }
+    });
+
+    Push.addListener('registrationError', function () {});
+
+    Push.addListener('pushNotificationActionPerformed', function (event) {
+      var n = (event && event.notification) || {};
+      var data = n.data || {};
+      var link = data.link || data.click_action || '';
+      if (link) openPushLink(link);
+      else window.location.href = '/poruke.php';
+    });
+
+    Push.requestPermissions().then(function (perm) {
+      var receive = (perm && (perm.receive || perm.granted)) || '';
+      if (receive === 'granted' || receive === true || (perm && perm.receive === 'granted')) {
+        if (typeof Push.createChannel === 'function') {
+          return Push.createChannel({
+            id: 'kupitelefon_messages',
+            name: 'Poruke',
+            description: 'Nove poruke na KupiTelefon',
+            importance: 5,
+            visibility: 1,
+            sound: 'default',
+            vibration: true
+          }).catch(function () {}).then(function () {
+            return Push.register();
+          });
+        }
+        return Push.register();
+      }
+    }).catch(function () {});
+
+    // Ako je token već sačuvan lokalno, pošalji ga posle logina
+    if (loggedIn) {
+      try {
+        var saved = localStorage.getItem('kt_push_token');
+        if (saved) registerPushTokenOnServer(saved);
+      } catch (e) {}
+    }
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
     initTypeFilters();
     initDrawer();
@@ -1580,5 +1686,6 @@
     initAdsView();
     initCompare();
     initShareAd();
+    initPushNotifications();
   });
 })();

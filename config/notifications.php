@@ -183,6 +183,14 @@ function notifyUser(int $userId, string $type, string $title, string $body, stri
     if (function_exists('telegramEnabled') && telegramEnabled()) {
         sendUserTelegramNotification($userId, $type, $title, $body, $link);
     }
+    if (function_exists('sendPushToUser')) {
+        // Push: nove poruke + ostala obaveštenja ako je uključen kanal
+        $pushBody = trim(preg_replace('/\s+/u', ' ', str_replace(["\r", "\n"], ' ', $body)) ?? $body);
+        if (mb_strlen($pushBody) > 160) {
+            $pushBody = mb_substr($pushBody, 0, 157) . '…';
+        }
+        sendPushToUser($userId, $type, $title, $pushBody, $link);
+    }
     if ($emailToo && emailNotificationsEnabled()) {
         $user = findUserById($userId);
         if ($user && userWantsEmailNotifications($user)) {

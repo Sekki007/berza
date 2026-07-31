@@ -1,0 +1,17 @@
+﻿{
+  "appId": "rs.kupitelefon.app",
+  "appName": "KupiTelefon",
+  "webDir": "www",
+  "server": {
+    "url": "https://kupitelefon.rs",
+    "cleartext": false,
+    "allowNavigation": [
+      "kupitelefon.rs",
+      "*.kupitelefon.rs"
+    ]
+  },
+  "android": {
+    "allowMixedContent": false,
+    "backgroundColor": "#0f1a14"
+  }
+}

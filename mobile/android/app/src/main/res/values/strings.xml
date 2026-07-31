@@ -1,0 +1,7 @@
+﻿<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">KupiTelefon</string>
+    <string name="title_activity_main">KupiTelefon</string>
+    <string name="package_name">rs.kupitelefon.app</string>
+    <string name="custom_url_scheme">rs.kupitelefon.app</string>
+</resources>

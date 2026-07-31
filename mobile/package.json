@@ -1,0 +1,17 @@
+{
+  "name": "kupitelefon-android",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Android wrapper for kupitelefon.rs",
+  "scripts": {
+    "build:web": "node -e \"console.log('www ready')\"",
+    "cap:sync": "npx cap sync android",
+    "cap:open": "npx cap open android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.2.1",
+    "@capacitor/cli": "^6.2.1",
+    "@capacitor/core": "^6.2.1",
+    "@capacitor/push-notifications": "^6.0.5"
+  }
+}

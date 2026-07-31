@@ -88,6 +88,7 @@ function jsonStorageDefaults(): array
         'ratings.json' => [],
         'reports.json' => [],
         'notifications.json' => [],
+        'push_tokens.json' => [],
         'top_orders.json' => [],
         'credit_deposits.json' => [],
         'credit_transactions.json' => [],
@@ -408,6 +409,9 @@ function updateUserProfile(int $userId, array $data): bool
         if (array_key_exists('notify_telegram_system', $data)) {
             $user['notify_telegram_system'] = !empty($data['notify_telegram_system']);
         }
+        if (array_key_exists('notify_push', $data)) {
+            $user['notify_push'] = !empty($data['notify_push']);
+        }
         writeJsonFile('users.json', $users);
         $sessionId = (int)($_SESSION['user']['id'] ?? 0);
         if ($sessionId === $userId) {
@@ -429,6 +433,9 @@ function updateUserProfile(int $userId, array $data): bool
             }
             if (array_key_exists('notify_telegram_system', $user)) {
                 $_SESSION['user']['notify_telegram_system'] = $user['notify_telegram_system'];
+            }
+            if (array_key_exists('notify_push', $user)) {
+                $_SESSION['user']['notify_push'] = $user['notify_push'];
             }
         }
         return true;
@@ -1216,6 +1223,7 @@ require_once __DIR__ . '/admin_helpers.php';
 require_once __DIR__ . '/mail.php';
 require_once __DIR__ . '/email_templates.php';
 require_once __DIR__ . '/telegram.php';
+require_once __DIR__ . '/push.php';
 require_once __DIR__ . '/notifications.php';
 require_once __DIR__ . '/credits.php';
 require_once __DIR__ . '/promotion.php';

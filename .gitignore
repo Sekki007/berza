@@ -1,6 +1,16 @@
 .env
 vendor/
 node_modules/
+mobile/node_modules/
+mobile/android/local.properties
+mobile/android/.gradle/
+mobile/android/app/build/
+mobile/android/build/
+mobile/android/keystore/
+mobile/android/keystore.properties
+mobile/android/app/google-services.json
+mobile/dist/
+secrets/
 .DS_Store
 Thumbs.db
 /public/uploads/ads/*
@@ -10,3 +20,5 @@ Thumbs.db
 /data/*_state.json
 /data/sms_rate_limits.json
 /data/nbs_rate_cache.json
+/data/fcm_token_cache.json
+/data/push_tokens.json

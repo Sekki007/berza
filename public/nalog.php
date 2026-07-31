@@ -310,6 +310,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'notify_telegram_messages' => !empty($_POST['notify_telegram_messages']),
             'notify_telegram_alerts' => !empty($_POST['notify_telegram_alerts']),
             'notify_telegram_system' => !empty($_POST['notify_telegram_system']),
+            'notify_push' => !empty($_POST['notify_push']),
         ]);
         setFlash($ok ? 'success' : 'danger', $ok ? 'Podešavanja notifikacija su sačuvana.' : 'Podešavanja nisu sačuvana.');
         header('Location: /nalog.php?tab=podesavanja');
@@ -1327,6 +1328,31 @@ require __DIR__ . '/partials/layout-start.php';
                             <?php endif; ?>
                         </div>
                     <?php endif; ?>
+
+                    <div class="profile-section">
+                        <h3 class="profile-section-title">Android app (push)</h3>
+                        <p class="form-hint" style="margin-top:6px;">
+                            Kad koristiš KupiTelefon app i uloguješ se, telefon se automatski prijavi za push.
+                            Nova poruka stiže kao notifikacija i kad je app zatvorena.
+                        </p>
+                        <?php
+                        $pushTokenCount = function_exists('getPushTokensForUser') ? count(getPushTokensForUser($userId)) : 0;
+                        $pushServerOn = function_exists('pushEnabled') && pushEnabled();
+                        ?>
+                        <div class="profile-status <?= $pushTokenCount > 0 ? 'profile-status-approved' : 'profile-status-idle' ?>" style="margin-top:8px;">
+                            <?php if ($pushTokenCount > 0): ?>
+                                <strong>App povezana</strong>
+                                <span><?= (int)$pushTokenCount ?> uređaj(a) registrovano<?= $pushServerOn ? '' : ' (server FCM još nije uključen — vidi .env)' ?></span>
+                            <?php else: ?>
+                                <strong>App nije povezana</strong>
+                                <span>Otvori sajt u KupiTelefon Android app-u i uloguj se.</span>
+                            <?php endif; ?>
+                        </div>
+                        <label class="profile-check" style="margin-top:10px;">
+                            <input type="checkbox" name="notify_push" value="1" <?= !array_key_exists('notify_push', $profile) || !empty($profile['notify_push']) ? 'checked' : '' ?>>
+                            <span>Push notifikacije na telefon (nove poruke i obaveštenja)</span>
+                        </label>
+                    </div>
 
                     <div class="profile-actions">
                         <button class="btn-call" type="submit" name="action" value="save_notification_channels">Sačuvaj podešavanja kanala</button>
