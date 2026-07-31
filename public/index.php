@@ -316,19 +316,6 @@ $homeCats = [
             </div>
         <?php endif; ?>
 
-        <?php if ($search === '' && $brand === '' && $page === 1): ?>
-            <?php
-            $chipCities = getCitiesWithActiveAds(8, $location);
-            if ($chipCities !== []):
-            ?>
-            <div class="quick-city-chips">
-                <?php foreach ($chipCities as $city): ?>
-                    <a class="quick-chip <?= $location === $city ? 'active' : '' ?>" href="/index.php?<?= h(buildFilterQuery(array_merge($queryBase, ['location' => $city, 'page' => null]))) ?>"><?= h($city) ?></a>
-                <?php endforeach; ?>
-            </div>
-            <?php endif; ?>
-        <?php endif; ?>
-
         <div class="listings view-list" data-listings>
             <?php foreach ($ads as $ai => $ad): ?>
                 <?php $cardImgPriority = $ai < 3 && $promotedAds === []; require __DIR__ . '/partials/ad-card.php'; $cardImgPriority = false; ?>
