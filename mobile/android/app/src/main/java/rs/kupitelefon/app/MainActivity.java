@@ -3,6 +3,8 @@ package rs.kupitelefon.app;
 import android.annotation.SuppressLint;
 import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.ActivityInfo;
+import android.content.res.Configuration;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
@@ -35,12 +37,30 @@ public class MainActivity extends BridgeActivity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        applyOrientationPolicy();
         applySystemBars();
         CookieManager.getInstance().setAcceptCookie(true);
         registerBackHandler();
         setupWebViewHelpers();
         captureDeepLink(getIntent());
         scheduleDeepLinkNavigation();
+    }
+
+    /** Telefon = samo portrait; tablet (sw >= 600dp) = slobodna rotacija. */
+    private void applyOrientationPolicy() {
+        int smallest = getResources().getConfiguration().smallestScreenWidthDp;
+        if (smallest >= 600) {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_FULL_USER);
+        } else {
+            setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
+        }
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        applyOrientationPolicy();
+        applySystemBars();
     }
 
     @Override
