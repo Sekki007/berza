@@ -885,12 +885,53 @@
   function initPhotoPreview() {
     const input = one('[data-photo-input]');
     const preview = one('[data-photo-preview]');
+    const drop = one('[data-photo-drop]');
     if (!input || !preview) return;
 
+    const MAX_TOTAL = 10;
     const MAX_EDGE = 1600;
     const JPEG_QUALITY = 0.82;
     const WARN_RAW_MB = 20;
     const HARD_REJECT_MB = 40;
+
+    /** @type {File[]} */
+    let selectedFiles = [];
+    /** @type {string[]} */
+    let previewUrls = [];
+    let syncingInput = false;
+    let busy = false;
+
+    function keptExistingCount() {
+      return all('[data-photo-existing] [data-photo-item]').length;
+    }
+
+    function remainingSlots() {
+      return Math.max(0, MAX_TOTAL - keptExistingCount() - selectedFiles.length);
+    }
+
+    function updateAddState() {
+      if (!drop) return;
+      const full = remainingSlots() <= 0;
+      drop.classList.toggle('is-full', full);
+      if (!busy) input.disabled = full;
+    }
+
+    function syncInput() {
+      const dt = new DataTransfer();
+      selectedFiles.forEach(function (f) { dt.items.add(f); });
+      syncingInput = true;
+      try { input.files = dt.files; } catch (e) {}
+      syncingInput = false;
+      renderPreview();
+      updateAddState();
+    }
+
+    function revokePreviews() {
+      previewUrls.forEach(function (u) {
+        try { URL.revokeObjectURL(u); } catch (e) {}
+      });
+      previewUrls = [];
+    }
 
     function loadImage(file) {
       return new Promise(function (resolve, reject) {
@@ -918,7 +959,6 @@
       if (!file || !file.type || file.type.indexOf('image/') !== 0) {
         return { file: file, compressed: false, error: null };
       }
-      // Skip tiny already-small images
       if (file.size < 900 * 1024 && file.type === 'image/jpeg') {
         return { file: file, compressed: false, error: null };
       }
@@ -943,7 +983,6 @@
         if (!blob) {
           return { file: file, compressed: false, error: 'encode' };
         }
-        // If still large, try stronger compression
         if (blob.size > 2.5 * 1024 * 1024) {
           blob = await canvasToBlob(canvas, 'image/jpeg', 0.7) || blob;
         }
@@ -958,13 +997,45 @@
       }
     }
 
-    function renderPreview(files) {
+    function renderPreview() {
+      revokePreviews();
       preview.innerHTML = '';
-      Array.from(files || []).slice(0, 10).forEach(function (file) {
+      const hasExisting = keptExistingCount() > 0;
+      selectedFiles.forEach(function (file, index) {
         const url = URL.createObjectURL(file);
+        previewUrls.push(url);
         const slot = document.createElement('div');
         slot.className = 'photo-slot';
-        slot.innerHTML = '<img src="' + url + '" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:4px;">';
+        slot.setAttribute('data-new-photo-item', String(index));
+
+        const removeBtn = document.createElement('button');
+        removeBtn.type = 'button';
+        removeBtn.className = 'photo-slot-remove';
+        removeBtn.setAttribute('data-new-photo-remove', '1');
+        removeBtn.setAttribute('aria-label', 'Ukloni sliku');
+        removeBtn.textContent = '×';
+
+        const img = document.createElement('img');
+        img.src = url;
+        img.alt = '';
+
+        const meta = document.createElement('div');
+        meta.className = 'photo-slot-meta';
+        const badge = document.createElement('span');
+        badge.className = 'photo-slot-badge';
+        badge.textContent = (!hasExisting && index === 0) ? 'Naslovna' : ('#' + (keptExistingCount() + index + 1));
+
+        const reorder = document.createElement('div');
+        reorder.className = 'photo-reorder';
+        reorder.innerHTML =
+          '<button type="button" class="btn-sm" data-new-photo-up title="Gore">↑</button>' +
+          '<button type="button" class="btn-sm" data-new-photo-down title="Dole">↓</button>';
+
+        meta.appendChild(badge);
+        meta.appendChild(reorder);
+        slot.appendChild(removeBtn);
+        slot.appendChild(img);
+        slot.appendChild(meta);
         preview.appendChild(slot);
       });
     }
@@ -981,26 +1052,69 @@
       return hint;
     }
 
-    input.addEventListener('change', async function () {
-      const files = Array.from(input.files || []).slice(0, 10);
-      if (!files.length) {
-        preview.innerHTML = '';
-        const h = one('[data-photo-compress-hint]');
-        if (h) h.textContent = '';
+    function moveSelected(index, dir) {
+      const next = index + dir;
+      if (next < 0 || next >= selectedFiles.length) return;
+      const tmp = selectedFiles[index];
+      selectedFiles[index] = selectedFiles[next];
+      selectedFiles[next] = tmp;
+      syncInput();
+    }
+
+    preview.addEventListener('click', function (e) {
+      const slot = e.target.closest('[data-new-photo-item]');
+      if (!slot) return;
+      const index = parseInt(slot.getAttribute('data-new-photo-item') || '-1', 10);
+      if (isNaN(index) || index < 0) return;
+
+      if (e.target.closest('[data-new-photo-remove]')) {
+        e.preventDefault();
+        selectedFiles.splice(index, 1);
+        syncInput();
+        const hint = one('[data-photo-compress-hint]');
+        if (hint && !selectedFiles.length) hint.textContent = '';
+        return;
+      }
+      if (e.target.closest('[data-new-photo-up]')) {
+        e.preventDefault();
+        moveSelected(index, -1);
+        return;
+      }
+      if (e.target.closest('[data-new-photo-down]')) {
+        e.preventDefault();
+        moveSelected(index, 1);
+      }
+    });
+
+    async function addIncomingFiles(fileList) {
+      const incoming = Array.from(fileList || []);
+      if (!incoming.length || busy) return;
+
+      let room = remainingSlots();
+      if (room <= 0) {
+        const hint = ensureHint();
+        hint.style.color = '#b45309';
+        hint.textContent = 'Već imaš ' + MAX_TOTAL + ' slika. Obriši neku da dodaš novu.';
+        syncInput();
         return;
       }
 
       const hint = ensureHint();
       hint.style.color = 'var(--text-muted)';
       hint.textContent = 'Smanjujem fotografije pre slanja…';
+      busy = true;
       input.disabled = true;
 
-      const dt = new DataTransfer();
       const notes = [];
       let rejected = 0;
+      let added = 0;
 
-      for (let i = 0; i < files.length; i++) {
-        const raw = files[i];
+      for (let i = 0; i < incoming.length; i++) {
+        if (added >= room) {
+          notes.push('Dodato je maksimum od ' + MAX_TOTAL + ' slika.');
+          break;
+        }
+        const raw = incoming[i];
         const rawMb = raw.size / (1024 * 1024);
         if (rawMb > HARD_REJECT_MB) {
           rejected++;
@@ -1021,16 +1135,14 @@
           rejected++;
           continue;
         }
-        dt.items.add(result.file);
+        selectedFiles.push(result.file);
+        added++;
       }
 
-      try {
-        input.files = dt.files;
-      } catch (e) {}
-      renderPreview(input.files);
-      input.disabled = false;
+      busy = false;
+      syncInput();
 
-      if (!dt.files.length) {
+      if (!added && !selectedFiles.length) {
         hint.style.color = '#b91c1c';
         hint.textContent = notes.join(' ') || 'Nijedna fotografija nije dodata.';
         return;
@@ -1038,14 +1150,35 @@
 
       const parts = [];
       if (notes.length) parts.push(notes.join(' '));
-      parts.push('Fotografije su spremne (automatski smanjene za brži upload).');
+      parts.push('Ukupno novih: ' + selectedFiles.length + '. Možeš dodati još ili ↑↓ / × za redosled i brisanje.');
       if (rejected > 0) {
         hint.style.color = '#b45309';
       } else {
         hint.style.color = 'var(--kp-green-dark, #15803d)';
       }
       hint.textContent = parts.join(' ');
+    }
+
+    input.addEventListener('change', async function () {
+      if (syncingInput || busy) return;
+      const incoming = Array.from(input.files || []);
+      // Picker šalje SAMO novoizabrane — prazan change (cancel) ne briše prethodne
+      if (!incoming.length) {
+        syncInput();
+        return;
+      }
+      await addIncomingFiles(incoming);
     });
+
+    // Kad se obriše postojeća slika, otključaj "Dodaj" ako ima mesta
+    const existing = one('[data-photo-existing]');
+    if (existing) {
+      existing.addEventListener('click', function () {
+        setTimeout(updateAddState, 0);
+      });
+    }
+
+    updateAddState();
   }
 
   function initPhotoReorder() {
@@ -1061,6 +1194,20 @@
     }
 
     list.addEventListener('click', function (e) {
+      const remove = e.target.closest('[data-photo-remove]');
+      if (remove) {
+        e.preventDefault();
+        const item = remove.closest('[data-photo-item]');
+        if (!item) return;
+        const wasCover = !!(one('input[name="cover_image"]:checked', item));
+        item.remove();
+        if (wasCover) {
+          const first = one('[data-photo-item] input[name="cover_image"]', list);
+          if (first) first.checked = true;
+        }
+        return;
+      }
+
       const up = e.target.closest('[data-photo-up]');
       const down = e.target.closest('[data-photo-down]');
       if (!up && !down) return;

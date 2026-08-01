@@ -342,14 +342,15 @@ $contactExtraOpen = $listingExtra
 
             <section class="ad-form-section">
                 <h3 class="ad-form-section-title">Fotografije</h3>
-                <p class="form-hint" style="margin-top:0;">Do 10 slika — prva je naslovna. Kompresuju se same.</p>
+                <p class="form-hint" style="margin-top:0;">Do 10 slika — prva je naslovna. Možeš dodavati jednu po jednu; ↑↓ menja redosled, × briše.</p>
                 <?php if ($existingImages): ?>
                     <div class="photo-existing" data-photo-existing>
                         <?php foreach ($existingImages as $idx => $img): ?>
                             <div class="photo-existing-item" data-photo-item>
+                                <button type="button" class="photo-slot-remove" data-photo-remove aria-label="Ukloni sliku">×</button>
                                 <img src="<?= h((string)$img) ?>" alt="">
                                 <input type="hidden" name="image_order[]" value="<?= h((string)$img) ?>">
-                                <label class="photo-keep"><input type="checkbox" name="keep_images[]" value="<?= h((string)$img) ?>" checked> Zadrži</label>
+                                <input type="hidden" name="keep_images[]" value="<?= h((string)$img) ?>">
                                 <label class="photo-cover"><input type="radio" name="cover_image" value="<?= h((string)$img) ?>" <?= $idx === 0 ? 'checked' : '' ?>> Naslovna</label>
                                 <div class="photo-reorder">
                                     <button type="button" class="btn-sm" data-photo-up title="Gore">↑</button>
@@ -361,7 +362,7 @@ $contactExtraOpen = $listingExtra
                 <?php endif; ?>
                 <label class="ad-photo-add" data-photo-drop>
                     <input type="file" name="images[]" accept="image/jpeg,image/png,image/webp,image/gif" multiple data-photo-input>
-                    <span>+ Dodaj fotografije<br><small>ili prevuci ovde</small></span>
+                    <span>+ Dodaj fotografije<br><small>ili prevuci ovde — možeš više puta</small></span>
                 </label>
                 <div class="photo-upload" data-photo-preview></div>
                 <div class="form-group" style="margin-top:14px;">
