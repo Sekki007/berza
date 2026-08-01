@@ -2559,24 +2559,22 @@ body.kp-lightbox-open {
   .shop-actions { flex-direction: column; align-items: stretch; min-width: 180px; }
 }
 
-/* Capacitor Android app polish */
+/* Capacitor Android app polish — sistemski nav bar je van WebView-a (siva traka), bez lažnog paddinga */
 html.kt-native-app,
 body.kt-native-app {
   overscroll-behavior-y: none;
   -webkit-tap-highlight-color: transparent;
-  /* Android WebView često ne šalje env(safe-area-inset-*), pa ručno ostavljamo prostor za gest/nav bar */
-  --safe-bottom: 22px;
+  --safe-bottom: 0px;
 }
 body.kt-native-app {
-  padding-bottom: calc(var(--mobile-bar-h) + var(--safe-bottom));
+  padding-bottom: var(--mobile-bar-h);
 }
 body.kt-native-app .header {
   padding-top: max(10px, env(safe-area-inset-top, 0px));
 }
 body.kt-native-app .mobile-bar {
-  padding-bottom: var(--safe-bottom);
-  min-height: calc(var(--mobile-bar-h) + var(--safe-bottom));
-  box-sizing: content-box;
+  padding-bottom: 0;
+  min-height: var(--mobile-bar-h);
 }
 body.kt-native-app .mobile-bar a,
 body.kt-native-app .mobile-bar button {

@@ -27,28 +27,49 @@ public class MainActivity extends BridgeActivity {
     private SwipeRefreshLayout swipeRefresh;
     private boolean swipeAttached = false;
 
+    private static final int NAV_BAR_GRAY = Color.parseColor("#C8C8C8");
+
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        applySystemBars();
+        CookieManager.getInstance().setAcceptCookie(true);
+        setupWebViewHelpers();
+        captureDeepLink(getIntent());
+        scheduleDeepLinkNavigation();
+    }
 
-        // Uvek prikaži sistemski status + nav bar (back/home)
+    @Override
+    public void onResume() {
+        super.onResume();
+        applySystemBars();
+    }
+
+    @Override
+    public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) {
+            applySystemBars();
+        }
+    }
+
+    /** Sistemska navigacija telefona (nazad/home) na sivoj traci — bez immersive/fullscreen. */
+    private void applySystemBars() {
         WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
         getWindow().setStatusBarColor(Color.WHITE);
-        getWindow().setNavigationBarColor(Color.WHITE);
+        getWindow().setNavigationBarColor(NAV_BAR_GRAY);
         View decor = getWindow().getDecorView();
         decor.setSystemUiVisibility(View.SYSTEM_UI_FLAG_VISIBLE);
         WindowInsetsControllerCompat insets = WindowCompat.getInsetsController(getWindow(), decor);
         if (insets != null) {
             insets.setAppearanceLightStatusBars(true);
             insets.setAppearanceLightNavigationBars(true);
+            insets.setSystemBarsBehavior(
+                WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
+            );
             insets.show(androidx.core.view.WindowInsetsCompat.Type.systemBars());
+            insets.show(androidx.core.view.WindowInsetsCompat.Type.navigationBars());
         }
-
-        CookieManager.getInstance().setAcceptCookie(true);
-
-        setupWebViewHelpers();
-        captureDeepLink(getIntent());
-        scheduleDeepLinkNavigation();
     }
 
     @Override
