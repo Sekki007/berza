@@ -10,8 +10,24 @@
       "*.kupitelefon.rs"
     ]
   },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 1200,
+      "launchAutoHide": true,
+      "backgroundColor": "#FFFFFFFF",
+      "androidSplashResourceName": "splash",
+      "androidScaleType": "CENTER",
+      "showSpinner": false,
+      "splashFullScreen": true,
+      "splashImmersive": false
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#FFFFFFFF"
+    }
+  },
   "android": {
     "allowMixedContent": false,
-    "backgroundColor": "#0f1a14"
+    "backgroundColor": "#F2F2F2"
   }
 }

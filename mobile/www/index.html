@@ -3,23 +3,81 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#ffffff" />
   <title>KupiTelefon</title>
   <style>
-    html, body { margin: 0; height: 100%; background: #0f1a14; color: #e8f5e9; font-family: system-ui, sans-serif; }
-    .wrap { min-height: 100%; display: grid; place-items: center; text-align: center; padding: 24px; }
-    p { opacity: .8; }
+    :root {
+      --green: #3d9a50;
+      --text: #333;
+      --bg: #f2f2f2;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0;
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Segoe UI", system-ui, -apple-system, sans-serif;
+    }
+    .boot {
+      min-height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      padding: 32px 24px;
+      text-align: center;
+    }
+    .mark {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      object-fit: cover;
+      box-shadow: 0 8px 24px rgba(61, 154, 80, 0.22);
+    }
+    .brand {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      line-height: 1;
+    }
+    .brand span { color: var(--green); }
+    .hint {
+      margin: 0;
+      color: #777;
+      font-size: 14px;
+    }
+    .bar {
+      width: 120px;
+      height: 3px;
+      border-radius: 99px;
+      background: #e5e5e5;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+    .bar > i {
+      display: block;
+      height: 100%;
+      width: 40%;
+      border-radius: inherit;
+      background: linear-gradient(90deg, var(--green), #f5c518);
+      animation: slide 1.1s ease-in-out infinite;
+    }
+    @keyframes slide {
+      0% { transform: translateX(-120%); }
+      100% { transform: translateX(280%); }
+    }
   </style>
   <script>
-    // Fallback ako server.url nije aktivan
     location.replace("https://kupitelefon.rs/");
   </script>
 </head>
 <body>
-  <div class="wrap">
-    <div>
-      <h1>KupiTelefon</h1>
-      <p>Učitavanje…</p>
-    </div>
+  <div class="boot">
+    <div class="brand"><span>Kupi</span>Telefon</div>
+    <p class="hint">Učitavanje…</p>
+    <div class="bar" aria-hidden="true"><i></i></div>
   </div>
 </body>
 </html>

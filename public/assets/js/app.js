@@ -1603,6 +1603,33 @@
     }
   }
 
+  function initNativeChrome() {
+    if (!isNativeApp()) return;
+    try {
+      document.documentElement.classList.add('kt-native-app');
+      document.body.classList.add('kt-native-app');
+    } catch (e) {}
+
+    var StatusBar = null;
+    var SplashScreen = null;
+    try {
+      StatusBar = window.Capacitor.Plugins.StatusBar || null;
+      SplashScreen = window.Capacitor.Plugins.SplashScreen || null;
+    } catch (e) {}
+
+    if (StatusBar) {
+      Promise.resolve()
+        .then(function () { return StatusBar.setStyle({ style: 'DARK' }); })
+        .then(function () { return StatusBar.setBackgroundColor({ color: '#ffffff' }); })
+        .catch(function () {});
+    }
+    if (SplashScreen && typeof SplashScreen.hide === 'function') {
+      setTimeout(function () {
+        SplashScreen.hide({ fadeOutDuration: 280 }).catch(function () {});
+      }, 350);
+    }
+  }
+
   function initPushNotifications() {
     if (!isNativeApp()) return;
     var Push = pushPlugin();
@@ -1686,6 +1713,7 @@
     initAdsView();
     initCompare();
     initShareAd();
+    initNativeChrome();
     initPushNotifications();
   });
 })();
