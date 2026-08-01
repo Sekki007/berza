@@ -24,6 +24,10 @@
     "StatusBar": {
       "style": "DARK",
       "backgroundColor": "#FFFFFFFF"
+    },
+    "Badge": {
+      "persist": true,
+      "autoClear": false
     }
   },
   "android": {

@@ -1247,6 +1247,24 @@
     return escapeHtml(text).replace(/\n/g, '<br>');
   }
 
+  function syncAppIconBadge(count) {
+    if (!isNativeApp()) return;
+    var n = Math.max(0, parseInt(count, 10) || 0);
+    try {
+      var Badge = window.Capacitor && window.Capacitor.Plugins && window.Capacitor.Plugins.Badge;
+      if (!Badge) return;
+      if (n > 0) {
+        Badge.set({ count: n }).catch(function () {});
+      } else {
+        Badge.clear().catch(function () {});
+        var Push = pushPlugin();
+        if (Push && typeof Push.removeAllDeliveredNotifications === 'function') {
+          Push.removeAllDeliveredNotifications().catch(function () {});
+        }
+      }
+    } catch (e) {}
+  }
+
   function updateUnreadBadges(count) {
     const n = Math.max(0, parseInt(count, 10) || 0);
     document.body.setAttribute('data-unread-messages', String(n));
@@ -1275,6 +1293,7 @@
         inboxLabel.style.display = 'none';
       }
     }
+    syncAppIconBadge(n);
   }
 
   function appendChatBubble(thread, msg) {
@@ -1644,11 +1663,24 @@
       if (link === 'FCM_PLUGIN_ACTIVITY') link = '';
       if (link) openPushLink(link);
       else window.location.href = '/poruke.php';
-      // Očisti delivered notifikacije kad korisnik otvori iz push-a
-      if (typeof Push.removeAllDeliveredNotifications === 'function') {
-        Push.removeAllDeliveredNotifications().catch(function () {});
-      }
+      // NE briši badge/notifikacije ovde — samo kad su poruke pročitane (unread=0)
+      try {
+        if (window.KtNative && typeof window.KtNative.clearPendingLink === 'function') {
+          window.KtNative.clearPendingLink();
+        }
+      } catch (e) {}
     }
+
+    // Deep link sa nativne strane (klik na push dok je app ugašena)
+    try {
+      if (window.KtNative && typeof window.KtNative.getPendingLink === 'function') {
+        var pending = window.KtNative.getPendingLink();
+        if (pending) {
+          openPushLink(pending);
+          window.KtNative.clearPendingLink();
+        }
+      }
+    } catch (e) {}
 
     Push.addListener('registration', function (token) {
       var value = (token && (token.value || token.token)) || '';
@@ -1662,16 +1694,27 @@
 
     Push.addListener('pushNotificationActionPerformed', handlePushOpen);
 
-    // Foreground: kad stigne push dok je app otvorena
     Push.addListener('pushNotificationReceived', function (notification) {
       try {
         var data = (notification && notification.data) || {};
         var unread = parseInt(data.badge || '0', 10);
-        if (unread > 0 && typeof updateUnreadBadges === 'function') {
-          updateUnreadBadges(unread);
-        }
+        if (unread > 0) updateUnreadBadges(unread);
       } catch (e) {}
     });
+
+    // Badge dozvola (Android 13+)
+    try {
+      var Badge = window.Capacitor.Plugins.Badge;
+      if (Badge && typeof Badge.requestPermissions === 'function') {
+        Badge.requestPermissions().then(function () {
+          var current = parseInt(document.body.getAttribute('data-unread-messages') || '0', 10) || 0;
+          syncAppIconBadge(current);
+        }).catch(function () {});
+      } else if (loggedIn) {
+        var current2 = parseInt(document.body.getAttribute('data-unread-messages') || '0', 10) || 0;
+        syncAppIconBadge(current2);
+      }
+    } catch (e) {}
 
     Push.requestPermissions().then(function (perm) {
       var receive = (perm && (perm.receive || perm.granted)) || '';
@@ -1693,7 +1736,6 @@
       }
     }).catch(function () {});
 
-    // Ako je token već sačuvan lokalno, pošalji ga posle logina
     if (loggedIn) {
       try {
         var saved = localStorage.getItem('kt_push_token');

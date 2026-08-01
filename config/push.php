@@ -370,9 +370,8 @@ function sendFcmToToken(string $token, string $title, string $body, string $link
 
 function pushBadgeCountForUser(int $userId): int
 {
-    $messages = function_exists('getUnreadMessageCount') ? getUnreadMessageCount($userId) : 0;
-    $notes = function_exists('getUnreadNotificationCount') ? getUnreadNotificationCount($userId) : 0;
-    return max(0, $messages + $notes);
+    // Badge na ikonici = nepročitane poruke (ostaje dok se ne pročitaju)
+    return function_exists('getUnreadMessageCount') ? max(0, getUnreadMessageCount($userId)) : 0;
 }
 
 function sendPushToUser(int $userId, string $type, string $title, string $body, string $link = ''): int
