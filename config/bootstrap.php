@@ -2,7 +2,33 @@
 
 declare(strict_types=1);
 
+/**
+ * Trajna prijava (bitno za Android WebView app):
+ * session cookie sa lifetime > 0 preživljava zatvaranje app-a.
+ */
+function sessionCookieSecure(): bool
+{
+    if (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+        return true;
+    }
+    if (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443) {
+        return true;
+    }
+    $fwd = strtolower((string)($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? ''));
+    return $fwd === 'https';
+}
+
 if (session_status() !== PHP_SESSION_ACTIVE) {
+    $lifetime = 60 * 60 * 24 * 30; // 30 dana
+    ini_set('session.gc_maxlifetime', (string)$lifetime);
+    ini_set('session.cookie_lifetime', (string)$lifetime);
+    session_set_cookie_params([
+        'lifetime' => $lifetime,
+        'path' => '/',
+        'secure' => sessionCookieSecure(),
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
     session_start();
 }
 

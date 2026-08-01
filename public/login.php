@@ -30,6 +30,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
+        session_regenerate_id(true);
         $_SESSION['user'] = [
             'id' => (int)$user['id'],
             'username' => $user['username'],
