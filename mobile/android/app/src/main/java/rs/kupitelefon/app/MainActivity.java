@@ -160,17 +160,8 @@ public class MainActivity extends BridgeActivity {
         parent.addView(swipeRefresh, index, params);
 
         swipeRefresh.setOnRefreshListener(() -> {
-            String js =
-                "(function(){"
-                    + "try{"
-                    + "if(window.location.pathname.indexOf('/poruke')===0||window.location.pathname.indexOf('/nalog')===0){"
-                    + "window.location.reload();"
-                    + "}else{"
-                    + "window.location.href='https://kupitelefon.rs/index.php';"
-                    + "}"
-                    + "}catch(e){window.location.reload();}"
-                    + "})();";
-            webView.evaluateJavascript(js, null);
+            // Osveži trenutnu stranicu (ne vraćaj uvek na home)
+            webView.reload();
             mainHandler.postDelayed(() -> {
                 if (swipeRefresh != null) {
                     swipeRefresh.setRefreshing(false);
