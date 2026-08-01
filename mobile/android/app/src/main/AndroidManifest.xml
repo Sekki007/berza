@@ -29,6 +29,15 @@
                 <action android:name="FCM_PLUGIN_ACTIVITY" />
                 <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
+
+            <!-- Deep links: https://kupitelefon.rs/... otvara app -->
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="https" android:host="kupitelefon.rs" />
+                <data android:scheme="https" android:host="www.kupitelefon.rs" />
+            </intent-filter>
         </activity>
 
         <provider

@@ -860,6 +860,13 @@
       btn.addEventListener('click', function () {
         const url = btn.getAttribute('data-share-url') || window.location.href;
         const title = btn.getAttribute('data-share-title') || document.title;
+        // Nativni Android share sheet u APK-u
+        try {
+          if (isNativeApp() && window.KtNative && typeof window.KtNative.share === 'function') {
+            window.KtNative.share(title, url);
+            return;
+          }
+        } catch (e) {}
         if (navigator.share) {
           navigator.share({ title: title, url: url }).catch(function () {});
           return;

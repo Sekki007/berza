@@ -1,0 +1,12 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "rs.kupitelefon.app",
+      "sha256_cert_fingerprints": [
+        "DB:75:69:2E:C4:6E:7F:E7:E2:66:7D:31:7F:F5:A6:E0:12:D6:5B:A8:6F:7F:41:70:62:EB:D0:17:19:7C:1F:62"
+      ]
+    }
+  }
+]
