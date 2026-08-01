@@ -311,7 +311,6 @@ function sendFcmToToken(string $token, string $title, string $body, string $link
 
     $androidNotification = [
         'sound' => 'default',
-        'click_action' => 'FCM_PLUGIN_ACTIVITY',
         'channel_id' => 'kupitelefon_messages',
         'default_sound' => true,
         'default_vibrate_timings' => true,
@@ -330,6 +329,7 @@ function sendFcmToToken(string $token, string $title, string $body, string $link
             'data' => $dataPayload,
             'android' => [
                 'priority' => 'HIGH',
+                // Bez click_action → Android otvara MAIN/LAUNCHER (MainActivity)
                 'notification' => $androidNotification,
             ],
         ],

@@ -18,12 +18,13 @@
       "androidSplashResourceName": "splash",
       "androidScaleType": "CENTER",
       "showSpinner": false,
-      "splashFullScreen": true,
+      "splashFullScreen": false,
       "splashImmersive": false
     },
     "StatusBar": {
       "style": "DARK",
-      "backgroundColor": "#FFFFFFFF"
+      "backgroundColor": "#FFFFFFFF",
+      "overlaysWebView": false
     },
     "Badge": {
       "persist": true,
