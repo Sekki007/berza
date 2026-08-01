@@ -2581,3 +2581,28 @@ body.kt-native-app .mobile-bar button {
   min-height: 48px;
 }
 
+/* APK: footer sveden na jednu tanku liniju */
+body.kt-native-app .site-footer {
+  margin-top: 12px;
+  border-top-width: 2px;
+}
+body.kt-native-app .site-footer-inner,
+body.kt-native-app .site-footer-brand,
+body.kt-native-app .site-footer-nav,
+body.kt-native-app .site-footer-tag,
+body.kt-native-app .site-footer-contact {
+  display: none !important;
+}
+body.kt-native-app .site-footer-bottom {
+  border-top: none;
+  background: #2a2a2a;
+}
+body.kt-native-app .site-footer-bottom-inner,
+body.kt-native-app .footer-copy {
+  padding: 8px 12px;
+  justify-content: center;
+  text-align: center;
+  font-size: 11px;
+  color: #888;
+}
+
