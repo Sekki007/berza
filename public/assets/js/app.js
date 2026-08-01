@@ -1637,6 +1637,19 @@
 
     var loggedIn = !!(document.body && document.body.getAttribute('data-logged-in'));
 
+    function handlePushOpen(event) {
+      var n = (event && event.notification) || {};
+      var data = n.data || event.data || {};
+      var link = data.link || data.click_action || '';
+      if (link === 'FCM_PLUGIN_ACTIVITY') link = '';
+      if (link) openPushLink(link);
+      else window.location.href = '/poruke.php';
+      // Očisti delivered notifikacije kad korisnik otvori iz push-a
+      if (typeof Push.removeAllDeliveredNotifications === 'function') {
+        Push.removeAllDeliveredNotifications().catch(function () {});
+      }
+    }
+
     Push.addListener('registration', function (token) {
       var value = (token && (token.value || token.token)) || '';
       if (value) {
@@ -1647,12 +1660,17 @@
 
     Push.addListener('registrationError', function () {});
 
-    Push.addListener('pushNotificationActionPerformed', function (event) {
-      var n = (event && event.notification) || {};
-      var data = n.data || {};
-      var link = data.link || data.click_action || '';
-      if (link) openPushLink(link);
-      else window.location.href = '/poruke.php';
+    Push.addListener('pushNotificationActionPerformed', handlePushOpen);
+
+    // Foreground: kad stigne push dok je app otvorena
+    Push.addListener('pushNotificationReceived', function (notification) {
+      try {
+        var data = (notification && notification.data) || {};
+        var unread = parseInt(data.badge || '0', 10);
+        if (unread > 0 && typeof updateUnreadBadges === 'function') {
+          updateUnreadBadges(unread);
+        }
+      } catch (e) {}
     });
 
     Push.requestPermissions().then(function (perm) {

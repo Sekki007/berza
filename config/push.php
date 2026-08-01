@@ -276,7 +276,7 @@ function fcmAccessToken(): ?string
     return $memo;
 }
 
-function sendFcmToToken(string $token, string $title, string $body, string $link = '', array $data = []): array
+function sendFcmToToken(string $token, string $title, string $body, string $link = '', array $data = [], int $badgeCount = 0): array
 {
     $token = trim($token);
     if ($token === '' || !pushEnabled()) {
@@ -291,16 +291,33 @@ function sendFcmToToken(string $token, string $title, string $body, string $link
     if ($urlPath !== '' && !preg_match('#^https?://#i', $urlPath)) {
         $urlPath = absoluteUrl($urlPath);
     }
+    if ($urlPath === '') {
+        $urlPath = absoluteUrl('/poruke.php');
+    }
+
+    $badgeCount = max(0, $badgeCount);
 
     $dataPayload = array_merge([
         'title' => $title,
         'body' => $body,
         'link' => $urlPath,
         'click_action' => $urlPath,
+        'badge' => (string)$badgeCount,
     ], $data);
     // FCM data values must be strings
     foreach ($dataPayload as $k => $v) {
         $dataPayload[$k] = (string)$v;
+    }
+
+    $androidNotification = [
+        'sound' => 'default',
+        'click_action' => 'FCM_PLUGIN_ACTIVITY',
+        'channel_id' => 'kupitelefon_messages',
+        'default_sound' => true,
+        'default_vibrate_timings' => true,
+    ];
+    if ($badgeCount > 0) {
+        $androidNotification['notification_count'] = $badgeCount;
     }
 
     $payload = [
@@ -312,12 +329,8 @@ function sendFcmToToken(string $token, string $title, string $body, string $link
             ],
             'data' => $dataPayload,
             'android' => [
-                'priority' => 'high',
-                'notification' => [
-                    'sound' => 'default',
-                    'click_action' => 'FCM_PLUGIN_ACTIVITY',
-                    'channel_id' => 'kupitelefon_messages',
-                ],
+                'priority' => 'HIGH',
+                'notification' => $androidNotification,
             ],
         ],
     ];
@@ -355,6 +368,13 @@ function sendFcmToToken(string $token, string $title, string $body, string $link
     return ['ok' => $ok, 'http' => $code, 'error' => $err, 'response' => $decoded];
 }
 
+function pushBadgeCountForUser(int $userId): int
+{
+    $messages = function_exists('getUnreadMessageCount') ? getUnreadMessageCount($userId) : 0;
+    $notes = function_exists('getUnreadNotificationCount') ? getUnreadNotificationCount($userId) : 0;
+    return max(0, $messages + $notes);
+}
+
 function sendPushToUser(int $userId, string $type, string $title, string $body, string $link = ''): int
 {
     if ($userId <= 0 || !pushEnabled()) {
@@ -365,10 +385,14 @@ function sendPushToUser(int $userId, string $type, string $title, string $body, 
         return 0;
     }
 
-    // Za sada: push za poruke; ostali tipovi ako korisnik nije isključio push
     $tokens = getPushTokensForUser($userId);
     if (!$tokens) {
         return 0;
+    }
+
+    $badge = pushBadgeCountForUser($userId);
+    if ($badge < 1) {
+        $badge = 1; // bar 1 kad stiže nova notifikacija
     }
 
     $sent = 0;
@@ -379,7 +403,7 @@ function sendPushToUser(int $userId, string $type, string $title, string $body, 
         }
         $result = sendFcmToToken($token, $title, $body, $link, [
             'type' => $type,
-        ]);
+        ], $badge);
         if (!empty($result['ok'])) {
             $sent++;
         }
