@@ -197,6 +197,7 @@ if ($cityParam !== '') {
             <header class="dir-hub-head form-card">
                 <h1>Mobilni servisi u <?= h($cityName) ?></h1>
                 <p>Verifikovane firme koje nude servis mobilnih telefona<?= count($services) > 0 ? ' — ' . count($services) . ' ' . (count($services) === 1 ? 'firma' : 'firmi') : '' ?>.</p>
+                <p style="margin-top:10px;"><a href="/servisi">← Svi gradovi / pretraga</a></p>
             </header>
 
             <?php if ($services === []): ?>
@@ -237,6 +238,7 @@ if ($cityParam !== '') {
 
 // --- Hub ---
 $cityStats = directoryCityStats();
+$citySearchIndex = directoryCitySearchIndex();
 $allServices = listDirectoryServices(null);
 $seo = seoDirectoryHubMeta();
 $pageTitle = $seo['title'];
@@ -250,6 +252,18 @@ $jsonLd = [
     'description' => $pageDescription,
 ];
 
+// Direktna pretraga: ?q=Niš → /servisi/nis
+$hubQ = trim((string)($_GET['q'] ?? ''));
+if ($hubQ !== '') {
+    $qSlug = citySlug($hubQ);
+    foreach ($citySearchIndex as $row) {
+        if ($row['slug'] === $qSlug || mb_strtolower($row['city']) === mb_strtolower($hubQ)) {
+            header('Location: ' . $row['url'], true, 302);
+            exit;
+        }
+    }
+}
+
 require __DIR__ . '/partials/layout-start.php';
 ?>
 <div class="main-wrap">
@@ -258,35 +272,75 @@ require __DIR__ . '/partials/layout-start.php';
 
         <header class="dir-hub-head form-card">
             <h1>Mobilni servisi u Srbiji</h1>
-            <p>Direktorijum verifikovanih firmi za popravku i servis telefona. Izaberi grad pa otvori profil servisa.</p>
-            <p class="dir-hub-count"><?= count($allServices) ?> <?= count($allServices) === 1 ? 'servis' : 'servisa' ?> · <?= count($cityStats) ?> <?= count($cityStats) === 1 ? 'grad' : 'gradova' ?></p>
+            <p>Direktorijum verifikovanih firmi za popravku i servis telefona. Pretraži grad ili izaberi sa liste.</p>
+            <p class="dir-hub-count"><?= count($allServices) ?> <?= count($allServices) === 1 ? 'servis' : 'servisa' ?> · <?= count($cityStats) ?> <?= count($cityStats) === 1 ? 'grad sa firmama' : 'gradova sa firmama' ?></p>
+
+            <form class="dir-city-search" method="GET" action="/servisi" data-dir-city-search autocomplete="off">
+                <label class="dir-city-search-label" for="dir-city-q">Traži grad</label>
+                <div class="dir-city-search-wrap">
+                    <input
+                        id="dir-city-q"
+                        class="dir-city-search-input"
+                        type="search"
+                        name="q"
+                        value="<?= h($hubQ) ?>"
+                        placeholder="npr. Niš, Novi Sad, Beograd…"
+                        autocomplete="off"
+                        role="combobox"
+                        aria-autocomplete="list"
+                        aria-expanded="false"
+                        aria-controls="dir-city-suggest"
+                        data-dir-city-input
+                    >
+                    <button type="submit" class="btn-sm btn-sm-primary">Traži</button>
+                    <div id="dir-city-suggest" class="dir-city-suggest" data-dir-city-suggest hidden role="listbox"></div>
+                </div>
+                <p class="form-hint dir-city-search-hint">Kucaj naziv grada — predlozi se otvaraju odmah. Enter otvara prvi rezultat.</p>
+            </form>
         </header>
 
         <?php if ($cityStats === []): ?>
             <div class="form-card">
-                <p class="dir-empty">Još nema javnih verifikovanih servisa u direktorijumu. Uskoro će biti dostupni po gradovima.</p>
+                <p class="dir-empty">Još nema javnih verifikovanih servisa u direktorijumu. Možeš ipak potražiti grad iznad — stranica grada će biti spremna kad se firme pojave.</p>
                 <p style="margin-top:10px;"><a href="/index.php?type=servis">Pogledaj oglase usluga →</a></p>
             </div>
         <?php else: ?>
-            <div class="dir-city-grid">
+            <div class="dir-city-toolbar">
+                <h2 class="dir-section-title" style="margin:0;">Gradovi sa servisima</h2>
+                <span class="dir-city-filter-meta" data-dir-city-filter-meta></span>
+            </div>
+            <div class="dir-city-grid" data-dir-city-grid>
                 <?php foreach ($cityStats as $row): ?>
-                    <a class="dir-city-card" href="<?= h($row['url']) ?>">
+                    <a
+                        class="dir-city-card"
+                        href="<?= h($row['url']) ?>"
+                        data-dir-city-card
+                        data-city="<?= h(mb_strtolower($row['city'])) ?>"
+                        data-slug="<?= h($row['slug']) ?>"
+                    >
                         <strong><?= h($row['city']) ?></strong>
                         <span><?= (int)$row['count'] ?> <?= (int)$row['count'] === 1 ? 'servis' : 'servisa' ?></span>
                     </a>
                 <?php endforeach; ?>
             </div>
+            <p class="dir-empty" data-dir-city-empty hidden>Nema grada sa tim nazivom među gradovima koji imaju servise. Probaj predlog iz pretrage.</p>
 
             <section class="dir-section">
                 <h2 class="dir-section-title">Svi servisi</h2>
-                <div class="dir-card-grid dir-card-grid-lg">
+                <div class="dir-card-grid dir-card-grid-lg" data-dir-service-grid>
                     <?php foreach ($allServices as $svc): ?>
                         <?php
                         $svcName = directoryServiceName($svc);
                         $svcInit = mb_strtoupper(mb_substr($svcName, 0, 1));
                         $svcCity = trim((string)($svc['location'] ?? ''));
                         ?>
-                        <a class="dir-card dir-card-lg" href="<?= h(directoryServiceUrl($svc, $svcCity)) ?>">
+                        <a
+                            class="dir-card dir-card-lg"
+                            href="<?= h(directoryServiceUrl($svc, $svcCity)) ?>"
+                            data-dir-service-card
+                            data-city="<?= h(mb_strtolower($svcCity)) ?>"
+                            data-name="<?= h(mb_strtolower($svcName)) ?>"
+                        >
                             <?= renderShopAvatarHtml($svc, $svcInit, 'dir-card-avatar') ?>
                             <div class="dir-card-body">
                                 <strong><?= h($svcName) ?></strong>
@@ -299,5 +353,159 @@ require __DIR__ . '/partials/layout-start.php';
         <?php endif; ?>
     </main>
 </div>
+<script>
+window.__DIR_CITIES__ = <?= json_encode($citySearchIndex, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+(function () {
+  const cities = Array.isArray(window.__DIR_CITIES__) ? window.__DIR_CITIES__ : [];
+  const form = document.querySelector('[data-dir-city-search]');
+  const input = document.querySelector('[data-dir-city-input]');
+  const box = document.querySelector('[data-dir-city-suggest]');
+  if (!form || !input || !box) return;
+
+  const cards = Array.from(document.querySelectorAll('[data-dir-city-card]'));
+  const serviceCards = Array.from(document.querySelectorAll('[data-dir-service-card]'));
+  const emptyEl = document.querySelector('[data-dir-city-empty]');
+  const metaEl = document.querySelector('[data-dir-city-filter-meta]');
+  let active = -1;
+  let items = [];
+
+  function norm(s) {
+    return String(s || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/đ/g, 'dj')
+      .replace(/Đ/g, 'dj');
+  }
+
+  function matchCity(row, q) {
+    if (!q) return true;
+    const nq = norm(q);
+    return norm(row.city).includes(nq) || String(row.slug || '').includes(nq.replace(/\s+/g, '-'));
+  }
+
+  function filterLists(q) {
+    const nq = norm(q);
+    let visibleCities = 0;
+    cards.forEach(function (card) {
+      const ok = !nq || norm(card.getAttribute('data-city')).includes(nq) || String(card.getAttribute('data-slug') || '').includes(nq.replace(/\s+/g, '-'));
+      card.hidden = !ok;
+      if (ok) visibleCities++;
+    });
+    if (emptyEl) emptyEl.hidden = !(nq && visibleCities === 0 && cards.length > 0);
+    if (metaEl) {
+      metaEl.textContent = nq
+        ? (visibleCities + ' / ' + cards.length)
+        : '';
+    }
+    serviceCards.forEach(function (card) {
+      if (!nq) { card.hidden = false; return; }
+      const city = norm(card.getAttribute('data-city'));
+      const name = norm(card.getAttribute('data-name'));
+      card.hidden = !(city.includes(nq) || name.includes(nq));
+    });
+  }
+
+  function renderSuggest(q) {
+    const nq = norm(q).trim();
+    if (nq.length < 1) {
+      items = [];
+      box.hidden = true;
+      input.setAttribute('aria-expanded', 'false');
+      box.innerHTML = '';
+      active = -1;
+      return;
+    }
+    items = cities.filter(function (row) { return matchCity(row, nq); }).slice(0, 8);
+    if (!items.length) {
+      box.hidden = true;
+      input.setAttribute('aria-expanded', 'false');
+      box.innerHTML = '';
+      active = -1;
+      return;
+    }
+    box.innerHTML = items.map(function (row, idx) {
+      const countLabel = row.count > 0
+        ? (row.count + (row.count === 1 ? ' servis' : ' servisa'))
+        : 'još nema firmi';
+      return '<button type="button" class="dir-city-suggest-item' + (idx === active ? ' is-active' : '') + '" data-idx="' + idx + '" role="option">' +
+        '<strong>' + escapeHtml(row.city) + '</strong>' +
+        '<span>' + escapeHtml(countLabel) + '</span></button>';
+    }).join('');
+    box.hidden = false;
+    input.setAttribute('aria-expanded', 'true');
+  }
+
+  function escapeHtml(s) {
+    return String(s)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function go(idx) {
+    if (idx < 0 || idx >= items.length) return;
+    window.location.href = items[idx].url;
+  }
+
+  input.addEventListener('input', function () {
+    active = -1;
+    filterLists(input.value);
+    renderSuggest(input.value);
+  });
+
+  input.addEventListener('keydown', function (e) {
+    if (box.hidden || !items.length) {
+      if (e.key === 'Enter' && items.length === 1) {
+        e.preventDefault();
+        go(0);
+      }
+      return;
+    }
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      active = (active + 1) % items.length;
+      renderSuggest(input.value);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      active = (active - 1 + items.length) % items.length;
+      renderSuggest(input.value);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      go(active >= 0 ? active : 0);
+    } else if (e.key === 'Escape') {
+      box.hidden = true;
+      input.setAttribute('aria-expanded', 'false');
+      active = -1;
+    }
+  });
+
+  box.addEventListener('click', function (e) {
+    const btn = e.target.closest('[data-idx]');
+    if (!btn) return;
+    go(parseInt(btn.getAttribute('data-idx') || '-1', 10));
+  });
+
+  document.addEventListener('click', function (e) {
+    if (!form.contains(e.target)) {
+      box.hidden = true;
+      input.setAttribute('aria-expanded', 'false');
+    }
+  });
+
+  form.addEventListener('submit', function (e) {
+    const q = input.value.trim();
+    if (!q) return;
+    const hit = cities.find(function (row) { return matchCity(row, q); });
+    if (hit) {
+      e.preventDefault();
+      window.location.href = hit.url;
+    }
+  });
+
+  if (input.value) filterLists(input.value);
+})();
+</script>
 <?php
 require __DIR__ . '/partials/layout-end.php';

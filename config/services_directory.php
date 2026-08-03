@@ -6,9 +6,37 @@ declare(strict_types=1);
  * SEO direktorijum verifikovanih servisa: /servisi, /servisi/{grad}, /servisi/{grad}/{slug}
  */
 
-function citySlug(string $city): string
+/**
+ * Gradovi za pretragu: prvo oni sa servisima, zatim ostali iz settings.
+ *
+ * @return list<array{city:string,slug:string,count:int,url:string}>
+ */
+function directoryCitySearchIndex(): array
 {
-    return normalizeShopSlug($city);
+    $bySlug = [];
+    foreach (directoryCityStats() as $row) {
+        $bySlug[$row['slug']] = $row;
+    }
+    foreach (directoryCities() as $city) {
+        $slug = citySlug($city);
+        if ($slug === '' || isset($bySlug[$slug])) {
+            continue;
+        }
+        $bySlug[$slug] = [
+            'city' => $city,
+            'slug' => $slug,
+            'count' => 0,
+            'url' => directoryCityUrl($city),
+        ];
+    }
+    $out = array_values($bySlug);
+    usort($out, static function (array $a, array $b): int {
+        if ($a['count'] !== $b['count']) {
+            return $b['count'] <=> $a['count'];
+        }
+        return strcasecmp($a['city'], $b['city']);
+    });
+    return $out;
 }
 
 /**
