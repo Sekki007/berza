@@ -77,6 +77,18 @@ if ($isEdit) {
             }
         }
     }
+    // Brzi unos: zadrži tip / kategoriju / kontakt sa prethodnog oglasa
+    $prefill = $_SESSION['kt_quick_prefill'] ?? null;
+    if (is_array($prefill) && (isset($_GET['more']) || !empty($prefill['active']))) {
+        foreach (['ad_type', 'location', 'contact_phone', 'shop_category_id', 'currency', 'condition_state', 'brand'] as $key) {
+            if (!empty($prefill[$key])) {
+                $ad[$key] = $prefill[$key];
+            }
+        }
+        if (($ad['ad_type'] ?? '') === 'servis') {
+            $ad['listing_type'] = 'service';
+        }
+    }
 }
 
 $formError = '';
@@ -268,6 +280,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'content_type' => 'product',
             'content_name' => (string)($payload['title'] ?? ''),
         ]);
+
+        $addAnother = isset($_POST['save_and_add_another']);
+        if ($addAnother) {
+            $_SESSION['kt_quick_prefill'] = [
+                'active' => 1,
+                'ad_type' => (string)($payload['ad_type'] ?? 'telefon'),
+                'location' => (string)($payload['location'] ?? ''),
+                'contact_phone' => (string)($payload['contact_phone'] ?? ''),
+                'shop_category_id' => (string)($payload['shop_category_id'] ?? ''),
+                'currency' => (string)($payload['currency'] ?? 'eur'),
+                'condition_state' => (string)($payload['condition_state'] ?? ''),
+                'brand' => (string)($payload['brand'] ?? ''),
+            ];
+            setFlash('success', $msg . ' Možeš odmah dodati sledeći.');
+            header('Location: /ad_form.php?more=1');
+            exit;
+        }
+        unset($_SESSION['kt_quick_prefill']);
         header('Location: /nalog.php?tab=oglasi');
         exit;
     }

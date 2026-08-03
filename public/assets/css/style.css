@@ -1396,6 +1396,9 @@ body.page-chat .footer,body.page-chat .site-footer{display:none;}
 .shop-cat-row input[type="text"]{flex:1;min-width:140px;padding:8px 10px;border:1px solid var(--border);border-radius:6px;font:inherit;}
 .shop-cat-add{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
 .shop-cat-add input{flex:1;min-width:160px;padding:10px 12px;border:1px solid var(--border);border-radius:6px;font:inherit;}
+.bulk-import-box{margin:14px 0 18px;padding:14px;border:1px dashed #cfcfcf;border-radius:10px;background:#fafafa;}
+.bulk-import-box h3{margin:0 0 6px;}
+.bulk-import-actions{margin:8px 0 0;}
 .rep-badge { display: inline-flex; align-items: center; gap: 4px; font-weight: bold; font-size: 15px; }
 .rep-pos { color: #1a7a3a; }
 .rep-neg { color: #b42318; }

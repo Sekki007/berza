@@ -490,8 +490,15 @@ $contactExtraOpen = $listingExtra
 
             <div class="ad-form-submit">
                 <button class="btn-call" type="submit"><?= $isEdit ? 'Sačuvaj izmene' : 'Objavi oglas' ?></button>
-                <a href="/nalog.php?tab=oglasi" class="btn-message">Odustani</a>
+                <?php if (!$isEdit): ?>
+                    <button class="btn-message" type="submit" name="save_and_add_another" value="1">Objavi i dodaj još</button>
+                <?php else: ?>
+                    <a href="/nalog.php?tab=oglasi" class="btn-message">Odustani</a>
+                <?php endif; ?>
             </div>
+            <?php if (!$isEdit): ?>
+                <p class="form-hint" style="margin-top:8px;text-align:center;">„Objavi i dodaj još” čuva tip, grad, telefon i kategoriju izloga za sledeći oglas.</p>
+            <?php endif; ?>
         </form>
     </main>
 </div>

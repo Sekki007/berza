@@ -722,6 +722,18 @@ require __DIR__ . '/partials/layout-start.php';
                 <?php if ($topOn): ?>
                     <p class="form-hint">Ispod oglasa klikni <strong>Promocije</strong> da aktiviraš TOP ili plavo isticanje. Kredit: <a href="?tab=krediti"><?= formatCredits($userCredits) ?></a></p>
                 <?php endif; ?>
+
+                <div class="bulk-import-box" id="bulk-import">
+                    <h3 class="profile-section-title">Brzi unos (jedan po jedan)</h3>
+                    <p class="form-hint" style="margin-top:0;">
+                        Dodaj oglas, pa odmah sledeći — tip, grad, telefon i kategorija izloga se pamte.
+                        Na formi klikni <strong>Objavi i dodaj još</strong>.
+                    </p>
+                    <div class="bulk-import-actions">
+                        <a class="btn-sm btn-sm-primary" href="/ad_form.php?more=1">+ Brzi unos oglasa</a>
+                    </div>
+                </div>
+
                 <?php if (!$myAds): ?>
                     <div class="account-empty">
                         <p>Nemaš objavljenih oglasa.</p>
