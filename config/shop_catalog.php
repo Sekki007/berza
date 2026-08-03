@@ -391,11 +391,12 @@ function canUploadShopLogo(?array $user): bool
 }
 
 /**
- * Upload / brisanje logoa izloga. Vraća novi URL, null (obrisano), ili postojeći.
+ * Upload / brisanje logoa izloga.
+ *
+ * @return array{ok:bool,url:?string,changed:bool,error:?string}
  */
-function handleShopLogoUpload(int $userId, ?string $existingLogo = null): ?string
+function handleShopLogoUpload(int $userId, ?string $existingLogo = null): array
 {
-    ensureShopLogoUploadsDir();
     $existing = $existingLogo && str_starts_with($existingLogo, '/uploads/shops/') ? $existingLogo : null;
 
     if (!empty($_POST['shop_logo_remove'])) {
@@ -405,39 +406,58 @@ function handleShopLogoUpload(int $userId, ?string $existingLogo = null): ?strin
                 @unlink($old);
             }
         }
-        return null;
+        return ['ok' => true, 'url' => null, 'changed' => true, 'error' => null];
     }
 
     if (!isset($_FILES['shop_logo']) || !is_array($_FILES['shop_logo'])) {
-        return $existing;
+        return ['ok' => true, 'url' => $existing, 'changed' => false, 'error' => null];
     }
-    if ((int)($_FILES['shop_logo']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
-        return $existing;
+
+    $fileErr = (int)($_FILES['shop_logo']['error'] ?? UPLOAD_ERR_NO_FILE);
+    if ($fileErr === UPLOAD_ERR_NO_FILE) {
+        return ['ok' => true, 'url' => $existing, 'changed' => false, 'error' => null];
+    }
+    if ($fileErr !== UPLOAD_ERR_OK) {
+        $msg = match ($fileErr) {
+            UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE => 'Logo je prevelik (server limit).',
+            default => 'Upload logoa nije uspeo (kod ' . $fileErr . ').',
+        };
+        return ['ok' => false, 'url' => $existing, 'changed' => false, 'error' => $msg];
     }
 
     $tmp = (string)($_FILES['shop_logo']['tmp_name'] ?? '');
     if ($tmp === '' || !is_file($tmp)) {
-        return $existing;
+        return ['ok' => false, 'url' => $existing, 'changed' => false, 'error' => 'Privremeni fajl logoa nije pronađen.'];
     }
     $type = mime_content_type($tmp) ?: '';
     $allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
     if (!in_array($type, $allowed, true)) {
-        return $existing;
+        return ['ok' => false, 'url' => $existing, 'changed' => false, 'error' => 'Dozvoljeni formati: JPG, PNG, WebP, GIF.'];
     }
 
     $size = (int)($_FILES['shop_logo']['size'] ?? 0);
     if ($size <= 0 || $size > 4 * 1024 * 1024) {
-        return $existing;
+        return ['ok' => false, 'url' => $existing, 'changed' => false, 'error' => 'Logo mora biti do 4 MB.'];
     }
 
-    $targetDir = shopLogoUploadsDir() . '/' . $userId;
-    if (!is_dir($targetDir)) {
-        mkdir($targetDir, 0777, true);
+    ensureShopLogoUploadsDir();
+    $base = shopLogoUploadsDir();
+    if (!is_dir($base) || !is_writable($base)) {
+        return ['ok' => false, 'url' => $existing, 'changed' => false, 'error' => 'Folder uploads/shops nije upisiv. Na serveru uradi chmod/chown.'];
     }
+
+    $targetDir = $base . '/' . $userId;
+    if (!is_dir($targetDir) && !@mkdir($targetDir, 0775, true)) {
+        return ['ok' => false, 'url' => $existing, 'changed' => false, 'error' => 'Ne mogu da napravim folder za logo (dozvole).'];
+    }
+    if (!is_writable($targetDir)) {
+        return ['ok' => false, 'url' => $existing, 'changed' => false, 'error' => 'Folder za logo nije upisiv (chmod).'];
+    }
+
     $name = 'logo_' . time() . '.jpg';
     $dest = $targetDir . '/' . $name;
     if (!saveShopLogoImage($tmp, $dest, $type)) {
-        return $existing;
+        return ['ok' => false, 'url' => $existing, 'changed' => false, 'error' => 'Obrada slike nije uspela. Proveri da li PHP ima GD ekstenziju.'];
     }
 
     if ($existing) {
@@ -447,7 +467,7 @@ function handleShopLogoUpload(int $userId, ?string $existingLogo = null): ?strin
         }
     }
 
-    return '/uploads/shops/' . $userId . '/' . $name;
+    return ['ok' => true, 'url' => '/uploads/shops/' . $userId . '/' . $name, 'changed' => true, 'error' => null];
 }
 
 /** Kvadratni logo max 512px, beli background, JPEG. */

@@ -398,18 +398,24 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         setFlash('danger', 'Profil nije ažuriran. Proveri telefon, PIB ili URL izloga (zauzet / neispravan).');
     } else {
         $fresh = findUserById($userId) ?? $profile;
+        $logoMsg = '';
         if (canUploadShopLogo($fresh)) {
-            $newLogo = handleShopLogoUpload($userId, userShopLogoUrl($fresh) ?: null);
-            $oldLogo = userShopLogoUrl($fresh);
-            if ($newLogo !== $oldLogo) {
-                patchUser($userId, ['shop_logo' => $newLogo ?? '']);
+            $logoResult = handleShopLogoUpload($userId, userShopLogoUrl($fresh) ?: null);
+            if (empty($logoResult['ok'])) {
+                setFlash('danger', (string)($logoResult['error'] ?? 'Logo nije sačuvan.'));
+                header('Location: /nalog.php?tab=profil#shop-logo');
+                exit;
+            }
+            if (!empty($logoResult['changed'])) {
+                patchUser($userId, ['shop_logo' => $logoResult['url'] ?? '']);
+                $logoMsg = $logoResult['url'] ? ' Logo je sačuvan.' : ' Logo je uklonjen.';
             }
         }
         $fresh = findUserById($userId);
         if ($fresh && !isPhoneVerified($fresh) && normalizePhoneRs((string)($fresh['phone'] ?? '')) !== null) {
-            setFlash('success', 'Profil je ažuriran. Potvrdi novi broj SMS kodom.');
+            setFlash('success', 'Profil je ažuriran. Potvrdi novi broj SMS kodom.' . $logoMsg);
         } else {
-            setFlash('success', 'Profil je ažuriran.');
+            setFlash('success', 'Profil je ažuriran.' . $logoMsg);
         }
     }
     header('Location: /nalog.php?tab=profil');
