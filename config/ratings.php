@@ -5,10 +5,11 @@ declare(strict_types=1);
 function reservedShopSlugs(): array
 {
     return [
-        'admin', 'api', 'assets', 'izlog', 'usluge', 'oglas', 'oglasi', 'login', 'register',
+        'admin', 'api', 'assets', 'izlog', 'usluge', 'servisi', 'oglas', 'oglasi', 'login', 'register',
         'nalog', 'poruke', 'favorites', 'dashboard', 'report', 'sitemap', 'robots', 'uploads',
         'forgot-password', 'reset-password', 'verify-phone', 'verify-email', 'uporedi',
         'kako-radi', 'index', 'www', 'mail', 'podrska', 'support', 'kupitelefon',
+        'prodavnice', 'grad',
     ];
 }
 

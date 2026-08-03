@@ -11,6 +11,7 @@ $urls[] = ['loc' => rtrim(absoluteUrl('/'), '/') . '/', 'priority' => '1.0', 'ch
 
 $staticPages = [
     ['/kako-radi.php', '0.5', 'monthly'],
+    ['/servisi', '0.9', 'daily'],
     ['/index.php?type=telefon', '0.8', 'daily'],
     ['/index.php?type=delovi', '0.7', 'daily'],
     ['/index.php?type=servis', '0.8', 'daily'],
@@ -22,6 +23,22 @@ foreach ($staticPages as [$path, $priority, $changefreq]) {
         'loc' => absoluteUrl($path),
         'priority' => $priority,
         'changefreq' => $changefreq,
+    ];
+}
+
+foreach (directoryCityStats() as $cityRow) {
+    $urls[] = [
+        'loc' => absoluteUrl($cityRow['url']),
+        'priority' => '0.8',
+        'changefreq' => 'weekly',
+    ];
+}
+foreach (listDirectoryServices(null) as $svcUser) {
+    $urls[] = [
+        'loc' => absoluteUrl(directoryServiceUrl($svcUser)),
+        'priority' => '0.75',
+        'changefreq' => 'weekly',
+        'lastmod' => substr((string)($svcUser['verified_seller_at'] ?? $svcUser['business_verified_at'] ?? $svcUser['created_at'] ?? ''), 0, 10),
     ];
 }
 

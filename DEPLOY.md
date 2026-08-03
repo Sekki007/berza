@@ -25,10 +25,13 @@ server {
     access_log /var/log/nginx/kupitelefon-access.log;
     error_log  /var/log/nginx/kupitelefon-error.log;
 
-    # Pretty URL: /oglas/123-slug, /izlog/username, /usluge/username
+    # Pretty URL: /oglas/123-slug, /izlog/username, /usluge/username, /servisi/...
     rewrite ^/oglas/(\d+)(?:-.*)?/?$ /oglas.php?id=$1 last;
     rewrite ^/izlog/([^/]+)/?$ /izlog.php?u=$1 last;
     rewrite ^/usluge/([^/]+)/?$ /usluge.php?u=$1 last;
+    rewrite ^/servisi/([^/]+)/([^/]+)/?$ /servisi.php?city=$1&slug=$2 last;
+    rewrite ^/servisi/([^/]+)/?$ /servisi.php?city=$1 last;
+    rewrite ^/servisi/?$ /servisi.php last;
     rewrite ^/sitemap\.xml$ /sitemap.php last;
 
     location / {

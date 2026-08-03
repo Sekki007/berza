@@ -48,7 +48,8 @@ if ($user) {
                     <a href="/index.php">Početna</a>
                     <a href="/index.php?type=telefon">Uređaji</a>
                     <a href="/index.php?type=delovi">Oprema</a>
-                    <a href="/index.php?type=servis">Servis</a>
+                    <a href="/index.php?type=servis">Servis oglasi</a>
+                    <a href="/servisi">Servisi po gradu</a>
                 </div>
                 <div class="site-footer-col">
                     <h4>Prodaja</h4>
@@ -215,6 +216,13 @@ if ($user) {
                     <span class="mobile-account-menu-text">
                         <strong>Postavi oglas</strong>
                         <small>Potrebna je prijava</small>
+                    </span>
+                </a>
+                <a href="/servisi" class="mobile-account-menu-item">
+                    <span class="mobile-account-menu-icon">🔧</span>
+                    <span class="mobile-account-menu-text">
+                        <strong>Servisi po gradu</strong>
+                        <small>Verifikovane firme</small>
                     </span>
                 </a>
                 <a href="/kako-radi.php" class="mobile-account-menu-item">

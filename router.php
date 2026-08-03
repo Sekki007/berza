@@ -23,6 +23,24 @@ if (preg_match('#^/usluge/([^/]+)/?$#', $uri, $m)) {
     exit;
 }
 
+if ($uri === '/servisi' || $uri === '/servisi/') {
+    require __DIR__ . '/public/servisi.php';
+    exit;
+}
+
+if (preg_match('#^/servisi/([^/]+)/([^/]+)/?$#', $uri, $m)) {
+    $_GET['city'] = rawurldecode($m[1]);
+    $_GET['slug'] = rawurldecode($m[2]);
+    require __DIR__ . '/public/servisi.php';
+    exit;
+}
+
+if (preg_match('#^/servisi/([^/]+)/?$#', $uri, $m)) {
+    $_GET['city'] = rawurldecode($m[1]);
+    require __DIR__ . '/public/servisi.php';
+    exit;
+}
+
 if ($uri === '/sitemap.xml' || $uri === '/sitemap.php') {
     require __DIR__ . '/public/sitemap.php';
     exit;

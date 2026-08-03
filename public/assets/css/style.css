@@ -2674,3 +2674,76 @@ body.kt-native-app .footer-copy {
   color: #888;
 }
 
+/* Direktorijum servisa */
+.dir-page { max-width: 920px; }
+.dir-hub-head h1 { margin: 0 0 8px; font-size: 26px; line-height: 1.25; }
+.dir-hub-head p { margin: 0; color: var(--text-muted); line-height: 1.45; }
+.dir-hub-count { margin-top: 10px !important; font-weight: 700; color: var(--text) !important; }
+.dir-city-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  margin-top: 12px;
+}
+.dir-city-card {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 14px 16px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--text);
+  transition: border-color .15s, background .15s;
+}
+.dir-city-card:hover { border-color: var(--kp-green); background: #f3faf4; text-decoration: none; }
+.dir-city-card strong { font-size: 16px; }
+.dir-city-card span { font-size: 13px; color: var(--text-muted); }
+.dir-card-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+.dir-card {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  text-decoration: none;
+  color: var(--text);
+}
+.dir-card:hover { border-color: var(--kp-green); background: #f3faf4; text-decoration: none; }
+.dir-card-avatar {
+  width: 48px;
+  height: 48px;
+  font-size: 18px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.dir-card-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.dir-card-body strong { font-size: 15px; line-height: 1.3; }
+.dir-card-kind, .dir-card-phone { font-size: 12px; color: var(--text-muted); }
+.dir-card-bio { font-size: 13px; color: var(--text-muted); line-height: 1.35; }
+.dir-section { margin-top: 18px; }
+.dir-section-title { margin: 0 0 8px; font-size: 18px; }
+.dir-empty { color: var(--text-muted); margin: 0; line-height: 1.45; }
+.dir-more { margin-top: 12px; }
+.dir-service-hero { margin-bottom: 14px; }
+.dir-service-top { display: flex; gap: 14px; align-items: flex-start; }
+.dir-service-avatar { width: 72px; height: 72px; font-size: 26px; }
+.dir-service-title { margin: 0 0 4px; font-size: 22px; line-height: 1.3; }
+.dir-service-meta { margin: 0 0 8px; color: var(--text-muted); font-size: 14px; }
+.dir-service-address { margin: 8px 0 0; font-size: 14px; color: var(--text); }
+.dir-service-actions { margin-top: 14px; }
+@media (max-width: 640px) {
+  .dir-hub-head h1 { font-size: 22px; }
+  .dir-service-top { flex-direction: column; }
+  .dir-card-grid { grid-template-columns: 1fr; }
+}
+
+

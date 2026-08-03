@@ -52,8 +52,8 @@ $compareCount = count(compareIds());
     <meta name="twitter:image" content="<?= h($pageImage) ?>">
     <meta name="twitter:title" content="<?= h($pageTitle) ?>">
     <meta name="twitter:description" content="<?= h($pageDescription) ?>">
-    <link rel="preload" href="/assets/css/style.css?v=20260803e" as="style">
-    <link rel="stylesheet" href="/assets/css/style.css?v=20260803e">
+    <link rel="preload" href="/assets/css/style.css?v=20260803f" as="style">
+    <link rel="stylesheet" href="/assets/css/style.css?v=20260803f">
     <link rel="icon" type="image/png" href="/assets/img/favicon.png">
     <link rel="apple-touch-icon" href="/assets/img/logo-mark.png">
     <?php if (!empty($preloadImage)): ?>
@@ -78,6 +78,7 @@ $compareCount = count(compareIds());
         <div class="topbar-inner">
             <span><?= h(siteTagline()) ?></span>
             <div class="topbar-links">
+                <a href="/servisi">Servisi</a>
                 <a href="/kako-radi.php">Kako radi</a>
                 <?php if (!empty($site['enable_favorites'])): ?><a href="/favorites.php">Omiljeni</a><?php endif; ?>
                 <?php if ($user): ?>
