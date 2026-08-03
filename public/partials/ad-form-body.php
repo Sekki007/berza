@@ -115,6 +115,19 @@ $contactExtraOpen = $listingExtra
                     <input name="title" id="ad-title" placeholder="npr. iPhone 13 Pro Max 256GB" value="<?= h((string)$ad['title']) ?>" required maxlength="120" autocomplete="off">
                 </div>
 
+                <?php if (!empty($shopCategoriesForForm)): ?>
+                    <div class="form-group">
+                        <label for="shop-category-id">Kategorija u izlogu</label>
+                        <select name="shop_category_id" id="shop-category-id">
+                            <option value="">Bez kategorije</option>
+                            <?php foreach ($shopCategoriesForForm as $sc): ?>
+                                <option value="<?= h($sc['id']) ?>" <?= ($currentShopCategoryId ?? '') === $sc['id'] ? 'selected' : '' ?>><?= h($sc['name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                        <p class="form-hint">Opciono — za katalog na tvom izlogu. Upravljaj kategorijama u <a href="/nalog.php?tab=profil#shop-categories">Nalogu</a>.</p>
+                    </div>
+                <?php endif; ?>
+
                 <div class="form-group">
                     <label>Cena</label>
                     <div class="price-type-row" data-price-type-row>

@@ -26,8 +26,45 @@ if ($param !== '' && rawurldecode($param) !== userShopSlug($seller)) {
     exit;
 }
 
-$ads = getPublicAdsByUserId($sellerId, true);
-$shopName = getSellerShopName($seller, $ads);
+$allAds = getPublicAdsByUserId($sellerId, true);
+$shopCategories = getShopCategories($seller);
+$searchQ = trim((string)($_GET['q'] ?? ''));
+$filterType = trim((string)($_GET['type'] ?? ''));
+$filterCat = trim((string)($_GET['cat'] ?? ''));
+$sort = trim((string)($_GET['sort'] ?? 'newest'));
+$page = max(1, (int)($_GET['page'] ?? 1));
+$perPage = max(12, (int)(siteSettings()['items_per_page'] ?? 20));
+
+if (!in_array($filterType, ['telefon', 'delovi', 'servis', ''], true)) {
+    $filterType = '';
+}
+if (!in_array($sort, ['newest', 'price_asc', 'price_desc'], true)) {
+    $sort = 'newest';
+}
+if ($filterCat !== '' && !findShopCategory($seller, $filterCat)) {
+    $filterCat = '';
+}
+
+$typeCounts = shopAdTypeCounts($allAds);
+$categoryCounts = shopCategoryCounts($allAds, $shopCategories);
+$adsFiltered = filterShopAds($allAds, [
+    'q' => $searchQ,
+    'type' => $filterType,
+    'shop_category' => $filterCat,
+    'sort' => $sort,
+    'hide_sold' => false,
+]);
+$pagination = paginateAds($adsFiltered, $page, $perPage);
+$ads = $pagination['items'];
+
+$queryBase = array_filter([
+    'q' => $searchQ,
+    'type' => $filterType,
+    'cat' => $filterCat,
+    'sort' => $sort,
+], static fn($v) => $v !== '');
+
+$shopName = getSellerShopName($seller, $allAds);
 $summary = getSellerRatingSummary($sellerId);
 $ratings = getSellerRatings($sellerId);
 $shopSeo = seoShopMeta($seller, $shopName);
@@ -95,7 +132,7 @@ require __DIR__ . '/partials/layout-start.php';
                 <div class="shop-header-info">
                     <h1 class="shop-title"><?= h($shopName) ?> <?= renderSellerBadges($seller) ?></h1>
                     <p class="shop-meta">
-                        <?= count($ads) ?> <?= count($ads) === 1 ? 'oglas' : 'oglasa' ?>
+                        <?= (int)$typeCounts['all'] ?> <?= (int)$typeCounts['all'] === 1 ? 'oglas' : 'oglasa' ?>
                     </p>
                     <div class="shop-rating"><?= renderReputation($summary, $shopLink) ?></div>
                     <?php if (!empty($seller['shop_bio'])): ?>
@@ -118,16 +155,85 @@ require __DIR__ . '/partials/layout-start.php';
             </div>
         </div>
 
-        <div class="form-card" style="margin-top:12px;">
-            <h2>Oglasi (<?= count($ads) ?>)</h2>
-            <?php if (!$ads): ?>
+        <div class="form-card shop-catalog" style="margin-top:12px;" id="oglasi">
+            <div class="shop-catalog-head">
+                <h2>Katalog</h2>
+                <span class="shop-catalog-count"><?= (int)$pagination['total'] ?> <?= (int)$pagination['total'] === 1 ? 'oglas' : 'oglasa' ?></span>
+            </div>
+
+            <?php if ($typeCounts['all'] === 0): ?>
                 <p style="color:var(--text-muted);margin-top:8px;">Ovaj prodavac trenutno nema aktivnih oglasa.</p>
             <?php else: ?>
-                <div class="listings" style="margin-top:12px;">
-                    <?php foreach ($ads as $ad): ?>
-                        <?php require __DIR__ . '/partials/ad-card.php'; ?>
+                <form method="GET" class="shop-catalog-toolbar" action="<?= h($shopLink) ?>">
+                    <div class="shop-catalog-search">
+                        <input type="search" name="q" value="<?= h($searchQ) ?>" placeholder="Pretraži u izlogu…" aria-label="Pretraga u izlogu">
+                        <button type="submit" class="btn-sm btn-sm-primary">Traži</button>
+                    </div>
+                    <?php if ($filterType !== ''): ?><input type="hidden" name="type" value="<?= h($filterType) ?>"><?php endif; ?>
+                    <?php if ($filterCat !== ''): ?><input type="hidden" name="cat" value="<?= h($filterCat) ?>"><?php endif; ?>
+                    <div class="shop-catalog-sort">
+                        <label for="shop-sort">Sortiraj</label>
+                        <select id="shop-sort" name="sort" onchange="this.form.submit()">
+                            <option value="newest" <?= $sort === 'newest' ? 'selected' : '' ?>>Najnovije</option>
+                            <option value="price_asc" <?= $sort === 'price_asc' ? 'selected' : '' ?>>Cena rastuće</option>
+                            <option value="price_desc" <?= $sort === 'price_desc' ? 'selected' : '' ?>>Cena opadajuće</option>
+                        </select>
+                    </div>
+                </form>
+
+                <nav class="shop-type-tabs" aria-label="Tip oglasa">
+                    <?php
+                    $typeTabs = [
+                        '' => ['label' => 'Sve', 'count' => $typeCounts['all']],
+                        'telefon' => ['label' => 'Uređaji', 'count' => $typeCounts['telefon']],
+                        'delovi' => ['label' => 'Delovi / oprema', 'count' => $typeCounts['delovi']],
+                        'servis' => ['label' => 'Servis', 'count' => $typeCounts['servis']],
+                    ];
+                    foreach ($typeTabs as $tKey => $tMeta):
+                        if ($tKey !== '' && (int)$tMeta['count'] === 0) {
+                            continue;
+                        }
+                        $href = $shopLink . shopCatalogQuery(array_merge($queryBase, ['type' => $tKey, 'page' => 1]));
+                        $active = $filterType === $tKey;
+                    ?>
+                        <a class="shop-tab <?= $active ? 'is-active' : '' ?>" href="<?= h($href) ?>"><?= h($tMeta['label']) ?> <span><?= (int)$tMeta['count'] ?></span></a>
                     <?php endforeach; ?>
-                </div>
+                </nav>
+
+                <?php if ($shopCategories !== []): ?>
+                    <nav class="shop-cat-tabs" aria-label="Kategorije izloga">
+                        <?php
+                        $catAllHref = $shopLink . shopCatalogQuery(array_merge($queryBase, ['cat' => '', 'page' => 1]));
+                        ?>
+                        <a class="shop-tab <?= $filterCat === '' ? 'is-active' : '' ?>" href="<?= h($catAllHref) ?>">Sve kategorije</a>
+                        <?php foreach ($categoryCounts as $cc):
+                            $href = $shopLink . shopCatalogQuery(array_merge($queryBase, ['cat' => $cc['id'], 'page' => 1]));
+                        ?>
+                            <a class="shop-tab <?= $filterCat === $cc['id'] ? 'is-active' : '' ?>" href="<?= h($href) ?>"><?= h($cc['name']) ?> <span><?= (int)$cc['count'] ?></span></a>
+                        <?php endforeach; ?>
+                    </nav>
+                <?php endif; ?>
+
+                <?php if (!$ads): ?>
+                    <p style="color:var(--text-muted);margin-top:12px;">Nema oglasa za izabrane filtere. <a href="<?= h($shopLink) ?>">Prikaži sve</a></p>
+                <?php else: ?>
+                    <div class="listings" style="margin-top:12px;">
+                        <?php foreach ($ads as $ad): ?>
+                            <?php require __DIR__ . '/partials/ad-card.php'; ?>
+                        <?php endforeach; ?>
+                    </div>
+                    <?php if ($pagination['pages'] > 1): ?>
+                        <div class="pagination">
+                            <?php if ($pagination['page'] > 1): ?>
+                                <a class="btn-sm" href="<?= h($shopLink . shopCatalogQuery(array_merge($queryBase, ['page' => $pagination['page'] - 1]))) ?>">← Prethodna</a>
+                            <?php endif; ?>
+                            <span class="form-hint" style="margin:0;align-self:center;">Strana <?= (int)$pagination['page'] ?> / <?= (int)$pagination['pages'] ?></span>
+                            <?php if ($pagination['page'] < $pagination['pages']): ?>
+                                <a class="btn-sm btn-sm-primary" href="<?= h($shopLink . shopCatalogQuery(array_merge($queryBase, ['page' => $pagination['page'] + 1]))) ?>">Sledeća →</a>
+                            <?php endif; ?>
+                        </div>
+                    <?php endif; ?>
+                <?php endif; ?>
             <?php endif; ?>
         </div>
 

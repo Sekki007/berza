@@ -650,6 +650,7 @@ function normalizeAdDefaults(array $payload): array
     $payload['is_sold'] = (int)($payload['is_sold'] ?? 0);
     $payload['is_promoted'] = (int)($payload['is_promoted'] ?? 0);
     $payload['shop_name'] = trim((string)($payload['shop_name'] ?? ''));
+    $payload['shop_category_id'] = trim((string)($payload['shop_category_id'] ?? ''));
     $payload['country'] = trim((string)($payload['country'] ?? 'Srbija'));
     $payload['category_group'] = trim((string)($payload['category_group'] ?? ''));
     $payload['currency'] = normalizeAdCurrency((string)($payload['currency'] ?? 'eur'));

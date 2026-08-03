@@ -1260,6 +1260,7 @@ require_once __DIR__ . '/saved_searches.php';
 require_once __DIR__ . '/compare.php';
 require_once __DIR__ . '/ad_stats.php';
 require_once __DIR__ . '/storefront.php';
+require_once __DIR__ . '/shop_catalog.php';
 require_once __DIR__ . '/facebook_pixel.php';
 require_once __DIR__ . '/google_tag.php';
 ensureJsonDataFiles();

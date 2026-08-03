@@ -46,6 +46,7 @@ $ad = [
     'location' => '',
     'contact_phone' => '',
     'shop_name' => '',
+    'shop_category_id' => '',
     'badge' => '',
     'images' => [],
     'is_active' => 1,
@@ -149,6 +150,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'country' => 'Srbija',
         'contact_phone' => trim((string)($_POST['contact_phone'] ?? '')),
         'shop_name' => trim((string)($_POST['shop_name'] ?? '')),
+        'shop_category_id' => normalizeAdShopCategoryId($profile, (string)($_POST['shop_category_id'] ?? '')),
         'badge' => trim((string)($_POST['badge'] ?? '')),
         'is_active' => isset($_POST['is_active']) ? 1 : 0,
         'is_sold' => isset($_POST['is_sold']) ? 1 : 0,
@@ -294,6 +296,8 @@ $serviceExtrasSel = is_array($ad['service_extras'] ?? null) ? $ad['service_extra
 $contactSel = is_array($ad['contact_methods'] ?? null) ? $ad['contact_methods'] : ['call', 'message'];
 $pickupSel = is_array($ad['pickup_methods'] ?? null) ? $ad['pickup_methods'] : ['pickup'];
 $bizStatus = userBusinessStatus($profile);
+$shopCategoriesForForm = canManageShopCategories($profile) ? getShopCategories($profile) : [];
+$currentShopCategoryId = trim((string)($ad['shop_category_id'] ?? ''));
 
 $pageTitle = ($isEdit ? 'Izmena oglasa' : 'Postavi oglas') . ' — KupiTelefon';
 $activePage = 'dodaj';

@@ -317,6 +317,56 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         exit;
     }
 
+    if ($action === 'shop_category_add') {
+        $result = addShopCategory($userId, (string)($_POST['name'] ?? ''));
+        $msg = match ($result['error'] ?? '') {
+            'forbidden' => 'Kategorije izloga su dostupne verifikovanim prodavcima.',
+            'name' => 'Unesi naziv kategorije (min. 2 karaktera).',
+            'limit' => 'Maksimalno ' . shopCategoriesMax() . ' kategorija.',
+            'duplicate' => 'Kategorija sa tim nazivom već postoji.',
+            default => !empty($result['ok']) ? 'Kategorija je dodata.' : 'Kategorija nije sačuvana.',
+        };
+        setFlash(!empty($result['ok']) ? 'success' : 'danger', $msg);
+        header('Location: /nalog.php?tab=profil#shop-categories');
+        exit;
+    }
+
+    if ($action === 'shop_category_rename') {
+        $result = renameShopCategory($userId, (string)($_POST['category_id'] ?? ''), (string)($_POST['name'] ?? ''));
+        $msg = match ($result['error'] ?? '') {
+            'forbidden' => 'Kategorije izloga su dostupne verifikovanim prodavcima.',
+            'name' => 'Unesi validan naziv.',
+            'duplicate' => 'Kategorija sa tim nazivom već postoji.',
+            'missing' => 'Kategorija nije pronađena.',
+            default => !empty($result['ok']) ? 'Kategorija je ažurirana.' : 'Izmena nije sačuvana.',
+        };
+        setFlash(!empty($result['ok']) ? 'success' : 'danger', $msg);
+        header('Location: /nalog.php?tab=profil#shop-categories');
+        exit;
+    }
+
+    if ($action === 'shop_category_delete') {
+        $result = deleteShopCategory($userId, (string)($_POST['category_id'] ?? ''));
+        $msg = match ($result['error'] ?? '') {
+            'forbidden' => 'Kategorije izloga su dostupne verifikovanim prodavcima.',
+            'missing' => 'Kategorija nije pronađena.',
+            default => !empty($result['ok']) ? 'Kategorija je obrisana. Oglasi ostaju bez te kategorije.' : 'Brisanje nije uspelo.',
+        };
+        setFlash(!empty($result['ok']) ? 'success' : 'danger', $msg);
+        header('Location: /nalog.php?tab=profil#shop-categories');
+        exit;
+    }
+
+    if ($action === 'shop_category_move') {
+        $dir = (int)($_POST['direction'] ?? 0);
+        $result = moveShopCategory($userId, (string)($_POST['category_id'] ?? ''), $dir < 0 ? -1 : 1);
+        if (empty($result['ok']) && ($result['error'] ?? '') === 'forbidden') {
+            setFlash('danger', 'Kategorije izloga su dostupne verifikovanim prodavcima.');
+        }
+        header('Location: /nalog.php?tab=profil#shop-categories');
+        exit;
+    }
+
     $phoneInput = trim((string)($_POST['phone'] ?? ''));
     if ($phoneInput !== '' && normalizePhoneRs($phoneInput) === null) {
         setFlash('danger', 'Unesi validan srpski mobilni broj (npr. 06x xxx xxxx).');
@@ -373,6 +423,8 @@ $unreadNotifs = getUnreadNotificationCount($userId);
 $savedSearches = getSavedSearchesForUser($userId);
 $sellerStats = sumAdStatsForUser($userId, 30);
 $shopLink = shopUrlForUser($profile);
+$shopCategories = getShopCategories($profile);
+$canShopCategories = canManageShopCategories($profile);
 $summary = getSellerRatingSummary($userId);
 $host = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http') . '://' . ($_SERVER['HTTP_HOST'] ?? 'localhost');
 $fullShopUrl = $host . $shopLink;
@@ -1516,6 +1568,60 @@ require __DIR__ . '/partials/layout-start.php';
                         <button class="btn-call" type="submit">Sačuvaj izmene</button>
                     </div>
                 </form>
+
+                <?php if ($canShopCategories): ?>
+                    <div class="shop-cat-manage" id="shop-categories">
+                        <h3 class="profile-section-title">Kategorije izloga</h3>
+                        <p class="profile-section-desc">Organizuj oglase u sopstvene kategorije (npr. iPhone, Samsung, Kućišta). Prikazuju se na <a href="<?= h($shopLink) ?>">tvom izlogu</a>.</p>
+                        <?php if ($shopCategories): ?>
+                            <div class="shop-cat-list">
+                                <?php foreach ($shopCategories as $cat): ?>
+                                    <div class="shop-cat-row">
+                                        <form method="POST">
+                                            <?= csrfField() ?>
+                                            <input type="hidden" name="action" value="shop_category_rename">
+                                            <input type="hidden" name="category_id" value="<?= h($cat['id']) ?>">
+                                            <input type="text" name="name" value="<?= h($cat['name']) ?>" maxlength="40" required>
+                                            <button class="btn-sm btn-sm-primary" type="submit">Sačuvaj</button>
+                                        </form>
+                                        <form method="POST">
+                                            <?= csrfField() ?>
+                                            <input type="hidden" name="action" value="shop_category_move">
+                                            <input type="hidden" name="category_id" value="<?= h($cat['id']) ?>">
+                                            <input type="hidden" name="direction" value="-1">
+                                            <button class="btn-sm" type="submit" title="Gore">↑</button>
+                                        </form>
+                                        <form method="POST">
+                                            <?= csrfField() ?>
+                                            <input type="hidden" name="action" value="shop_category_move">
+                                            <input type="hidden" name="category_id" value="<?= h($cat['id']) ?>">
+                                            <input type="hidden" name="direction" value="1">
+                                            <button class="btn-sm" type="submit" title="Dole">↓</button>
+                                        </form>
+                                        <form method="POST" onsubmit="return confirm('Obrisati kategoriju? Oglasi ostaju, samo bez kategorije.');">
+                                            <?= csrfField() ?>
+                                            <input type="hidden" name="action" value="shop_category_delete">
+                                            <input type="hidden" name="category_id" value="<?= h($cat['id']) ?>">
+                                            <button class="btn-sm" type="submit">Obriši</button>
+                                        </form>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php else: ?>
+                            <p class="form-hint">Još nemaš kategorije — dodaj prvu ispod.</p>
+                        <?php endif; ?>
+                        <?php if (count($shopCategories) < shopCategoriesMax()): ?>
+                            <form method="POST" class="shop-cat-add">
+                                <?= csrfField() ?>
+                                <input type="hidden" name="action" value="shop_category_add">
+                                <input type="text" name="name" maxlength="40" minlength="2" required placeholder="Nova kategorija (npr. iPhone)">
+                                <button class="btn-sm btn-sm-primary" type="submit">Dodaj kategoriju</button>
+                            </form>
+                        <?php else: ?>
+                            <p class="form-hint">Dostignut je limit od <?= shopCategoriesMax() ?> kategorija.</p>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
 
                 <div class="profile-side-actions">
                     <?php if ($canRequestBusiness): ?>
