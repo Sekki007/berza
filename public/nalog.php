@@ -397,6 +397,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!$ok) {
         setFlash('danger', 'Profil nije ažuriran. Proveri telefon, PIB ili URL izloga (zauzet / neispravan).');
     } else {
+        $fresh = findUserById($userId) ?? $profile;
+        if (canUploadShopLogo($fresh)) {
+            $newLogo = handleShopLogoUpload($userId, userShopLogoUrl($fresh) ?: null);
+            $oldLogo = userShopLogoUrl($fresh);
+            if ($newLogo !== $oldLogo) {
+                patchUser($userId, ['shop_logo' => $newLogo ?? '']);
+            }
+        }
         $fresh = findUserById($userId);
         if ($fresh && !isPhoneVerified($fresh) && normalizePhoneRs((string)($fresh['phone'] ?? '')) !== null) {
             setFlash('success', 'Profil je ažuriran. Potvrdi novi broj SMS kodom.');
@@ -433,6 +441,8 @@ $initials = mb_strtoupper(mb_substr($displayName, 0, 1) . mb_substr(trim(strrchr
 if (mb_strlen($initials) < 1) {
     $initials = '?';
 }
+$shopLogoUrl = userShopLogoUrl($profile);
+$canShopLogo = canUploadShopLogo($profile);
 $expiryOn = adExpiryEnabled();
 $warningDays = adExpiryWarningDays();
 $topOn = topPurchaseEnabled();
@@ -481,7 +491,7 @@ require __DIR__ . '/partials/layout-start.php';
 
         <section class="account-hero form-card">
             <div class="account-hero-main">
-                <div class="seller-avatar account-avatar" aria-hidden="true"><?= h($initials) ?></div>
+                <?= renderShopAvatarHtml($profile, $initials, 'account-avatar') ?>
                 <div class="account-hero-info">
                     <div class="account-name-row">
                         <h1 class="account-name"><?= h($displayName) ?></h1>
@@ -1463,7 +1473,8 @@ require __DIR__ . '/partials/layout-start.php';
                     </div>
                 <?php endif; ?>
 
-                <form method="POST" class="account-profile-form" id="account-profile-form">
+                <form method="POST" enctype="multipart/form-data" class="account-profile-form" id="account-profile-form">
+                    <?= csrfField() ?>
                     <input type="hidden" name="action" value="profile">
 
                     <div class="profile-section">
@@ -1523,6 +1534,9 @@ require __DIR__ . '/partials/layout-start.php';
                             <label>Kratki opis</label>
                             <textarea name="shop_bio" rows="3" placeholder="Šta radiš, gde si, radno vreme..."><?= h((string)($profile['shop_bio'] ?? '')) ?></textarea>
                         </div>
+                        <?php if ($accountType === 'business' && !$canShopLogo): ?>
+                            <p class="form-hint">Logo izloga biće dostupan posle potvrde firme (verified bedž).</p>
+                        <?php endif; ?>
                     </div>
 
                     <div class="profile-section" data-private-shop <?= $accountType === 'business' ? 'hidden' : '' ?>>
@@ -1536,6 +1550,28 @@ require __DIR__ . '/partials/layout-start.php';
                             <textarea name="shop_bio_private" rows="3" placeholder="Šta prodaješ..." <?= $accountType === 'business' ? 'disabled' : '' ?>><?= h((string)($profile['shop_bio'] ?? '')) ?></textarea>
                         </div>
                     </div>
+
+                    <?php if ($canShopLogo): ?>
+                        <div class="profile-section" id="shop-logo">
+                            <h3 class="profile-section-title">Logo firme</h3>
+                            <p class="profile-section-desc">Prikazuje se na izlogu i oglasima umesto inicijala.</p>
+                            <div class="form-group shop-logo-field">
+                                <div class="shop-logo-upload">
+                                    <?= renderShopAvatarHtml($profile, $initials, 'shop-avatar shop-logo-preview') ?>
+                                    <div class="shop-logo-controls">
+                                        <input type="file" name="shop_logo" accept="image/jpeg,image/png,image/webp,image/gif" aria-label="Izaberi logo">
+                                        <?php if ($shopLogoUrl !== ''): ?>
+                                            <label class="shop-logo-remove">
+                                                <input type="checkbox" name="shop_logo_remove" value="1">
+                                                Ukloni logo
+                                            </label>
+                                        <?php endif; ?>
+                                        <p class="form-hint">Kvadratna slika (PNG/JPG/WebP), do 4 MB.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    <?php endif; ?>
 
                     <div class="profile-section">
                         <h3 class="profile-section-title">Kontakt</h3>

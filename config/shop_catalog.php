@@ -358,3 +358,145 @@ function shopCatalogQuery(array $params): string
     }
     return $clean === [] ? '' : ('?' . http_build_query($clean));
 }
+
+function shopLogoUploadsDir(): string
+{
+    return dirname(__DIR__) . '/public/uploads/shops';
+}
+
+function ensureShopLogoUploadsDir(): void
+{
+    $dir = shopLogoUploadsDir();
+    if (!is_dir($dir)) {
+        mkdir($dir, 0777, true);
+    }
+}
+
+/** Javni URL logoa firme, ili prazan string. */
+function userShopLogoUrl(?array $user): string
+{
+    if (!$user) {
+        return '';
+    }
+    $logo = trim((string)($user['shop_logo'] ?? ''));
+    if ($logo === '' || !str_starts_with($logo, '/uploads/shops/')) {
+        return '';
+    }
+    return $logo;
+}
+
+function canUploadShopLogo(?array $user): bool
+{
+    return isVerifiedSeller($user);
+}
+
+/**
+ * Upload / brisanje logoa izloga. Vraća novi URL, null (obrisano), ili postojeći.
+ */
+function handleShopLogoUpload(int $userId, ?string $existingLogo = null): ?string
+{
+    ensureShopLogoUploadsDir();
+    $existing = $existingLogo && str_starts_with($existingLogo, '/uploads/shops/') ? $existingLogo : null;
+
+    if (!empty($_POST['shop_logo_remove'])) {
+        if ($existing) {
+            $old = dirname(__DIR__) . '/public' . $existing;
+            if (is_file($old)) {
+                @unlink($old);
+            }
+        }
+        return null;
+    }
+
+    if (!isset($_FILES['shop_logo']) || !is_array($_FILES['shop_logo'])) {
+        return $existing;
+    }
+    if ((int)($_FILES['shop_logo']['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+        return $existing;
+    }
+
+    $tmp = (string)($_FILES['shop_logo']['tmp_name'] ?? '');
+    if ($tmp === '' || !is_file($tmp)) {
+        return $existing;
+    }
+    $type = mime_content_type($tmp) ?: '';
+    $allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    if (!in_array($type, $allowed, true)) {
+        return $existing;
+    }
+
+    $size = (int)($_FILES['shop_logo']['size'] ?? 0);
+    if ($size <= 0 || $size > 4 * 1024 * 1024) {
+        return $existing;
+    }
+
+    $targetDir = shopLogoUploadsDir() . '/' . $userId;
+    if (!is_dir($targetDir)) {
+        mkdir($targetDir, 0777, true);
+    }
+    $name = 'logo_' . time() . '.jpg';
+    $dest = $targetDir . '/' . $name;
+    if (!saveShopLogoImage($tmp, $dest, $type)) {
+        return $existing;
+    }
+
+    if ($existing) {
+        $old = dirname(__DIR__) . '/public' . $existing;
+        if (is_file($old)) {
+            @unlink($old);
+        }
+    }
+
+    return '/uploads/shops/' . $userId . '/' . $name;
+}
+
+/** Kvadratni logo max 512px, beli background, JPEG. */
+function saveShopLogoImage(string $tmpPath, string $destPath, string $mime): bool
+{
+    if (!function_exists('imagecreatetruecolor')) {
+        return move_uploaded_file($tmpPath, $destPath);
+    }
+
+    $src = match ($mime) {
+        'image/png' => @imagecreatefrompng($tmpPath),
+        'image/webp' => function_exists('imagecreatefromwebp') ? @imagecreatefromwebp($tmpPath) : false,
+        'image/gif' => @imagecreatefromgif($tmpPath),
+        default => @imagecreatefromjpeg($tmpPath),
+    };
+    if ($src === false) {
+        return move_uploaded_file($tmpPath, $destPath);
+    }
+
+    $w = imagesx($src);
+    $h = imagesy($src);
+    $side = min($w, $h);
+    $sx = (int)floor(($w - $side) / 2);
+    $sy = (int)floor(($h - $side) / 2);
+    $out = 512;
+    if ($side < $out) {
+        $out = max(64, $side);
+    }
+
+    $dst = imagecreatetruecolor($out, $out);
+    $white = imagecolorallocate($dst, 255, 255, 255);
+    imagefilledrectangle($dst, 0, 0, $out, $out, $white);
+    imagecopyresampled($dst, $src, 0, 0, $sx, $sy, $out, $out, $side, $side);
+    imagedestroy($src);
+    $ok = imagejpeg($dst, $destPath, 88);
+    imagedestroy($dst);
+    return (bool)$ok;
+}
+
+/**
+ * HTML za avatar izloga (logo ili inicijali).
+ */
+function renderShopAvatarHtml(?array $user, string $initials, string $extraClass = ''): string
+{
+    $cls = trim('seller-avatar ' . $extraClass);
+    $logo = userShopLogoUrl($user);
+    if ($logo !== '') {
+        $alt = trim((string)(($user['shop_name'] ?? '') ?: ($user['full_name'] ?? 'Logo')));
+        return '<div class="' . h($cls) . ' has-logo"><img src="' . h($logo) . '" alt="' . h($alt) . '" loading="lazy" decoding="async"></div>';
+    }
+    return '<div class="' . h($cls) . '" aria-hidden="true">' . h($initials) . '</div>';
+}

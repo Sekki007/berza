@@ -471,7 +471,14 @@ body.account-menu-open{overflow:hidden;}
 .detail-meta-grid{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--border-light);border-radius:4px;overflow:hidden;margin-bottom:16px;}
 .detail-meta-row{display:contents;} .detail-meta-key,.detail-meta-val{padding:10px 12px;font-size:13px;border-bottom:1px solid var(--border-light);} .detail-meta-key{background:#fafafa;color:var(--text-muted);font-weight:bold;}
 .detail-desc{font-size:14px;color:var(--text);line-height:1.65;} .detail-desc h3{font-size:15px;color:var(--text);margin-bottom:10px;}
-.seller-card,.kp-seller{display:flex;gap:12px;align-items:center;} .seller-avatar{width:48px;height:48px;border-radius:50%;background:var(--kp-green);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:18px;}
+.seller-card,.kp-seller{display:flex;gap:12px;align-items:center;} .seller-avatar{width:48px;height:48px;border-radius:50%;background:var(--kp-green);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:bold;font-size:18px;overflow:hidden;flex-shrink:0;}
+.seller-avatar.has-logo,.kp-seller-avatar.has-logo{background:#fff;padding:0;border:1px solid var(--border);}
+.seller-avatar img,.kp-seller-avatar img{width:100%;height:100%;object-fit:cover;display:block;}
+.shop-logo-upload{display:flex;gap:14px;align-items:flex-start;flex-wrap:wrap;}
+.shop-logo-preview{width:72px;height:72px;font-size:24px;}
+.shop-logo-controls{flex:1;min-width:200px;display:flex;flex-direction:column;gap:8px;}
+.shop-logo-remove{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--text-muted);cursor:pointer;}
+.kp-seller-avatar.has-logo{background:#fff;}
 .seller-info h4{font-size:15px;margin-bottom:2px;} .seller-info p{font-size:12px;color:var(--text-muted);margin:0;} .contact-actions{display:flex;flex-direction:column;gap:10px;margin-top:16px;}
 .btn-call,.btn-message{padding:14px;border-radius:4px;font-size:16px;font-weight:bold;cursor:pointer;text-align:center;display:block;text-decoration:none;box-sizing:border-box;width:100%;}
 .btn-call{background:var(--kp-green);color:#fff;border:none;} .btn-message{background:#fff;color:var(--link);border:2px solid var(--link);}
@@ -2306,6 +2313,8 @@ body.kp-lightbox-open {
   align-items: center;
   justify-content: center;
   font-size: 18px;
+  overflow: hidden;
+  flex-shrink: 0;
 }
 .kp-seller-name { font-weight: 700; font-size: 15px; color: #1a6bb5; }
 .kp-seller-name-link { color: #1a6bb5; text-decoration: none; }

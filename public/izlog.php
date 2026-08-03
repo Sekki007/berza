@@ -191,7 +191,7 @@ require __DIR__ . '/partials/layout-start.php';
 
         <div class="shop-header form-card">
             <div class="shop-header-main">
-                <div class="seller-avatar shop-avatar"><?= h($initials) ?></div>
+                <?= renderShopAvatarHtml($seller, $initials, 'shop-avatar') ?>
                 <div class="shop-header-info">
                     <h1 class="shop-title"><?= h($shopName) ?> <?= renderSellerBadges($seller) ?></h1>
                     <p class="shop-meta">

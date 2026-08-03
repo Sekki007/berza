@@ -173,7 +173,7 @@ $sellerBlock = static function () use (
     if ($sellerShopUrl !== ''): ?>
         <div class="kp-card kp-seller-card">
             <div class="kp-seller-top">
-                <div class="kp-seller-avatar"><?= h($sellerInitials) ?></div>
+                <?= renderShopAvatarHtml($seller, $sellerInitials, 'kp-seller-avatar') ?>
                 <div>
                     <div class="kp-seller-name">
                         <a class="kp-seller-name-link" href="<?= h($sellerShopUrl) ?>"><?= h($sellerName) ?></a>
@@ -195,7 +195,7 @@ $sellerBlock = static function () use (
     <?php else: ?>
         <div class="kp-card">
             <div class="kp-seller-top">
-                <div class="kp-seller-avatar"><?= h($sellerInitials) ?></div>
+                <?= renderShopAvatarHtml($seller, $sellerInitials, 'kp-seller-avatar') ?>
                 <div class="kp-seller-name"><?= h($sellerName) ?></div>
             </div>
             <div class="kp-seller-rating">

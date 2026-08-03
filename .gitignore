@@ -16,6 +16,10 @@ Thumbs.db
 /public/uploads/ads/*
 !/public/uploads/ads/.gitkeep
 !/public/uploads/ads/seed_*.jpg
+/public/uploads/shops/*
+!/public/uploads/shops/.gitkeep
+/public/uploads/storefront/*
+!/public/uploads/storefront/.gitkeep
 /data/mail_log.json
 /data/*_state.json
 /data/sms_rate_limits.json

@@ -240,8 +240,11 @@ function seoStorefrontJsonLd(array $user, string $shopName): array
         $data['address'] = array_filter($data['address'], static fn($v) => $v !== null && $v !== '');
     }
     $cover = trim((string)($user['shop_page_cover'] ?? ''));
+    $logo = userShopLogoUrl($user);
     if ($cover !== '') {
         $data['image'] = absoluteUrl($cover);
+    } elseif ($logo !== '') {
+        $data['image'] = absoluteUrl($logo);
     }
     return $data;
 }
