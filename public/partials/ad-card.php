@@ -113,4 +113,33 @@ $rsdHint = !$priceOpen ? formatAdPriceRsd($ad) : '';
             title="Uporedi">
         <?= $inCompare ? '✓' : '⇄' ?>
     </button>
+    <?php
+    $shopCatalogMode = !empty($shopCatalogMode);
+    $shopCatalogOwn = !empty($shopCatalogOwn);
+    $messagesOn = !empty(siteSettings()['enable_messages']);
+    if ($shopCatalogMode && $messagesOn && !$isSold && !$shopCatalogOwn):
+        $orderDefault = 'Zdravo, zainteresovan/a sam za „' . (string)($ad['title'] ?? 'artikal') . '”'
+            . (!$priceOpen ? (' (' . formatAdPrice($ad) . ')') : '')
+            . '. Da li je još dostupno i kako mogu da naručim / preuzmem?';
+        $orderLoginHref = '/login.php';
+    ?>
+        <div class="shop-order-bar" id="order-<?= $adId ?>">
+            <a class="btn-sm" href="<?= h($adHref) ?>">Detalji</a>
+            <?php if (isLoggedIn()): ?>
+                <details class="shop-order-details">
+                    <summary class="btn-sm btn-sm-primary shop-order-toggle">Naruči / Pošalji poruku</summary>
+                    <form method="POST" class="shop-order-form">
+                        <?= csrfField() ?>
+                        <input type="hidden" name="action" value="shop_order">
+                        <input type="hidden" name="ad_id" value="<?= $adId ?>">
+                        <label class="shop-order-label" for="shop-order-msg-<?= $adId ?>">Poruka prodavcu</label>
+                        <textarea id="shop-order-msg-<?= $adId ?>" name="message" rows="3" required maxlength="2000"><?= h($orderDefault) ?></textarea>
+                        <button class="btn-sm btn-sm-primary" type="submit">Pošalji narudžbinu</button>
+                    </form>
+                </details>
+            <?php else: ?>
+                <a class="btn-sm btn-sm-primary" href="<?= h($orderLoginHref) ?>">Naruči / Prijavi se</a>
+            <?php endif; ?>
+        </div>
+    <?php endif; ?>
 </article>

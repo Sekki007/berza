@@ -1399,6 +1399,23 @@ body.page-chat .footer,body.page-chat .site-footer{display:none;}
 .bulk-import-box{margin:14px 0 18px;padding:14px;border:1px dashed #cfcfcf;border-radius:10px;background:#fafafa;}
 .bulk-import-box h3{margin:0 0 6px;}
 .bulk-import-actions{margin:8px 0 0;}
+.shop-order-bar{
+  display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start;
+  padding:10px 12px 12px;border-top:1px solid var(--border-light);background:#f8faf8;
+}
+.shop-order-details{flex:1;min-width:200px;}
+.shop-order-toggle{
+  list-style:none;cursor:pointer;display:inline-flex;align-items:center;
+}
+.shop-order-toggle::-webkit-details-marker{display:none;}
+.shop-order-form{margin-top:10px;display:grid;gap:8px;}
+.shop-order-label{font-size:12px;font-weight:bold;color:var(--text-muted);}
+.shop-order-form textarea{
+  width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:8px;
+  font:inherit;resize:vertical;min-height:72px;background:#fff;
+}
+.shop-listings .kp-list-card{padding-bottom:0;}
+.shop-listings .shop-order-bar .btn-sm{min-height:40px;}
 .rep-badge { display: inline-flex; align-items: center; gap: 4px; font-weight: bold; font-size: 15px; }
 .rep-pos { color: #1a7a3a; }
 .rep-neg { color: #b42318; }

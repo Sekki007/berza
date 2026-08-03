@@ -85,6 +85,69 @@ if (mb_strlen($initials) < 1) {
     $initials = '?';
 }
 
+if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'shop_order') {
+    requireCsrf($shopLink);
+    requireLogin();
+    $siteCheck = siteSettings();
+    if (empty($siteCheck['enable_messages'])) {
+        setFlash('danger', 'Poruke trenutno nisu omogućene.');
+        header('Location: ' . $shopLink);
+        exit;
+    }
+
+    $orderAdId = (int)($_POST['ad_id'] ?? 0);
+    $body = trim((string)($_POST['message'] ?? ''));
+    $orderAd = $orderAdId > 0 ? getAdById($orderAdId) : null;
+    $fromUserId = (int)currentUser()['id'];
+
+    if (!$orderAd || (int)($orderAd['is_active'] ?? 0) !== 1 || (int)($orderAd['created_by'] ?? 0) !== $sellerId) {
+        setFlash('danger', 'Artikal nije pronađen u ovom izlogu.');
+        header('Location: ' . $shopLink . '#oglasi');
+        exit;
+    }
+    if (!empty($orderAd['is_sold'])) {
+        setFlash('danger', 'Ovaj artikal je označen kao prodat.');
+        header('Location: ' . $shopLink . '#oglasi');
+        exit;
+    }
+    if ($fromUserId === $sellerId) {
+        setFlash('danger', 'Ne možeš naručiti sa sopstvenog izloga.');
+        header('Location: ' . $shopLink . '#oglasi');
+        exit;
+    }
+    if ($body === '') {
+        setFlash('danger', 'Unesi poruku uz narudžbinu.');
+        header('Location: ' . $shopLink . '#order-' . $orderAdId);
+        exit;
+    }
+
+    $saved = saveMessage([
+        'ad_id' => $orderAdId,
+        'from_user_id' => $fromUserId,
+        'from_name' => (string)(currentUser()['full_name'] ?? ''),
+        'from_phone' => '',
+        'to_user_id' => $sellerId,
+        'body' => $body,
+    ]);
+
+    if ($saved) {
+        setFlash('success', 'Poruka / narudžbina je poslata prodavcu. Prati odgovor u Porukama.');
+        if (function_exists('queueFacebookPixelEvent')) {
+            queueFacebookPixelEvent('Lead', [
+                'content_ids' => [(string)$orderAdId],
+                'content_name' => (string)($orderAd['title'] ?? ''),
+                'content_category' => getAdType($orderAd),
+            ]);
+        }
+        header('Location: /poruke.php?ad=' . $orderAdId . '&with=' . $sellerId);
+        exit;
+    }
+
+    setFlash('danger', 'Poruka nije poslata. Pokušaj ponovo.');
+    header('Location: ' . $shopLink . '#order-' . $orderAdId);
+    exit;
+}
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'rate') {
     requireCsrf($shopLink);
     requireLogin();
@@ -217,9 +280,13 @@ require __DIR__ . '/partials/layout-start.php';
                 <?php if (!$ads): ?>
                     <p style="color:var(--text-muted);margin-top:12px;">Nema oglasa za izabrane filtere. <a href="<?= h($shopLink) ?>">Prikaži sve</a></p>
                 <?php else: ?>
-                    <div class="listings" style="margin-top:12px;">
+                    <div class="listings shop-listings" style="margin-top:12px;">
                         <?php foreach ($ads as $ad): ?>
-                            <?php require __DIR__ . '/partials/ad-card.php'; ?>
+                            <?php
+                            $shopCatalogMode = true;
+                            $shopCatalogOwn = $isOwnShop;
+                            require __DIR__ . '/partials/ad-card.php';
+                            ?>
                         <?php endforeach; ?>
                     </div>
                     <?php if ($pagination['pages'] > 1): ?>
