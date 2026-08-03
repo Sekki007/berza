@@ -5,6 +5,23 @@ declare(strict_types=1);
 /**
  * Opcije i pomoćne funkcije za dinamičku formu oglasa.
  */
+function adPhoneBrands(): array
+{
+    $fromSettings = siteSettings()['brands'] ?? [];
+    $fallback = ['Apple', 'Samsung', 'Xiaomi', 'Huawei', 'Google', 'Motorola', 'Nokia', 'OnePlus', 'Honor', 'Oppo', 'Realme', 'Ostalo'];
+    $list = [];
+    foreach ((is_array($fromSettings) && $fromSettings !== [] ? $fromSettings : $fallback) as $b) {
+        $b = trim((string)$b);
+        if ($b !== '' && !in_array($b, $list, true)) {
+            $list[] = $b;
+        }
+    }
+    if (!in_array('Ostalo', $list, true)) {
+        $list[] = 'Ostalo';
+    }
+    return $list;
+}
+
 function adFormSchema(): array
 {
     return [
@@ -14,7 +31,7 @@ function adFormSchema(): array
             'trade' => 'Zamena',
             'service' => 'Nudim uslugu',
         ],
-        'phone_brands' => ['Apple', 'Samsung', 'Xiaomi', 'Huawei', 'Google', 'Motorola', 'Ostalo'],
+        'phone_brands' => adPhoneBrands(),
         'phone_conditions' => ['Novo', 'Kao novo', 'Polovno', 'Oštećeno/Za delove'],
         'storage_options' => ['64GB', '128GB', '256GB', '512GB', '1TB'],
         'ram_options' => ['4GB', '6GB', '8GB', '12GB', '16GB'],

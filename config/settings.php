@@ -58,7 +58,7 @@ function defaultSiteSettings(): array
             'Čačak', 'Kraljevo', 'Pančevo', 'Zrenjanin', 'Šabac', 'Leskovac',
             'Užice', 'Valjevo', 'Vranje', 'Smederevo', 'Sombor', 'Pirot',
         ],
-        'brands' => ['Apple', 'Samsung', 'Xiaomi', 'Huawei', 'Google', 'Motorola', 'Ostalo'],
+        'brands' => ['Apple', 'Samsung', 'Xiaomi', 'Huawei', 'Google', 'Motorola', 'Nokia', 'OnePlus', 'Honor', 'Oppo', 'Realme', 'Ostalo'],
         'conditions' => ['Novo', 'Kao novo', 'Polovno', 'Oštećeno/Za delove', 'Odlično', 'Servisirano'],
         'sms_template_phone_verify' => 'KupiTelefon kod: {code}. Vazi 10 min.',
         'sms_template_password_reset' => 'KupiTelefon reset lozinke: {code}. Vazi 10 min.',

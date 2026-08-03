@@ -33,10 +33,7 @@ sort($pickupSorted);
 $dp = $defaultPickup;
 sort($dp);
 
-$listingExtra = $currentListing !== '' && $currentListing !== 'sell'
-    && !($currentType === 'servis' && $currentListing === 'service');
-$contactExtraOpen = $listingExtra
-    || $contactSorted !== $dc
+$contactExtraOpen = $contactSorted !== $dc
     || $pickupSorted !== $dp
     || trim((string)($ad['shop_name'] ?? '')) !== ''
     || trim((string)($ad['badge'] ?? '')) !== ''
@@ -69,8 +66,23 @@ $contactExtraOpen = $listingExtra
             </div>
 
             <section class="ad-form-section ad-form-section--core">
+                <div class="form-group" data-listing-types>
+                    <label>Šta želiš?</label>
+                    <div class="chip-grid chip-grid-4">
+                        <?php foreach ($schema['listing_types'] as $ltKey => $ltLabel): ?>
+                            <?php $isServiceOnly = $ltKey === 'service'; ?>
+                            <label class="chip-option <?= $currentListing === $ltKey ? 'is-on' : '' ?>"
+                                   data-listing-opt="<?= h($ltKey) ?>"
+                                   data-for-types="<?= $isServiceOnly ? 'servis' : 'telefon,delovi' ?>">
+                                <input type="radio" name="listing_type" value="<?= h($ltKey) ?>" data-listing-type <?= $currentListing === $ltKey ? 'checked' : '' ?>>
+                                <span><?= h($ltLabel) ?></span>
+                            </label>
+                        <?php endforeach; ?>
+                    </div>
+                </div>
+
                 <div class="form-group ad-form-cat-group">
-                    <label>Šta prodaješ?</label>
+                    <label>Kategorija</label>
                     <div class="form-type-select">
                         <label class="form-type-option <?= $currentType === 'telefon' ? 'selected' : '' ?>">
                             <input data-form-type type="radio" name="ad_type" value="telefon" <?= $currentType === 'telefon' ? 'checked' : '' ?>>
@@ -189,18 +201,20 @@ $contactExtraOpen = $listingExtra
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Brend</label>
+                        <label>Brend <span class="ad-form-optional">(opciono)</span></label>
                         <select name="brand" data-phone-brand>
+                            <option value="">—</option>
                             <?php foreach ($phoneBrands as $brand): ?>
                                 <option value="<?= h($brand) ?>" <?= ($ad['brand'] ?? '') === $brand ? 'selected' : '' ?>><?= h($brand) ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Model</label>
+                        <label>Model <span class="ad-form-optional">(opciono)</span></label>
                         <input name="model" id="ad-model" value="<?= h((string)$ad['model']) ?>" placeholder="npr. iPhone 13 Pro Max" autocomplete="off">
                     </div>
                 </div>
+                <p class="form-hint">Nije obavezno — dovoljan je naslov. Brend pomaže u filterima.</p>
                 <div class="form-row">
                     <div class="form-group">
                         <label>Stanje</label>
@@ -403,23 +417,9 @@ $contactExtraOpen = $listingExtra
                 </div>
 
                 <button type="button" class="ad-form-more-toggle" data-contact-more-toggle aria-expanded="<?= $contactExtraOpen ? 'true' : 'false' ?>">
-                    <?= $contactExtraOpen ? 'Manje opcija ▴' : 'Dodatne opcije (tip oglasa, kontakt…) ▾' ?>
+                    <?= $contactExtraOpen ? 'Manje opcija ▴' : 'Dodatne opcije (kontakt…) ▾' ?>
                 </button>
                 <div class="ad-form-more" data-contact-more <?= $contactExtraOpen ? '' : 'hidden' ?>>
-                    <div class="form-group" data-listing-types>
-                        <label>Tip oglasa</label>
-                        <div class="chip-grid chip-grid-4">
-                            <?php foreach ($schema['listing_types'] as $ltKey => $ltLabel): ?>
-                                <?php $isServiceOnly = $ltKey === 'service'; ?>
-                                <label class="chip-option <?= $currentListing === $ltKey ? 'is-on' : '' ?>"
-                                       data-listing-opt="<?= h($ltKey) ?>"
-                                       data-for-types="<?= $isServiceOnly ? 'servis' : 'telefon,delovi' ?>">
-                                    <input type="radio" name="listing_type" value="<?= h($ltKey) ?>" data-listing-type <?= $currentListing === $ltKey ? 'checked' : '' ?>>
-                                    <span><?= h($ltLabel) ?></span>
-                                </label>
-                            <?php endforeach; ?>
-                        </div>
-                    </div>
                     <div class="form-group">
                         <label>Kako da te kontaktiraju</label>
                         <?php renderChipGroup('contact_methods', $schema['contact_methods'], $contactSel); ?>

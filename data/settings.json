@@ -151,6 +151,12 @@
         "Xiaomi",
         "Google",
         "Huawei",
+        "Motorola",
+        "Nokia",
+        "OnePlus",
+        "Honor",
+        "Oppo",
+        "Realme",
         "Ostalo"
     ],
     "conditions": [
