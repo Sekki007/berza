@@ -29,9 +29,9 @@ server {
     rewrite ^/oglas/(\d+)(?:-.*)?/?$ /oglas.php?id=$1 last;
     rewrite ^/izlog/([^/]+)/?$ /izlog.php?u=$1 last;
     rewrite ^/usluge/([^/]+)/?$ /usluge.php?u=$1 last;
-    rewrite ^/servisi/([^/]+)/([^/]+)/?$ /servisi.php?city=$1&slug=$2 last;
-    rewrite ^/servisi/([^/]+)/?$ /servisi.php?city=$1 last;
-    rewrite ^/servisi/?$ /servisi.php last;
+    rewrite ^/servisi/([^/]+)/([^/]+)/?$ /servisi.php?city=$1&slug=$2&$args last;
+    rewrite ^/servisi/([^/]+)/?$ /servisi.php?city=$1&$args last;
+    rewrite ^/servisi/?$ /servisi.php?$args last;
     rewrite ^/sitemap\.xml$ /sitemap.php last;
 
     location / {

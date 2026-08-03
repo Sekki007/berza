@@ -3,11 +3,17 @@
 declare(strict_types=1);
 
 /**
- * SEO direktorijum verifikovanih servisa: /servisi, /servisi/{grad}, /servisi/{grad}/{slug}
+ * SEO direktorijum verifikovanih firmi (servis + prodaja):
+ * /servisi, /servisi/{grad}, /servisi/{grad}/{slug}
  */
 
+function citySlug(string $city): string
+{
+    return normalizeShopSlug($city);
+}
+
 /**
- * Gradovi za pretragu: prvo oni sa servisima, zatim ostali iz settings.
+ * Gradovi za pretragu: prvo oni sa firmama, zatim ostali iz settings.
  *
  * @return list<array{city:string,slug:string,count:int,url:string}>
  */
@@ -72,16 +78,40 @@ function findCityBySlug(string $slug): ?string
     return null;
 }
 
+/** Tipovi firmi u direktorijumu: servis, prodavnica, oba. */
+function directoryFirmKinds(): array
+{
+    return ['service', 'shop', 'both'];
+}
+
 function isDirectoryServiceFirm(?array $user): bool
 {
     if (!$user || !empty($user['is_blocked'])) {
         return false;
     }
     $kind = userBusinessKind($user);
-    if (!in_array($kind, ['service', 'both'], true)) {
+    if (!in_array($kind, directoryFirmKinds(), true)) {
         return false;
     }
     return isBusinessVerified($user) || isVerifiedSeller($user);
+}
+
+/**
+ * @param ''|'service'|'shop'|'both' $kindFilter
+ */
+function directoryKindMatches(array $user, string $kindFilter): bool
+{
+    if ($kindFilter === '') {
+        return true;
+    }
+    $kind = userBusinessKind($user);
+    if ($kindFilter === 'service') {
+        return in_array($kind, ['service', 'both'], true);
+    }
+    if ($kindFilter === 'shop') {
+        return in_array($kind, ['shop', 'both'], true);
+    }
+    return $kind === $kindFilter;
 }
 
 function directoryServiceName(array $user): string
@@ -94,7 +124,7 @@ function directoryServiceName(array $user): string
     if ($name !== '') {
         return $name;
     }
-    return (string)($user['username'] ?? 'Servis');
+    return (string)($user['username'] ?? 'Firma');
 }
 
 function directoryServiceUrl(array $user, ?string $city = null): string
@@ -110,21 +140,40 @@ function directoryServiceUrl(array $user, ?string $city = null): string
     return '/servisi/' . rawurlencode($citySlugVal) . '/' . rawurlencode($slug);
 }
 
-function directoryCityUrl(string $city): string
+function directoryCityUrl(string $city, string $kindFilter = ''): string
 {
     $slug = citySlug($city);
-    return $slug === '' ? '/servisi' : '/servisi/' . rawurlencode($slug);
+    $base = $slug === '' ? '/servisi' : '/servisi/' . rawurlencode($slug);
+    if ($kindFilter !== '' && in_array($kindFilter, ['service', 'shop'], true)) {
+        return $base . '?tip=' . rawurlencode($kindFilter);
+    }
+    return $base;
+}
+
+function directoryHubUrl(string $kindFilter = ''): string
+{
+    if ($kindFilter !== '' && in_array($kindFilter, ['service', 'shop'], true)) {
+        return '/servisi?tip=' . rawurlencode($kindFilter);
+    }
+    return '/servisi';
 }
 
 /**
+ * @param ''|'service'|'shop' $kindFilter
  * @return list<array>
  */
-function listDirectoryServices(?string $city = null): array
+function listDirectoryServices(?string $city = null, string $kindFilter = ''): array
 {
+    if ($kindFilter !== '' && !in_array($kindFilter, ['service', 'shop', 'both'], true)) {
+        $kindFilter = '';
+    }
     $cityNorm = $city !== null ? mb_strtolower(trim($city)) : '';
     $out = [];
     foreach (getUsers() as $user) {
         if (!isDirectoryServiceFirm($user)) {
+            continue;
+        }
+        if (!directoryKindMatches($user, $kindFilter)) {
             continue;
         }
         $loc = trim((string)($user['location'] ?? ''));
@@ -143,14 +192,15 @@ function listDirectoryServices(?string $city = null): array
 }
 
 /**
- * Gradovi koji imaju bar jedan servis (+ broj).
+ * Gradovi koji imaju bar jednu firmu (+ broj).
  *
+ * @param ''|'service'|'shop' $kindFilter
  * @return list<array{city:string,slug:string,count:int,url:string}>
  */
-function directoryCityStats(): array
+function directoryCityStats(string $kindFilter = ''): array
 {
     $counts = [];
-    foreach (listDirectoryServices(null) as $user) {
+    foreach (listDirectoryServices(null, $kindFilter) as $user) {
         $city = trim((string)($user['location'] ?? ''));
         if ($city === '') {
             continue;
@@ -168,10 +218,9 @@ function directoryCityStats(): array
             'city' => $city,
             'slug' => citySlug($city),
             'count' => $count,
-            'url' => directoryCityUrl($city),
+            'url' => directoryCityUrl($city, $kindFilter),
         ];
     }
-    // Gradovi van liste settings, ali sa servisima
     foreach ($counts as $city => $count) {
         $found = false;
         foreach ($stats as $row) {
@@ -185,7 +234,7 @@ function directoryCityStats(): array
                 'city' => $city,
                 'slug' => citySlug($city),
                 'count' => $count,
-                'url' => directoryCityUrl($city),
+                'url' => directoryCityUrl($city, $kindFilter),
             ];
         }
     }
@@ -210,7 +259,6 @@ function findDirectoryService(string $city, string $slug): ?array
     }
     $userCity = trim((string)($user['location'] ?? ''));
     if ($cityName !== null && mb_strtolower($userCity) !== mb_strtolower($cityName)) {
-        // Dozvoli match ako slug grada odgovara lokaciji korisnika (van settings liste)
         if (citySlug($userCity) !== citySlug($city)) {
             return null;
         }
@@ -220,27 +268,63 @@ function findDirectoryService(string $city, string $slug): ?array
     return $user;
 }
 
-function seoDirectoryHubMeta(): array
+function seoDirectoryHubMeta(string $kindFilter = ''): array
 {
     $name = seoSiteName();
-    $n = count(listDirectoryServices(null));
+    $n = count(listDirectoryServices(null, $kindFilter));
+    if ($kindFilter === 'shop') {
+        return [
+            'title' => 'Prodavnice mobilnih telefona u Srbiji — verifikovane firme | ' . $name,
+            'description' => seoTruncate(
+                'Spisak verifikovanih prodavnica mobilnih telefona u Srbiji' . ($n > 0 ? " ({$n})" : '') .
+                '. Pronađi shop po gradu, kontakt i izlog na ' . $name . '.'
+            ),
+        ];
+    }
+    if ($kindFilter === 'service') {
+        return [
+            'title' => 'Mobilni servisi u Srbiji — verifikovane firme | ' . $name,
+            'description' => seoTruncate(
+                'Spisak verifikovanih mobilnih servisa u Srbiji' . ($n > 0 ? " ({$n})" : '') .
+                '. Pronađi servis po gradu, kontakt i oglase na ' . $name . '.'
+            ),
+        ];
+    }
     return [
-        'title' => 'Mobilni servisi u Srbiji — verifikovane firme | ' . $name,
+        'title' => 'Servisi i prodavnice telefona u Srbiji | ' . $name,
         'description' => seoTruncate(
-            'Spisak verifikovanih mobilnih servisa u Srbiji' . ($n > 0 ? " ({$n})" : '') .
-            '. Pronađi servis po gradu, kontakt i oglase na ' . $name . '.'
+            'Verifikovane firme za prodaju i popravku mobilnih telefona u Srbiji' . ($n > 0 ? " ({$n})" : '') .
+            '. Pretraži po gradu na ' . $name . '.'
         ),
     ];
 }
 
-function seoDirectoryCityMeta(string $city, int $count): array
+function seoDirectoryCityMeta(string $city, int $count, string $kindFilter = ''): array
 {
     $name = seoSiteName();
+    if ($kindFilter === 'shop') {
+        return [
+            'title' => 'Prodavnica mobilnih telefona ' . $city . ' — firme | ' . $name,
+            'description' => seoTruncate(
+                ($count > 0 ? "{$count} verifikovan" . ($count === 1 ? 'a prodavnica' : 'ih prodavnica') : 'Verifikovane prodavnice') .
+                " mobilnih telefona u gradu {$city} na {$name}."
+            ),
+        ];
+    }
+    if ($kindFilter === 'service') {
+        return [
+            'title' => 'Mobilni servis ' . $city . ' — spisak firmi | ' . $name,
+            'description' => seoTruncate(
+                ($count > 0 ? "{$count} verifikovan" . ($count === 1 ? 'i servis' : 'ih servisa') : 'Verifikovani mobilni servisi') .
+                " u gradu {$city}. Kontakt, izlog i usluge na {$name}."
+            ),
+        ];
+    }
     return [
-        'title' => 'Mobilni servis ' . $city . ' — spisak firmi | ' . $name,
+        'title' => 'Servisi i prodavnice telefona — ' . $city . ' | ' . $name,
         'description' => seoTruncate(
-            ($count > 0 ? "{$count} verifikovan" . ($count === 1 ? 'i servis' : 'ih servisa') : 'Verifikovani mobilni servisi') .
-            " u gradu {$city}. Kontakt, izlog i usluge na {$name}."
+            ($count > 0 ? "{$count} verifikovan" . ($count === 1 ? 'a firma' : 'ih firmi') : 'Verifikovane firme') .
+            " za prodaju i popravku mobilnih telefona u gradu {$city} na {$name}."
         ),
     ];
 }
@@ -251,8 +335,14 @@ function seoDirectoryServiceMeta(array $user, string $city): array
     $shop = directoryServiceName($user);
     $kind = businessKindLabel(userBusinessKind($user));
     $bio = trim((string)($user['shop_bio'] ?? ''));
+    $kindCode = userBusinessKind($user);
+    $topic = match ($kindCode) {
+        'shop' => 'prodavnica mobilnih telefona',
+        'both' => 'servis i prodavnica telefona',
+        default => 'mobilni servis',
+    };
     return [
-        'title' => $shop . ' — mobilni servis ' . $city . ' | ' . $name,
+        'title' => $shop . ' — ' . $topic . ' ' . $city . ' | ' . $name,
         'description' => seoTruncate(
             $bio !== ''
                 ? $bio

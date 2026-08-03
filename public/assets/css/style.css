@@ -2796,6 +2796,30 @@ body.kt-native-app .footer-copy {
   margin: 16px 0 8px;
 }
 .dir-city-filter-meta { font-size: 13px; color: var(--text-muted); }
+.dir-kind-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.dir-kind-tab {
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: #fff;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 13px;
+  font-weight: 600;
+}
+.dir-kind-tab:hover { border-color: var(--kp-green); background: #f3faf4; text-decoration: none; }
+.dir-kind-tab.is-active {
+  background: var(--kp-green);
+  border-color: var(--kp-green-dark);
+  color: #fff;
+}
 .dir-city-card[hidden],
 .dir-card[hidden] { display: none !important; }
 @media (max-width: 640px) {

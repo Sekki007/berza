@@ -6,17 +6,27 @@ require_once dirname(__DIR__) . '/config/bootstrap.php';
 
 $cityParam = trim((string)($_GET['city'] ?? ''));
 $slugParam = trim((string)($_GET['slug'] ?? ''));
+$kindFilter = trim((string)($_GET['tip'] ?? ''));
+if (!in_array($kindFilter, ['service', 'shop', ''], true)) {
+    $kindFilter = '';
+}
 $activePage = 'servisi';
 $showSearch = true;
+
+$dirKindTabs = [
+    '' => 'Sve firme',
+    'service' => 'Servisi / popravka',
+    'shop' => 'Prodavnice',
+];
 
 // --- Detalj firme ---
 if ($cityParam !== '' && $slugParam !== '') {
     $user = findDirectoryService($cityParam, $slugParam);
     if (!$user) {
         http_response_code(404);
-        $pageTitle = 'Servis nije pronađen — KupiTelefon';
+        $pageTitle = 'Firma nije pronađena — KupiTelefon';
         require __DIR__ . '/partials/layout-start.php';
-        echo '<div class="main-wrap"><main class="content"><div class="form-card"><h1>Servis nije pronađen</h1><p style="margin-top:10px;color:var(--text-muted);">Proveri link ili pogledaj <a href="/servisi">sve servise</a>.</p></div></main></div>';
+        echo '<div class="main-wrap"><main class="content"><div class="form-card"><h1>Firma nije pronađena</h1><p style="margin-top:10px;color:var(--text-muted);">Proveri link ili pogledaj <a href="/servisi">direktorijum firmi</a>.</p></div></main></div>';
         require __DIR__ . '/partials/layout-end.php';
         exit;
     }
@@ -56,7 +66,7 @@ if ($cityParam !== '' && $slugParam !== '') {
         <main class="content dir-page">
             <div class="breadcrumb">
                 <a href="/index.php">Početna</a> ›
-                <a href="/servisi">Servisi</a> ›
+                <a href="/servisi">Firme</a> ›
                 <a href="<?= h(directoryCityUrl($cityName)) ?>"><?= h($cityName) ?></a> ›
                 <?= h($shopName) ?>
             </div>
@@ -109,7 +119,7 @@ if ($cityParam !== '' && $slugParam !== '') {
             <?php endif; ?>
 
             <section class="dir-section form-card">
-                <h2 class="dir-section-title">Još servisa u <?= h($cityName) ?></h2>
+                    <h2 class="dir-section-title">Još firmi u <?= h($cityName) ?></h2>
                 <?php
                 $siblings = array_values(array_filter(
                     listDirectoryServices($cityName),
@@ -118,7 +128,7 @@ if ($cityParam !== '' && $slugParam !== '') {
                 $siblings = array_slice($siblings, 0, 8);
                 ?>
                 <?php if ($siblings === []): ?>
-                    <p class="dir-empty">Trenutno nema drugih verifikovanih servisa u ovom gradu.</p>
+                    <p class="dir-empty">Trenutno nema drugih verifikovanih firmi u ovom gradu.</p>
                 <?php else: ?>
                     <div class="dir-card-grid">
                         <?php foreach ($siblings as $sib): ?>
@@ -167,19 +177,24 @@ if ($cityParam !== '') {
     }
 
     if (citySlug($cityParam) !== citySlug($cityName)) {
-        header('Location: ' . directoryCityUrl($cityName), true, 301);
+        header('Location: ' . directoryCityUrl($cityName, $kindFilter), true, 301);
         exit;
     }
 
-    $services = listDirectoryServices($cityName);
-    $seo = seoDirectoryCityMeta($cityName, count($services));
+    $services = listDirectoryServices($cityName, $kindFilter);
+    $seo = seoDirectoryCityMeta($cityName, count($services), $kindFilter);
     $pageTitle = $seo['title'];
     $pageDescription = $seo['description'];
-    $canonicalUrl = absoluteUrl(directoryCityUrl($cityName));
+    $canonicalUrl = absoluteUrl(directoryCityUrl($cityName, $kindFilter));
+    $cityHeading = match ($kindFilter) {
+        'shop' => 'Prodavnice mobilnih telefona u ' . $cityName,
+        'service' => 'Mobilni servisi u ' . $cityName,
+        default => 'Servisi i prodavnice u ' . $cityName,
+    };
     $jsonLd = [
         '@context' => 'https://schema.org',
         '@type' => 'CollectionPage',
-        'name' => 'Mobilni servisi u ' . $cityName,
+        'name' => $cityHeading,
         'url' => $canonicalUrl,
         'description' => $pageDescription,
     ];
@@ -190,19 +205,24 @@ if ($cityParam !== '') {
         <main class="content dir-page">
             <div class="breadcrumb">
                 <a href="/index.php">Početna</a> ›
-                <a href="/servisi">Servisi</a> ›
+                <a href="<?= h(directoryHubUrl($kindFilter)) ?>">Firme</a> ›
                 <?= h($cityName) ?>
             </div>
 
             <header class="dir-hub-head form-card">
-                <h1>Mobilni servisi u <?= h($cityName) ?></h1>
-                <p>Verifikovane firme koje nude servis mobilnih telefona<?= count($services) > 0 ? ' — ' . count($services) . ' ' . (count($services) === 1 ? 'firma' : 'firmi') : '' ?>.</p>
-                <p style="margin-top:10px;"><a href="/servisi">← Svi gradovi / pretraga</a></p>
+                <h1><?= h($cityHeading) ?></h1>
+                <p>Verifikovane firme za prodaju i/ili popravku mobilnih telefona<?= count($services) > 0 ? ' — ' . count($services) . ' ' . (count($services) === 1 ? 'firma' : 'firmi') : '' ?>.</p>
+                <nav class="dir-kind-tabs" aria-label="Tip firme">
+                    <?php foreach ($dirKindTabs as $tipKey => $tipLabel): ?>
+                        <a class="dir-kind-tab <?= $kindFilter === $tipKey ? 'is-active' : '' ?>" href="<?= h(directoryCityUrl($cityName, $tipKey)) ?>"><?= h($tipLabel) ?></a>
+                    <?php endforeach; ?>
+                </nav>
+                <p style="margin-top:10px;"><a href="<?= h(directoryHubUrl($kindFilter)) ?>">← Svi gradovi / pretraga</a></p>
             </header>
 
             <?php if ($services === []): ?>
                 <div class="form-card">
-                    <p class="dir-empty">Još nema verifikovanih servisa za <?= h($cityName) ?>. Pogledaj <a href="/servisi">druge gradove</a> ili <a href="/index.php?type=servis&amp;location=<?= h(rawurlencode($cityName)) ?>">oglase usluga</a>.</p>
+                    <p class="dir-empty">Još nema verifikovanih firmi za <?= h($cityName) ?> u ovom filteru. Pogledaj <a href="<?= h(directoryHubUrl()) ?>">druge gradove</a> ili <a href="/index.php?type=servis&amp;location=<?= h(rawurlencode($cityName)) ?>">oglase</a>.</p>
                 </div>
             <?php else: ?>
                 <div class="dir-card-grid dir-card-grid-lg">
@@ -237,17 +257,22 @@ if ($cityParam !== '') {
 }
 
 // --- Hub ---
-$cityStats = directoryCityStats();
+$cityStats = directoryCityStats($kindFilter);
 $citySearchIndex = directoryCitySearchIndex();
-$allServices = listDirectoryServices(null);
-$seo = seoDirectoryHubMeta();
+$allServices = listDirectoryServices(null, $kindFilter);
+$seo = seoDirectoryHubMeta($kindFilter);
 $pageTitle = $seo['title'];
 $pageDescription = $seo['description'];
-$canonicalUrl = absoluteUrl('/servisi');
+$canonicalUrl = absoluteUrl(directoryHubUrl($kindFilter));
+$hubHeading = match ($kindFilter) {
+    'shop' => 'Prodavnice mobilnih telefona u Srbiji',
+    'service' => 'Mobilni servisi u Srbiji',
+    default => 'Servisi i prodavnice telefona u Srbiji',
+};
 $jsonLd = [
     '@context' => 'https://schema.org',
     '@type' => 'CollectionPage',
-    'name' => 'Mobilni servisi u Srbiji',
+    'name' => $hubHeading,
     'url' => $canonicalUrl,
     'description' => $pageDescription,
 ];
@@ -258,7 +283,7 @@ if ($hubQ !== '') {
     $qSlug = citySlug($hubQ);
     foreach ($citySearchIndex as $row) {
         if ($row['slug'] === $qSlug || mb_strtolower($row['city']) === mb_strtolower($hubQ)) {
-            header('Location: ' . $row['url'], true, 302);
+            header('Location: ' . directoryCityUrl($row['city'], $kindFilter), true, 302);
             exit;
         }
     }
@@ -268,14 +293,23 @@ require __DIR__ . '/partials/layout-start.php';
 ?>
 <div class="main-wrap">
     <main class="content dir-page">
-        <div class="breadcrumb"><a href="/index.php">Početna</a> › Servisi</div>
+        <div class="breadcrumb"><a href="/index.php">Početna</a> › Firme</div>
 
         <header class="dir-hub-head form-card">
-            <h1>Mobilni servisi u Srbiji</h1>
-            <p>Direktorijum verifikovanih firmi za popravku i servis telefona. Pretraži grad ili izaberi sa liste.</p>
-            <p class="dir-hub-count"><?= count($allServices) ?> <?= count($allServices) === 1 ? 'servis' : 'servisa' ?> · <?= count($cityStats) ?> <?= count($cityStats) === 1 ? 'grad sa firmama' : 'gradova sa firmama' ?></p>
+            <h1><?= h($hubHeading) ?></h1>
+            <p>Direktorijum verifikovanih firmi za <strong>prodaju</strong> i <strong>popravku</strong> mobilnih telefona. Pretraži grad ili filtriraj tip firme.</p>
+            <p class="dir-hub-count"><?= count($allServices) ?> <?= count($allServices) === 1 ? 'firma' : 'firmi' ?> · <?= count($cityStats) ?> <?= count($cityStats) === 1 ? 'grad' : 'gradova' ?></p>
+
+            <nav class="dir-kind-tabs" aria-label="Tip firme">
+                <?php foreach ($dirKindTabs as $tipKey => $tipLabel): ?>
+                    <a class="dir-kind-tab <?= $kindFilter === $tipKey ? 'is-active' : '' ?>" href="<?= h(directoryHubUrl($tipKey)) ?>"><?= h($tipLabel) ?></a>
+                <?php endforeach; ?>
+            </nav>
 
             <form class="dir-city-search" method="GET" action="/servisi" data-dir-city-search autocomplete="off">
+                <?php if ($kindFilter !== ''): ?>
+                    <input type="hidden" name="tip" value="<?= h($kindFilter) ?>">
+                <?php endif; ?>
                 <label class="dir-city-search-label" for="dir-city-q">Traži grad</label>
                 <div class="dir-city-search-wrap">
                     <input
@@ -301,12 +335,12 @@ require __DIR__ . '/partials/layout-start.php';
 
         <?php if ($cityStats === []): ?>
             <div class="form-card">
-                <p class="dir-empty">Još nema javnih verifikovanih servisa u direktorijumu. Možeš ipak potražiti grad iznad — stranica grada će biti spremna kad se firme pojave.</p>
-                <p style="margin-top:10px;"><a href="/index.php?type=servis">Pogledaj oglase usluga →</a></p>
+                <p class="dir-empty">Još nema javnih verifikovanih firmi u ovom filteru. Probaj drugi tip ili potraži grad iznad.</p>
+                <p style="margin-top:10px;"><a href="/index.php?type=servis">Pogledaj oglase usluga →</a> · <a href="/index.php?type=telefon">Oglasi telefona →</a></p>
             </div>
         <?php else: ?>
             <div class="dir-city-toolbar">
-                <h2 class="dir-section-title" style="margin:0;">Gradovi sa servisima</h2>
+                <h2 class="dir-section-title" style="margin:0;">Gradovi sa firmama</h2>
                 <span class="dir-city-filter-meta" data-dir-city-filter-meta></span>
             </div>
             <div class="dir-city-grid" data-dir-city-grid>
@@ -319,20 +353,21 @@ require __DIR__ . '/partials/layout-start.php';
                         data-slug="<?= h($row['slug']) ?>"
                     >
                         <strong><?= h($row['city']) ?></strong>
-                        <span><?= (int)$row['count'] ?> <?= (int)$row['count'] === 1 ? 'servis' : 'servisa' ?></span>
+                        <span><?= (int)$row['count'] ?> <?= (int)$row['count'] === 1 ? 'firma' : 'firmi' ?></span>
                     </a>
                 <?php endforeach; ?>
             </div>
-            <p class="dir-empty" data-dir-city-empty hidden>Nema grada sa tim nazivom među gradovima koji imaju servise. Probaj predlog iz pretrage.</p>
+            <p class="dir-empty" data-dir-city-empty hidden>Nema grada sa tim nazivom među gradovima koji imaju firme. Probaj predlog iz pretrage.</p>
 
             <section class="dir-section">
-                <h2 class="dir-section-title">Svi servisi</h2>
+                <h2 class="dir-section-title">Sve firme</h2>
                 <div class="dir-card-grid dir-card-grid-lg" data-dir-service-grid>
                     <?php foreach ($allServices as $svc): ?>
                         <?php
                         $svcName = directoryServiceName($svc);
                         $svcInit = mb_strtoupper(mb_substr($svcName, 0, 1));
                         $svcCity = trim((string)($svc['location'] ?? ''));
+                        $svcKindCode = userBusinessKind($svc);
                         ?>
                         <a
                             class="dir-card dir-card-lg"
@@ -340,11 +375,12 @@ require __DIR__ . '/partials/layout-start.php';
                             data-dir-service-card
                             data-city="<?= h(mb_strtolower($svcCity)) ?>"
                             data-name="<?= h(mb_strtolower($svcName)) ?>"
+                            data-kind="<?= h($svcKindCode) ?>"
                         >
                             <?= renderShopAvatarHtml($svc, $svcInit, 'dir-card-avatar') ?>
                             <div class="dir-card-body">
                                 <strong><?= h($svcName) ?></strong>
-                                <span class="dir-card-kind"><?= h(businessKindLabel(userBusinessKind($svc))) ?> · <?= h($svcCity) ?></span>
+                                <span class="dir-card-kind"><?= h(businessKindLabel($svcKindCode)) ?> · <?= h($svcCity) ?></span>
                             </div>
                         </a>
                     <?php endforeach; ?>
@@ -354,7 +390,11 @@ require __DIR__ . '/partials/layout-start.php';
     </main>
 </div>
 <script>
-window.__DIR_CITIES__ = <?= json_encode($citySearchIndex, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+window.__DIR_CITIES__ = <?= json_encode(array_map(static function (array $row) use ($kindFilter): array {
+    $row['url'] = directoryCityUrl($row['city'], $kindFilter);
+    return $row;
+}, $citySearchIndex), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+window.__DIR_KIND__ = <?= json_encode($kindFilter, JSON_UNESCAPED_UNICODE) ?>;
 (function () {
   const cities = Array.isArray(window.__DIR_CITIES__) ? window.__DIR_CITIES__ : [];
   const form = document.querySelector('[data-dir-city-search]');
@@ -426,7 +466,7 @@ window.__DIR_CITIES__ = <?= json_encode($citySearchIndex, JSON_UNESCAPED_UNICODE
     }
     box.innerHTML = items.map(function (row, idx) {
       const countLabel = row.count > 0
-        ? (row.count + (row.count === 1 ? ' servis' : ' servisa'))
+        ? (row.count + (row.count === 1 ? ' firma' : ' firmi'))
         : 'još nema firmi';
       return '<button type="button" class="dir-city-suggest-item' + (idx === active ? ' is-active' : '') + '" data-idx="' + idx + '" role="option">' +
         '<strong>' + escapeHtml(row.city) + '</strong>' +

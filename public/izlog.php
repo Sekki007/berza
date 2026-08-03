@@ -209,7 +209,7 @@ require __DIR__ . '/partials/layout-start.php';
             <div class="shop-actions">
                 <button type="button" class="btn-message" data-copy-link data-copy-url="<?= h($shopLink) ?>">Kopiraj link izloga</button>
                 <?php if (isDirectoryServiceFirm($seller) && trim((string)($seller['location'] ?? '')) !== ''): ?>
-                    <a class="btn-message" href="<?= h(directoryServiceUrl($seller)) ?>" style="text-align:center;">SEO profil servisa</a>
+                    <a class="btn-message" href="<?= h(directoryServiceUrl($seller)) ?>" style="text-align:center;">Direktorijum firmi</a>
                 <?php endif; ?>
                 <?php if (storefrontIsActive($seller)): ?>
                     <a class="btn-message" href="<?= h(storefrontUrlForUser($seller)) ?>" style="text-align:center;">Mini sajt radnje</a>
