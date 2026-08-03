@@ -333,32 +333,12 @@ require __DIR__ . '/partials/layout-start.php';
             </form>
         </header>
 
-        <?php if ($cityStats === []): ?>
+        <?php if ($allServices === []): ?>
             <div class="form-card">
                 <p class="dir-empty">Još nema javnih verifikovanih firmi u ovom filteru. Probaj drugi tip ili potraži grad iznad.</p>
                 <p style="margin-top:10px;"><a href="/index.php?type=servis">Pogledaj oglase usluga →</a> · <a href="/index.php?type=telefon">Oglasi telefona →</a></p>
             </div>
         <?php else: ?>
-            <div class="dir-city-toolbar">
-                <h2 class="dir-section-title" style="margin:0;">Gradovi sa firmama</h2>
-                <span class="dir-city-filter-meta" data-dir-city-filter-meta></span>
-            </div>
-            <div class="dir-city-grid" data-dir-city-grid>
-                <?php foreach ($cityStats as $row): ?>
-                    <a
-                        class="dir-city-card"
-                        href="<?= h($row['url']) ?>"
-                        data-dir-city-card
-                        data-city="<?= h(mb_strtolower($row['city'])) ?>"
-                        data-slug="<?= h($row['slug']) ?>"
-                    >
-                        <strong><?= h($row['city']) ?></strong>
-                        <span><?= (int)$row['count'] ?> <?= (int)$row['count'] === 1 ? 'firma' : 'firmi' ?></span>
-                    </a>
-                <?php endforeach; ?>
-            </div>
-            <p class="dir-empty" data-dir-city-empty hidden>Nema grada sa tim nazivom među gradovima koji imaju firme. Probaj predlog iz pretrage.</p>
-
             <section class="dir-section">
                 <h2 class="dir-section-title">Sve firme</h2>
                 <div class="dir-card-grid dir-card-grid-lg" data-dir-service-grid>
@@ -402,10 +382,7 @@ window.__DIR_KIND__ = <?= json_encode($kindFilter, JSON_UNESCAPED_UNICODE) ?>;
   const box = document.querySelector('[data-dir-city-suggest]');
   if (!form || !input || !box) return;
 
-  const cards = Array.from(document.querySelectorAll('[data-dir-city-card]'));
   const serviceCards = Array.from(document.querySelectorAll('[data-dir-service-card]'));
-  const emptyEl = document.querySelector('[data-dir-city-empty]');
-  const metaEl = document.querySelector('[data-dir-city-filter-meta]');
   let active = -1;
   let items = [];
 
@@ -426,18 +403,6 @@ window.__DIR_KIND__ = <?= json_encode($kindFilter, JSON_UNESCAPED_UNICODE) ?>;
 
   function filterLists(q) {
     const nq = norm(q);
-    let visibleCities = 0;
-    cards.forEach(function (card) {
-      const ok = !nq || norm(card.getAttribute('data-city')).includes(nq) || String(card.getAttribute('data-slug') || '').includes(nq.replace(/\s+/g, '-'));
-      card.hidden = !ok;
-      if (ok) visibleCities++;
-    });
-    if (emptyEl) emptyEl.hidden = !(nq && visibleCities === 0 && cards.length > 0);
-    if (metaEl) {
-      metaEl.textContent = nq
-        ? (visibleCities + ' / ' + cards.length)
-        : '';
-    }
     serviceCards.forEach(function (card) {
       if (!nq) { card.hidden = false; return; }
       const city = norm(card.getAttribute('data-city'));
