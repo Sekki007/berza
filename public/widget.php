@@ -25,67 +25,84 @@ $siteName = 'KupiTelefon.rs';
     <title>Oglasi — <?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?></title>
     <style>
         :root {
-            --bg: #f3f5f7;
-            --card: #fff;
+            --bg: #eef2f5;
+            --card: #ffffff;
             --text: #1f2933;
             --muted: #6b7280;
             --link: #1760a8;
             --price: #1760a8;
-            --border: #e5e7eb;
+            --border: #dde3ea;
             --green: #2d7a3e;
+            --yellow: #f5c518;
         }
         * { box-sizing: border-box; }
         html, body {
             margin: 0;
             padding: 0;
-            background: var(--bg);
+            width: 100%;
+            min-height: 100%;
+            background: linear-gradient(180deg, #f7f9fb 0%, var(--bg) 100%);
             color: var(--text);
             font-family: Arial, Helvetica, sans-serif;
             font-size: 13px;
             line-height: 1.35;
         }
-        .wrap { padding: 8px; }
-        .head {
+        .banner {
             display: flex;
-            align-items: center;
-            justify-content: space-between;
-            gap: 8px;
-            margin-bottom: 8px;
-            padding: 0 2px;
+            flex-direction: column;
+            min-height: 100vh;
+            padding: 0;
+        }
+        .topbar {
+            background: #fff;
+            border-bottom: 2px solid var(--yellow);
+            padding: 10px 12px;
+            text-align: center;
         }
         .brand {
+            display: inline-block;
             font-weight: 800;
             color: var(--green);
             text-decoration: none;
-            font-size: 13px;
+            font-size: 14px;
+            letter-spacing: -.01em;
         }
-        .brand:hover { text-decoration: underline; }
-        .list { display: flex; flex-direction: column; gap: 8px; }
+        .brand span { color: var(--text); }
+        .tagline {
+            margin-top: 2px;
+            font-size: 11px;
+            color: var(--muted);
+        }
+        .list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            padding: 10px;
+            flex: 1;
+        }
         .card {
             display: flex;
-            gap: 10px;
+            flex-direction: column;
             background: var(--card);
             border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 8px;
+            border-radius: 12px;
+            overflow: hidden;
             text-decoration: none;
             color: inherit;
-            transition: border-color .15s ease;
+            box-shadow: 0 1px 3px rgba(16, 24, 40, .06);
         }
-        .card:hover { border-color: #b8c4d4; }
+        .card:hover { border-color: #b7c5d6; }
         .thumb {
-            width: 72px;
-            min-width: 72px;
-            height: 72px;
-            border-radius: 8px;
-            overflow: hidden;
-            background: #eef1f4;
+            width: 100%;
+            aspect-ratio: 4 / 3;
+            background: #e8edf2;
             display: flex;
             align-items: center;
             justify-content: center;
             color: var(--muted);
-            font-size: 10px;
+            font-size: 11px;
             font-weight: 700;
+            overflow: hidden;
         }
         .thumb img {
             width: 100%;
@@ -93,7 +110,12 @@ $siteName = 'KupiTelefon.rs';
             object-fit: cover;
             display: block;
         }
-        .body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+        .body {
+            padding: 10px 11px 11px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
         .title {
             margin: 0;
             font-size: 13px;
@@ -103,63 +125,86 @@ $siteName = 'KupiTelefon.rs';
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
+            line-height: 1.3;
+        }
+        .row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
         }
         .meta {
             color: var(--muted);
             font-size: 11px;
-            white-space: nowrap;
+            min-width: 0;
             overflow: hidden;
             text-overflow: ellipsis;
+            white-space: nowrap;
         }
         .price {
-            margin-top: auto;
-            font-size: 14px;
+            flex-shrink: 0;
+            background: var(--price);
+            color: #fff;
+            font-size: 12px;
             font-weight: 800;
-            color: var(--price);
+            border-radius: 6px;
+            padding: 5px 8px;
+            white-space: nowrap;
+        }
+        .price.is-open {
+            background: #fff8e8;
+            color: #8a6400;
+            border: 1px solid #f0d78c;
         }
         .empty {
+            margin: 10px;
             background: var(--card);
             border: 1px dashed var(--border);
-            border-radius: 10px;
-            padding: 18px 12px;
+            border-radius: 12px;
+            padding: 24px 12px;
             text-align: center;
             color: var(--muted);
         }
-        .foot {
-            margin-top: 8px;
-            text-align: center;
-            font-size: 11px;
-            color: var(--muted);
+        .bottom {
+            margin-top: auto;
+            padding: 0 10px 10px;
         }
-        .foot a { color: var(--green); font-weight: 700; text-decoration: none; }
-        .foot a:hover { text-decoration: underline; }
         .cta {
             display: block;
-            margin-top: 8px;
             text-align: center;
             background: var(--green);
             color: #fff;
             font-weight: 700;
             text-decoration: none;
             border-radius: 8px;
-            padding: 8px 10px;
+            padding: 10px 12px;
             font-size: 12px;
         }
-        .cta:hover { filter: brightness(.95); }
+        .cta:hover { filter: brightness(.96); }
+        .foot {
+            margin-top: 8px;
+            text-align: center;
+            font-size: 10px;
+            color: var(--muted);
+        }
+        .foot a { color: var(--green); font-weight: 700; text-decoration: none; }
     </style>
 </head>
 <body>
-<div class="wrap">
-    <div class="head">
-        <a class="brand" href="<?= htmlspecialchars($homeUrl, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener"><?= htmlspecialchars($siteName, ENT_QUOTES, 'UTF-8') ?></a>
-        <span style="color:var(--muted);font-size:11px;">Najnoviji oglasi</span>
+<div class="banner">
+    <div class="topbar">
+        <a class="brand" href="<?= htmlspecialchars($homeUrl, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">Kupi<span>Telefon</span></a>
+        <div class="tagline">Telefone · oprema · servis</div>
     </div>
 
     <?php if ($ads === []): ?>
         <div class="empty">Trenutno nema oglasa za prikaz.</div>
     <?php else: ?>
         <div class="list">
-            <?php foreach ($ads as $ad): ?>
+            <?php foreach ($ads as $ad):
+                $price = (string)($ad['price'] ?? '');
+                $isOpen = str_contains(mb_strtolower($price), 'dogovoru') || str_contains(mb_strtolower($price), 'kontakt');
+                ?>
                 <a class="card" href="<?= htmlspecialchars((string)$ad['url'], ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">
                     <div class="thumb">
                         <?php if (!empty($ad['image'])): ?>
@@ -170,18 +215,20 @@ $siteName = 'KupiTelefon.rs';
                     </div>
                     <div class="body">
                         <h2 class="title"><?= htmlspecialchars((string)$ad['title'], ENT_QUOTES, 'UTF-8') ?></h2>
-                        <?php if ((string)($ad['location'] ?? '') !== ''): ?>
-                            <div class="meta"><?= htmlspecialchars((string)$ad['location'], ENT_QUOTES, 'UTF-8') ?></div>
-                        <?php endif; ?>
-                        <div class="price"><?= htmlspecialchars((string)$ad['price'], ENT_QUOTES, 'UTF-8') ?></div>
+                        <div class="row">
+                            <div class="meta"><?= htmlspecialchars((string)($ad['location'] ?? ''), ENT_QUOTES, 'UTF-8') ?></div>
+                            <div class="price<?= $isOpen ? ' is-open' : '' ?>"><?= htmlspecialchars($price, ENT_QUOTES, 'UTF-8') ?></div>
+                        </div>
                     </div>
                 </a>
             <?php endforeach; ?>
         </div>
     <?php endif; ?>
 
-    <a class="cta" href="<?= htmlspecialchars($homeUrl, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">Pogledaj više na KupiTelefon</a>
-    <div class="foot">Powered by <a href="<?= htmlspecialchars($homeUrl, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">KupiTelefon.rs</a></div>
+    <div class="bottom">
+        <a class="cta" href="<?= htmlspecialchars($homeUrl, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">Otvori KupiTelefon.rs</a>
+        <div class="foot">Powered by <a href="<?= htmlspecialchars($homeUrl, ENT_QUOTES, 'UTF-8') ?>" target="_blank" rel="noopener">KupiTelefon.rs</a></div>
+    </div>
 </div>
 </body>
 </html>

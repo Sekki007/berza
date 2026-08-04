@@ -40,12 +40,13 @@ require __DIR__ . '/partials/layout-start.php';
                 <p style="margin-top:10px;"><strong>Kod (copy-paste):</strong></p>
                 <pre style="margin-top:8px;padding:12px;background:#f5f7fa;border:1px solid var(--border);border-radius:8px;overflow:auto;font-size:12px;line-height:1.45;"><?= h('<iframe
   src="' . rtrim(appBaseUrl(), '/') . '/widget.php?limit=3"
-  style="width:100%;max-width:360px;height:480px;border:0;overflow:hidden"
+  style="width:300px;height:600px;border:0;overflow:hidden;border-radius:12px"
   loading="lazy"
   title="KupiTelefon oglasi"
 ></iframe>') ?></pre>
                 <p style="margin-top:10px;color:var(--text-muted);font-size:13px;">
-                    Opcije u URL-u: <code>limit=1..6</code>,
+                    Vertikalni banner (npr. sidebar): <code>300×600</code> ili <code>160×600</code>.
+                    Opcije: <code>limit=1..6</code>,
                     <code>type=telefon|delovi|servis</code>,
                     <code>ref=opciono</code>.
                     Primer: <a href="/widget.php?limit=3" target="_blank" rel="noopener">/widget.php?limit=3</a>
