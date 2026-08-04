@@ -55,11 +55,11 @@ $imageCount = is_array($ad['images'] ?? null) ? count($ad['images']) : 0;
                     <?php if ($isSold): ?><span class="listing-badge-sold kp-list-badge kp-list-badge-sold">Prodato</span><?php endif; ?>
                 </div>
                 <div class="kp-list-thumb-meta">
-                    <span title="Pregledi">👁 <?= $views ?></span>
                     <?php if ($location !== ''): ?>
-                        <span class="kp-list-meta-sep" aria-hidden="true">·</span>
                         <span class="kp-list-meta-loc" title="Grad"><?= h($location) ?></span>
+                        <span class="kp-list-meta-sep" aria-hidden="true">·</span>
                     <?php endif; ?>
+                    <span title="Pregledi">👁 <?= $views ?></span>
                     <span class="kp-list-meta-sep" aria-hidden="true">·</span>
                     <span title="Objavljeno"><?= h($relativeTime) ?></span>
                 </div>
