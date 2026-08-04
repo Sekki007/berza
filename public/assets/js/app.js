@@ -650,33 +650,67 @@
   }
 
   function initGallery() {
-    const main = one('#gallery-main');
+    const track = one('#gallery-track') || one('.kp-gallery-track');
     const counter = one('[data-gallery-counter]');
-    const thumbs = all('[data-gallery-thumb]');
+    if (!track || !counter) return;
+
+    const slides = all('.kp-gallery-slide', track);
+    const thumbs = all('[data-gallery-thumb-index]');
+    const prevBtn = one('[data-gallery-prev]');
+    const nextBtn = one('[data-gallery-next]');
+    const total = slides.length;
+    if (!total) return;
+
+    let rafId = null;
+
+    function currentIndex() {
+      const w = track.clientWidth || 1;
+      return Math.min(total - 1, Math.max(0, Math.round(track.scrollLeft / w)));
+    }
+
+    function paint(idx) {
+      counter.textContent = (idx + 1) + ' od ' + total;
+      thumbs.forEach(function (thumb) {
+        const isOn = parseInt(thumb.getAttribute('data-gallery-thumb-index') || '-1', 10) === idx;
+        thumb.classList.toggle('is-active', isOn);
+      });
+      if (prevBtn) prevBtn.disabled = idx <= 0;
+      if (nextBtn) nextBtn.disabled = idx >= total - 1;
+    }
+
+    function scrollToIndex(idx) {
+      const clamped = Math.min(total - 1, Math.max(0, idx));
+      const left = (track.clientWidth || 1) * clamped;
+      track.scrollTo({ left: left, behavior: 'smooth' });
+      paint(clamped);
+    }
+
+    paint(currentIndex());
+
+    track.addEventListener('scroll', function () {
+      if (rafId !== null) return;
+      rafId = window.requestAnimationFrame(function () {
+        rafId = null;
+        paint(currentIndex());
+      });
+    }, { passive: true });
+
     thumbs.forEach(function (thumb) {
       thumb.addEventListener('click', function () {
-        if (!main) return;
-        main.src = thumb.getAttribute('data-gallery-thumb') || '';
-        all('.detail-thumb').forEach(function (t) { t.classList.remove('active'); });
-        thumb.classList.add('active');
-        if (counter) {
-          const idx = thumb.getAttribute('data-gallery-index') || '1';
-          counter.textContent = idx + ' od ' + thumbs.length;
-        }
+        const idx = parseInt(thumb.getAttribute('data-gallery-thumb-index') || '0', 10);
+        scrollToIndex(isNaN(idx) ? 0 : idx);
       });
     });
 
-    const track = one('#gallery-track') || one('.kp-gallery-track');
-    if (track && counter) {
-      const slides = all('.kp-gallery-slide', track);
-      const total = slides.length;
-      if (total > 1) {
-        track.addEventListener('scroll', function () {
-          const w = track.clientWidth || 1;
-          const idx = Math.min(total, Math.max(1, Math.round(track.scrollLeft / w) + 1));
-          counter.textContent = idx + ' od ' + total;
-        }, { passive: true });
-      }
+    if (prevBtn) {
+      prevBtn.addEventListener('click', function () {
+        scrollToIndex(currentIndex() - 1);
+      });
+    }
+    if (nextBtn) {
+      nextBtn.addEventListener('click', function () {
+        scrollToIndex(currentIndex() + 1);
+      });
     }
   }
 

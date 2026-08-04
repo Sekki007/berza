@@ -308,7 +308,26 @@ $contactBlock = static function (string $formId = 'poruka') use (
                         </div>
                     <?php endforeach; ?>
                 </div>
+                <?php if ($imageCount > 1): ?>
+                    <button type="button" class="kp-gallery-nav kp-gallery-prev" data-gallery-prev aria-label="Prethodna slika">‹</button>
+                    <button type="button" class="kp-gallery-nav kp-gallery-next" data-gallery-next aria-label="Sledeća slika">›</button>
+                <?php endif; ?>
                 <span class="kp-gallery-counter" data-gallery-counter>1 od <?= $imageCount ?></span>
+                <?php if ($imageCount > 1): ?>
+                    <div class="kp-gallery-thumbs" data-gallery-thumbs>
+                        <?php foreach ($images as $i => $img): ?>
+                            <?php $thumbSrc = $galleryDisplay[$i] ?? (string)$img; ?>
+                            <button
+                                type="button"
+                                class="kp-gallery-thumb<?= $i === 0 ? ' is-active' : '' ?>"
+                                data-gallery-thumb-index="<?= $i ?>"
+                                aria-label="Prikaži sliku <?= $i + 1 ?>"
+                            >
+                                <img src="<?= h($thumbSrc) ?>" alt="<?= h((string)$ad['title']) ?> — slika <?= $i + 1 ?>" loading="lazy" decoding="async">
+                            </button>
+                        <?php endforeach; ?>
+                    </div>
+                <?php endif; ?>
             <?php else: ?>
                 <div class="kp-gallery-slide">
                     <div class="<?= $type === 'telefon' ? 'phone-silhouette' : 'parts-icon' ?>" style="width:90px;height:160px;">
@@ -341,6 +360,11 @@ $contactBlock = static function (string $formId = 'poruka') use (
                 </button>
                 <a class="kp-action-link" href="/report.php?ad=<?= (int)$ad['id'] ?>">⋯ Opcije</a>
             </div>
+            <div class="kp-head-stats">
+                <span title="Pregledi">👁 <?= (int)($ad['views'] ?? 0) ?></span>
+                <span title="Omiljeni"><?= $isFav ? '♥' : '♡' ?></span>
+                <span>↻ <?= h(formatRelativeTime((string)$ad['created_at'])) ?></span>
+            </div>
         </div>
 
         <div class="kp-card">
@@ -350,11 +374,6 @@ $contactBlock = static function (string $formId = 'poruka') use (
             <?php elseif (!empty($ad['listing_type'])): ?>
                 <div class="kp-info-cond"><strong><?= h(listingTypeLabel($ad)) ?></strong></div>
             <?php endif; ?>
-            <div class="kp-info-stats">
-                <span title="Pregledi">👁 <?= (int)($ad['views'] ?? 0) ?></span>
-                <span title="Omiljeni"><?= $isFav ? '♥' : '♡' ?></span>
-                <span>↻ <?= h(formatRelativeTime((string)$ad['created_at'])) ?></span>
-            </div>
         </div>
 
         <?php $attrRows = adAttributeRows($ad); ?>
