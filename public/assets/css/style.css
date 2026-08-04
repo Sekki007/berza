@@ -1359,7 +1359,31 @@ body.page-chat .footer,body.page-chat .site-footer{display:none;}
 .listing-badge-sold { background: #333; color: #fff; left: auto; right: 8px; }
 .listing-sold { opacity: 0.75; }
 .listing-shop { font-size: 12px; color: var(--text-muted); margin: 2px 0 4px; font-weight: bold; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
-.kp-list-shop { font-size: 12px; }
+.kp-list-shop {
+  font-size: 12px;
+  font-weight: 600;
+  color: #5f6b7a;
+  margin: 0;
+  gap: 6px;
+  line-height: 1.3;
+}
+.kp-list-card .listing-tags-compact {
+  margin: 0;
+  gap: 6px;
+}
+.kp-list-card .listing-tags-compact .tag {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .01em;
+  padding: 3px 8px;
+  border-radius: 999px;
+}
+.kp-list-card .listing-desc {
+  font-size: 13px;
+  line-height: 1.45;
+  color: #667084;
+  letter-spacing: 0;
+}
 .listing-tags-compact { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 0; }
 .listing-shop-biz { display: inline-flex; align-items: center; gap: 4px; }
 .detail-img { max-width: 100%; max-height: 100%; object-fit: contain; }
@@ -1619,10 +1643,12 @@ a.rep-thumb:hover { opacity: 0.85; text-decoration: underline; }
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 3px 4px;
+  gap: 2px 5px;
   font-size: 11px;
-  line-height: 1.25;
-  color: #888;
+  font-weight: 500;
+  letter-spacing: .01em;
+  line-height: 1.3;
+  color: #7a8494;
   padding: 0 1px;
 }
 .kp-list-thumb-meta span {
@@ -1631,12 +1657,13 @@ a.rep-thumb:hover { opacity: 0.85; text-decoration: underline; }
   gap: 2px;
   min-width: 0;
 }
-.kp-list-meta-sep { color: #c0c0c0; }
+.kp-list-meta-sep { color: #c5ccd6; font-weight: 400; }
 .kp-list-meta-loc {
   max-width: 100%;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  color: #5f6b7a;
 }
 .kp-list-card .kp-list-body,
 .kp-list-card .listing-body {
@@ -1644,14 +1671,14 @@ a.rep-thumb:hover { opacity: 0.85; text-decoration: underline; }
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 6px;
   padding: 0 28px 0 0;
 }
 .kp-list-title-row {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  gap: 10px;
+  gap: 12px;
 }
 .kp-list-card .kp-list-title,
 .kp-list-card .listing-title {
@@ -1660,8 +1687,9 @@ a.rep-thumb:hover { opacity: 0.85; text-decoration: underline; }
   min-width: 0;
   font-size: 15px;
   font-weight: 700;
-  line-height: 1.25;
-  color: #1a6bb5;
+  letter-spacing: -.01em;
+  line-height: 1.3;
+  color: #1760a8;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
@@ -1671,34 +1699,42 @@ a.rep-thumb:hover { opacity: 0.85; text-decoration: underline; }
   flex-shrink: 0;
   max-width: 46%;
   text-align: center;
-  background: #1a6bb5;
+  background: #1760a8;
   color: #fff;
-  border-radius: 6px;
-  padding: 6px 10px;
-  box-shadow: 0 2px 6px rgba(26,107,181,.28);
+  border-radius: 8px;
+  padding: 7px 11px;
+  box-shadow: 0 1px 3px rgba(23,96,168,.22);
   line-height: 1.15;
+  border: 1px solid transparent;
 }
 .kp-list-price-main {
   display: block;
   font-size: 14px;
   font-weight: 800;
+  letter-spacing: -.01em;
   white-space: nowrap;
+  font-variant-numeric: tabular-nums;
 }
 .kp-list-price-badge .listing-price-rsd {
   display: block;
-  margin-top: 2px;
+  margin-top: 3px;
   font-size: 10px;
   font-weight: 500;
-  color: rgba(255,255,255,.88);
+  letter-spacing: 0;
+  color: rgba(255,255,255,.86);
   white-space: nowrap;
 }
 .kp-list-price-badge.is-open {
-  background: #2e7d32;
-  box-shadow: 0 2px 6px rgba(46,125,50,.25);
+  background: #f4f6f8;
+  color: #3d4a5c;
+  border-color: #d7dee7;
+  box-shadow: none;
 }
 .kp-list-price-badge.is-open .kp-list-price-main {
   font-size: 12px;
-  white-space: normal;
+  font-weight: 700;
+  letter-spacing: .01em;
+  white-space: nowrap;
 }
 .kp-list-loc {
   display: flex;

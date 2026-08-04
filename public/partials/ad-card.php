@@ -68,7 +68,7 @@ $imageCount = is_array($ad['images'] ?? null) ? count($ad['images']) : 0;
                 <div class="kp-list-title-row">
                     <h2 class="listing-title kp-list-title"><?= h((string)$ad['title']) ?></h2>
                     <div class="kp-list-price-badge <?= $priceOpen ? 'is-open' : '' ?>">
-                        <span class="kp-list-price-main"><?= h(formatAdPrice($ad)) ?></span>
+                        <span class="kp-list-price-main"><?= $priceOpen ? 'Po dogovoru' : h(formatAdPrice($ad)) ?></span>
                         <?php if ($rsdHint !== ''): ?>
                             <span class="listing-price-rsd"><?= h($rsdHint) ?></span>
                         <?php endif; ?>
