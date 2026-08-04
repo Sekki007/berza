@@ -665,7 +665,6 @@
     const consume = function (e) {
       if (!e) return;
       window.__ktGalleryNavTs = Date.now();
-      if (typeof e.preventDefault === 'function') e.preventDefault();
       if (typeof e.stopPropagation === 'function') e.stopPropagation();
       if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
     };
@@ -713,8 +712,8 @@
     }, { passive: true });
 
     thumbs.forEach(function (thumb) {
-      thumb.addEventListener('pointerdown', consume);
       thumb.addEventListener('click', function (e) {
+        if (typeof e.preventDefault === 'function') e.preventDefault();
         consume(e);
         const idx = parseInt(thumb.getAttribute('data-gallery-thumb-index') || '0', 10);
         scrollToIndex(isNaN(idx) ? 0 : idx, true);
@@ -722,15 +721,15 @@
     });
 
     if (prevBtn) {
-      prevBtn.addEventListener('pointerdown', consume);
       prevBtn.addEventListener('click', function (e) {
+        if (typeof e.preventDefault === 'function') e.preventDefault();
         consume(e);
         scrollToIndex(currentIndex() - 1, true);
       });
     }
     if (nextBtn) {
-      nextBtn.addEventListener('pointerdown', consume);
       nextBtn.addEventListener('click', function (e) {
+        if (typeof e.preventDefault === 'function') e.preventDefault();
         consume(e);
         scrollToIndex(currentIndex() + 1, true);
       });
