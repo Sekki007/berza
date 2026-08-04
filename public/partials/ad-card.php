@@ -20,33 +20,60 @@ $cardShop = $cardSeller
 $cardShopUrl = $cardSeller ? shopUrlForUser($cardSeller) : '';
 $categoryLabel = adCategoryLabel($ad);
 $rsdHint = !$priceOpen ? formatAdPriceRsd($ad) : '';
+$location = trim((string)($ad['location'] ?? ''));
+$relativeTime = formatRelativeTime((string)($ad['created_at'] ?? ''));
+$imageCount = is_array($ad['images'] ?? null) ? count($ad['images']) : 0;
 ?>
 <article class="listing-card kp-list-card <?= $isSold ? 'is-sold listing-sold' : '' ?> <?= $isHighlighted ? 'listing-highlighted' : '' ?>" data-category="<?= h($type) ?>" data-ad-id="<?= $adId ?>">
     <a href="<?= h($adHref) ?>" class="listing-link kp-list-link">
         <div class="listing-inner kp-list-inner">
-            <div class="listing-thumb kp-list-thumb">
-                <?php if ($img): ?>
-                    <img
-                        src="<?= h($img) ?>"
-                        alt=""
-                        width="400"
-                        height="400"
-                        loading="<?= $cardImgPriority ? 'eager' : 'lazy' ?>"
-                        decoding="async"
-                        <?php if ($cardImgPriority): ?>fetchpriority="high"<?php endif; ?>
-                        class="listing-thumb-img"
-                    >
-                <?php else: ?>
-                    <div class="<?= $type === 'telefon' ? 'phone-silhouette' : 'parts-icon' ?>">
-                        <?= $type === 'telefon' ? '' : strtoupper($categoryLabel) ?>
-                    </div>
-                <?php endif; ?>
-                <?php if ($isPromoted): ?><span class="listing-badge-promo">TOP</span><?php endif; ?>
-                <?php if ($isHighlighted && !$isPromoted): ?><span class="listing-badge-hi">Istaknut</span><?php endif; ?>
-                <?php if ($isSold): ?><span class="listing-badge-sold kp-list-badge kp-list-badge-sold">Prodato</span><?php endif; ?>
+            <div class="kp-list-media">
+                <div class="listing-thumb kp-list-thumb">
+                    <?php if ($img): ?>
+                        <img
+                            src="<?= h($img) ?>"
+                            alt=""
+                            width="400"
+                            height="400"
+                            loading="<?= $cardImgPriority ? 'eager' : 'lazy' ?>"
+                            decoding="async"
+                            <?php if ($cardImgPriority): ?>fetchpriority="high"<?php endif; ?>
+                            class="listing-thumb-img"
+                        >
+                    <?php else: ?>
+                        <div class="<?= $type === 'telefon' ? 'phone-silhouette' : 'parts-icon' ?>">
+                            <?= $type === 'telefon' ? '' : strtoupper($categoryLabel) ?>
+                        </div>
+                    <?php endif; ?>
+                    <?php if ($imageCount > 1): ?>
+                        <span class="kp-list-photo-count" title="<?= $imageCount ?> fotografija">
+                            <span aria-hidden="true">▣</span> <?= $imageCount ?>
+                        </span>
+                    <?php endif; ?>
+                    <?php if ($isPromoted): ?><span class="listing-badge-promo">TOP</span><?php endif; ?>
+                    <?php if ($isHighlighted && !$isPromoted): ?><span class="listing-badge-hi">Istaknut</span><?php endif; ?>
+                    <?php if ($isSold): ?><span class="listing-badge-sold kp-list-badge kp-list-badge-sold">Prodato</span><?php endif; ?>
+                </div>
+                <div class="kp-list-thumb-meta">
+                    <span title="Pregledi">👁 <?= $views ?></span>
+                    <?php if ($location !== ''): ?>
+                        <span class="kp-list-meta-sep" aria-hidden="true">·</span>
+                        <span class="kp-list-meta-loc" title="Grad"><?= h($location) ?></span>
+                    <?php endif; ?>
+                    <span class="kp-list-meta-sep" aria-hidden="true">·</span>
+                    <span title="Objavljeno"><?= h($relativeTime) ?></span>
+                </div>
             </div>
             <div class="listing-body kp-list-body">
-                <h2 class="listing-title kp-list-title"><?= h((string)$ad['title']) ?></h2>
+                <div class="kp-list-title-row">
+                    <h2 class="listing-title kp-list-title"><?= h((string)$ad['title']) ?></h2>
+                    <div class="kp-list-price-badge <?= $priceOpen ? 'is-open' : '' ?>">
+                        <span class="kp-list-price-main"><?= h(formatAdPrice($ad)) ?></span>
+                        <?php if ($rsdHint !== ''): ?>
+                            <span class="listing-price-rsd"><?= h($rsdHint) ?></span>
+                        <?php endif; ?>
+                    </div>
+                </div>
 
                 <?php if ($cardShop !== ''): ?>
                     <div class="listing-shop kp-list-shop">
@@ -60,31 +87,11 @@ $rsdHint = !$priceOpen ? formatAdPriceRsd($ad) : '';
                     </div>
                 <?php endif; ?>
 
-                <div class="listing-loc-line kp-list-loc">
-                    <span class="listing-loc"><?= h((string)($ad['location'] ?? '')) ?></span>
-                    <span class="kp-deliv-ok" title="Dostava / dogovor">☑</span>
-                </div>
-
-                <div class="listing-stats-line kp-list-stats">
-                    <span title="Pregledi">👁 <?= $views ?></span>
-                    <span title="Omiljeni"><?= $isFav ? '♥' : '♡' ?></span>
-                    <span title="Objavljeno">↻ <?= h(formatRelativeTime((string)($ad['created_at'] ?? ''))) ?></span>
-                </div>
-
-                <div class="listing-price-row kp-list-price-row">
-                    <div class="listing-price kp-list-price <?= $priceOpen ? 'kp-list-price-free' : '' ?>">
-                        <?= h(formatAdPrice($ad)) ?>
-                        <?php if ($rsdHint !== ''): ?>
-                            <span class="listing-price-rsd"><?= h($rsdHint) ?></span>
-                        <?php endif; ?>
-                    </div>
-                    <?php if ($isPromoted): ?><span class="kp-list-badge">TOP</span><?php endif; ?>
-                </div>
-
                 <div class="listing-tags listing-tags-compact">
                     <span class="tag <?= $type === 'telefon' ? 'tag-cat-phone' : ($type === 'delovi' ? 'tag-cat-parts' : 'tag-cat-service') ?>">
                         <?= h($categoryLabel) ?>
                     </span>
+                    <?php if ($isPromoted): ?><span class="kp-list-badge">TOP</span><?php endif; ?>
                 </div>
 
                 <div class="listing-desktop-extra">
