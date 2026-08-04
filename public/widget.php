@@ -24,6 +24,11 @@ $homeUrl = absoluteUrl('/') . '?' . http_build_query([
     'utm_campaign' => $ref !== '' ? $ref : 'partner',
 ]);
 $primary = $ads[0] ?? null;
+
+header('Content-Type: text/html; charset=UTF-8');
+header('Content-Security-Policy: frame-ancestors *');
+header('Cache-Control: public, max-age=120');
+header_remove('X-Frame-Options');
 ?>
 <!DOCTYPE html>
 <html lang="sr">

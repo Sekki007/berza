@@ -26,6 +26,15 @@ require __DIR__ . '/partials/layout-start.php';
                 Copy-paste iframe kod na partnerski sajt ili u članak. Partner ne mora da menja ništa —
                 <code>ref</code> se automatski uzima sa domena. Preview otvara live widget.
             </p>
+            <div class="form-hint" style="margin-top:10px;padding:10px 12px;background:#fff8e1;border:1px solid #ffe082;border-radius:8px;color:#856404;">
+                <strong>Ako se ne vidi na drugom sajtu:</strong>
+                <ul style="margin:6px 0 0;padding-left:18px;">
+                    <li>WordPress: ubaci preko bloka <em>Custom HTML</em> / HTML (ne običan editor — skida iframe).</li>
+                    <li>Koristi tačan HTTPS URL: <code>https://kupitelefon.rs/widget.php?...</code></li>
+                    <li>Proveri da li partnerski sajt ima CSP koji blokira iframe (frame-src).</li>
+                    <li>Test: otvori preview u novom tabu — ako tu radi, kod je OK.</li>
+                </ul>
+            </div>
         </div>
 
         <?php foreach ($presets as $size => $preset):
