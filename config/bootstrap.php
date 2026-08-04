@@ -50,6 +50,150 @@ function currentUser(): ?array
     return $_SESSION['user'] ?? null;
 }
 
+function rememberCookieName(): string
+{
+    return 'kt_remember';
+}
+
+function rememberCookieTtl(): int
+{
+    return 60 * 60 * 24 * 30; // 30 dana
+}
+
+function setSessionUserFromProfile(array $user): void
+{
+    $isAdminUser = !empty($user['is_admin']) || (($user['username'] ?? '') === 'admin');
+    $_SESSION['user'] = [
+        'id' => (int)($user['id'] ?? 0),
+        'username' => (string)($user['username'] ?? ''),
+        'full_name' => (string)($user['full_name'] ?? ''),
+        'is_admin' => $isAdminUser,
+    ];
+}
+
+function clearRememberCookie(): void
+{
+    setcookie(rememberCookieName(), '', [
+        'expires' => time() - 3600,
+        'path' => '/',
+        'secure' => sessionCookieSecure(),
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+    unset($_COOKIE[rememberCookieName()]);
+}
+
+function rememberTokenEncode(string $token): string
+{
+    return rtrim(strtr(base64_encode($token), '+/', '-_'), '=');
+}
+
+function rememberTokenDecode(string $encoded): ?string
+{
+    $raw = strtr($encoded, '-_', '+/');
+    $pad = strlen($raw) % 4;
+    if ($pad > 0) {
+        $raw .= str_repeat('=', 4 - $pad);
+    }
+    $bin = base64_decode($raw, true);
+    return is_string($bin) ? $bin : null;
+}
+
+function clearRememberLoginForUser(int $userId): void
+{
+    if ($userId > 0 && function_exists('patchUser')) {
+        patchUser($userId, [
+            'remember_selector' => '',
+            'remember_token_hash' => '',
+            'remember_expires_at' => null,
+        ]);
+    }
+    clearRememberCookie();
+}
+
+function issueRememberLogin(array $user, bool $enabled): void
+{
+    $userId = (int)($user['id'] ?? 0);
+    if ($userId <= 0) {
+        clearRememberCookie();
+        return;
+    }
+    if (!$enabled) {
+        clearRememberLoginForUser($userId);
+        return;
+    }
+
+    $selector = bin2hex(random_bytes(9));
+    $token = random_bytes(32);
+    $hash = hash('sha256', $token);
+    $expiresAtTs = time() + rememberCookieTtl();
+    $expiresAt = date('Y-m-d H:i:s', $expiresAtTs);
+
+    if (function_exists('patchUser')) {
+        patchUser($userId, [
+            'remember_selector' => $selector,
+            'remember_token_hash' => $hash,
+            'remember_expires_at' => $expiresAt,
+        ]);
+    }
+
+    setcookie(rememberCookieName(), $selector . ':' . rememberTokenEncode($token), [
+        'expires' => $expiresAtTs,
+        'path' => '/',
+        'secure' => sessionCookieSecure(),
+        'httponly' => true,
+        'samesite' => 'Lax',
+    ]);
+}
+
+function tryRememberLogin(): void
+{
+    if (isLoggedIn()) {
+        return;
+    }
+    $raw = trim((string)($_COOKIE[rememberCookieName()] ?? ''));
+    if ($raw === '' || !str_contains($raw, ':')) {
+        return;
+    }
+    [$selector, $encoded] = explode(':', $raw, 2);
+    $selector = trim($selector);
+    $token = rememberTokenDecode(trim($encoded));
+    if ($selector === '' || $token === null) {
+        clearRememberCookie();
+        return;
+    }
+
+    $matchedUser = null;
+    foreach (getUsers() as $u) {
+        if ((string)($u['remember_selector'] ?? '') === $selector) {
+            $matchedUser = $u;
+            break;
+        }
+    }
+    if (!$matchedUser) {
+        clearRememberCookie();
+        return;
+    }
+
+    $expiresAt = trim((string)($matchedUser['remember_expires_at'] ?? ''));
+    $expiresTs = $expiresAt !== '' ? strtotime($expiresAt) : false;
+    if ($expiresTs === false || $expiresTs < time()) {
+        clearRememberLoginForUser((int)($matchedUser['id'] ?? 0));
+        return;
+    }
+
+    $storedHash = trim((string)($matchedUser['remember_token_hash'] ?? ''));
+    $actualHash = hash('sha256', $token);
+    if ($storedHash === '' || !hash_equals($storedHash, $actualHash)) {
+        clearRememberLoginForUser((int)($matchedUser['id'] ?? 0));
+        return;
+    }
+
+    session_regenerate_id(true);
+    setSessionUserFromProfile($matchedUser);
+    issueRememberLogin($matchedUser, true); // rotacija tokena
+}
+
 function setFlash(string $type, string $message): void
 {
     $_SESSION['flash'] = ['type' => $type, 'message' => $message];
@@ -1265,6 +1409,7 @@ require_once __DIR__ . '/services_directory.php';
 require_once __DIR__ . '/facebook_pixel.php';
 require_once __DIR__ . '/google_tag.php';
 ensureJsonDataFiles();
+tryRememberLogin();
 ensureUploadsDir();
 ensureCreditFiles();
 checkMaintenanceMode();

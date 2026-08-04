@@ -13,6 +13,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     requireCsrf('/login.php');
     $username = trim((string)($_POST['username'] ?? ''));
     $password = (string)($_POST['password'] ?? '');
+    $rememberMe = !empty($_POST['remember_me']);
     $user = findUserByUsername($username);
 
     if ($user && password_verify($password, $user['password_hash'])) {
@@ -31,12 +32,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
 
         session_regenerate_id(true);
-        $_SESSION['user'] = [
-            'id' => (int)$user['id'],
-            'username' => $user['username'],
-            'full_name' => $user['full_name'],
-            'is_admin' => $isAdminUser,
-        ];
+        setSessionUserFromProfile($user);
+        issueRememberLogin($user, $rememberMe);
         setFlash('success', 'Upešno ste prijavljeni.');
         header('Location: ' . ($isAdminUser ? '/dashboard.php' : '/nalog.php'));
         exit;
@@ -69,6 +66,12 @@ require __DIR__ . '/partials/layout-start.php';
                 <div class="form-group">
                     <label>Lozinka</label>
                     <input type="password" name="password" required>
+                </div>
+                <div class="form-group" style="margin-top:-6px;">
+                    <label style="display:flex;align-items:center;gap:8px;font-weight:500;cursor:pointer;">
+                        <input type="checkbox" name="remember_me" value="1" checked>
+                        <span>Zapamti me na ovom uređaju</span>
+                    </label>
                 </div>
                 <button class="btn-call" type="submit">Prijavi se</button>
             </form>
