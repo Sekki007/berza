@@ -2312,15 +2312,20 @@ body.kp-lightbox-open {
 }
 .kp-head-stats {
   display: flex;
-  flex-wrap: wrap;
-  gap: 14px;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 16px;
   margin-top: 10px;
   padding-top: 8px;
   border-top: 1px solid #f5f6f8;
   font-size: 13px;
   color: #666;
+  white-space: nowrap;
+  overflow-x: auto;
+  scrollbar-width: none;
 }
-.kp-head-stats span { display: inline-flex; align-items: center; gap: 4px; }
+.kp-head-stats::-webkit-scrollbar { display: none; }
+.kp-head-stats span { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; flex: 0 0 auto; }
 .kp-action-link {
   display: inline-flex;
   align-items: center;
