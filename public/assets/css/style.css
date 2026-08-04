@@ -2856,7 +2856,7 @@ body.kp-lightbox-open {
       "shop price"
       "tags tags";
     align-items: center;
-    column-gap: 8px;
+    column-gap: 10px;
     row-gap: 6px;
     padding: 8px 12px 12px !important;
   }
@@ -2879,11 +2879,20 @@ body.kp-lightbox-open {
     gap: 4px;
     min-width: 0;
     align-self: center;
+    padding-right: 4px;
+  }
+  .listings.view-grid .kp-list-card .listing-shop-link,
+  .listings.view-grid .kp-list-card .listing-shop-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
   }
   .listings.view-grid .kp-list-card .kp-list-price-badge {
     grid-area: price;
     justify-self: end;
     align-self: center;
+    margin-left: auto;
     max-width: none;
     padding: 5px 9px;
     border-radius: 6px;
@@ -3000,7 +3009,7 @@ body.kp-lightbox-open {
       "shop price"
       "tags tags";
     align-items: center;
-    column-gap: 6px;
+    column-gap: 8px;
     row-gap: 5px;
     padding: 6px 9px 10px !important;
   }
@@ -3021,11 +3030,20 @@ body.kp-lightbox-open {
     margin: 0;
     min-width: 0;
     align-self: center;
+    padding-right: 2px;
+  }
+  .listings.view-grid .listing-shop-link,
+  .listings.view-grid .listing-shop-name {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 100%;
   }
   .listings.view-grid .kp-list-price-badge {
     grid-area: price;
     justify-self: end;
     align-self: center;
+    margin-left: auto;
     max-width: none;
     padding: 4px 8px;
   }
