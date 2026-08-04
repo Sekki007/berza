@@ -2256,7 +2256,7 @@ body.kp-lightbox-open {
 }
 .kp-detail-head {
   background: #fff;
-  padding: 16px 14px 12px;
+  padding: 16px 14px 14px;
   margin: 0 -12px;
   border: 1px solid #e8edf3;
   border-radius: 12px;
@@ -2298,29 +2298,31 @@ body.kp-lightbox-open {
   line-height: 1.1;
   letter-spacing: -.02em;
 }
+.kp-price-rsd { margin-top: 3px; }
 .kp-price-note {
   display: block;
-  margin-top: 2px;
+  margin-top: 4px;
   font-size: 13px;
   color: #888;
 }
 .kp-price-free { color: #2e7d32; }
 .kp-action-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 18px;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
   margin-top: 12px;
   padding-top: 10px;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid #edf1f5;
 }
 .kp-head-stats {
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
-  gap: 16px;
-  margin-top: 10px;
+  justify-content: flex-start;
+  gap: 12px;
+  margin-top: 8px;
   padding-top: 8px;
-  border-top: 1px solid #f5f6f8;
+  border-top: 1px solid #edf1f5;
   font-size: 13px;
   color: #666;
   white-space: nowrap;
@@ -2328,19 +2330,36 @@ body.kp-lightbox-open {
   scrollbar-width: none;
 }
 .kp-head-stats::-webkit-scrollbar { display: none; }
-.kp-head-stats span { display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; flex: 0 0 auto; }
+.kp-head-stats span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+  flex: 0 0 auto;
+  background: #f7f9fc;
+  border: 1px solid #e7edf4;
+  border-radius: 999px;
+  padding: 4px 8px;
+}
 .kp-action-link {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: #555;
-  background: none;
-  border: none;
-  padding: 0;
+  justify-content: center;
+  gap: 5px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #334155;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 10px;
+  min-height: 34px;
+  padding: 6px 8px;
   cursor: pointer;
   text-decoration: none;
+  transition: background .15s ease, border-color .15s ease, color .15s ease;
 }
+.kp-action-link:hover { background: #eef4ff; border-color: #cfe0ff; color: #1a6bb5; }
+.kp-info-cond { font-size: 19px; margin-bottom: 0; line-height: 1.25; }
 .kp-card {
   background: #fff;
   border-radius: 12px;
@@ -2594,6 +2613,29 @@ body.kp-lightbox-open {
     border: 1px solid #ececec;
     max-width: none;
   }
+  .kp-action-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+  .kp-action-link {
+    min-height: 0;
+    padding: 0;
+    border: 0;
+    border-radius: 0;
+    background: none;
+    font-size: 13px;
+    font-weight: 500;
+    color: #555;
+  }
+  .kp-action-link:hover { background: none; border-color: transparent; color: #1a6bb5; }
+  .kp-head-stats span {
+    background: transparent;
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+  }
+  .kp-info-cond { font-size: 16px; }
   .kp-detail-main > .kp-card,
   .kp-detail-main > .kp-card.kp-cat-chip {
     max-width: none;
