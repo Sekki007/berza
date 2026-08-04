@@ -1408,6 +1408,8 @@ require_once __DIR__ . '/shop_catalog.php';
 require_once __DIR__ . '/services_directory.php';
 require_once __DIR__ . '/facebook_pixel.php';
 require_once __DIR__ . '/google_tag.php';
+require_once __DIR__ . '/google_analytics.php';
+
 ensureJsonDataFiles();
 tryRememberLogin();
 ensureUploadsDir();

@@ -25,4 +25,6 @@ Thumbs.db
 /data/sms_rate_limits.json
 /data/nbs_rate_cache.json
 /data/fcm_token_cache.json
+/data/ga_token_cache.json
+/data/ga_stats_cache.json
 /data/push_tokens.json

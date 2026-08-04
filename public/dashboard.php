@@ -39,6 +39,30 @@ require __DIR__ . '/partials/layout-start.php';
             <div class="stat-card"><div class="label">Prosečna cena</div><div class="value" style="font-size:16px;"><?= formatPrice((float)$stats['avgPrice']) ?></div></div>
         </div>
 
+        <?php
+        $gaQuick = gaAnalyticsConfigured() ? gaFetchAdminStats(false) : ['ok' => false];
+        if (!empty($gaQuick['ok']) && is_array($gaQuick['summary']['today'] ?? null)):
+            $gaToday = $gaQuick['summary']['today'];
+            $ga7 = $gaQuick['summary']['d7'] ?? [];
+            ?>
+        <div class="form-card" style="margin-top:12px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 16px 0;gap:8px;flex-wrap:wrap;">
+                <h2 style="font-size:16px;margin:0;">Posete sajta</h2>
+                <a href="/admin_analytics.php" style="font-size:13px;">Detaljnije →</a>
+            </div>
+            <div class="stats-grid" style="padding:12px 16px 16px;gap:8px;">
+                <div class="stat-card"><div class="label">Danas — korisnici</div><div class="value"><?= (int)($gaToday['users'] ?? 0) ?></div></div>
+                <div class="stat-card"><div class="label">Danas — pregledi</div><div class="value"><?= (int)($gaToday['pageviews'] ?? 0) ?></div></div>
+                <div class="stat-card"><div class="label">7 dana — korisnici</div><div class="value"><?= (int)($ga7['users'] ?? 0) ?></div></div>
+                <div class="stat-card"><div class="label">7 dana — sesije</div><div class="value"><?= (int)($ga7['sessions'] ?? 0) ?></div></div>
+            </div>
+        </div>
+        <?php else: ?>
+        <div class="account-menu" style="margin-top:12px;margin-bottom:0;">
+            <a href="/admin_analytics.php">Posete sajta (Google Analytics)</a>
+        </div>
+        <?php endif; ?>
+
         <div class="account-menu" style="margin-bottom:12px;">
             <a href="/admin_reports.php">Prijave<?= (int)$stats['openReports'] > 0 ? ' (' . (int)$stats['openReports'] . ' otvorenih)' : '' ?></a>
             <a href="/admin_users.php">Upravljanje korisnicima</a>

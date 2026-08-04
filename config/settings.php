@@ -70,6 +70,7 @@ function defaultSiteSettings(): array
         'google_tag_ga4_id' => '',
         'google_tag_ads_id' => '',
         'google_tag_require_consent' => true,
+        'ga4_property_id' => '',
     ];
 }
 

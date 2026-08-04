@@ -155,6 +155,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'google_tag_ga4_id' => strtoupper(trim((string)($_POST['google_tag_ga4_id'] ?? $current['google_tag_ga4_id'] ?? ''))),
         'google_tag_ads_id' => strtoupper(trim((string)($_POST['google_tag_ads_id'] ?? $current['google_tag_ads_id'] ?? ''))),
         'google_tag_require_consent' => (string)($_POST['google_tag_require_consent'] ?? '0') === '1',
+        'ga4_property_id' => preg_replace('/\D+/', '', (string)($_POST['ga4_property_id'] ?? $current['ga4_property_id'] ?? '')) ?? '',
     ]);
 
     $defaultsSms = defaultSiteSettings();
@@ -562,8 +563,17 @@ require __DIR__ . '/partials/layout-start.php';
                         <input name="google_tag_ads_id" value="<?= h((string)($settings['google_tag_ads_id'] ?? '')) ?>" placeholder="npr. AW-1234567890">
                     </div>
                 </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>GA4 Property ID (za admin statistiku)</label>
+                        <input name="ga4_property_id" value="<?= h((string)($settings['ga4_property_id'] ?? '')) ?>" placeholder="npr. 123456789" inputmode="numeric">
+                    </div>
+                </div>
                 <p class="form-hint" style="margin-top:-8px;">
-                    ID-jeve nađeš u Google Analytics (Admin → Data Streams) i Google Ads (Tools → Conversions / Tag setup).
+                    Measurement ID: Admin → Data streams. Property ID: Admin → Property settings (samo brojevi).
+                    Za čitanje poseta u adminu: Google Cloud → uključi <strong>Google Analytics Data API</strong>,
+                    pa service account email dodaj u GA4 → Property access (Viewer). Env: <code>GA_SERVICE_ACCOUNT_JSON</code>
+                    (ili isti JSON kao FCM). Pregled: <a href="/admin_analytics.php">Posete (GA)</a>.
                 </p>
 
                 <div class="form-group form-checks">
