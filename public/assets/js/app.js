@@ -662,6 +662,12 @@
     if (!total) return;
 
     let rafId = null;
+    const consume = function (e) {
+      if (!e) return;
+      if (typeof e.preventDefault === 'function') e.preventDefault();
+      if (typeof e.stopPropagation === 'function') e.stopPropagation();
+      if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
+    };
 
     function currentIndex() {
       const w = track.clientWidth || 1;
@@ -706,23 +712,25 @@
     }, { passive: true });
 
     thumbs.forEach(function (thumb) {
-      thumb.addEventListener('click', function () {
+      thumb.addEventListener('pointerdown', consume);
+      thumb.addEventListener('click', function (e) {
+        consume(e);
         const idx = parseInt(thumb.getAttribute('data-gallery-thumb-index') || '0', 10);
         scrollToIndex(isNaN(idx) ? 0 : idx, true);
       });
     });
 
     if (prevBtn) {
+      prevBtn.addEventListener('pointerdown', consume);
       prevBtn.addEventListener('click', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
+        consume(e);
         scrollToIndex(currentIndex() - 1, true);
       });
     }
     if (nextBtn) {
+      nextBtn.addEventListener('pointerdown', consume);
       nextBtn.addEventListener('click', function (e) {
-        e.preventDefault();
-        e.stopPropagation();
+        consume(e);
         scrollToIndex(currentIndex() + 1, true);
       });
     }
