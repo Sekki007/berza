@@ -27,4 +27,5 @@ Thumbs.db
 /data/fcm_token_cache.json
 /data/ga_token_cache.json
 /data/ga_stats_cache.json
+/data/ga_realtime_cache.json
 /data/push_tokens.json

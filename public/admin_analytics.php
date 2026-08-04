@@ -7,6 +7,7 @@ requireAdmin();
 
 $force = isset($_GET['refresh']) && (string)$_GET['refresh'] === '1';
 $stats = gaFetchAdminStats($force);
+$realtime = gaAnalyticsConfigured() ? gaFetchRealtime($force) : ['ok' => false];
 
 $pageTitle = 'Posete (Google Analytics) — KupiTelefon';
 $activePage = 'nalog';
@@ -17,6 +18,8 @@ $summary = is_array($stats['summary'] ?? null) ? $stats['summary'] : [];
 $daily = is_array($stats['daily'] ?? null) ? $stats['daily'] : [];
 $pages = is_array($stats['pages'] ?? null) ? $stats['pages'] : [];
 $devices = is_array($stats['devices'] ?? null) ? $stats['devices'] : [];
+$rtPages = is_array($realtime['pages'] ?? null) ? $realtime['pages'] : [];
+$rtDevices = is_array($realtime['devices'] ?? null) ? $realtime['devices'] : [];
 $maxDaily = 1;
 foreach ($daily as $d) {
     $maxDaily = max($maxDaily, (int)($d['users'] ?? 0), (int)($d['pageviews'] ?? 0));
@@ -62,6 +65,51 @@ require __DIR__ . '/partials/layout-start.php';
                 </p>
             </div>
         <?php else: ?>
+            <?php if (!empty($realtime['ok'])): ?>
+            <div class="form-card" style="margin-bottom:14px;padding:16px;border-left:4px solid var(--kp-green, #1a7f4b);">
+                <div style="display:flex;flex-wrap:wrap;align-items:flex-end;justify-content:space-between;gap:12px;">
+                    <div>
+                        <div class="label" style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">Uživo na sajtu (poslednjih ~30 min)</div>
+                        <div style="font-size:36px;font-weight:700;line-height:1;color:var(--kp-green-dark, #146c3d);">
+                            <?= (int)($realtime['active_users'] ?? 0) ?>
+                        </div>
+                        <div style="font-size:13px;color:var(--text-muted);margin-top:6px;">aktivnih korisnika</div>
+                    </div>
+                    <div style="font-size:12px;color:var(--text-muted);">
+                        realtime <?= h((string)($realtime['cached_at'] ?? '')) ?>
+                        <?= !empty($realtime['from_cache']) ? '(keš ~45s)' : '' ?>
+                        · <a href="/admin_analytics.php?refresh=1">osveži</a>
+                    </div>
+                </div>
+                <?php if ($rtPages || $rtDevices): ?>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:14px;">
+                    <?php if ($rtPages): ?>
+                    <div>
+                        <strong style="font-size:13px;">Stranice sada</strong>
+                        <ul style="margin:8px 0 0;padding-left:16px;font-size:12px;color:var(--text-muted);line-height:1.5;">
+                            <?php foreach ($rtPages as $rp): ?>
+                                <li><?= h((string)$rp['page']) ?> — <?= (int)$rp['users'] ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                    <?php endif; ?>
+                    <?php if ($rtDevices): ?>
+                    <div>
+                        <strong style="font-size:13px;">Uređaji sada</strong>
+                        <ul style="margin:8px 0 0;padding-left:16px;font-size:12px;color:var(--text-muted);line-height:1.5;">
+                            <?php foreach ($rtDevices as $rd): ?>
+                                <li><?= h(ucfirst((string)$rd['device'])) ?> — <?= (int)$rd['users'] ?></li>
+                            <?php endforeach; ?>
+                        </ul>
+                    </div>
+                    <?php endif; ?>
+                </div>
+                <?php endif; ?>
+            </div>
+            <?php elseif (!empty($realtime['error'])): ?>
+            <p class="form-hint" style="margin-bottom:12px;color:#b45309;">Realtime: <?= h((string)$realtime['error']) ?></p>
+            <?php endif; ?>
+
             <p class="form-hint" style="margin-bottom:12px;">
                 Property <?= h((string)($stats['property_id'] ?? '')) ?>
                 <?php if (!empty($stats['measurement_id'])): ?>

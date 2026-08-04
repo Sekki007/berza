@@ -41,6 +41,7 @@ require __DIR__ . '/partials/layout-start.php';
 
         <?php
         $gaQuick = gaAnalyticsConfigured() ? gaFetchAdminStats(false) : ['ok' => false];
+        $gaLive = gaAnalyticsConfigured() ? gaFetchRealtime(false) : ['ok' => false];
         if (!empty($gaQuick['ok']) && is_array($gaQuick['summary']['today'] ?? null)):
             $gaToday = $gaQuick['summary']['today'];
             $ga7 = $gaQuick['summary']['d7'] ?? [];
@@ -51,6 +52,12 @@ require __DIR__ . '/partials/layout-start.php';
                 <a href="/admin_analytics.php" style="font-size:13px;">Detaljnije →</a>
             </div>
             <div class="stats-grid" style="padding:12px 16px 16px;gap:8px;">
+                <?php if (!empty($gaLive['ok'])): ?>
+                <div class="stat-card" style="border-left:3px solid var(--kp-green, #1a7f4b);">
+                    <div class="label">Uživo sada</div>
+                    <div class="value"><?= (int)($gaLive['active_users'] ?? 0) ?></div>
+                </div>
+                <?php endif; ?>
                 <div class="stat-card"><div class="label">Danas — korisnici</div><div class="value"><?= (int)($gaToday['users'] ?? 0) ?></div></div>
                 <div class="stat-card"><div class="label">Danas — pregledi</div><div class="value"><?= (int)($gaToday['pageviews'] ?? 0) ?></div></div>
                 <div class="stat-card"><div class="label">7 dana — korisnici</div><div class="value"><?= (int)($ga7['users'] ?? 0) ?></div></div>

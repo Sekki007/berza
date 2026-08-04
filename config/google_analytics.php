@@ -143,7 +143,7 @@ function gaAccessToken(): ?string
 /**
  * @return array{ok:bool,data?:array,error?:string,http?:int}
  */
-function gaRunReport(array $body): array
+function gaApiPost(string $method, array $body): array
 {
     $propertyId = ga4PropertyId();
     if ($propertyId === '') {
@@ -154,7 +154,8 @@ function gaRunReport(array $body): array
         return ['ok' => false, 'error' => 'Nema Google access tokena (proveri service account JSON).'];
     }
 
-    $url = 'https://analyticsdata.googleapis.com/v1beta/properties/' . rawurlencode($propertyId) . ':runReport';
+    $url = 'https://analyticsdata.googleapis.com/v1beta/properties/'
+        . rawurlencode($propertyId) . ':' . ltrim($method, ':');
     $ch = curl_init($url);
     curl_setopt_array($ch, [
         CURLOPT_POST => true,
@@ -180,6 +181,98 @@ function gaRunReport(array $body): array
         return ['ok' => false, 'error' => $msg, 'http' => $code, 'data' => is_array($data) ? $data : []];
     }
     return ['ok' => true, 'data' => is_array($data) ? $data : [], 'http' => $code];
+}
+
+/**
+ * @return array{ok:bool,data?:array,error?:string,http?:int}
+ */
+function gaRunReport(array $body): array
+{
+    return gaApiPost('runReport', $body);
+}
+
+/**
+ * @return array{ok:bool,data?:array,error?:string,http?:int}
+ */
+function gaRunRealtimeReport(array $body): array
+{
+    return gaApiPost('runRealtimeReport', $body);
+}
+
+/**
+ * Aktivni korisnici na sajtu (GA4 realtime, poslednjih ~30 min).
+ *
+ * @return array{ok:bool,error?:string,active_users?:int,pages?:array,devices?:array,cached_at?:string,from_cache?:bool}
+ */
+function gaFetchRealtime(bool $forceRefresh = false): array
+{
+    if (!gaAnalyticsConfigured()) {
+        return ['ok' => false, 'error' => 'GA nije podešen.'];
+    }
+
+    $cacheFile = dataPath('ga_realtime_cache.json');
+    $ttl = 45;
+    if (!$forceRefresh && is_file($cacheFile)) {
+        $cached = json_decode((string)file_get_contents($cacheFile), true);
+        if (
+            is_array($cached)
+            && !empty($cached['ok'])
+            && (int)($cached['fetched_at'] ?? 0) > time() - $ttl
+        ) {
+            $cached['from_cache'] = true;
+            return $cached;
+        }
+    }
+
+    $usersRes = gaRunRealtimeReport([
+        'metrics' => [['name' => 'activeUsers']],
+    ]);
+    if (!$usersRes['ok']) {
+        return ['ok' => false, 'error' => (string)($usersRes['error'] ?? 'Realtime API greška')];
+    }
+
+    $pagesRes = gaRunRealtimeReport([
+        'dimensions' => [['name' => 'unifiedPagePathScreen']],
+        'metrics' => [['name' => 'activeUsers']],
+        'orderBys' => [['metric' => ['metricName' => 'activeUsers'], 'desc' => true]],
+        'limit' => 8,
+    ]);
+    $pages = [];
+    if ($pagesRes['ok']) {
+        foreach (($pagesRes['data']['rows'] ?? []) as $row) {
+            $pages[] = [
+                'page' => (string)($row['dimensionValues'][0]['value'] ?? ''),
+                'users' => (int)round((float)($row['metricValues'][0]['value'] ?? 0)),
+            ];
+        }
+    }
+
+    $devicesRes = gaRunRealtimeReport([
+        'dimensions' => [['name' => 'deviceCategory']],
+        'metrics' => [['name' => 'activeUsers']],
+        'orderBys' => [['metric' => ['metricName' => 'activeUsers'], 'desc' => true]],
+    ]);
+    $devices = [];
+    if ($devicesRes['ok']) {
+        foreach (($devicesRes['data']['rows'] ?? []) as $row) {
+            $devices[] = [
+                'device' => (string)($row['dimensionValues'][0]['value'] ?? ''),
+                'users' => (int)round((float)($row['metricValues'][0]['value'] ?? 0)),
+            ];
+        }
+    }
+
+    $payload = [
+        'ok' => true,
+        'fetched_at' => time(),
+        'cached_at' => date('Y-m-d H:i:s'),
+        'active_users' => (int)round(gaMetricValue($usersRes['data'] ?? [], 0, 0)),
+        'pages' => $pages,
+        'devices' => $devices,
+        'from_cache' => false,
+    ];
+    @file_put_contents($cacheFile, json_encode($payload, JSON_UNESCAPED_UNICODE));
+    return $payload;
 }
 
 function gaMetricValue(array $report, int $rowIndex, int $metricIndex): float
