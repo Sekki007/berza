@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/config/bootstrap.php';
+require_once dirname(__DIR__) . '/config/widget.php';
 
 $pageTitle = 'Kako radi — KupiTelefon';
 $pageDescription = 'Kako kupovati i prodavati telefone, tablete i pametne satove na KupiTelefon, i kako pronaći servis.';
@@ -36,20 +37,12 @@ require __DIR__ . '/partials/layout-start.php';
             <h2>Ubaci oglase na svoj sajt</h2>
             <div class="detail-desc">
                 <p>Ubaci ovaj kod na svoj sajt (blog, servis, shop) — prikazuje nasumične aktivne oglase sa KupiTelefon.rs. Klik vodi na oglas.</p>
-                <p>Partner <strong>ne mora ništa da menja</strong>: sistem automatski prepozna domen sajta gde je widget (za Analytics). Opciono možeš dodati <code>&amp;ref=...</code> ako želiš ručni naziv.</p>
-                <p style="margin-top:10px;"><strong>Kod (copy-paste):</strong></p>
-                <pre style="margin-top:8px;padding:12px;background:#f5f7fa;border:1px solid var(--border);border-radius:8px;overflow:auto;font-size:12px;line-height:1.45;"><?= h('<iframe
-  src="' . rtrim(appBaseUrl(), '/') . '/widget.php?limit=3"
-  style="width:300px;height:600px;border:0;overflow:hidden;border-radius:12px"
-  loading="lazy"
-  title="KupiTelefon oglasi"
-></iframe>') ?></pre>
+                <p>Partner <strong>ne mora ništa da menja</strong>: sistem automatski prepozna domen sajta gde je widget (za Analytics).</p>
+                <p style="margin-top:10px;">Svi formati (native u članku, 300×250, 300×600, 728×90…) i copy dugmad su u <a href="/admin_widget.php">Admin → Widget kodovi</a>.</p>
+                <p style="margin-top:10px;"><strong>Brzi primer (vertikalni banner):</strong></p>
+                <pre style="margin-top:8px;padding:12px;background:#f5f7fa;border:1px solid var(--border);border-radius:8px;overflow:auto;font-size:12px;line-height:1.45;"><?= h(widgetEmbedCode('300x600')) ?></pre>
                 <p style="margin-top:10px;color:var(--text-muted);font-size:13px;">
-                    Vertikalni banner (npr. sidebar): <code>300×600</code> ili <code>160×600</code>.
-                    Opcije: <code>limit=1..6</code>,
-                    <code>type=telefon|delovi|servis</code>,
-                    <code>ref=opciono</code>.
-                    Primer: <a href="/widget.php?limit=3" target="_blank" rel="noopener">/widget.php?limit=3</a>
+                    Native u članku: <a href="/widget.php?size=native&amp;limit=1" target="_blank" rel="noopener">/widget.php?size=native</a>
                 </p>
             </div>
         </div>

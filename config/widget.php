@@ -3,6 +3,123 @@
 declare(strict_types=1);
 
 /**
+ * Popularne IAB / native dimenzije za embed.
+ *
+ * @return array<string, array{
+ *   label:string,
+ *   use:string,
+ *   width:string,
+ *   height:int,
+ *   limit:int,
+ *   layout:string
+ * }>
+ */
+function widgetSizePresets(): array
+{
+    return [
+        'native' => [
+            'label' => 'Native kartica (u članku)',
+            'use' => 'Unutar teksta članka — horizontalna kartica, puna širina kolone',
+            'width' => '100%',
+            'height' => 148,
+            'limit' => 1,
+            'layout' => 'native',
+        ],
+        '300x250' => [
+            'label' => 'Medium Rectangle 300×250',
+            'use' => 'Najčešći format u člancima / sidebar',
+            'width' => '300px',
+            'height' => 250,
+            'limit' => 1,
+            'layout' => 'rect',
+        ],
+        '336x280' => [
+            'label' => 'Large Rectangle 336×280',
+            'use' => 'Članak / sadržaj, malo veći od 300×250',
+            'width' => '336px',
+            'height' => 280,
+            'limit' => 1,
+            'layout' => 'rect',
+        ],
+        '300x600' => [
+            'label' => 'Half Page 300×600',
+            'use' => 'Sidebar / vertikalni banner',
+            'width' => '300px',
+            'height' => 600,
+            'limit' => 3,
+            'layout' => 'sky',
+        ],
+        '160x600' => [
+            'label' => 'Wide Skyscraper 160×600',
+            'use' => 'Uzak sidebar',
+            'width' => '160px',
+            'height' => 600,
+            'limit' => 3,
+            'layout' => 'sky-narrow',
+        ],
+        '728x90' => [
+            'label' => 'Leaderboard 728×90',
+            'use' => 'Iznad / ispod članka (desktop)',
+            'width' => '728px',
+            'height' => 90,
+            'limit' => 1,
+            'layout' => 'leader',
+        ],
+        '970x90' => [
+            'label' => 'Super Leaderboard 970×90',
+            'use' => 'Široki header banner (desktop)',
+            'width' => '970px',
+            'height' => 90,
+            'limit' => 1,
+            'layout' => 'leader',
+        ],
+        '320x50' => [
+            'label' => 'Mobile Banner 320×50',
+            'use' => 'Mobilni sticky / iznad sadržaja',
+            'width' => '320px',
+            'height' => 50,
+            'limit' => 1,
+            'layout' => 'mobile-sm',
+        ],
+        '320x100' => [
+            'label' => 'Large Mobile 320×100',
+            'use' => 'Mobilni banner u članku',
+            'width' => '320px',
+            'height' => 100,
+            'limit' => 1,
+            'layout' => 'mobile-lg',
+        ],
+    ];
+}
+
+function widgetPreset(string $size): ?array
+{
+    $presets = widgetSizePresets();
+    $size = strtolower(trim($size));
+    return $presets[$size] ?? null;
+}
+
+function widgetEmbedCode(string $size, string $baseUrl = ''): string
+{
+    $preset = widgetPreset($size);
+    if ($preset === null) {
+        return '';
+    }
+    $baseUrl = rtrim($baseUrl !== '' ? $baseUrl : appBaseUrl(), '/');
+    $w = $preset['width'];
+    $h = (int)$preset['height'];
+    $limit = (int)$preset['limit'];
+    $src = $baseUrl . '/widget.php?size=' . rawurlencode($size) . '&limit=' . $limit;
+    $styleW = $w === '100%' ? 'width:100%;max-width:720px' : ('width:' . $w);
+    return '<iframe' . "\n"
+        . '  src="' . $src . '"' . "\n"
+        . '  style="' . $styleW . ';height:' . $h . 'px;border:0;overflow:hidden;border-radius:12px;display:block"' . "\n"
+        . '  loading="lazy"' . "\n"
+        . '  title="KupiTelefon oglasi"' . "\n"
+        . '></iframe>';
+}
+
+/**
  * Nasumični javni oglasi za partner embed widget.
  *
  * @return list<array{id:int,title:string,price:string,location:string,image:?string,url:string,type:string}>
@@ -107,7 +224,6 @@ function resolveWidgetRef(string $ref = ''): string
         $host = substr($host, 4);
     }
 
-    // Ne koristi naš domen kao "partner"
     $ownHost = parse_url(appBaseUrl(), PHP_URL_HOST);
     if (is_string($ownHost) && $ownHost !== '') {
         $ownHost = strtolower($ownHost);
@@ -120,4 +236,10 @@ function resolveWidgetRef(string $ref = ''): string
     }
 
     return normalizeWidgetRef($host);
+}
+
+function widgetPriceIsOpen(string $price): bool
+{
+    $p = mb_strtolower($price);
+    return str_contains($p, 'dogovoru') || str_contains($p, 'kontakt');
 }

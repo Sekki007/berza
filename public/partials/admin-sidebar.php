@@ -13,6 +13,7 @@ $adminLinks = [
     ['id' => 'top', 'href' => '/admin_top.php', 'label' => 'TOP' . ($pendingTop > 0 ? " ($pendingTop)" : '')],
     ['id' => 'credits', 'href' => '/admin_credits.php', 'label' => 'Krediti' . ($pendingCredits > 0 ? " ($pendingCredits)" : '')],
     ['id' => 'settings', 'href' => '/admin_settings.php', 'label' => 'Podešavanja'],
+    ['id' => 'widget', 'href' => '/admin_widget.php', 'label' => 'Widget kodovi'],
     ['id' => 'new-ad', 'href' => '/ad_form.php', 'label' => '+ Novi oglas'],
 ];
 ?>
