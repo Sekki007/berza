@@ -676,17 +676,25 @@
         thumb.style.borderColor = isOn ? '#1a73e8' : 'transparent';
         thumb.style.boxShadow = isOn ? '0 0 0 2px rgba(26,115,232,.16)' : 'none';
       });
-      if (prevBtn) prevBtn.disabled = idx <= 0;
-      if (nextBtn) nextBtn.disabled = idx >= total - 1;
     }
 
-    function scrollToIndex(idx) {
-      const clamped = Math.min(total - 1, Math.max(0, idx));
-      const left = (track.clientWidth || 1) * clamped;
-      track.scrollTo({ left: left, behavior: 'smooth' });
-      paint(clamped);
+    function scrollToIndex(idx, smooth) {
+      const w = track.clientWidth || 1;
+      const wrapped = ((idx % total) + total) % total;
+      const left = w * wrapped;
+      try {
+        if (smooth) {
+          track.scrollTo({ left: left, behavior: 'smooth' });
+        } else {
+          track.scrollLeft = left;
+        }
+      } catch (e) {
+        track.scrollLeft = left;
+      }
+      paint(wrapped);
     }
 
+    track.style.scrollBehavior = 'smooth';
     paint(currentIndex());
 
     track.addEventListener('scroll', function () {
@@ -700,18 +708,22 @@
     thumbs.forEach(function (thumb) {
       thumb.addEventListener('click', function () {
         const idx = parseInt(thumb.getAttribute('data-gallery-thumb-index') || '0', 10);
-        scrollToIndex(isNaN(idx) ? 0 : idx);
+        scrollToIndex(isNaN(idx) ? 0 : idx, true);
       });
     });
 
     if (prevBtn) {
-      prevBtn.addEventListener('click', function () {
-        scrollToIndex(currentIndex() - 1);
+      prevBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        scrollToIndex(currentIndex() - 1, true);
       });
     }
     if (nextBtn) {
-      nextBtn.addEventListener('click', function () {
-        scrollToIndex(currentIndex() + 1);
+      nextBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        e.stopPropagation();
+        scrollToIndex(currentIndex() + 1, true);
       });
     }
   }

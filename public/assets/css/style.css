@@ -2104,6 +2104,7 @@ body.page-detail { background: #f0f0f0; }
   align-items: center;
   justify-content: center;
   transition: background .2s ease, opacity .2s ease;
+  pointer-events: auto;
 }
 .kp-gallery-prev { left: 10px; }
 .kp-gallery-next { right: 10px; }
@@ -2136,6 +2137,8 @@ body.page-detail { background: #f0f0f0; }
   border-top: 1px solid #edf0f4;
   min-height: 74px;
   max-height: 74px;
+  position: relative;
+  z-index: 4;
 }
 .kp-gallery-thumb {
   display: block;
