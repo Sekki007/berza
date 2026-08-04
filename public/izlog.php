@@ -22,7 +22,10 @@ $sellerId = (int)$seller['id'];
 $shopLink = shopUrlForUser($seller);
 // Stari /izlog/{username} → kanonski slug
 if ($param !== '' && rawurldecode($param) !== userShopSlug($seller)) {
-    header('Location: ' . $shopLink, true, 301);
+    $qs = $_GET;
+    unset($qs['u'], $qs['cat_from_path']);
+    $target = shopCatalogUrl($seller, $qs);
+    header('Location: ' . $target, true, 301);
     exit;
 }
 
@@ -31,6 +34,7 @@ $shopCategories = getShopCategories($seller);
 $searchQ = trim((string)($_GET['q'] ?? ''));
 $filterType = trim((string)($_GET['type'] ?? ''));
 $filterCat = trim((string)($_GET['cat'] ?? ''));
+$catFromPath = !empty($_GET['cat_from_path']);
 $sort = trim((string)($_GET['sort'] ?? 'newest'));
 $page = max(1, (int)($_GET['page'] ?? 1));
 $perPage = max(12, (int)(siteSettings()['items_per_page'] ?? 20));
@@ -41,8 +45,29 @@ if (!in_array($filterType, ['telefon', 'delovi', 'servis', ''], true)) {
 if (!in_array($sort, ['newest', 'price_asc', 'price_desc'], true)) {
     $sort = 'newest';
 }
-if ($filterCat !== '' && !findShopCategory($seller, $filterCat)) {
+
+$activeCategory = $filterCat !== '' ? findShopCategory($seller, $filterCat) : null;
+if ($filterCat !== '' && !$activeCategory) {
+    if ($catFromPath) {
+        header('Location: ' . $shopLink, true, 301);
+        exit;
+    }
     $filterCat = '';
+}
+
+// Stari ?cat=slug → /izlog/{shop}/{slug}
+$queryString = (string)(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_QUERY) ?? '');
+parse_str($queryString, $rawQuery);
+if (!$catFromPath && $filterCat !== '' && isset($rawQuery['cat']) && trim((string)$rawQuery['cat']) !== '') {
+    $redirectParams = [
+        'cat' => $filterCat,
+        'q' => $searchQ,
+        'type' => $filterType,
+        'sort' => $sort,
+        'page' => $page,
+    ];
+    header('Location: ' . shopCatalogUrl($seller, $redirectParams), true, 301);
+    exit;
 }
 
 $typeCounts = shopAdTypeCounts($allAds);
@@ -67,9 +92,10 @@ $queryBase = array_filter([
 $shopName = getSellerShopName($seller, $allAds);
 $summary = getSellerRatingSummary($sellerId);
 $ratings = getSellerRatings($sellerId);
-$shopSeo = seoShopMeta($seller, $shopName);
+$categoryLabel = $activeCategory ? (string)$activeCategory['name'] : null;
+$shopSeo = seoShopMeta($seller, $shopName, $categoryLabel);
 $pageDescription = $shopSeo['description'];
-$canonicalUrl = absoluteUrl($shopLink);
+$canonicalUrl = absoluteUrl(shopCatalogUrl($seller, $filterCat !== '' ? ['cat' => $filterCat] : []));
 $shopCover = trim((string)($seller['shop_page_cover'] ?? ''));
 if ($shopCover !== '') {
     $pageImage = absoluteUrl($shopCover);
@@ -187,7 +213,14 @@ require __DIR__ . '/partials/layout-start.php';
 
 <div class="main-wrap">
     <main class="content">
-        <div class="breadcrumb"><a href="/index.php">Početna</a> › Izlog › <?= h($shopName) ?></div>
+        <div class="breadcrumb">
+            <a href="/index.php">Početna</a> › Izlog ›
+            <?php if ($activeCategory): ?>
+                <a href="<?= h($shopLink) ?>"><?= h($shopName) ?></a> › <?= h($activeCategory['name']) ?>
+            <?php else: ?>
+                <?= h($shopName) ?>
+            <?php endif; ?>
+        </div>
 
         <div class="shop-header form-card">
             <div class="shop-header-main">
@@ -230,13 +263,12 @@ require __DIR__ . '/partials/layout-start.php';
             <?php if ($typeCounts['all'] === 0): ?>
                 <p style="color:var(--text-muted);margin-top:8px;">Ovaj prodavac trenutno nema aktivnih oglasa.</p>
             <?php else: ?>
-                <form method="GET" class="shop-catalog-toolbar" action="<?= h($shopLink) ?>">
+                <form method="GET" class="shop-catalog-toolbar" action="<?= h(shopCatalogUrl($seller, ['cat' => $filterCat])) ?>">
                     <div class="shop-catalog-search">
                         <input type="search" name="q" value="<?= h($searchQ) ?>" placeholder="Pretraži u izlogu…" aria-label="Pretraga u izlogu">
                         <button type="submit" class="btn-sm btn-sm-primary">Traži</button>
                     </div>
                     <?php if ($filterType !== ''): ?><input type="hidden" name="type" value="<?= h($filterType) ?>"><?php endif; ?>
-                    <?php if ($filterCat !== ''): ?><input type="hidden" name="cat" value="<?= h($filterCat) ?>"><?php endif; ?>
                     <div class="shop-catalog-sort">
                         <label for="shop-sort">Sortiraj</label>
                         <select id="shop-sort" name="sort" onchange="this.form.submit()">
@@ -259,7 +291,7 @@ require __DIR__ . '/partials/layout-start.php';
                         if ($tKey !== '' && (int)$tMeta['count'] === 0) {
                             continue;
                         }
-                        $href = $shopLink . shopCatalogQuery(array_merge($queryBase, ['type' => $tKey, 'page' => 1]));
+                        $href = shopCatalogUrl($seller, array_merge($queryBase, ['type' => $tKey, 'page' => 1]));
                         $active = $filterType === $tKey;
                     ?>
                         <a class="shop-tab <?= $active ? 'is-active' : '' ?>" href="<?= h($href) ?>"><?= h($tMeta['label']) ?> <span><?= (int)$tMeta['count'] ?></span></a>
@@ -269,11 +301,11 @@ require __DIR__ . '/partials/layout-start.php';
                 <?php if ($shopCategories !== []): ?>
                     <nav class="shop-cat-tabs" aria-label="Kategorije izloga">
                         <?php
-                        $catAllHref = $shopLink . shopCatalogQuery(array_merge($queryBase, ['cat' => '', 'page' => 1]));
+                        $catAllHref = shopCatalogUrl($seller, array_merge($queryBase, ['cat' => '', 'page' => 1]));
                         ?>
                         <a class="shop-tab <?= $filterCat === '' ? 'is-active' : '' ?>" href="<?= h($catAllHref) ?>">Sve kategorije</a>
                         <?php foreach ($categoryCounts as $cc):
-                            $href = $shopLink . shopCatalogQuery(array_merge($queryBase, ['cat' => $cc['id'], 'page' => 1]));
+                            $href = shopCatalogUrl($seller, array_merge($queryBase, ['cat' => $cc['id'], 'page' => 1]));
                         ?>
                             <a class="shop-tab <?= $filterCat === $cc['id'] ? 'is-active' : '' ?>" href="<?= h($href) ?>"><?= h($cc['name']) ?> <span><?= (int)$cc['count'] ?></span></a>
                         <?php endforeach; ?>
@@ -295,11 +327,11 @@ require __DIR__ . '/partials/layout-start.php';
                     <?php if ($pagination['pages'] > 1): ?>
                         <div class="pagination">
                             <?php if ($pagination['page'] > 1): ?>
-                                <a class="btn-sm" href="<?= h($shopLink . shopCatalogQuery(array_merge($queryBase, ['page' => $pagination['page'] - 1]))) ?>">← Prethodna</a>
+                                <a class="btn-sm" href="<?= h(shopCatalogUrl($seller, array_merge($queryBase, ['page' => $pagination['page'] - 1]))) ?>">← Prethodna</a>
                             <?php endif; ?>
                             <span class="form-hint" style="margin:0;align-self:center;">Strana <?= (int)$pagination['page'] ?> / <?= (int)$pagination['pages'] ?></span>
                             <?php if ($pagination['page'] < $pagination['pages']): ?>
-                                <a class="btn-sm btn-sm-primary" href="<?= h($shopLink . shopCatalogQuery(array_merge($queryBase, ['page' => $pagination['page'] + 1]))) ?>">Sledeća →</a>
+                                <a class="btn-sm btn-sm-primary" href="<?= h(shopCatalogUrl($seller, array_merge($queryBase, ['page' => $pagination['page'] + 1]))) ?>">Sledeća →</a>
                             <?php endif; ?>
                         </div>
                     <?php endif; ?>

@@ -351,12 +351,34 @@ function shopCatalogQuery(array $params): string
         if ($v === null || $v === '' || $v === false) {
             continue;
         }
+        // Kategorija ide u path (/izlog/slug/cat), ne u query
+        if ($k === 'cat') {
+            continue;
+        }
         if ($k === 'page' && (int)$v <= 1) {
+            continue;
+        }
+        if ($k === 'sort' && (string)$v === 'newest') {
             continue;
         }
         $clean[$k] = $v;
     }
     return $clean === [] ? '' : ('?' . http_build_query($clean));
+}
+
+/**
+ * Kanonski URL kataloga izloga.
+ * Kategorija: /izlog/{slug}/{cat} — ostali filteri ostaju u query-ju.
+ */
+function shopCatalogUrl(array $user, array $params = []): string
+{
+    $base = shopUrlForUser($user);
+    $cat = trim((string)($params['cat'] ?? ''));
+    unset($params['cat']);
+    if ($cat !== '' && findShopCategory($user, $cat)) {
+        $base .= '/' . rawurlencode($cat);
+    }
+    return $base . shopCatalogQuery($params);
 }
 
 function shopLogoUploadsDir(): string

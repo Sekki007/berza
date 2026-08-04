@@ -95,11 +95,21 @@ function seoAdMeta(array $ad): array
     ];
 }
 
-function seoShopMeta(array $user, string $shopName): array
+function seoShopMeta(array $user, string $shopName, ?string $categoryName = null): array
 {
     $name = seoSiteName();
     $location = trim((string)($user['location'] ?? ''));
     $bio = trim((string)($user['shop_bio'] ?? ''));
+    $categoryName = $categoryName !== null ? trim($categoryName) : '';
+    if ($categoryName !== '') {
+        $desc = $categoryName . ' u izlogu ' . $shopName
+            . ($location !== '' ? ' · ' . $location : '')
+            . ' na ' . $name . '.';
+        return [
+            'title' => $categoryName . ' — ' . $shopName . ' — Izlog — ' . $name,
+            'description' => seoTruncate($desc),
+        ];
+    }
     $desc = $bio !== ''
         ? $bio
         : ('Izlog prodavca ' . $shopName . ($location !== '' ? ' iz ' . $location : '') . ' na ' . $name . '.');

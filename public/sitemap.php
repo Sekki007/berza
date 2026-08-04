@@ -69,6 +69,13 @@ foreach (getUsers() as $user) {
             'priority' => '0.6',
             'changefreq' => 'weekly',
         ];
+        foreach (getShopCategories($user) as $shopCat) {
+            $urls[] = [
+                'loc' => absoluteUrl(shopCatalogUrl($user, ['cat' => $shopCat['id']])),
+                'priority' => '0.55',
+                'changefreq' => 'weekly',
+            ];
+        }
     }
 
     if (function_exists('storefrontIsActive') && storefrontIsActive($user)) {
