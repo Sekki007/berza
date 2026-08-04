@@ -344,6 +344,7 @@ $contactBlock = static function (string $formId = 'poruka') use (
         </div>
 
         <div class="kp-card">
+            <h3 class="kp-section-title kp-section-title--compact">Osnovne informacije</h3>
             <?php if (!empty($ad['condition_state'])): ?>
                 <div class="kp-info-cond"><strong><?= h((string)$ad['condition_state']) ?></strong><?php if (!empty($ad['listing_type'])): ?> · <?= h(listingTypeLabel($ad)) ?><?php endif; ?></div>
             <?php elseif (!empty($ad['listing_type'])): ?>
@@ -402,16 +403,6 @@ $contactBlock = static function (string $formId = 'poruka') use (
             <?php $contactBlock('poruka'); ?>
             <?php $sellerBlock(); ?>
         </div>
-
-        <?php if ($adCategory !== ''): ?>
-            <a class="kp-card kp-cat-chip" href="/index.php?type=<?= urlencode($type) ?>">
-                <div>
-                    <span class="kp-cat-name"><?= h($adCategory) ?></span>
-                    <span class="kp-cat-path"><?= h(adCategoryLabel($ad)) ?><?= $adBrand !== '' ? ' · ' . h($adBrand) : '' ?></span>
-                </div>
-                <span class="kp-cat-chevron">›</span>
-            </a>
-        <?php endif; ?>
 
         <div class="kp-card kp-desc-card">
             <h3 class="kp-section-title">Opis oglasa</h3>
