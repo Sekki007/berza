@@ -291,11 +291,11 @@ $contactBlock = static function (string $formId = 'poruka') use (
 
         <div class="detail-gallery kp-gallery">
             <?php if ($images): ?>
-                <div class="kp-gallery-track" id="gallery-track">
+                <div class="kp-gallery-track" id="gallery-track" style="display:flex;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;">
                     <?php foreach ($images as $i => $img): ?>
                         <?php $displaySrc = $galleryDisplay[$i] ?? (string)$img; ?>
-                        <div class="kp-gallery-slide">
-                            <button type="button" class="kp-gallery-zoom" data-lightbox-open="<?= $i ?>" aria-label="Uvećaj sliku">
+                        <div class="kp-gallery-slide" style="flex:0 0 100%;min-width:100%;scroll-snap-align:start;aspect-ratio:1 / 1;">
+                            <button type="button" class="kp-gallery-zoom" data-lightbox-open="<?= $i ?>" aria-label="Uvećaj sliku" style="display:flex;width:100%;height:100%;padding:0;border:none;background:transparent;">
                                 <img
                                     src="<?= h($displaySrc) ?>"
                                     alt="<?= h((string)$ad['title']) ?>"
@@ -309,12 +309,12 @@ $contactBlock = static function (string $formId = 'poruka') use (
                     <?php endforeach; ?>
                 </div>
                 <?php if ($imageCount > 1): ?>
-                    <button type="button" class="kp-gallery-nav kp-gallery-prev" data-gallery-prev aria-label="Prethodna slika">‹</button>
-                    <button type="button" class="kp-gallery-nav kp-gallery-next" data-gallery-next aria-label="Sledeća slika">›</button>
+                    <button type="button" class="kp-gallery-nav kp-gallery-prev" data-gallery-prev aria-label="Prethodna slika" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);z-index:3;width:38px;height:38px;border:1px solid rgba(255,255,255,.6);border-radius:50%;background:rgba(17,24,39,.45);color:#fff;font-size:24px;line-height:1;">‹</button>
+                    <button type="button" class="kp-gallery-nav kp-gallery-next" data-gallery-next aria-label="Sledeća slika" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);z-index:3;width:38px;height:38px;border:1px solid rgba(255,255,255,.6);border-radius:50%;background:rgba(17,24,39,.45);color:#fff;font-size:24px;line-height:1;">›</button>
                 <?php endif; ?>
                 <span class="kp-gallery-counter" data-gallery-counter>1 od <?= $imageCount ?></span>
                 <?php if ($imageCount > 1): ?>
-                    <div class="kp-gallery-thumbs" data-gallery-thumbs>
+                    <div class="kp-gallery-thumbs" data-gallery-thumbs style="display:flex;gap:8px;overflow-x:auto;padding:10px;background:#fff;border-top:1px solid #edf0f4;">
                         <?php foreach ($images as $i => $img): ?>
                             <?php $thumbSrc = $galleryDisplay[$i] ?? (string)$img; ?>
                             <button
@@ -322,8 +322,9 @@ $contactBlock = static function (string $formId = 'poruka') use (
                                 class="kp-gallery-thumb<?= $i === 0 ? ' is-active' : '' ?>"
                                 data-gallery-thumb-index="<?= $i ?>"
                                 aria-label="Prikaži sliku <?= $i + 1 ?>"
+                                style="flex:0 0 auto;width:64px;height:64px;padding:0;border:2px solid <?= $i === 0 ? '#1a73e8' : 'transparent' ?>;border-radius:10px;overflow:hidden;background:#f4f6f8;line-height:0;<?= $i === 0 ? 'box-shadow:0 0 0 2px rgba(26,115,232,.16);' : '' ?>"
                             >
-                                <img src="<?= h($thumbSrc) ?>" alt="<?= h((string)$ad['title']) ?> — slika <?= $i + 1 ?>" loading="lazy" decoding="async">
+                                <img src="<?= h($thumbSrc) ?>" alt="<?= h((string)$ad['title']) ?> — slika <?= $i + 1 ?>" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover;display:block;">
                             </button>
                         <?php endforeach; ?>
                     </div>

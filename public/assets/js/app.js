@@ -673,6 +673,8 @@
       thumbs.forEach(function (thumb) {
         const isOn = parseInt(thumb.getAttribute('data-gallery-thumb-index') || '-1', 10) === idx;
         thumb.classList.toggle('is-active', isOn);
+        thumb.style.borderColor = isOn ? '#1a73e8' : 'transparent';
+        thumb.style.boxShadow = isOn ? '0 0 0 2px rgba(26,115,232,.16)' : 'none';
       });
       if (prevBtn) prevBtn.disabled = idx <= 0;
       if (nextBtn) nextBtn.disabled = idx >= total - 1;
