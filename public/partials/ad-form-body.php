@@ -56,18 +56,9 @@ $contactExtraOpen = $contactSorted !== $dc
                 <p class="form-hint ad-form-error" data-form-error><?= h($formError) ?></p>
             <?php endif; ?>
 
-            <div class="form-group" data-category-wrap hidden>
-                <label>Podkategorija</label>
-                <select name="category_group" id="ad-category" data-keep-enabled="1" data-group-map="<?= h(json_encode($groupMeta, JSON_UNESCAPED_UNICODE)) ?>">
-                    <?php foreach ($cfg['groups'] as $key => $group): ?>
-                        <option value="<?= h($key) ?>" data-ad-type="<?= h((string)($group['ad_type'] ?? '')) ?>" <?= ($ad['category_group'] ?? '') === $key ? 'selected' : '' ?>><?= h($group['label']) ?></option>
-                    <?php endforeach; ?>
-                </select>
-            </div>
-
             <section class="ad-form-section ad-form-section--core">
                 <div class="form-group ad-form-cat-group">
-                    <label>Kategorija</label>
+                    <label>1. Kategorija</label>
                     <div class="form-type-select">
                         <label class="form-type-option <?= $currentType === 'telefon' ? 'selected' : '' ?>">
                             <input data-form-type type="radio" name="ad_type" value="telefon" <?= $currentType === 'telefon' ? 'checked' : '' ?>>
@@ -107,8 +98,29 @@ $contactExtraOpen = $contactSorted !== $dc
                     <?php endif; ?>
                 </div>
 
+                <div class="form-group" data-category-wrap <?= $currentType === 'delovi' ? '' : 'hidden' ?>>
+                    <label for="ad-category">2. Podkategorija</label>
+                    <select name="category_group" id="ad-category" data-keep-enabled="1" data-group-map="<?= h(json_encode($groupMeta, JSON_UNESCAPED_UNICODE)) ?>">
+                        <?php foreach ($cfg['groups'] as $key => $group): ?>
+                            <?php
+                            $gType = (string)($group['ad_type'] ?? '');
+                            $gBrand = (string)($group['brand'] ?? '');
+                            $gEquip = (string)($group['equipment_type'] ?? '');
+                            ?>
+                            <option
+                                value="<?= h($key) ?>"
+                                data-ad-type="<?= h($gType) ?>"
+                                data-brand="<?= h($gBrand) ?>"
+                                data-equipment-type="<?= h($gEquip) ?>"
+                                <?= ($ad['category_group'] ?? '') === $key ? 'selected' : '' ?>
+                            ><?= h($group['label']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <p class="form-hint">Biraš tip opreme / delova — brend se popunjava automatski kad može.</p>
+                </div>
+
                 <div class="form-group" data-listing-types>
-                    <label>Šta želiš?</label>
+                    <label>3. Šta želiš?</label>
                     <div class="chip-grid chip-grid-4">
                         <?php foreach ($schema['listing_types'] as $ltKey => $ltLabel): ?>
                             <?php $isServiceOnly = $ltKey === 'service'; ?>
@@ -296,15 +308,26 @@ $contactExtraOpen = $contactSorted !== $dc
             </section>
 
             <section class="ad-form-section" data-panel="delovi" <?= $currentType !== 'delovi' ? 'hidden' : '' ?>>
-                <h3 class="ad-form-section-title">Oprema</h3>
+                <h3 class="ad-form-section-title">Detalji opreme</h3>
                 <div class="form-group">
-                    <label>Tip opreme</label>
-                    <select name="equipment_type">
+                    <label>Brend <span class="ad-form-optional">(opciono)</span></label>
+                    <select name="brand_parts" data-parts-brand>
+                        <option value="">—</option>
+                        <?php foreach ($phoneBrands as $brand): ?>
+                            <option value="<?= h($brand) ?>" <?= ($ad['brand'] ?? '') === $brand ? 'selected' : '' ?>><?= h($brand) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                    <p class="form-hint" data-parts-brand-hint hidden>Popunjeno iz podkategorije.</p>
+                </div>
+                <div class="form-group" data-equipment-type-wrap>
+                    <label>Tip opreme <span class="ad-form-optional">(ako treba preciznije)</span></label>
+                    <select name="equipment_type" data-equipment-type>
                         <option value="">Izaberi</option>
                         <?php foreach ($schema['equipment_types'] as $eq): ?>
                             <option value="<?= h($eq) ?>" <?= ($ad['equipment_type'] ?? '') === $eq ? 'selected' : '' ?>><?= h($eq) ?></option>
                         <?php endforeach; ?>
                     </select>
+                    <p class="form-hint">Često se popuni iz podkategorije — menjaš samo ako treba drugačije.</p>
                 </div>
                 <div class="form-group">
                     <label>Kompatibilni modeli</label>
@@ -328,15 +351,6 @@ $contactExtraOpen = $contactSorted !== $dc
                             <?php endforeach; ?>
                         </select>
                     </div>
-                </div>
-                <div class="form-group">
-                    <label>Brend (opciono)</label>
-                    <select name="brand_parts" data-parts-brand>
-                        <option value="">—</option>
-                        <?php foreach ($phoneBrands as $brand): ?>
-                            <option value="<?= h($brand) ?>" <?= ($ad['brand'] ?? '') === $brand ? 'selected' : '' ?>><?= h($brand) ?></option>
-                        <?php endforeach; ?>
-                    </select>
                 </div>
             </section>
 

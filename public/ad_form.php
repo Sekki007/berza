@@ -138,12 +138,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $storage = $adType === 'telefon' ? trim((string)($_POST['storage'] ?? '')) : '';
     $model = $adType === 'servis' ? '' : trim((string)($_POST['model'] ?? ''));
     $categoryGroup = trim((string)($_POST['category_group'] ?? ''));
-    if ($categoryGroup === '') {
-        $categoryGroup = match ($adType) {
-            'delovi' => 'iphone_parts',
-            'servis' => 'service',
-            default => 'phones',
-        };
+    if ($adType === 'telefon') {
+        $categoryGroup = 'phones';
+    } elseif ($adType === 'servis') {
+        $categoryGroup = 'service';
+    } else {
+        $groupCfg = $cfg['groups'][$categoryGroup] ?? null;
+        if (!$groupCfg || (string)($groupCfg['ad_type'] ?? '') !== 'delovi') {
+            $categoryGroup = 'iphone_parts';
+        }
     }
 
     $payload = array_merge([
@@ -316,7 +319,11 @@ $phoneBrands = $schema['phone_brands'];
 $existingImages = is_array($ad['images'] ?? null) ? $ad['images'] : [];
 $groupMeta = [];
 foreach ($cfg['groups'] as $key => $group) {
-    $groupMeta[$key] = (string)($group['ad_type'] ?? '');
+    $groupMeta[$key] = [
+        'ad_type' => (string)($group['ad_type'] ?? ''),
+        'brand' => (string)($group['brand'] ?? ''),
+        'equipment_type' => (string)($group['equipment_type'] ?? ''),
+    ];
 }
 
 $accessoriesSel = is_array($ad['accessories'] ?? null) ? $ad['accessories'] : [];

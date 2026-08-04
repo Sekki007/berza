@@ -279,9 +279,13 @@
       if (selected && (selected.hidden || selected.disabled) && firstVisible) {
         cat.value = firstVisible.value;
       }
+      // Podkategorija se prikazuje samo za Opremu (delovi)
       if (catWrap) {
-        if (visibleCount > 1) catWrap.removeAttribute('hidden');
+        if (type === 'delovi' && visibleCount > 0) catWrap.removeAttribute('hidden');
         else catWrap.setAttribute('hidden', '');
+      }
+      if (type === 'delovi') {
+        applyCategoryGroupDefaults(form, true);
       }
     }
 
@@ -297,6 +301,68 @@
         bh.disabled = !isApple || !!panelHidden;
         if (!isApple) bh.value = '';
       }
+    }
+  }
+
+  function applyCategoryGroupDefaults(form, forceEquip) {
+    const cat = one('#ad-category', form);
+    if (!cat) return;
+    const opt = cat.options[cat.selectedIndex];
+    if (!opt || opt.disabled || opt.hidden) return;
+
+    const brand = (opt.getAttribute('data-brand') || '').trim();
+    const equip = (opt.getAttribute('data-equipment-type') || '').trim();
+    const partsBrand = one('[data-parts-brand]', form);
+    const brandHint = one('[data-parts-brand-hint]', form);
+    const equipSel = one('[data-equipment-type]', form);
+
+    if (partsBrand) {
+      if (brand) {
+        if (forceEquip || !(partsBrand.value || '').trim()) {
+          partsBrand.value = brand;
+        }
+        if ((partsBrand.value || '') === brand) {
+          if (brandHint) brandHint.removeAttribute('hidden');
+        } else if (brandHint) {
+          brandHint.setAttribute('hidden', '');
+        }
+      } else {
+        if (forceEquip) partsBrand.value = '';
+        if (brandHint) brandHint.setAttribute('hidden', '');
+      }
+    }
+
+    if (equipSel) {
+      if (equip && (forceEquip || !(equipSel.value || '').trim())) {
+        equipSel.value = equip;
+      } else if (forceEquip && !equip) {
+        equipSel.value = '';
+      }
+    }
+  }
+
+  function initCategoryGroupSync() {
+    const form = one('[data-ad-form]');
+    if (!form) return;
+    const cat = one('#ad-category', form);
+    if (!cat) return;
+    cat.addEventListener('change', function () {
+      applyCategoryGroupDefaults(form, true);
+    });
+    const partsBrand = one('[data-parts-brand]', form);
+    if (partsBrand) {
+      partsBrand.addEventListener('change', function () {
+        const opt = cat.options[cat.selectedIndex];
+        const expected = opt ? (opt.getAttribute('data-brand') || '').trim() : '';
+        const hint = one('[data-parts-brand-hint]', form);
+        if (!hint) return;
+        if (expected && (partsBrand.value || '') === expected) hint.removeAttribute('hidden');
+        else hint.setAttribute('hidden', '');
+      });
+    }
+    const typeEl = one('[data-form-type]:checked', form);
+    if (typeEl && typeEl.value === 'delovi') {
+      applyCategoryGroupDefaults(form, false);
     }
   }
 
@@ -1950,6 +2016,7 @@
     initListingFilters();
     initFocusSearch();
     initFormTypeSelect();
+    initCategoryGroupSync();
     initAdFormExtras();
     initActiveNav();
     initAccountMenu();
