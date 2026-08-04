@@ -664,6 +664,7 @@
     let rafId = null;
     const consume = function (e) {
       if (!e) return;
+      window.__ktGalleryNavTs = Date.now();
       if (typeof e.preventDefault === 'function') e.preventDefault();
       if (typeof e.stopPropagation === 'function') e.stopPropagation();
       if (typeof e.stopImmediatePropagation === 'function') e.stopImmediatePropagation();
@@ -771,7 +772,13 @@
     }
 
     all('[data-lightbox-open]').forEach(function (btn) {
-      btn.addEventListener('click', function () {
+      btn.addEventListener('click', function (e) {
+        const navTs = window.__ktGalleryNavTs || 0;
+        if (Date.now() - navTs < 450) {
+          if (e && typeof e.preventDefault === 'function') e.preventDefault();
+          if (e && typeof e.stopPropagation === 'function') e.stopPropagation();
+          return;
+        }
         const i = parseInt(btn.getAttribute('data-lightbox-open') || '0', 10);
         open(isNaN(i) ? 0 : i);
       });
