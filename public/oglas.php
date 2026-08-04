@@ -309,8 +309,8 @@ $contactBlock = static function (string $formId = 'poruka') use (
                     <?php endforeach; ?>
                 </div>
                 <?php if ($imageCount > 1): ?>
-                    <button type="button" class="kp-gallery-nav kp-gallery-prev" data-gallery-prev aria-label="Prethodna slika" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);z-index:3;width:38px;height:38px;border:1px solid rgba(255,255,255,.6);border-radius:50%;background:rgba(17,24,39,.45);color:#fff;font-size:24px;line-height:1;">‹</button>
-                    <button type="button" class="kp-gallery-nav kp-gallery-next" data-gallery-next aria-label="Sledeća slika" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);z-index:3;width:38px;height:38px;border:1px solid rgba(255,255,255,.6);border-radius:50%;background:rgba(17,24,39,.45);color:#fff;font-size:24px;line-height:1;">›</button>
+                    <button type="button" class="kp-gallery-nav kp-gallery-prev" data-gallery-prev aria-label="Prethodna slika" onclick="return window.ktGalleryNav ? window.ktGalleryNav(-1) : false;" style="position:absolute;left:10px;top:50%;transform:translateY(-50%);z-index:3;width:38px;height:38px;border:1px solid rgba(255,255,255,.6);border-radius:50%;background:rgba(17,24,39,.45);color:#fff;font-size:24px;line-height:1;">‹</button>
+                    <button type="button" class="kp-gallery-nav kp-gallery-next" data-gallery-next aria-label="Sledeća slika" onclick="return window.ktGalleryNav ? window.ktGalleryNav(1) : false;" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);z-index:3;width:38px;height:38px;border:1px solid rgba(255,255,255,.6);border-radius:50%;background:rgba(17,24,39,.45);color:#fff;font-size:24px;line-height:1;">›</button>
                 <?php endif; ?>
                 <span class="kp-gallery-counter" data-gallery-counter>1 od <?= $imageCount ?></span>
                 <?php if ($imageCount > 1): ?>
@@ -322,6 +322,7 @@ $contactBlock = static function (string $formId = 'poruka') use (
                                 class="kp-gallery-thumb<?= $i === 0 ? ' is-active' : '' ?>"
                                 data-gallery-thumb-index="<?= $i ?>"
                                 aria-label="Prikaži sliku <?= $i + 1 ?>"
+                                onclick="return window.ktGalleryGo ? window.ktGalleryGo(<?= $i ?>) : false;"
                                 style="flex:0 0 auto;width:64px;height:64px;padding:0;border:2px solid <?= $i === 0 ? '#1a73e8' : 'transparent' ?>;border-radius:10px;overflow:hidden;background:#f4f6f8;line-height:0;<?= $i === 0 ? 'box-shadow:0 0 0 2px rgba(26,115,232,.16);' : '' ?>"
                             >
                                 <img src="<?= h($thumbSrc) ?>" alt="<?= h((string)$ad['title']) ?> — slika <?= $i + 1 ?>" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover;display:block;">
@@ -487,6 +488,54 @@ $contactBlock = static function (string $formId = 'poruka') use (
     <div class="kp-lightbox-counter" data-lightbox-counter>1 od <?= $imageCount ?></div>
     <script type="application/json" data-lightbox-sources><?= json_encode(array_values($images), JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE) ?></script>
 </div>
+<?php endif; ?>
+
+<?php if ($images && $imageCount > 1): ?>
+<script>
+(function () {
+  var root = document.querySelector('.kp-gallery');
+  if (!root) return;
+  var slides = root.querySelectorAll('.kp-gallery-slide');
+  var thumbs = root.querySelectorAll('[data-gallery-thumb-index]');
+  var counter = root.querySelector('[data-gallery-counter]');
+  var index = 0;
+  var total = slides.length;
+  if (!total) return;
+
+  function paint(i) {
+    index = ((i % total) + total) % total;
+    for (var s = 0; s < slides.length; s++) {
+      slides[s].style.display = s === index ? 'flex' : 'none';
+    }
+    for (var t = 0; t < thumbs.length; t++) {
+      var on = parseInt(thumbs[t].getAttribute('data-gallery-thumb-index') || '-1', 10) === index;
+      thumbs[t].classList.toggle('is-active', on);
+      thumbs[t].style.borderColor = on ? '#1a73e8' : 'transparent';
+      thumbs[t].style.boxShadow = on ? '0 0 0 2px rgba(26,115,232,.16)' : 'none';
+    }
+    if (counter) counter.textContent = (index + 1) + ' od ' + total;
+    window.__ktGalleryNavTs = Date.now();
+  }
+
+  window.ktGalleryGo = function (i) { paint(i); return false; };
+  window.ktGalleryNav = function (dir) { paint(index + (dir > 0 ? 1 : -1)); return false; };
+
+  var prev = root.querySelector('[data-gallery-prev]');
+  var next = root.querySelector('[data-gallery-next]');
+  if (prev) prev.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); window.ktGalleryNav(-1); });
+  if (next) next.addEventListener('click', function (e) { e.preventDefault(); e.stopPropagation(); window.ktGalleryNav(1); });
+  for (var i = 0; i < thumbs.length; i++) {
+    thumbs[i].addEventListener('click', function (e) {
+      e.preventDefault();
+      e.stopPropagation();
+      var idx = parseInt(this.getAttribute('data-gallery-thumb-index') || '0', 10);
+      window.ktGalleryGo(isNaN(idx) ? 0 : idx);
+    });
+  }
+
+  paint(0);
+})();
+</script>
 <?php endif; ?>
 
 <?php require __DIR__ . '/partials/layout-end.php'; ?>
