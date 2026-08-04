@@ -1670,7 +1670,7 @@ a.rep-thumb:hover { opacity: 0.85; text-decoration: underline; }
   flex-direction: row;
   align-items: flex-start;
   gap: 10px;
-  padding: 0 28px 0 0;
+  padding: 0;
 }
 .kp-list-main {
   flex: 1;
@@ -1695,7 +1695,8 @@ a.rep-thumb:hover { opacity: 0.85; text-decoration: underline; }
 .kp-list-price-badge {
   flex-shrink: 0;
   align-self: flex-start;
-  max-width: 42%;
+  margin-left: auto;
+  max-width: none;
   text-align: center;
   background: #1760a8;
   color: #fff;
@@ -1780,20 +1781,34 @@ a.rep-thumb:hover { opacity: 0.85; text-decoration: underline; }
 .kp-list-card .kp-list-fav,
 .kp-list-card .listing-fav-btn {
   position: absolute;
-  top: 8px;
-  right: 8px;
-  z-index: 2;
+  top: 16px;
+  left: 16px;
+  right: auto;
+  z-index: 3;
   border: none;
-  background: transparent;
-  padding: 4px;
+  background: rgba(255,255,255,.92);
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  padding: 0;
   cursor: pointer;
   line-height: 1;
   color: #1a6bb5;
-  font-size: 18px;
+  font-size: 15px;
   text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 3px rgba(0,0,0,.12);
 }
 .kp-list-card .kp-list-fav.active,
 .kp-list-card .listing-fav-btn.active { color: #d32f2f; }
+.listings.view-grid .kp-list-card .kp-list-fav,
+.listings.view-grid .kp-list-card .listing-fav-btn {
+  top: 8px;
+  right: 8px;
+  left: auto;
+}
 .kp-list-card .kp-list-cmp,
 .kp-list-card .listing-compare-btn {
   position: absolute;
@@ -2687,12 +2702,13 @@ body.kp-lightbox-open {
     flex-direction: row;
     align-items: flex-start;
     gap: 16px;
-    padding: 0 32px 0 0;
+    padding: 0;
   }
   .listings:not(.view-grid) .kp-list-card .kp-list-main {
     gap: 5px;
   }
   .listings:not(.view-grid) .kp-list-card .kp-list-price-badge {
+    margin-left: auto;
     min-width: 118px;
     padding: 8px 14px;
   }
