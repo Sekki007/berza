@@ -23,6 +23,48 @@ return [
             'brand' => 'Samsung',
             'models' => ['Galaxy S21 Ultra', 'Galaxy S22 Ultra', 'Galaxy S23 Ultra', 'Galaxy S24 Ultra', 'Galaxy A52', 'Galaxy A54'],
         ],
+        'xiaomi_parts' => [
+            'label' => 'Xiaomi / Redmi delovi',
+            'ad_type' => 'delovi',
+            'brand' => 'Xiaomi',
+            'models' => ['Xiaomi 13', 'Xiaomi 13 Pro', 'Xiaomi 14', 'Xiaomi 14 Pro', 'Redmi Note 12', 'Redmi Note 13 Pro'],
+        ],
+        'huawei_honor_parts' => [
+            'label' => 'Huawei / Honor delovi',
+            'ad_type' => 'delovi',
+            'brand' => '',
+            'models' => ['P40 Pro', 'P50 Pro', 'Mate 40 Pro', 'Honor 90', 'Honor 200'],
+        ],
+        'android_parts' => [
+            'label' => 'Android delovi (ostali)',
+            'ad_type' => 'delovi',
+            'brand' => '',
+            'models' => [],
+        ],
+        'chargers_cables' => [
+            'label' => 'Punjači i kablovi',
+            'ad_type' => 'delovi',
+            'brand' => '',
+            'models' => [],
+        ],
+        'cases_protection' => [
+            'label' => 'Maske i zaštita',
+            'ad_type' => 'delovi',
+            'brand' => '',
+            'models' => [],
+        ],
+        'audio_accessories' => [
+            'label' => 'Slušalice i audio oprema',
+            'ad_type' => 'delovi',
+            'brand' => '',
+            'models' => [],
+        ],
+        'watch_tablet_accessories' => [
+            'label' => 'Dodatna oprema za satove i tablete',
+            'ad_type' => 'delovi',
+            'brand' => '',
+            'models' => [],
+        ],
         'other_parts' => [
             'label' => 'Ostalo — delovi i oprema',
             'ad_type' => 'delovi',
