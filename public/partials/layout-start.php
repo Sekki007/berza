@@ -52,8 +52,8 @@ $compareCount = count(compareIds());
     <meta name="twitter:image" content="<?= h($pageImage) ?>">
     <meta name="twitter:title" content="<?= h($pageTitle) ?>">
     <meta name="twitter:description" content="<?= h($pageDescription) ?>">
-    <link rel="preload" href="/assets/css/style.css?v=20260804g" as="style">
-    <link rel="stylesheet" href="/assets/css/style.css?v=20260804g">
+    <link rel="preload" href="<?= h(assetUrl('/assets/css/style.css')) ?>" as="style">
+    <link rel="stylesheet" href="<?= h(assetUrl('/assets/css/style.css')) ?>">
     <link rel="icon" type="image/png" href="/assets/img/favicon.png">
     <link rel="apple-touch-icon" href="/assets/img/logo-mark.png">
     <?php if (!empty($preloadImage)): ?>

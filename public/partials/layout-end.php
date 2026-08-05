@@ -255,7 +255,7 @@ if ($user) {
         <span class="btn-sm btn-sm-primary">Otvori</span>
     </a>
 
-    <script src="/assets/js/app.js?v=20260801h" defer></script>
+    <script src="<?= h(assetUrl('/assets/js/app.js')) ?>" defer></script>
     <?= renderFacebookPixelBootstrap() ?>
     <?= renderGoogleTagBootstrap() ?>
 </body>

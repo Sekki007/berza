@@ -198,6 +198,17 @@ function adUrl(array $ad): string
     return '/oglas/' . $id . ($slug !== '' ? '-' . $slug : '');
 }
 
+/** Statički asset sa cache-busting verzijom iz filemtime. */
+function assetUrl(string $path): string
+{
+    if ($path === '' || $path[0] !== '/') {
+        $path = '/' . $path;
+    }
+    $file = dirname(__DIR__) . '/public' . $path;
+    $stamp = is_file($file) ? (string)filemtime($file) : (string)time();
+    return $path . '?v=' . $stamp;
+}
+
 function absoluteUrl(string $path): string
 {
     if (preg_match('#^https?://#i', $path) === 1) {
