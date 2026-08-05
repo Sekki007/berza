@@ -4,9 +4,21 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/config/bootstrap.php';
 
+$requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+
+// Radi i bez nginx rewrite pravila: nepoznate putanje stižu ovde preko try_files.
+if (preg_match('#^/(?:vodici|blog)/?$#', $requestPath) === 1) {
+    require __DIR__ . '/vodici.php';
+    exit;
+}
+if (preg_match('#^/(?:vodic|blog)/([^/]+)/?$#', $requestPath, $guideMatch) === 1) {
+    $_GET['slug'] = rawurldecode((string)$guideMatch[1]);
+    require __DIR__ . '/vodic.php';
+    exit;
+}
+
 $cfg = categoriesConfig();
 $settings = siteSettings();
-$requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 $landing = resolveListingLandingFromPath($requestPath);
 if (is_array($landing) && !empty($landing['invalid'])) {
     http_response_code(404);
