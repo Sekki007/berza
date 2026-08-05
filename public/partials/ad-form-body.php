@@ -382,8 +382,11 @@ $contactExtraOpen = $contactSorted !== $dc
             </section>
 
             <section class="ad-form-section">
-                <h3 class="ad-form-section-title">Fotografije</h3>
-                <p class="form-hint" style="margin-top:0;">Do 10 slika — prva je naslovna. Možeš dodavati jednu po jednu; ↑↓ menja redosled, × briše.</p>
+                <h3 class="ad-form-section-title">Fotografije <span data-photo-required <?= $currentType !== 'telefon' ? 'hidden' : '' ?>>*</span></h3>
+                <p class="form-hint" style="margin-top:0;">
+                    <span data-phone-photo-hint <?= $currentType !== 'telefon' ? 'hidden' : '' ?>>Za telefon je obavezna najmanje jedna fotografija uređaja. </span>
+                    Do 10 slika — prva je naslovna. Možeš dodavati jednu po jednu; ↑↓ menja redosled, × briše.
+                </p>
                 <?php if ($existingImages): ?>
                     <div class="photo-existing" data-photo-existing>
                         <?php foreach ($existingImages as $idx => $img): ?>
@@ -402,7 +405,7 @@ $contactExtraOpen = $contactSorted !== $dc
                     </div>
                 <?php endif; ?>
                 <label class="ad-photo-add" data-photo-drop>
-                    <input type="file" name="images[]" accept="image/jpeg,image/png,image/webp,image/gif" multiple data-photo-input>
+                    <input type="file" name="images[]" accept="image/jpeg,image/png,image/webp,image/gif" multiple data-photo-input <?= $currentType === 'telefon' && $existingImages === [] ? 'required' : '' ?>>
                     <span>+ Dodaj fotografije<br><small>ili prevuci ovde — možeš više puta</small></span>
                 </label>
                 <div class="photo-upload" data-photo-preview></div>

@@ -216,6 +216,18 @@
     if (current) syncAdFormByType(current.value);
   }
 
+  function syncPhonePhotoRequirement(form, type) {
+    const input = one('[data-photo-input]', form);
+    if (!input) return;
+    const hasExisting = all('[data-photo-existing] [data-photo-item]', form).length > 0;
+    const isPhone = type === 'telefon';
+    input.required = isPhone && !hasExisting;
+    const requiredMark = one('[data-photo-required]', form);
+    const hint = one('[data-phone-photo-hint]', form);
+    if (requiredMark) requiredMark.hidden = !isPhone;
+    if (hint) hint.hidden = !isPhone;
+  }
+
   function syncAdFormByType(type) {
     const form = one('[data-ad-form]');
     if (!form) return;
@@ -302,6 +314,7 @@
         if (!isApple) bh.value = '';
       }
     }
+    syncPhonePhotoRequirement(form, type);
   }
 
   function applyCategoryGroupDefaults(form, forceEquip) {
@@ -1026,6 +1039,8 @@
       const full = remainingSlots() <= 0;
       drop.classList.toggle('is-full', full);
       if (!busy) input.disabled = full;
+      const selectedType = one('[data-form-type]:checked');
+      syncPhonePhotoRequirement(input.form, selectedType ? selectedType.value : '');
     }
 
     function syncInput() {

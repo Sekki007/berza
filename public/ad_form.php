@@ -187,6 +187,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $ad = array_merge($ad, $payload);
 
+    $keptImageUrls = is_array($_POST['keep_images'] ?? null) ? $_POST['keep_images'] : [];
+    $originalImageUrls = is_array($payload['images'] ?? null) ? $payload['images'] : [];
+    $hasKeptImage = array_intersect($originalImageUrls, array_map('strval', $keptImageUrls)) !== [];
+    $hasValidUpload = false;
+    if (isset($_FILES['images']) && is_array($_FILES['images']['name'] ?? null)) {
+        $allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+        foreach ($_FILES['images']['name'] as $imageIndex => $_imageName) {
+            if ((int)($_FILES['images']['error'][$imageIndex] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+                continue;
+            }
+            $tmpImage = (string)($_FILES['images']['tmp_name'][$imageIndex] ?? '');
+            $imageType = $tmpImage !== '' ? (mime_content_type($tmpImage) ?: '') : '';
+            if (in_array($imageType, $allowedImageTypes, true)) {
+                $hasValidUpload = true;
+                break;
+            }
+        }
+    }
+
     if ($formError !== '') {
         // već postavljen (npr. servis bez potvrđenog PIB-a)
     } elseif ($payload['title'] === '') {
@@ -195,6 +214,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $formError = 'Grad je obavezan.';
     } elseif ($payload['contact_phone'] === '') {
         $formError = 'Broj telefona je obavezan.';
+    } elseif (($payload['ad_type'] ?? '') === 'telefon' && !$hasKeptImage && !$hasValidUpload) {
+        $formError = 'Za oglas telefona obavezna je najmanje jedna fotografija uređaja.';
     } elseif (($payload['ad_type'] ?? '') === 'servis' && !$allowServiceType) {
         $formError = 'Servisne usluge mogu da objavljuju samo registrovane firme sa potvrđenim PIB-om.';
     } elseif ($payload['price_type'] === 'fixed' && $payload['price'] <= 0) {
