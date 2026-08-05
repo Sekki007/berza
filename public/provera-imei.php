@@ -5,6 +5,7 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/config/bootstrap.php';
 
 $error = '';
+$errorDetail = '';
 $checkedImei = '';
 $result = null;
 
@@ -19,6 +20,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $result = $check['result'];
         } else {
             $error = (string)($check['error'] ?? 'Provera trenutno nije uspela. Pokušaj ponovo.');
+            $errorDetail = (string)($check['detail'] ?? '');
         }
     }
 }
@@ -84,6 +86,9 @@ require __DIR__ . '/partials/layout-start.php';
                 <div class="imei-message imei-message--error" role="alert">
                     <strong>Provera nije uspela</strong>
                     <span><?= h($error) ?></span>
+                    <?php if ($errorDetail !== '' && isAdmin()): ?>
+                        <span class="imei-admin-detail">Detalj (vidi samo admin): <?= h($errorDetail) ?></span>
+                    <?php endif; ?>
                 </div>
             <?php endif; ?>
 

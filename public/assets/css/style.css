@@ -353,6 +353,7 @@ body.account-menu-open{overflow:hidden;}
 .imei-message,.imei-result{margin-top:18px;border-radius:10px;padding:15px;}
 .imei-message{display:grid;gap:3px;}
 .imei-message--error{border:1px solid #efc4c1;background:#fff4f3;color:#9c251d;}
+.imei-admin-detail{margin-top:5px;font-size:12px;color:#7a3b36;word-break:break-word;}
 .imei-result{border:1px solid #b8dfc1;background:#f3fbf5;}
 .imei-result-head{display:flex;align-items:center;gap:11px;}
 .imei-result-head>div{display:grid;gap:2px;}
