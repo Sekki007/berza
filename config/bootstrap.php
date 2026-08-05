@@ -1430,4 +1430,10 @@ requireNotBlocked();
 processAdExpirations();
 refreshNbsEurRsdRateIfStale(12);
 processTopExpirations();
-processSavedSearchAlerts();
+
+// Pozadinska obrada ne sme da obori zahtev korisnika.
+try {
+    processSavedSearchAlerts();
+} catch (Throwable $e) {
+    error_log('processSavedSearchAlerts failed: ' . $e->getMessage());
+}

@@ -238,12 +238,21 @@ function processSavedSearchAlerts(bool $force = false, ?array $targetAd = null):
         $currentIds = savedSearchMatchedIds($search);
         $currentMax = $currentIds !== [] ? max($currentIds) : 0;
         $prevSeen = (int)($search['last_seen_ad_id'] ?? 0);
-        if ($prevSeen <= 0) {
-            $prevSeen = max(array_map('intval', (array)($search['last_match_ids'] ?? [])));
+        $hasBaseline = $prevSeen > 0;
+        if (!$hasBaseline) {
+            $legacyIds = array_map('intval', (array)($search['last_match_ids'] ?? []));
+            if ($legacyIds !== []) {
+                $prevSeen = max($legacyIds);
+                $hasBaseline = true;
+            } else {
+                $prevSeen = 0;
+            }
         }
 
         $newIds = [];
-        if ($targetId > 0) {
+        if (!$hasBaseline) {
+            // Prva provera bez zabeleženog stanja: samo postavi početnu tačku, bez lažnog alerta.
+        } elseif ($targetId > 0) {
             if ($targetId > $prevSeen && in_array($targetId, $currentIds, true)) {
                 $newIds = [$targetId];
             }
