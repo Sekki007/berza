@@ -50,6 +50,7 @@ if ($user) {
                     <a href="/index.php?type=delovi">Oprema</a>
                     <a href="/index.php?type=servis">Servis oglasi</a>
                     <a href="/servisi">Firme po gradu</a>
+                    <a href="/provera-imei">Besplatna IMEI provera</a>
                 </div>
                 <div class="site-footer-col">
                     <h4>Prodaja</h4>
@@ -97,6 +98,13 @@ if ($user) {
             <button type="button" class="mobile-account-menu-close" data-close-account-menu aria-label="Zatvori">×</button>
         </div>
         <nav class="mobile-account-menu-nav">
+            <a href="/provera-imei" class="mobile-account-menu-item">
+                <span class="mobile-account-menu-icon">#</span>
+                <span class="mobile-account-menu-text">
+                    <strong>Provera IMEI</strong>
+                    <small>Besplatno proveri model telefona</small>
+                </span>
+            </a>
             <?php if ($user): ?>
                 <a href="/nalog.php" class="mobile-account-menu-item">
                     <span class="mobile-account-menu-icon">👤</span>

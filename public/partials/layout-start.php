@@ -82,6 +82,7 @@ $compareCount = count(compareIds());
             <div class="topbar-links">
                 <a href="/servisi">Firme</a>
                 <a href="/vodici">Vodiči</a>
+                <a href="/provera-imei">Provera IMEI</a>
                 <a href="/kako-radi.php">Kako radi</a>
                 <?php if (!empty($site['enable_favorites'])): ?><a href="/favorites.php">Omiljeni</a><?php endif; ?>
                 <?php if ($user): ?>

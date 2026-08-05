@@ -16,6 +16,10 @@ if (preg_match('#^/(?:vodic|blog)/([^/]+)/?$#', $requestPath, $guideMatch) === 1
     require __DIR__ . '/vodic.php';
     exit;
 }
+if (preg_match('#^/provera-imei/?$#', $requestPath) === 1) {
+    require __DIR__ . '/provera-imei.php';
+    exit;
+}
 
 $cfg = categoriesConfig();
 $settings = siteSettings();

@@ -1420,6 +1420,7 @@ require_once __DIR__ . '/listings_directory.php';
 require_once __DIR__ . '/facebook_pixel.php';
 require_once __DIR__ . '/google_tag.php';
 require_once __DIR__ . '/google_analytics.php';
+require_once __DIR__ . '/imei_check.php';
 
 ensureJsonDataFiles();
 tryRememberLogin();

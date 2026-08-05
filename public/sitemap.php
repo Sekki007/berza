@@ -14,6 +14,7 @@ $staticPages = [
     ['/oglasi', '0.9', 'daily'],
     ['/vodici', '0.7', 'weekly'],
     ['/servisi', '0.9', 'daily'],
+    ['/provera-imei', '0.8', 'monthly'],
     ['/index.php?type=telefon', '0.8', 'daily'],
     ['/index.php?type=delovi', '0.7', 'daily'],
     ['/index.php?type=servis', '0.8', 'daily'],

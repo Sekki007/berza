@@ -54,6 +54,11 @@ if ($uri === '/vodici' || $uri === '/vodici/' || $uri === '/blog' || $uri === '/
     exit;
 }
 
+if ($uri === '/provera-imei' || $uri === '/provera-imei/') {
+    require __DIR__ . '/public/provera-imei.php';
+    exit;
+}
+
 if (preg_match('#^/(vodic|blog)/([^/]+)/?$#', $uri, $m)) {
     $_GET['slug'] = rawurldecode($m[2]);
     require __DIR__ . '/public/vodic.php';
