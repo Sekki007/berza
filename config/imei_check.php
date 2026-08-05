@@ -2,10 +2,32 @@
 
 declare(strict_types=1);
 
+/**
+ * IMEI provera preko DHRU Fusion API-ja (imeicheck.com / checkimei.com).
+ *
+ * Env:
+ *   IMEI_CHECK_ENABLED=true
+ *   IMEI_CHECK_URL=https://dhru.checkimei.com
+ *   IMEI_CHECK_USERNAME=...
+ *   IMEI_CHECK_API_KEY=...
+ *   IMEI_CHECK_SERVICE_ID=11   # "IMEI to Brand/Model/Name"
+ */
+
 function imeiCheckEnabled(): bool
 {
     $flag = strtolower(trim((string)envValue('IMEI_CHECK_ENABLED', 'false')));
     return in_array($flag, ['1', 'true', 'yes', 'on'], true);
+}
+
+function imeiCheckApiUrl(): string
+{
+    $url = trim((string)envValue('IMEI_CHECK_URL', 'https://dhru.checkimei.com'));
+    return rtrim($url !== '' ? $url : 'https://dhru.checkimei.com', '/') . '/api/index.php';
+}
+
+function imeiCheckUsername(): string
+{
+    return trim((string)envValue('IMEI_CHECK_USERNAME', ''));
 }
 
 function imeiCheckApiKey(): string
@@ -13,80 +35,15 @@ function imeiCheckApiKey(): string
     return trim((string)envValue('IMEI_CHECK_API_KEY', ''));
 }
 
-/**
- * Plaćeni php-api servis (npr. "Brand + Model IMEI Check"). Prazno = koristi se
- * besplatni TAC endpoint modelBrandName.
- */
 function imeiCheckServiceId(): string
 {
-    return preg_replace('/\D+/', '', (string)envValue('IMEI_CHECK_SERVICE_ID', '')) ?? '';
+    $id = preg_replace('/\D+/', '', (string)envValue('IMEI_CHECK_SERVICE_ID', '11')) ?? '';
+    return $id !== '' ? $id : '11';
 }
 
-/**
- * @return array{body:string,http:int,error:string}
- */
-function imeiCheckHttpGet(string $url): array
+function imeiCheckConfigured(): bool
 {
-    $ch = curl_init($url);
-    curl_setopt_array($ch, [
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_FOLLOWLOCATION => false,
-        CURLOPT_CONNECTTIMEOUT => 5,
-        CURLOPT_TIMEOUT => 15,
-        CURLOPT_HTTPHEADER => ['Accept: application/json'],
-        CURLOPT_USERAGENT => 'Mozilla/5.0 (compatible; KupiTelefon/1.0; +https://kupitelefon.rs)',
-    ]);
-    $body = curl_exec($ch);
-    $http = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $error = curl_error($ch);
-    curl_close($ch);
-
-    return [
-        'body' => is_string($body) ? $body : '',
-        'http' => $http,
-        'error' => $error,
-    ];
-}
-
-/**
- * Iz odgovora izvlači brend/model bez obzira na oblik (TAC ili php-api).
- *
- * @return array{brand:string,model:string,name:string}
- */
-function imeiCheckExtractResult(array $decoded): array
-{
-    $object = is_array($decoded['object'] ?? null) ? $decoded['object'] : $decoded;
-    $result = [
-        'brand' => trim((string)($object['brand'] ?? '')),
-        'model' => trim((string)($object['model'] ?? '')),
-        'name' => trim((string)($object['name'] ?? $object['model_name'] ?? '')),
-    ];
-    if ($result['brand'] !== '' || $result['model'] !== '' || $result['name'] !== '') {
-        return $result;
-    }
-
-    // php-api vraća tekstualni izveštaj u "response".
-    $text = (string)($decoded['response'] ?? '');
-    if ($text !== '') {
-        $plain = trim(strip_tags(str_ireplace(['<br>', '<br/>', '<br />'], "\n", $text)));
-        foreach (preg_split('/\r\n|\r|\n/', $plain) ?: [] as $line) {
-            [$label, $value] = array_pad(explode(':', $line, 2), 2, '');
-            $label = strtolower(trim($label));
-            $value = trim($value);
-            if ($value === '') {
-                continue;
-            }
-            if ($result['brand'] === '' && in_array($label, ['brand', 'manufacturer', 'brand name'], true)) {
-                $result['brand'] = $value;
-            } elseif ($result['model'] === '' && in_array($label, ['model', 'model number'], true)) {
-                $result['model'] = $value;
-            } elseif ($result['name'] === '' && in_array($label, ['name', 'model name', 'device', 'description'], true)) {
-                $result['name'] = $value;
-            }
-        }
-    }
-
-    return $result;
+    return imeiCheckEnabled() && imeiCheckUsername() !== '' && imeiCheckApiKey() !== '';
 }
 
 function normalizeImei(string $value): string
@@ -204,11 +161,119 @@ function cacheImeiModel(string $imei, array $result): void
 }
 
 /**
- * @return array{ok:bool,result?:array{brand:string,model:string,name:string},error?:string,cached?:bool}
+ * Poziv DHRU Fusion API-ja. Dodatni parametri idu kao base64(JSON).
+ *
+ * @param array<string,string> $parameters
+ * @return array{ok:bool,data?:array,detail?:string}
+ */
+function dhruApiRequest(string $action, array $parameters = []): array
+{
+    if (!function_exists('curl_init')) {
+        return ['ok' => false, 'detail' => 'PHP cURL ekstenzija nije dostupna.'];
+    }
+
+    $payload = [
+        'username' => imeiCheckUsername(),
+        'apiaccesskey' => imeiCheckApiKey(),
+        'action' => $action,
+        'requestformat' => 'JSON',
+    ];
+    if ($parameters !== []) {
+        $payload['parameters'] = base64_encode((string)json_encode($parameters));
+    }
+
+    $ch = curl_init(imeiCheckApiUrl());
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_POSTFIELDS => http_build_query($payload),
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => false,
+        CURLOPT_CONNECTTIMEOUT => 5,
+        CURLOPT_TIMEOUT => 25,
+        CURLOPT_USERAGENT => 'KupiTelefon.rs/1.0',
+    ]);
+    $body = curl_exec($ch);
+    $http = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+    curl_close($ch);
+
+    if (!is_string($body) || $curlError !== '' || $http < 200 || $http >= 300) {
+        return [
+            'ok' => false,
+            'detail' => 'HTTP ' . $http . ($curlError !== '' ? ' - ' . $curlError : ''),
+        ];
+    }
+    if (trim($body) === '') {
+        return [
+            'ok' => false,
+            'detail' => 'Prazan odgovor servisa (najčešće nedovoljan kredit na DHRU nalogu).',
+        ];
+    }
+
+    $decoded = json_decode($body, true);
+    if (!is_array($decoded)) {
+        return ['ok' => false, 'detail' => 'Neispravan JSON: ' . mb_substr(trim(strip_tags($body)), 0, 200)];
+    }
+    if (isset($decoded['ERROR'])) {
+        $first = is_array($decoded['ERROR']) ? ($decoded['ERROR'][0] ?? []) : [];
+        $message = is_array($first) ? trim((string)($first['MESSAGE'] ?? '')) : '';
+        return ['ok' => false, 'detail' => $message !== '' ? $message : 'Servis je vratio grešku bez opisa.'];
+    }
+
+    $success = is_array($decoded['SUCCESS'] ?? null) ? ($decoded['SUCCESS'][0] ?? []) : [];
+    return ['ok' => true, 'data' => is_array($success) ? $success : []];
+}
+
+/**
+ * Iz DHRU odgovora (HTML/tekst "Labela: vrednost") izvlači brend, model i naziv.
+ *
+ * @return array{brand:string,model:string,name:string}
+ */
+function imeiCheckParseResult(array $data): array
+{
+    $result = ['brand' => '', 'model' => '', 'name' => ''];
+
+    $text = '';
+    foreach (['RESULT', 'result', 'DESCRIPTION', 'MESSAGE'] as $field) {
+        if (is_string($data[$field] ?? null) && trim((string)$data[$field]) !== '') {
+            $text .= "\n" . $data[$field];
+        }
+    }
+    if (trim($text) === '') {
+        return $result;
+    }
+
+    $plain = str_ireplace(['<br>', '<br/>', '<br />', '</p>', '</div>', '</li>'], "\n", $text);
+    $plain = html_entity_decode(strip_tags($plain), ENT_QUOTES | ENT_HTML5, 'UTF-8');
+
+    foreach (preg_split('/\r\n|\r|\n/', $plain) ?: [] as $line) {
+        if (!str_contains($line, ':')) {
+            continue;
+        }
+        [$label, $value] = array_pad(explode(':', $line, 2), 2, '');
+        $label = strtolower(trim($label));
+        $value = trim($value);
+        if ($value === '') {
+            continue;
+        }
+        if ($result['brand'] === '' && in_array($label, ['brand', 'manufacturer', 'brand name', 'vendor'], true)) {
+            $result['brand'] = $value;
+        } elseif ($result['model'] === '' && in_array($label, ['model', 'model number', 'model no'], true)) {
+            $result['model'] = $value;
+        } elseif ($result['name'] === '' && in_array($label, ['name', 'model name', 'device', 'device name', 'description'], true)) {
+            $result['name'] = $value;
+        }
+    }
+
+    return $result;
+}
+
+/**
+ * @return array{ok:bool,result?:array{brand:string,model:string,name:string},error?:string,detail?:string,cached?:bool}
  */
 function checkImeiModel(string $imei): array
 {
-    if (!imeiCheckEnabled() || imeiCheckApiKey() === '') {
+    if (!imeiCheckConfigured()) {
         return ['ok' => false, 'error' => 'IMEI provera trenutno nije dostupna.'];
     }
     if (!isValidImei($imei)) {
@@ -224,72 +289,72 @@ function checkImeiModel(string $imei): array
     if (empty($rate['ok'])) {
         return $rate;
     }
-    if (!function_exists('curl_init')) {
-        error_log('IMEICheck requires PHP cURL extension');
-        return ['ok' => false, 'error' => 'Servis za proveru trenutno nije dostupan.'];
-    }
 
-    $key = imeiCheckApiKey();
-    $serviceId = imeiCheckServiceId();
-    $endpoint = $serviceId !== ''
-        ? 'https://alpha.imeicheck.com/api/php-api/create?' . http_build_query([
-            'key' => $key,
-            'service' => $serviceId,
-            'imei' => $imei,
-        ])
-        : 'https://alpha.imeicheck.com/api/modelBrandName?' . http_build_query([
-            'imei' => $imei,
-            'format' => 'json',
-            'key' => $key,
-        ]);
-
-    $response = imeiCheckHttpGet($endpoint);
-    $body = $response['body'];
-    $httpCode = $response['http'];
-
-    if ($body === '' || $response['error'] !== '' || $httpCode < 200 || $httpCode >= 300) {
-        $detail = 'HTTP ' . $httpCode . ($response['error'] !== '' ? ' - ' . $response['error'] : '');
-        if ($httpCode === 403) {
-            $detail .= ' (Cloudflare blokira zahtev — traži lični API ključ koji zaobilazi CAPTCHA)';
-        }
-        error_log('IMEICheck request failed: ' . $detail);
+    $order = dhruApiRequest('placeimeiorder', [
+        'ID' => imeiCheckServiceId(),
+        'IMEI' => $imei,
+    ]);
+    if (empty($order['ok'])) {
+        error_log('IMEICheck placeimeiorder failed: ' . (string)($order['detail'] ?? ''));
         return [
             'ok' => false,
             'error' => 'Servis za proveru trenutno ne odgovara. Pokušaj ponovo malo kasnije.',
-            'detail' => $detail,
+            'detail' => (string)($order['detail'] ?? ''),
         ];
     }
 
-    $decoded = json_decode($body, true);
-    if (!is_array($decoded)) {
-        error_log('IMEICheck returned invalid JSON');
-        return [
-            'ok' => false,
-            'error' => 'Servis trenutno nije vratio ispravan rezultat. Pokušaj ponovo kasnije.',
-            'detail' => 'Neispravan JSON: ' . mb_substr(trim(strip_tags($body)), 0, 200),
-        ];
+    $data = is_array($order['data'] ?? null) ? $order['data'] : [];
+    $result = imeiCheckParseResult($data);
+
+    // Instant servis obično vrati rezultat odmah; ako nije, dovuci ga po ID-u porudžbine.
+    $orderId = trim((string)($data['ID'] ?? $data['REFERENCEID'] ?? ''));
+    if ($result['brand'] === '' && $result['model'] === '' && $result['name'] === '' && $orderId !== '') {
+        for ($attempt = 0; $attempt < 3; $attempt++) {
+            sleep(2);
+            $fetched = dhruApiRequest('getimeiorder', ['ID' => $orderId]);
+            if (empty($fetched['ok'])) {
+                continue;
+            }
+            $result = imeiCheckParseResult(is_array($fetched['data'] ?? null) ? $fetched['data'] : []);
+            if ($result['brand'] !== '' || $result['model'] !== '' || $result['name'] !== '') {
+                break;
+            }
+        }
     }
 
-    if (strtolower(trim((string)($decoded['status'] ?? ''))) === 'error') {
-        $apiMessage = trim(strip_tags((string)($decoded['response'] ?? $decoded['message'] ?? '')));
-        error_log('IMEICheck API error: ' . $apiMessage);
-        return [
-            'ok' => false,
-            'error' => 'Provera trenutno nije moguća. Pokušaj ponovo malo kasnije.',
-            'detail' => $apiMessage !== '' ? $apiMessage : 'Servis je vratio grešku bez opisa.',
-        ];
-    }
-
-    $result = imeiCheckExtractResult($decoded);
     if ($result['brand'] === '' && $result['model'] === '' && $result['name'] === '') {
         return [
             'ok' => false,
-            'error' => trim((string)($decoded['message'] ?? 'IMEI nije pronađen u bazi. Proveri broj i pokušaj ponovo.')),
-            'detail' => 'Odgovor bez podataka o modelu: ' . mb_substr(trim(strip_tags($body)), 0, 200),
+            'error' => 'IMEI nije pronađen u bazi. Proveri broj i pokušaj ponovo.',
+            'detail' => 'Odgovor bez podataka o modelu: ' . mb_substr((string)json_encode($data), 0, 200),
         ];
     }
 
     recordImeiCheckRateLimit();
     cacheImeiModel($imei, $result);
     return ['ok' => true, 'result' => $result, 'cached' => false];
+}
+
+/**
+ * Stanje kredita na DHRU nalogu — za admin prikaz.
+ *
+ * @return array{ok:bool,credit?:string,currency?:string,detail?:string}
+ */
+function imeiCheckAccountInfo(): array
+{
+    if (!imeiCheckConfigured()) {
+        return ['ok' => false, 'detail' => 'IMEI provera nije podešena.'];
+    }
+
+    $info = dhruApiRequest('accountinfo');
+    if (empty($info['ok'])) {
+        return ['ok' => false, 'detail' => (string)($info['detail'] ?? '')];
+    }
+
+    $account = is_array($info['data']['AccoutInfo'] ?? null) ? $info['data']['AccoutInfo'] : [];
+    return [
+        'ok' => true,
+        'credit' => trim((string)($account['credit'] ?? '0.00')),
+        'currency' => trim((string)($account['currency'] ?? 'USD')),
+    ];
 }

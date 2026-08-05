@@ -70,6 +70,36 @@ require __DIR__ . '/partials/layout-start.php';
         </div>
         <?php endif; ?>
 
+        <?php if (imeiCheckConfigured()): ?>
+            <?php $imeiAccount = imeiCheckAccountInfo(); ?>
+            <div class="form-card" style="margin-top:12px;">
+                <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 16px 0;gap:8px;flex-wrap:wrap;">
+                    <h2 style="font-size:16px;margin:0;">IMEI provera</h2>
+                    <a href="/provera-imei" style="font-size:13px;">Otvori stranicu →</a>
+                </div>
+                <div class="stats-grid" style="padding:12px 16px 16px;gap:8px;">
+                    <?php if (!empty($imeiAccount['ok'])): ?>
+                        <?php $imeiCredit = (float)($imeiAccount['credit'] ?? 0); ?>
+                        <div class="stat-card" style="border-left:3px solid <?= $imeiCredit > 0 ? 'var(--kp-green, #1a7f4b)' : '#c0392b' ?>;">
+                            <div class="label">Stanje kredita</div>
+                            <div class="value"><?= h((string)($imeiAccount['credit'] ?? '0.00')) ?> <?= h((string)($imeiAccount['currency'] ?? 'USD')) ?></div>
+                        </div>
+                        <?php if ($imeiCredit <= 0): ?>
+                            <div class="stat-card">
+                                <div class="label">Status</div>
+                                <div class="value" style="font-size:13px;color:#c0392b;">Dopuni kredit — provera ne radi</div>
+                            </div>
+                        <?php endif; ?>
+                    <?php else: ?>
+                        <div class="stat-card">
+                            <div class="label">Status</div>
+                            <div class="value" style="font-size:13px;color:#c0392b;"><?= h(mb_substr((string)($imeiAccount['detail'] ?? 'Nedostupno'), 0, 90)) ?></div>
+                        </div>
+                    <?php endif; ?>
+                </div>
+            </div>
+        <?php endif; ?>
+
         <div class="account-menu" style="margin-bottom:12px;">
             <a href="/admin_reports.php">Prijave<?= (int)$stats['openReports'] > 0 ? ' (' . (int)$stats['openReports'] . ' otvorenih)' : '' ?></a>
             <a href="/admin_users.php">Upravljanje korisnicima</a>
