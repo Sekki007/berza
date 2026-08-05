@@ -60,8 +60,6 @@ $imageCount = is_array($ad['images'] ?? null) ? count($ad['images']) : 0;
                         <span class="kp-list-meta-sep" aria-hidden="true">·</span>
                     <?php endif; ?>
                     <span title="Pregledi">👁 <?= $views ?></span>
-                    <span class="kp-list-meta-sep" aria-hidden="true">·</span>
-                    <span title="Objavljeno"><?= h($relativeTime) ?></span>
                 </div>
             </div>
             <div class="listing-body kp-list-body">
@@ -113,6 +111,9 @@ $imageCount = is_array($ad['images'] ?? null) ? count($ad['images']) : 0;
         <a class="listing-fav-btn kp-list-fav <?= $isFav ? 'active' : '' ?>" href="/favorite.php?id=<?= $adId ?>" title="<?= $isFav ? 'Ukloni iz omiljenih' : 'Dodaj u omiljene' ?>" aria-label="Omiljeni">
             <?= $isFav ? '♥' : '♡' ?>
         </a>
+    <?php endif; ?>
+    <?php if ($relativeTime !== ''): ?>
+        <span class="kp-list-time" title="Objavljeno"><?= h($relativeTime) ?></span>
     <?php endif; ?>
     <button type="button"
             class="listing-compare-btn kp-list-cmp <?= $inCompare ? 'active is-in-compare' : '' ?>"

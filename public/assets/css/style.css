@@ -1831,6 +1831,18 @@ a.rep-thumb:hover { opacity: 0.85; text-decoration: underline; }
   color: #1565c0;
   font-weight: 700;
 }
+.kp-list-card .kp-list-time {
+  position: absolute;
+  bottom: 8px;
+  right: 44px;
+  z-index: 2;
+  font-size: 11px;
+  font-weight: 500;
+  line-height: 1;
+  color: #7a8494;
+  white-space: nowrap;
+  pointer-events: none;
+}
 .listing-desktop-extra { display: none; }
 
 @media (min-width: 768px) {
@@ -2922,6 +2934,11 @@ body.kp-lightbox-open {
   .listings.view-grid .kp-list-card .listing-tags-compact {
     grid-area: tags;
     margin: 0;
+    padding-right: 56px;
+  }
+  .listings.view-grid .kp-list-card .kp-list-time {
+    right: 12px;
+    bottom: 12px;
   }
   .listings.view-grid .kp-list-card .listing-shop-biz,
   .listings.view-grid .kp-list-card .business-badge,
@@ -3067,6 +3084,12 @@ body.kp-lightbox-open {
   .listings.view-grid .listing-tags-compact {
     grid-area: tags;
     margin: 0;
+    padding-right: 52px;
+  }
+  .listings.view-grid .kp-list-card .kp-list-time {
+    right: 9px;
+    bottom: 10px;
+    font-size: 10px;
   }
   .listings.view-grid .listing-shop-biz,
   .listings.view-grid .business-badge,
