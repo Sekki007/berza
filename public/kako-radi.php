@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/config/bootstrap.php';
-require_once dirname(__DIR__) . '/config/widget.php';
 
 $pageTitle = 'Kako radi — KupiTelefon';
 $pageDescription = 'Kako kupovati i prodavati telefone, tablete i pametne satove na KupiTelefon, i kako pronaći servis.';
@@ -33,18 +32,12 @@ require __DIR__ . '/partials/layout-start.php';
             <a class="btn-call" href="/register.php" style="display:inline-block;margin-top:12px;">Kreni odmah</a>
         </div>
 
-        <div class="form-card" style="margin-top:12px;" id="widget">
-            <h2>Ubaci oglase na svoj sajt</h2>
+        <div class="form-card" style="margin-top:12px;">
+            <h2>Saveti pre kupovine</h2>
             <div class="detail-desc">
-                <p>Ubaci ovaj kod na svoj sajt (blog, servis, shop) — prikazuje nasumične aktivne oglase sa KupiTelefon.rs. Klik vodi na oglas.</p>
-                <p>Partner <strong>ne mora ništa da menja</strong>: sistem automatski prepozna domen sajta gde je widget (za Analytics).</p>
-                <p style="margin-top:10px;">Svi formati (native u članku, 300×250, 300×600, 728×90…) i copy dugmad su u <a href="/admin_widget.php">Admin → Widget kodovi</a>.</p>
-                <p style="margin-top:10px;"><strong>Brzi primer (vertikalni banner):</strong></p>
-                <pre style="margin-top:8px;padding:12px;background:#f5f7fa;border:1px solid var(--border);border-radius:8px;overflow:auto;font-size:12px;line-height:1.45;"><?= h(widgetEmbedCode('300x600')) ?></pre>
-                <p style="margin-top:10px;color:var(--text-muted);font-size:13px;">
-                    Native u članku: <a href="/widget.php?size=native&amp;limit=1" target="_blank" rel="noopener">/widget.php?size=native</a>
-                </p>
+                <p>U <a href="/vodici">vodičima</a> smo objasnili kako da proverite polovan telefon, kako da izbegnete prevaru i kada se isplati zamena ekrana.</p>
             </div>
+            <a class="btn-call" href="/vodici" style="display:inline-block;margin-top:12px;">Pročitaj vodiče</a>
         </div>
     </main>
 </div>

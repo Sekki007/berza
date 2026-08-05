@@ -21,15 +21,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $pageTitle = 'Admin — Uredi vodič';
-$activePage = 'admin';
+$activePage = 'nalog';
 $adminPage = 'guides';
 $showSearch = false;
 
 require __DIR__ . '/partials/layout-start.php';
 ?>
-<div class="admin-layout">
+<div class="main-wrap admin-wrap">
     <?php require __DIR__ . '/partials/admin-sidebar.php'; ?>
-    <main class="admin-main">
+    <main class="content">
+        <div class="breadcrumb"><a href="/dashboard.php">Admin</a> › <a href="/admin_guides.php">Vodiči</a> › <?= $guideId > 0 ? 'Uredi' : 'Novi' ?></div>
         <section class="form-card">
             <div class="account-section-head">
                 <h2><?= $guideId > 0 ? 'Uredi vodič' : 'Novi vodič' ?></h2>
@@ -75,8 +76,8 @@ require __DIR__ . '/partials/layout-start.php';
                         <label>Status</label>
                         <?php $status = (string)($guide['status'] ?? 'draft'); ?>
                         <select name="status">
-                            <option value="draft" <?= $status === 'draft' ? 'selected' : '' ?>>Draft</option>
-                            <option value="published" <?= $status === 'published' ? 'selected' : '' ?>>Published</option>
+                            <option value="draft" <?= $status === 'draft' ? 'selected' : '' ?>>Nacrt</option>
+                            <option value="published" <?= $status === 'published' ? 'selected' : '' ?>>Objavljen</option>
                         </select>
                     </div>
                 </div>
