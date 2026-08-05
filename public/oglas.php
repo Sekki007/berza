@@ -187,8 +187,7 @@ $sellerBlock = static function () use (
                 <?php if ($sellerLocation !== ''): ?><?= $memberSince !== '' ? ' · ' : '' ?><?= h($sellerLocation) ?><?php endif; ?>
             </div>
             <div class="kp-seller-rating">
-                <span class="kp-thumb-up">👍 <?= (int)($sellerSummary['positive'] ?? 0) ?></span>
-                <span class="kp-thumb-down">👎 <?= (int)($sellerSummary['negative'] ?? 0) ?></span>
+                <?= renderReputation($sellerSummary, $sellerShopUrl) ?>
                 <a class="kp-seller-all-link" href="<?= h($sellerShopUrl) ?>">Svi oglasi (<?= $sellerAdsCount ?>)</a>
             </div>
         </div>
@@ -199,8 +198,7 @@ $sellerBlock = static function () use (
                 <div class="kp-seller-name"><?= h($sellerName) ?></div>
             </div>
             <div class="kp-seller-rating">
-                <span class="kp-thumb-up">👍 <?= (int)($sellerSummary['positive'] ?? 0) ?></span>
-                <span class="kp-thumb-down">👎 <?= (int)($sellerSummary['negative'] ?? 0) ?></span>
+                <?= renderReputation($sellerSummary) ?>
             </div>
         </div>
     <?php endif;

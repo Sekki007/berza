@@ -263,7 +263,7 @@ require __DIR__ . '/partials/layout-start.php';
                 <div class="storefront-rows">
                     <div class="storefront-row"><span>PIB verifikacija:</span><strong><?= !empty($seller['pib_verified']) ? 'Verifikovano' : 'Nije verifikovano' ?></strong></div>
                     <div class="storefront-row"><span>Broj oglasa:</span><strong><?= count($ads) ?></strong></div>
-                    <div class="storefront-row"><span>Ocene kupaca:</span><strong>👍 <?= (int)($ratingSummary['positive'] ?? 0) ?> / 👎 <?= (int)($ratingSummary['negative'] ?? 0) ?></strong></div>
+                    <div class="storefront-row"><span>Ocene kupaca:</span><strong><?= renderReputation($ratingSummary, $shopLink) ?></strong></div>
                 </div>
             </article>
             <?php if ($mapEmbed !== ''): ?>

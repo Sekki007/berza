@@ -18,6 +18,7 @@ $cardShop = $cardSeller
     ? getSellerShopName($cardSeller, [$ad])
     : trim((string)($ad['shop_name'] ?? ''));
 $cardShopUrl = $cardSeller ? shopUrlForUser($cardSeller) : '';
+$cardRatingSummary = $cardSeller ? getSellerRatingSummary((int)($cardSeller['id'] ?? 0)) : ['count' => 0, 'positive' => 0, 'negative' => 0];
 $categoryLabel = adCategoryLabel($ad);
 $rsdHint = !$priceOpen ? formatAdPriceRsd($ad) : '';
 $location = trim((string)($ad['location'] ?? ''));
@@ -76,6 +77,9 @@ $imageCount = is_array($ad['images'] ?? null) ? count($ad['images']) : 0;
                             <?php endif; ?>
                             <?= $cardSeller ? renderVerifiedBadge($cardSeller) : '' ?>
                             <span class="listing-shop-biz"><?= $cardSeller ? renderBusinessBadge($cardSeller) : '' ?></span>
+                            <?php if ((int)($cardRatingSummary['count'] ?? 0) > 0): ?>
+                                <span class="shop-rating-sm"><?= renderReputation($cardRatingSummary) ?></span>
+                            <?php endif; ?>
                         </div>
                     <?php endif; ?>
 

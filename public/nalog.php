@@ -1072,11 +1072,13 @@ require __DIR__ . '/partials/layout-start.php';
                                 <div class="account-ad-actions">
                                     <a class="btn-sm btn-sm-primary" href="/index.php<?= $q !== '' ? '?' . h($q) : '' ?>">Pokreni</a>
                                     <form method="POST" style="display:inline;">
+                                        <?= csrfField() ?>
                                         <input type="hidden" name="action" value="toggle_search_alert">
                                         <input type="hidden" name="search_id" value="<?= (int)$ss['id'] ?>">
                                         <button class="btn-sm" type="submit"><?= !empty($ss['alert_enabled']) ? 'Isključi alert' : 'Uključi alert' ?></button>
                                     </form>
                                     <form method="POST" style="display:inline;" onsubmit="return confirm('Obrisati pretragu?');">
+                                        <?= csrfField() ?>
                                         <input type="hidden" name="action" value="delete_search">
                                         <input type="hidden" name="search_id" value="<?= (int)$ss['id'] ?>">
                                         <button class="btn-sm btn-sm-danger" type="submit">Obriši</button>
@@ -1322,6 +1324,7 @@ require __DIR__ . '/partials/layout-start.php';
                 </div>
 
                 <form method="POST" class="account-profile-form">
+                    <?= csrfField() ?>
 
                     <div class="profile-section">
                         <h3 class="profile-section-title">Email</h3>

@@ -184,7 +184,7 @@ function searchSuggestions(string $query, int $limit = 8): array
             'type' => 'model',
             'label' => $model,
             'sub' => 'Model u oglasima',
-            'url' => '/index.php?' . http_build_query(['q' => $model]),
+            'url' => '/index.php?' . http_build_query(['model' => $model]),
         ])) {
             return $out;
         }
@@ -195,7 +195,7 @@ function searchSuggestions(string $query, int $limit = 8): array
             'type' => 'brand',
             'label' => $brand,
             'sub' => 'Brend',
-            'url' => '/index.php?' . http_build_query(['brand' => $brand]),
+            'url' => listingLandingPath(['brand' => $brand]),
         ])) {
             return $out;
         }

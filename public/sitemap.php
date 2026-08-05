@@ -11,6 +11,8 @@ $urls[] = ['loc' => rtrim(absoluteUrl('/'), '/') . '/', 'priority' => '1.0', 'ch
 
 $staticPages = [
     ['/kako-radi.php', '0.5', 'monthly'],
+    ['/oglasi', '0.9', 'daily'],
+    ['/vodici', '0.7', 'weekly'],
     ['/servisi', '0.9', 'daily'],
     ['/index.php?type=telefon', '0.8', 'daily'],
     ['/index.php?type=delovi', '0.7', 'daily'],
@@ -23,6 +25,23 @@ foreach ($staticPages as [$path, $priority, $changefreq]) {
         'loc' => absoluteUrl($path),
         'priority' => $priority,
         'changefreq' => $changefreq,
+    ];
+}
+
+foreach (listingLandingCandidatesForSitemap() as $landingPath) {
+    $urls[] = [
+        'loc' => absoluteUrl($landingPath),
+        'priority' => '0.75',
+        'changefreq' => 'daily',
+    ];
+}
+
+foreach (getPublishedGuides() as $guide) {
+    $urls[] = [
+        'loc' => absoluteUrl(guideUrl($guide)),
+        'priority' => '0.6',
+        'changefreq' => 'monthly',
+        'lastmod' => !empty($guide['updated_at']) ? date('c', strtotime((string)$guide['updated_at'])) : null,
     ];
 }
 

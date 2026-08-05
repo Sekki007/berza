@@ -35,6 +35,7 @@ function seoListingMeta(array $filters = []): array
     $parts = [];
     $type = (string)($filters['type'] ?? '');
     $brand = trim((string)($filters['brand'] ?? ''));
+    $model = trim((string)($filters['model'] ?? ''));
     $location = trim((string)($filters['location'] ?? ''));
     $deviceType = trim((string)($filters['device_type'] ?? ''));
     $q = trim((string)($filters['q'] ?? ''));
@@ -55,6 +56,9 @@ function seoListingMeta(array $filters = []): array
     }
     if ($brand !== '') {
         $parts[] = $brand;
+    }
+    if ($model !== '') {
+        $parts[] = $model;
     }
     if ($location !== '') {
         $parts[] = $location;
@@ -93,6 +97,59 @@ function seoAdMeta(array $ad): array
         'title' => $title . ($price !== '' ? ' · ' . $price : '') . ($location !== '' ? ' · ' . $location : '') . ' — ' . $name,
         'description' => seoTruncate($descSource),
     ];
+}
+
+function seoListingHeading(array $filters = []): string
+{
+    $type = (string)($filters['type'] ?? '');
+    $brand = trim((string)($filters['brand'] ?? ''));
+    $model = trim((string)($filters['model'] ?? ''));
+    $location = trim((string)($filters['location'] ?? ''));
+
+    $subject = match ($type) {
+        'delovi' => 'Delovi i oprema',
+        'servis' => 'Servisne usluge',
+        'telefon' => 'Telefoni i uređaji',
+        default => 'Oglasi',
+    };
+    if ($brand !== '' && $model !== '') {
+        $subject = $brand . ' ' . $model;
+    } elseif ($brand !== '') {
+        $subject = $brand . ' — telefoni i oprema';
+    }
+
+    return $subject . ($location !== '' ? ' — ' . $location : '');
+}
+
+function seoListingCollectionJsonLd(array $filters, array $ads, string $url, string $description = '', int $limit = 10): array
+{
+    $items = [];
+    $position = 0;
+    foreach ($ads as $ad) {
+        if ($position >= $limit) {
+            break;
+        }
+        $position++;
+        $items[] = [
+            '@type' => 'ListItem',
+            'position' => $position,
+            'url' => absoluteUrl(adUrl($ad)),
+            'name' => (string)($ad['title'] ?? 'Oglas'),
+        ];
+    }
+
+    return array_filter([
+        '@context' => 'https://schema.org',
+        '@type' => 'CollectionPage',
+        'name' => seoListingHeading($filters),
+        'url' => $url,
+        'description' => $description !== '' ? seoTruncate($description) : null,
+        'mainEntity' => $items === [] ? null : [
+            '@type' => 'ItemList',
+            'numberOfItems' => count($ads),
+            'itemListElement' => $items,
+        ],
+    ], static fn($v) => $v !== null && $v !== '');
 }
 
 function seoShopMeta(array $user, string $shopName, ?string $categoryName = null): array
@@ -257,6 +314,59 @@ function seoStorefrontJsonLd(array $user, string $shopName): array
         $data['image'] = absoluteUrl($logo);
     }
     return $data;
+}
+
+function seoGuideHubMeta(): array
+{
+    $name = seoSiteName();
+    return [
+        'title' => 'Vodiči za kupovinu i servis telefona — ' . $name,
+        'description' => seoTruncate('Praktični vodiči za bezbednu kupovinu telefona, proveru uređaja i odluke oko servisa.'),
+    ];
+}
+
+function seoGuideMeta(array $guide): array
+{
+    $name = seoSiteName();
+    $title = trim((string)($guide['seo_title'] ?? ''));
+    if ($title === '') {
+        $title = trim((string)($guide['title'] ?? 'Vodič')) . ' — ' . $name;
+    }
+    $description = trim((string)($guide['seo_description'] ?? ''));
+    if ($description === '') {
+        $description = trim((string)($guide['excerpt'] ?? ''));
+    }
+    return [
+        'title' => $title,
+        'description' => seoTruncate($description !== '' ? $description : 'Vodič na ' . $name . '.', 170),
+    ];
+}
+
+function seoGuideJsonLd(array $guide): array
+{
+    $url = absoluteUrl(guideUrl($guide));
+    $author = findUserById((int)($guide['author_id'] ?? 0));
+    $authorName = $author ? (string)($author['full_name'] ?? $author['username'] ?? seoSiteName()) : seoSiteName();
+    $image = trim((string)($guide['og_image'] ?? ''));
+    return array_filter([
+        '@context' => 'https://schema.org',
+        '@type' => 'Article',
+        'headline' => (string)($guide['title'] ?? 'Vodič'),
+        'description' => seoTruncate((string)($guide['excerpt'] ?? ''), 220),
+        'url' => $url,
+        'datePublished' => (string)($guide['published_at'] ?? $guide['created_at'] ?? ''),
+        'dateModified' => (string)($guide['updated_at'] ?? $guide['published_at'] ?? ''),
+        'author' => [
+            '@type' => 'Person',
+            'name' => $authorName,
+        ],
+        'publisher' => [
+            '@type' => 'Organization',
+            'name' => seoSiteName(),
+            'url' => appBaseUrl() . '/',
+        ],
+        'image' => $image !== '' ? absoluteUrl($image) : null,
+    ], static fn($v) => $v !== null && $v !== '');
 }
 
 function seoJsonLdScript(array $payload): string

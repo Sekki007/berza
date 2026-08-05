@@ -263,6 +263,7 @@ function jsonStorageDefaults(): array
         'credit_deposits.json' => [],
         'credit_transactions.json' => [],
         'saved_searches.json' => [],
+        'guides.json' => [],
         'ad_stats.json' => [],
         'sms_rate_limits.json' => [],
         'nbs_rate_cache.json' => [],
@@ -909,6 +910,7 @@ function saveAd(array $payload, ?int $adId = null): int
     if ($adId !== null) {
         foreach ($ads as &$ad) {
             if ((int)$ad['id'] === $adId) {
+                $wasActive = (int)($ad['is_active'] ?? 0) === 1;
                 $payload['id'] = $adId;
                 $payload['created_by'] = $ad['created_by'] ?? (currentUser()['id'] ?? 1);
                 $payload['created_at'] = $ad['created_at'] ?? date('Y-m-d H:i:s');
@@ -927,6 +929,10 @@ function saveAd(array $payload, ?int $adId = null): int
                 }
                 $ad = $payload;
                 writeJsonFile('ads.json', $ads);
+                $isActiveNow = (int)($payload['is_active'] ?? 0) === 1;
+                if (!$wasActive && $isActiveNow && function_exists('notifySavedSearchesForAd')) {
+                    notifySavedSearchesForAd($adId);
+                }
                 return $adId;
             }
         }
@@ -951,6 +957,9 @@ function saveAd(array $payload, ?int $adId = null): int
 
     $ads[] = $payload;
     writeJsonFile('ads.json', $ads);
+    if ((int)($payload['is_active'] ?? 0) === 1 && function_exists('notifySavedSearchesForAd')) {
+        notifySavedSearchesForAd($newId);
+    }
     return $newId;
 }
 
@@ -1388,6 +1397,7 @@ require_once __DIR__ . '/ad_form_schema.php';
 require_once __DIR__ . '/nbs_rate.php';
 require_once __DIR__ . '/search.php';
 require_once __DIR__ . '/ratings.php';
+require_once __DIR__ . '/guides.php';
 require_once __DIR__ . '/seo.php';
 require_once __DIR__ . '/admin_helpers.php';
 require_once __DIR__ . '/mail.php';
@@ -1406,6 +1416,7 @@ require_once __DIR__ . '/ad_stats.php';
 require_once __DIR__ . '/storefront.php';
 require_once __DIR__ . '/shop_catalog.php';
 require_once __DIR__ . '/services_directory.php';
+require_once __DIR__ . '/listings_directory.php';
 require_once __DIR__ . '/facebook_pixel.php';
 require_once __DIR__ . '/google_tag.php';
 require_once __DIR__ . '/google_analytics.php';

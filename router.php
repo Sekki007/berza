@@ -49,8 +49,24 @@ if (preg_match('#^/servisi/([^/]+)/?$#', $uri, $m)) {
     exit;
 }
 
+if ($uri === '/vodici' || $uri === '/vodici/' || $uri === '/blog' || $uri === '/blog/') {
+    require __DIR__ . '/public/vodici.php';
+    exit;
+}
+
+if (preg_match('#^/(vodic|blog)/([^/]+)/?$#', $uri, $m)) {
+    $_GET['slug'] = rawurldecode($m[2]);
+    require __DIR__ . '/public/vodic.php';
+    exit;
+}
+
 if ($uri === '/sitemap.xml' || $uri === '/sitemap.php') {
     require __DIR__ . '/public/sitemap.php';
+    exit;
+}
+
+if ($uri === '/oglasi' || $uri === '/oglasi/' || preg_match('#^/oglasi/.+#', $uri)) {
+    require __DIR__ . '/public/index.php';
     exit;
 }
 

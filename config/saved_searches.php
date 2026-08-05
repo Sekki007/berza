@@ -55,6 +55,7 @@ function savedSearchFiltersFromInput(array $input): array
         'min_price' => trim((string)($input['min_price'] ?? '')),
         'max_price' => trim((string)($input['max_price'] ?? '')),
         'category_group' => trim((string)($input['category_group'] ?? '')),
+        'equipment_group' => trim((string)($input['equipment_group'] ?? '')),
     ];
     if (!in_array($filters['type'], ['telefon', 'delovi', 'servis', ''], true)) {
         $filters['type'] = '';
@@ -80,6 +81,7 @@ function savedSearchToPublicFilters(array $search): array
         'location' => trim((string)($f['location'] ?? '')),
         'condition' => trim((string)($f['condition'] ?? '')),
         'category_group' => trim((string)($f['category_group'] ?? '')),
+        'equipment_group' => trim((string)($f['equipment_group'] ?? '')),
         'min_price' => trim((string)($f['min_price'] ?? '')),
         'max_price' => trim((string)($f['max_price'] ?? '')),
         'device_type' => $deviceType,
@@ -114,6 +116,24 @@ function savedSearchLabel(array $search): string
     return $parts !== [] ? implode(' · ', $parts) : 'Sačuvana pretraga';
 }
 
+function savedSearchMatchedIds(array $search): array
+{
+    $matched = getPublicAds(savedSearchToPublicFilters($search));
+    return array_values(array_map(static fn($a) => (int)($a['id'] ?? 0), $matched));
+}
+
+function savedSearchAlertLink(array $search, array $newIds): string
+{
+    if (count($newIds) === 1) {
+        $ad = getAdById((int)$newIds[0]);
+        if ($ad && (int)($ad['is_active'] ?? 0) === 1) {
+            return adUrl($ad);
+        }
+    }
+    $query = buildFilterQuery($search['filters'] ?? []);
+    return '/index.php' . ($query !== '' ? '?' . $query : '');
+}
+
 function createSavedSearch(int $userId, array $filters, string $name = '', bool $alertEnabled = true): ?array
 {
     if ($userId <= 0) {
@@ -134,8 +154,8 @@ function createSavedSearch(int $userId, array $filters, string $name = '', bool 
         $maxId = max($maxId, (int)($item['id'] ?? 0));
     }
 
-    $matched = getPublicAds(savedSearchToPublicFilters(['filters' => $filters]));
-    $ids = array_map(static fn($a) => (int)($a['id'] ?? 0), array_slice($matched, 0, 50));
+    $matchedIds = savedSearchMatchedIds(['filters' => $filters]);
+    $lastSeen = $matchedIds !== [] ? max($matchedIds) : 0;
 
     $row = [
         'id' => $maxId + 1,
@@ -143,7 +163,8 @@ function createSavedSearch(int $userId, array $filters, string $name = '', bool 
         'name' => trim($name),
         'filters' => $filters,
         'alert_enabled' => $alertEnabled,
-        'last_match_ids' => $ids,
+        'last_match_ids' => array_slice($matchedIds, 0, 150),
+        'last_seen_ad_id' => $lastSeen,
         'last_checked_at' => date('Y-m-d H:i:s'),
         'created_at' => date('Y-m-d H:i:s'),
     ];
@@ -189,17 +210,18 @@ function deleteSavedSearch(int $id, int $userId): bool
     return true;
 }
 
-function processSavedSearchAlerts(bool $force = false): array
+function processSavedSearchAlerts(bool $force = false, ?array $targetAd = null): array
 {
     $result = ['checked' => 0, 'notified' => 0, 'skipped' => false];
     $statePath = 'saved_search_state.json';
     $state = readJsonFile($statePath);
     $lastRun = strtotime((string)($state['last_run'] ?? '')) ?: 0;
-    if (!$force && $lastRun > 0 && (time() - $lastRun) < 900) {
+    if ($targetAd === null && !$force && $lastRun > 0 && (time() - $lastRun) < 900) {
         $result['skipped'] = true;
         return $result;
     }
 
+    $targetId = (int)($targetAd['id'] ?? 0);
     $items = getAllSavedSearches();
     $changed = false;
 
@@ -212,36 +234,49 @@ function processSavedSearchAlerts(bool $force = false): array
             continue;
         }
         $result['checked']++;
-        $matched = getPublicAds(savedSearchToPublicFilters($search));
-        $currentIds = array_map(static fn($a) => (int)($a['id'] ?? 0), $matched);
-        $prevIds = array_map('intval', $search['last_match_ids'] ?? []);
-        $newIds = array_values(array_diff($currentIds, $prevIds));
+
+        $currentIds = savedSearchMatchedIds($search);
+        $currentMax = $currentIds !== [] ? max($currentIds) : 0;
+        $prevSeen = (int)($search['last_seen_ad_id'] ?? 0);
+        if ($prevSeen <= 0) {
+            $prevSeen = max(array_map('intval', (array)($search['last_match_ids'] ?? [])));
+        }
+
+        $newIds = [];
+        if ($targetId > 0) {
+            if ($targetId > $prevSeen && in_array($targetId, $currentIds, true)) {
+                $newIds = [$targetId];
+            }
+        } else {
+            $newIds = array_values(array_filter($currentIds, static fn(int $id) => $id > $prevSeen));
+        }
 
         if ($newIds !== []) {
-            $titles = [];
-            foreach ($matched as $ad) {
-                if (in_array((int)($ad['id'] ?? 0), $newIds, true)) {
-                    $titles[] = (string)($ad['title'] ?? 'Oglas');
+            $label = savedSearchLabel($search);
+            $count = count($newIds);
+            $previewTitles = [];
+            foreach ($newIds as $nid) {
+                $adRow = getAdById($nid);
+                if ($adRow) {
+                    $previewTitles[] = (string)($adRow['title'] ?? 'Oglas');
                 }
-                if (count($titles) >= 3) {
+                if (count($previewTitles) >= 3) {
                     break;
                 }
             }
-            $label = savedSearchLabel($search);
-            $count = count($newIds);
-            $preview = implode(', ', $titles);
-            $query = buildFilterQuery($search['filters'] ?? []);
+            $preview = implode(', ', $previewTitles);
             notifyUser(
                 $userId,
                 'saved_search_match',
                 'Nova ponuda za sačuvanu pretragu',
                 ($count === 1 ? '1 novi oglas' : "{$count} novih oglasa") . " za „{$label}”" . ($preview !== '' ? ": {$preview}" : ''),
-                '/index.php' . ($query !== '' ? '?' . $query : '')
+                savedSearchAlertLink($search, $newIds)
             );
             $result['notified']++;
         }
 
-        $search['last_match_ids'] = array_slice($currentIds, 0, 80);
+        $search['last_match_ids'] = array_slice($currentIds, 0, 150);
+        $search['last_seen_ad_id'] = max($prevSeen, $currentMax, $targetId > 0 ? $targetId : 0);
         $search['last_checked_at'] = date('Y-m-d H:i:s');
         $changed = true;
     }
@@ -252,4 +287,13 @@ function processSavedSearchAlerts(bool $force = false): array
     }
     writeJsonFile($statePath, ['last_run' => date('Y-m-d H:i:s'), 'last_result' => $result]);
     return $result;
+}
+
+function notifySavedSearchesForAd(int $adId): array
+{
+    $ad = getAdById($adId);
+    if (!$ad || (int)($ad['is_active'] ?? 0) !== 1) {
+        return ['checked' => 0, 'notified' => 0, 'skipped' => true];
+    }
+    return processSavedSearchAlerts(true, $ad);
 }

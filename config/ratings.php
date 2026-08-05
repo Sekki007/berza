@@ -9,7 +9,7 @@ function reservedShopSlugs(): array
         'nalog', 'poruke', 'favorites', 'dashboard', 'report', 'sitemap', 'robots', 'uploads',
         'forgot-password', 'reset-password', 'verify-phone', 'verify-email', 'uporedi',
         'kako-radi', 'index', 'www', 'mail', 'podrska', 'support', 'kupitelefon',
-        'prodavnice', 'grad',
+        'prodavnice', 'grad', 'vodic', 'vodici', 'blog',
     ];
 }
 
@@ -265,9 +265,15 @@ function getSellerShopName(array $user, array $ads = []): string
 
 function getAllRatings(): array
 {
+    static $cache = null;
+    if ($cache !== null) {
+        return $cache;
+    }
+
     $ratings = readJsonFile('ratings.json');
     usort($ratings, static fn($a, $b) => strcmp((string)($b['created_at'] ?? ''), (string)($a['created_at'] ?? '')));
-    return $ratings;
+    $cache = $ratings;
+    return $cache;
 }
 
 function normalizeRatingVote($score): string
@@ -295,6 +301,11 @@ function getSellerRatings(int $sellerId): array
 
 function getSellerRatingSummary(int $sellerId): array
 {
+    static $summaryCache = [];
+    if (isset($summaryCache[$sellerId])) {
+        return $summaryCache[$sellerId];
+    }
+
     $positive = 0;
     $negative = 0;
 
@@ -307,12 +318,13 @@ function getSellerRatingSummary(int $sellerId): array
         }
     }
 
-    return [
+    $summaryCache[$sellerId] = [
         'positive' => $positive,
         'negative' => $negative,
         'count' => $positive + $negative,
         'avg' => 0.0,
     ];
+    return $summaryCache[$sellerId];
 }
 
 function getUserRatingsForSeller(int $sellerId, int $fromUserId): array

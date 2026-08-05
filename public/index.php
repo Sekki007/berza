@@ -6,6 +6,13 @@ require_once dirname(__DIR__) . '/config/bootstrap.php';
 
 $cfg = categoriesConfig();
 $settings = siteSettings();
+$requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+$landing = resolveListingLandingFromPath($requestPath);
+if (is_array($landing) && !empty($landing['invalid'])) {
+    http_response_code(404);
+    echo 'Stranica nije pronađena.';
+    exit;
+}
 $search = trim((string)($_GET['q'] ?? ''));
 $brand = trim((string)($_GET['brand'] ?? ''));
 $model = trim((string)($_GET['model'] ?? ''));
@@ -26,6 +33,21 @@ if ($deviceType !== '' && !in_array($deviceType, allowedDeviceTypes(), true)) {
 }
 if (!in_array($equipmentGroup, ['parts', 'oprema'], true)) {
     $equipmentGroup = '';
+}
+if (is_array($landing) && !empty($landing['filters'])) {
+    $landingFilters = (array)$landing['filters'];
+    if (!empty($landingFilters['brand'])) {
+        $brand = (string)$landingFilters['brand'];
+    }
+    if (!empty($landingFilters['model'])) {
+        $model = (string)$landingFilters['model'];
+    }
+    if (!empty($landingFilters['location'])) {
+        $location = (string)$landingFilters['location'];
+    }
+    if (!empty($landingFilters['type'])) {
+        $type = (string)$landingFilters['type'];
+    }
 }
 if ($equipmentGroup !== '' && $type === '') {
     $type = 'delovi';
@@ -77,14 +99,49 @@ $queryBase = array_filter([
 $seoMeta = seoListingMeta([
     'q' => $search,
     'brand' => $brand,
+    'model' => $model,
     'location' => $location,
     'type' => $type,
     'device_type' => $deviceType,
 ]);
 $pageTitle = $seoMeta['title'];
 $pageDescription = $seoMeta['description'];
-$canonicalUrl = absoluteUrl('/' . ($queryBase === [] ? '' : ('index.php?' . http_build_query($queryBase))));
-if ($queryBase === []) {
+$canonicalBasePath = is_array($landing) && !empty($landing['path']) ? (string)$landing['path'] : '/';
+$canonicalUrl = absoluteUrl($canonicalBasePath === '/' ? '/' : $canonicalBasePath);
+$landingHeading = '';
+$indexableLanding = true;
+if (is_array($landing)) {
+    $landingFacets = (array)($landing['filters'] ?? []);
+    $landingHeading = seoListingHeading($landingFacets !== [] ? $landingFacets : ['type' => $type]);
+    $jsonLd = seoListingCollectionJsonLd(
+        $landingFacets !== [] ? $landingFacets : ['type' => $type],
+        $allAds,
+        absoluteUrl($canonicalBasePath === '/' ? '/oglasi' : $canonicalBasePath),
+        $pageDescription
+    );
+    $indexableLanding = listingLandingIndexable((array)($landing['filters'] ?? []), $allAds);
+    if (!$indexableLanding) {
+        $parentFilters = (array)($landing['filters'] ?? []);
+        unset($parentFilters['model'], $parentFilters['location']);
+        if ($parentFilters === [] && !empty($landing['filters']['location'])) {
+            $parentFilters = ['type' => 'telefon'];
+        }
+        $canonicalUrl = absoluteUrl(listingLandingPath($parentFilters));
+        $robotsMeta = 'noindex,follow';
+    }
+}
+if (!is_array($landing) && $queryBase !== []) {
+    $canonicalUrl = absoluteUrl(listingLandingPath([
+        'type' => $type,
+        'brand' => $brand,
+        'model' => $model,
+        'location' => $location,
+    ]));
+    if ($search !== '' || $minPrice !== '' || $maxPrice !== '' || $condition !== '' || $categoryGroup !== '' || $deviceType !== '' || $equipmentGroup !== '' || $sort !== 'newest' || $page > 1) {
+        $robotsMeta = 'noindex,follow';
+    }
+}
+if ($queryBase === [] && !is_array($landing)) {
     $canonicalUrl = absoluteUrl('/');
     $jsonLd = [seoOrganizationJsonLd(), seoWebsiteJsonLd()];
 }
@@ -208,11 +265,10 @@ $homeCats = [
 <div class="home-cat-wrap">
     <nav class="home-cat-tiles" aria-label="Kategorije">
         <?php foreach ($homeCats as $cat):
-            $catParams = ['type' => $cat['type']];
+            $catHref = listingLandingPath(['type' => $cat['type']]);
             if ($cat['equipment_group'] !== '') {
-                $catParams['equipment_group'] = $cat['equipment_group'];
+                $catHref .= '?' . http_build_query(['equipment_group' => $cat['equipment_group']]);
             }
-            $catHref = '/index.php?' . http_build_query($catParams);
             $isActive = $type === $cat['type']
                 && (($cat['equipment_group'] === '' && $equipmentGroup === '')
                     || $equipmentGroup === $cat['equipment_group']);
@@ -244,12 +300,19 @@ $homeCats = [
     </aside>
 
     <main class="content">
+        <?php if ($landingHeading !== ''): ?>
+            <header class="listing-landing-head">
+                <h1 class="listing-landing-title"><?= h($landingHeading) ?></h1>
+                <p class="listing-landing-sub"><?= h($pageDescription) ?></p>
+            </header>
+        <?php endif; ?>
         <div class="listing-controls">
             <div class="results-meta">
                 <span class="results-count"><strong data-results-count data-results-total="<?= (int)$pagination['total'] ?>"><?= (int)$pagination['total'] ?></strong> oglasa</span>
                 <?php if ($hasFilters): ?>
                     <?php if (isLoggedIn()): ?>
                         <form method="POST" action="/nalog.php" class="save-search-form">
+                            <?= csrfField() ?>
                             <input type="hidden" name="action" value="save_search">
                             <input type="hidden" name="q" value="<?= h($search) ?>">
                             <input type="hidden" name="brand" value="<?= h($brand) ?>">

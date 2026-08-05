@@ -33,6 +33,11 @@ server {
     rewrite ^/servisi/([^/]+)/([^/]+)/?$ /servisi.php?city=$1&slug=$2&$args last;
     rewrite ^/servisi/([^/]+)/?$ /servisi.php?city=$1&$args last;
     rewrite ^/servisi/?$ /servisi.php?$args last;
+    rewrite ^/oglasi/?$ /index.php last;
+    rewrite ^/oglasi/(.*)$ /index.php?$args last;
+    rewrite ^/vodici/?$ /vodici.php last;
+    rewrite ^/blog/?$ /vodici.php last;
+    rewrite ^/(vodic|blog)/([^/]+)/?$ /vodic.php?slug=$2&$args last;
     rewrite ^/sitemap\.xml$ /sitemap.php last;
 
     location / {
@@ -113,6 +118,14 @@ php tools/mysql_post_cutover_check.php
 ```
 
 PHP potreban: `pdo_mysql`, `gd` ili `imagick` (za slike), `mbstring`, `json`.
+
+### Cron za alerte (preporučeno)
+
+Da alerti stižu i kada je sajt manje posećen, dodaj cron:
+
+```bash
+*/10 * * * * /usr/bin/php /var/www/berza/tools/run_alerts.php >> /var/log/kupitelefon-alerts.log 2>&1
+```
 
 ---
 

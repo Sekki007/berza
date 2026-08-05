@@ -15,6 +15,7 @@ $minimalHeader = $minimalHeader ?? false;
 $showSearch = $showSearch ?? true;
 $searchValue = $searchValue ?? '';
 $pageDescription = $pageDescription ?? (siteTagline() . ' — ' . (string)($site['site_name'] ?? 'KupiTelefon'));
+$robotsMeta = isset($robotsMeta) ? trim((string)$robotsMeta) : '';
 $pageImage = $pageImage ?? '';
 if ($pageImage === '') {
     $pageImage = absoluteUrl('/assets/img/og-default.png');
@@ -35,6 +36,7 @@ $compareCount = count(compareIds());
     <?= csrfMetaTag() ?>
     <title><?= h($pageTitle) ?></title>
     <meta name="description" content="<?= h($pageDescription) ?>">
+    <?php if ($robotsMeta !== ''): ?><meta name="robots" content="<?= h($robotsMeta) ?>"><?php endif; ?>
     <link rel="canonical" href="<?= h($canonicalUrl) ?>">
     <meta property="og:type" content="<?= h($ogType ?? 'website') ?>">
     <meta property="og:title" content="<?= h($pageTitle) ?>">
@@ -79,6 +81,7 @@ $compareCount = count(compareIds());
             <span><?= h(siteTagline()) ?></span>
             <div class="topbar-links">
                 <a href="/servisi">Firme</a>
+                <a href="/vodici">Vodiči</a>
                 <a href="/kako-radi.php">Kako radi</a>
                 <?php if (!empty($site['enable_favorites'])): ?><a href="/favorites.php">Omiljeni</a><?php endif; ?>
                 <?php if ($user): ?>
