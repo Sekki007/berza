@@ -1455,6 +1455,16 @@ body.page-chat .footer,body.page-chat .site-footer{display:none;}
   padding:10px 12px 12px;border-top:1px solid var(--border-light);background:#f8faf8;
 }
 .shop-order-details{flex:1;min-width:200px;}
+.shop-order-meta{
+  margin-left:auto;align-self:flex-start;min-height:40px;
+  display:inline-flex;align-items:center;gap:10px;
+  font-size:11px;font-weight:500;line-height:1;color:#7a8494;white-space:nowrap;
+}
+.shop-order-loc{overflow:hidden;text-overflow:ellipsis;max-width:120px;}
+.kp-list-card--order .shop-order-meta .kp-list-cmp,
+.kp-list-card--order .shop-order-meta .listing-compare-btn{position:static;}
+.kp-list-card--order .kp-list-inner,
+.kp-list-card--order .listing-inner{padding-bottom:10px;}
 .shop-order-toggle{
   list-style:none;cursor:pointer;display:inline-flex;align-items:center;
 }
@@ -2710,6 +2720,10 @@ body.kp-lightbox-open {
     gap: 16px;
     padding: 14px 16px 30px;
     align-items: flex-start;
+  }
+  .listings:not(.view-grid) .kp-list-card--order .kp-list-inner,
+  .listings:not(.view-grid) .kp-list-card--order .listing-inner {
+    padding-bottom: 12px;
   }
   .listings:not(.view-grid) .kp-list-card .kp-list-media {
     width: 156px;

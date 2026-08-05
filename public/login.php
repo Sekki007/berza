@@ -68,7 +68,7 @@ require __DIR__ . '/partials/layout-start.php';
                     <input type="password" name="password" required>
                 </div>
                 <div class="form-group" style="margin-top:-6px;">
-                    <label style="display:flex;align-items:center;gap:8px;font-weight:500;cursor:pointer;">
+                    <label class="check-inline" style="font-size:13px;">
                         <input type="checkbox" name="remember_me" value="1" checked>
                         <span>Zapamti me na ovom uređaju</span>
                     </label>

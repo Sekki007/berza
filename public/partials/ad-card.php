@@ -24,8 +24,14 @@ $rsdHint = !$priceOpen ? formatAdPriceRsd($ad) : '';
 $location = trim((string)($ad['location'] ?? ''));
 $relativeTime = formatRelativeTime((string)($ad['created_at'] ?? ''));
 $imageCount = is_array($ad['images'] ?? null) ? count($ad['images']) : 0;
+
+$shopCatalogMode = !empty($shopCatalogMode);
+$shopCatalogOwn = !empty($shopCatalogOwn);
+$messagesOn = !empty(siteSettings()['enable_messages']);
+// Kad kartica ima traku za naručivanje, meta podaci idu u nju umesto preko dugmadi.
+$hasOrderBar = $shopCatalogMode && $messagesOn && !$isSold && !$shopCatalogOwn;
 ?>
-<article class="listing-card kp-list-card <?= $isSold ? 'is-sold listing-sold' : '' ?> <?= $isHighlighted ? 'listing-highlighted' : '' ?>" data-category="<?= h($type) ?>" data-ad-id="<?= $adId ?>">
+<article class="listing-card kp-list-card <?= $hasOrderBar ? 'kp-list-card--order' : '' ?> <?= $isSold ? 'is-sold listing-sold' : '' ?> <?= $isHighlighted ? 'listing-highlighted' : '' ?>" data-category="<?= h($type) ?>" data-ad-id="<?= $adId ?>">
     <a href="<?= h($adHref) ?>" class="listing-link kp-list-link">
         <div class="listing-inner kp-list-inner">
             <div class="kp-list-media">
@@ -58,7 +64,7 @@ $imageCount = is_array($ad['images'] ?? null) ? count($ad['images']) : 0;
                     <?php if ($isHighlighted && !$isPromoted): ?><span class="listing-badge-hi">Istaknut</span><?php endif; ?>
                     <?php if ($isSold): ?><span class="listing-badge-sold kp-list-badge kp-list-badge-sold">Prodato</span><?php endif; ?>
                 </div>
-                <?php if ($location !== ''): ?>
+                <?php if ($location !== '' && !$hasOrderBar): ?>
                     <div class="kp-list-thumb-meta">
                         <span class="kp-list-meta-loc" title="Grad"><?= h($location) ?></span>
                     </div>
@@ -117,21 +123,20 @@ $imageCount = is_array($ad['images'] ?? null) ? count($ad['images']) : 0;
             <?= $isFav ? '♥' : '♡' ?>
         </a>
     <?php endif; ?>
-    <?php if ($relativeTime !== ''): ?>
+    <?php if ($relativeTime !== '' && !$hasOrderBar): ?>
         <span class="kp-list-time" title="Objavljeno"><?= h($relativeTime) ?></span>
     <?php endif; ?>
-    <button type="button"
-            class="listing-compare-btn kp-list-cmp <?= $inCompare ? 'active is-in-compare' : '' ?>"
-            data-compare-toggle="<?= $adId ?>"
-            aria-pressed="<?= $inCompare ? 'true' : 'false' ?>"
-            title="Uporedi">
-        <?= $inCompare ? '✓' : '⇄' ?>
-    </button>
+    <?php if (!$hasOrderBar): ?>
+        <button type="button"
+                class="listing-compare-btn kp-list-cmp <?= $inCompare ? 'active is-in-compare' : '' ?>"
+                data-compare-toggle="<?= $adId ?>"
+                aria-pressed="<?= $inCompare ? 'true' : 'false' ?>"
+                title="Uporedi">
+            <?= $inCompare ? '✓' : '⇄' ?>
+        </button>
+    <?php endif; ?>
     <?php
-    $shopCatalogMode = !empty($shopCatalogMode);
-    $shopCatalogOwn = !empty($shopCatalogOwn);
-    $messagesOn = !empty(siteSettings()['enable_messages']);
-    if ($shopCatalogMode && $messagesOn && !$isSold && !$shopCatalogOwn):
+    if ($hasOrderBar):
         $orderDefault = 'Zdravo, zainteresovan/a sam za „' . (string)($ad['title'] ?? 'artikal') . '”'
             . (!$priceOpen ? (' (' . formatAdPrice($ad) . ')') : '')
             . '. Da li je još dostupno i kako mogu da naručim / preuzmem?';
@@ -154,6 +159,21 @@ $imageCount = is_array($ad['images'] ?? null) ? count($ad['images']) : 0;
             <?php else: ?>
                 <a class="btn-sm btn-sm-primary" href="<?= h($orderLoginHref) ?>">Naruči / Prijavi se</a>
             <?php endif; ?>
+            <div class="shop-order-meta">
+                <?php if ($location !== ''): ?>
+                    <span class="shop-order-loc" title="Grad"><?= h($location) ?></span>
+                <?php endif; ?>
+                <?php if ($relativeTime !== ''): ?>
+                    <span class="shop-order-time" title="Objavljeno"><?= h($relativeTime) ?></span>
+                <?php endif; ?>
+                <button type="button"
+                        class="listing-compare-btn kp-list-cmp <?= $inCompare ? 'active is-in-compare' : '' ?>"
+                        data-compare-toggle="<?= $adId ?>"
+                        aria-pressed="<?= $inCompare ? 'true' : 'false' ?>"
+                        title="Uporedi">
+                    <?= $inCompare ? '✓' : '⇄' ?>
+                </button>
+            </div>
         </div>
     <?php endif; ?>
 </article>
