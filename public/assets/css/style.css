@@ -1612,9 +1612,9 @@ a.rep-thumb:hover { opacity: 0.85; text-decoration: underline; }
   object-fit: cover;
   display: block;
 }
-.kp-list-photo-count {
+.kp-list-photo-count,
+.kp-list-view-count {
   position: absolute;
-  left: 6px;
   bottom: 6px;
   z-index: 2;
   display: inline-flex;
@@ -1629,6 +1629,8 @@ a.rep-thumb:hover { opacity: 0.85; text-decoration: underline; }
   line-height: 1.2;
   pointer-events: none;
 }
+.kp-list-photo-count { left: 6px; }
+.kp-list-view-count { right: 6px; }
 .kp-list-thumb-meta {
   display: flex;
   flex-wrap: nowrap;

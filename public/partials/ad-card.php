@@ -50,17 +50,18 @@ $imageCount = is_array($ad['images'] ?? null) ? count($ad['images']) : 0;
                             <span aria-hidden="true">▣</span> <?= $imageCount ?>
                         </span>
                     <?php endif; ?>
+                    <span class="kp-list-view-count" title="<?= $views ?> pregleda">
+                        <span aria-hidden="true">👁</span> <?= $views ?>
+                    </span>
                     <?php if ($isPromoted): ?><span class="listing-badge-promo">TOP</span><?php endif; ?>
                     <?php if ($isHighlighted && !$isPromoted): ?><span class="listing-badge-hi">Istaknut</span><?php endif; ?>
                     <?php if ($isSold): ?><span class="listing-badge-sold kp-list-badge kp-list-badge-sold">Prodato</span><?php endif; ?>
                 </div>
-                <div class="kp-list-thumb-meta">
-                    <?php if ($location !== ''): ?>
+                <?php if ($location !== ''): ?>
+                    <div class="kp-list-thumb-meta">
                         <span class="kp-list-meta-loc" title="Grad"><?= h($location) ?></span>
-                        <span class="kp-list-meta-sep" aria-hidden="true">·</span>
-                    <?php endif; ?>
-                    <span title="Pregledi">👁 <?= $views ?></span>
-                </div>
+                    </div>
+                <?php endif; ?>
             </div>
             <div class="listing-body kp-list-body">
                 <div class="kp-list-main">
