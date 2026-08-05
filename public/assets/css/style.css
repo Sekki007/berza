@@ -1667,10 +1667,45 @@ a.rep-thumb:hover { opacity: 0.85; text-decoration: underline; }
   flex: 1;
   min-width: 0;
   display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  padding: 0;
+}
+.kp-list-body-top {
+  display: flex;
   flex-direction: row;
   align-items: flex-start;
   gap: 10px;
-  padding: 0;
+  width: 100%;
+  min-width: 0;
+}
+.kp-list-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  margin-top: auto;
+  padding-top: 8px;
+  border-top: 1px solid var(--border-light, #eef1f4);
+  font-size: 12px;
+  line-height: 1.3;
+  color: #7a8494;
+}
+.kp-list-footer-time {
+  flex-shrink: 0;
+  color: #7a8494;
+}
+.kp-list-footer-loc {
+  margin-left: auto;
+  text-align: right;
+  color: #5f6b7a;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
 }
 .kp-list-main {
   flex: 1;
@@ -2699,10 +2734,19 @@ body.kp-lightbox-open {
   .listings:not(.view-grid) .kp-list-card .kp-list-body,
   .listings:not(.view-grid) .kp-list-card .listing-body {
     display: flex;
-    flex-direction: row;
-    align-items: flex-start;
-    gap: 16px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
     padding: 0;
+    min-height: 156px;
+  }
+  .listings:not(.view-grid) .kp-list-card .kp-list-body-top {
+    flex: 1;
+    gap: 16px;
+  }
+  .listings:not(.view-grid) .kp-list-card .kp-list-footer {
+    padding-top: 10px;
+    font-size: 13px;
   }
   .listings:not(.view-grid) .kp-list-card .kp-list-main {
     gap: 5px;
@@ -2870,11 +2914,15 @@ body.kp-lightbox-open {
     grid-template-areas:
       "title title"
       "shop price"
-      "tags tags";
+      "tags tags"
+      "footer footer";
     align-items: center;
     column-gap: 10px;
     row-gap: 6px;
     padding: 8px 12px 12px !important;
+  }
+  .listings.view-grid .kp-list-card .kp-list-body-top {
+    display: contents;
   }
   .listings.view-grid .kp-list-card .kp-list-main {
     display: contents;
@@ -2922,6 +2970,13 @@ body.kp-lightbox-open {
   .listings.view-grid .kp-list-card .listing-tags-compact {
     grid-area: tags;
     margin: 0;
+  }
+  .listings.view-grid .kp-list-card .kp-list-footer {
+    grid-area: footer;
+    border-top: none;
+    padding-top: 2px;
+    margin-top: 0;
+    font-size: 11px;
   }
   .listings.view-grid .kp-list-card .listing-shop-biz,
   .listings.view-grid .kp-list-card .business-badge,

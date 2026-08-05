@@ -55,16 +55,11 @@ $imageCount = is_array($ad['images'] ?? null) ? count($ad['images']) : 0;
                     <?php if ($isSold): ?><span class="listing-badge-sold kp-list-badge kp-list-badge-sold">Prodato</span><?php endif; ?>
                 </div>
                 <div class="kp-list-thumb-meta">
-                    <?php if ($location !== ''): ?>
-                        <span class="kp-list-meta-loc" title="Grad"><?= h($location) ?></span>
-                        <span class="kp-list-meta-sep" aria-hidden="true">·</span>
-                    <?php endif; ?>
                     <span title="Pregledi">👁 <?= $views ?></span>
-                    <span class="kp-list-meta-sep" aria-hidden="true">·</span>
-                    <span title="Objavljeno"><?= h($relativeTime) ?></span>
                 </div>
             </div>
             <div class="listing-body kp-list-body">
+                <div class="kp-list-body-top">
                 <div class="kp-list-main">
                     <h2 class="listing-title kp-list-title"><?= h((string)$ad['title']) ?></h2>
 
@@ -106,6 +101,15 @@ $imageCount = is_array($ad['images'] ?? null) ? count($ad['images']) : 0;
                         <span class="listing-price-rsd"><?= h($rsdHint) ?></span>
                     <?php endif; ?>
                 </div>
+                </div>
+                <?php if ($relativeTime !== '' || $location !== ''): ?>
+                <div class="kp-list-footer">
+                    <span class="kp-list-footer-time" title="Objavljeno"><?= h($relativeTime) ?></span>
+                    <?php if ($location !== ''): ?>
+                        <span class="kp-list-footer-loc" title="Grad"><?= h($location) ?></span>
+                    <?php endif; ?>
+                </div>
+                <?php endif; ?>
             </div>
         </div>
     </a>
