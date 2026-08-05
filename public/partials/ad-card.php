@@ -54,60 +54,58 @@ $imageCount = is_array($ad['images'] ?? null) ? count($ad['images']) : 0;
                     <?php if ($isHighlighted && !$isPromoted): ?><span class="listing-badge-hi">Istaknut</span><?php endif; ?>
                     <?php if ($isSold): ?><span class="listing-badge-sold kp-list-badge kp-list-badge-sold">Prodato</span><?php endif; ?>
                 </div>
-                <?php if ($location !== ''): ?>
-                <div class="kp-list-thumb-loc" title="Grad"><?= h($location) ?></div>
-                <?php endif; ?>
                 <div class="kp-list-thumb-meta">
+                    <?php if ($location !== ''): ?>
+                        <span class="kp-list-meta-loc" title="Grad"><?= h($location) ?></span>
+                        <span class="kp-list-meta-sep" aria-hidden="true">·</span>
+                    <?php endif; ?>
                     <span title="Pregledi">👁 <?= $views ?></span>
+                    <span class="kp-list-meta-sep" aria-hidden="true">·</span>
+                    <span title="Objavljeno"><?= h($relativeTime) ?></span>
                 </div>
             </div>
             <div class="listing-body kp-list-body">
-                <div class="kp-list-header">
+                <div class="kp-list-main">
                     <h2 class="listing-title kp-list-title"><?= h((string)$ad['title']) ?></h2>
-                    <div class="kp-list-price-col">
-                        <div class="kp-list-price-badge <?= $priceOpen ? 'is-open' : '' ?>">
-                            <span class="kp-list-price-main"><?= $priceOpen ? 'Po dogovoru' : h(formatAdPrice($ad)) ?></span>
-                            <?php if ($rsdHint !== ''): ?>
-                                <span class="listing-price-rsd"><?= h($rsdHint) ?></span>
+
+                    <?php if ($cardShop !== ''): ?>
+                        <div class="listing-shop kp-list-shop">
+                            <?php if ($cardShopUrl !== ''): ?>
+                                <span class="listing-shop-link" data-shop-url="<?= h($cardShopUrl) ?>"><?= h($cardShop) ?></span>
+                            <?php else: ?>
+                                <span class="listing-shop-name"><?= h($cardShop) ?></span>
+                            <?php endif; ?>
+                            <?= $cardSeller ? renderVerifiedBadge($cardSeller) : '' ?>
+                            <span class="listing-shop-biz"><?= $cardSeller ? renderBusinessBadge($cardSeller) : '' ?></span>
+                        </div>
+                    <?php endif; ?>
+
+                    <div class="listing-tags listing-tags-compact">
+                        <span class="tag <?= $type === 'telefon' ? 'tag-cat-phone' : ($type === 'delovi' ? 'tag-cat-parts' : 'tag-cat-service') ?>">
+                            <?= h($categoryLabel) ?>
+                        </span>
+                        <?php if ($isPromoted): ?><span class="kp-list-badge">TOP</span><?php endif; ?>
+                    </div>
+
+                    <div class="listing-desktop-extra">
+                        <p class="listing-desc"><?= h((string)($ad['description'] ?? '')) ?></p>
+                        <div class="listing-tags">
+                            <?php if (!empty($ad['badge'])): ?>
+                                <span class="tag tag-green"><?= h((string)$ad['badge']) ?></span>
+                            <?php endif; ?>
+                            <?php if (!empty($ad['model'])): ?>
+                                <span class="tag tag-gray"><?= h((string)$ad['model']) ?></span>
                             <?php endif; ?>
                         </div>
-                        <?php if ($relativeTime !== ''): ?>
-                            <span class="kp-list-price-time" title="Objavljeno"><?= h($relativeTime) ?></span>
-                        <?php endif; ?>
                     </div>
                 </div>
 
-                <?php if ($cardShop !== ''): ?>
-                    <div class="listing-shop kp-list-shop">
-                        <?php if ($cardShopUrl !== ''): ?>
-                            <span class="listing-shop-link" data-shop-url="<?= h($cardShopUrl) ?>"><?= h($cardShop) ?></span>
-                        <?php else: ?>
-                            <span class="listing-shop-name"><?= h($cardShop) ?></span>
-                        <?php endif; ?>
-                        <?= $cardSeller ? renderVerifiedBadge($cardSeller) : '' ?>
-                        <span class="listing-shop-biz"><?= $cardSeller ? renderBusinessBadge($cardSeller) : '' ?></span>
-                    </div>
-                <?php endif; ?>
-
-                <div class="listing-tags listing-tags-compact">
-                    <span class="tag <?= $type === 'telefon' ? 'tag-cat-phone' : ($type === 'delovi' ? 'tag-cat-parts' : 'tag-cat-service') ?>">
-                        <?= h($categoryLabel) ?>
-                    </span>
-                    <?php if ($isPromoted): ?><span class="kp-list-badge">TOP</span><?php endif; ?>
+                <div class="kp-list-price-badge <?= $priceOpen ? 'is-open' : '' ?>">
+                    <span class="kp-list-price-main"><?= $priceOpen ? 'Po dogovoru' : h(formatAdPrice($ad)) ?></span>
+                    <?php if ($rsdHint !== ''): ?>
+                        <span class="listing-price-rsd"><?= h($rsdHint) ?></span>
+                    <?php endif; ?>
                 </div>
-
-                <div class="listing-desktop-extra">
-                    <p class="listing-desc"><?= h((string)($ad['description'] ?? '')) ?></p>
-                    <div class="listing-tags">
-                        <?php if (!empty($ad['badge'])): ?>
-                            <span class="tag tag-green"><?= h((string)$ad['badge']) ?></span>
-                        <?php endif; ?>
-                        <?php if (!empty($ad['model'])): ?>
-                            <span class="tag tag-gray"><?= h((string)$ad['model']) ?></span>
-                        <?php endif; ?>
-                    </div>
-                </div>
-
             </div>
         </div>
     </a>
