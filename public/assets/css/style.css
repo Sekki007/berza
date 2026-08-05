@@ -1669,15 +1669,19 @@ a.rep-thumb:hover { opacity: 0.85; text-decoration: underline; }
   display: flex;
   flex-direction: column;
   align-items: stretch;
-  gap: 6px;
+  gap: 5px;
   padding: 0;
 }
-.kp-list-body-top {
+.kp-list-header {
   display: flex;
-  flex-direction: row;
   align-items: flex-start;
+  justify-content: space-between;
   gap: 10px;
   width: 100%;
+  min-width: 0;
+}
+.kp-list-header .kp-list-title {
+  flex: 1;
   min-width: 0;
 }
 .kp-list-footer {
@@ -1707,13 +1711,6 @@ a.rep-thumb:hover { opacity: 0.85; text-decoration: underline; }
   white-space: nowrap;
   min-width: 0;
 }
-.kp-list-main {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
 .kp-list-card .kp-list-title,
 .kp-list-card .listing-title {
   margin: 0;
@@ -1730,7 +1727,7 @@ a.rep-thumb:hover { opacity: 0.85; text-decoration: underline; }
 .kp-list-price-badge {
   flex-shrink: 0;
   align-self: flex-start;
-  margin-left: auto;
+  margin-left: 0;
   max-width: none;
   text-align: center;
   background: #1760a8;
@@ -2736,23 +2733,18 @@ body.kp-lightbox-open {
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    gap: 8px;
+    gap: 6px;
     padding: 0;
-    min-height: 156px;
+    min-height: 0;
   }
-  .listings:not(.view-grid) .kp-list-card .kp-list-body-top {
-    flex: 1;
+  .listings:not(.view-grid) .kp-list-card .kp-list-header {
     gap: 16px;
   }
   .listings:not(.view-grid) .kp-list-card .kp-list-footer {
     padding-top: 10px;
     font-size: 13px;
   }
-  .listings:not(.view-grid) .kp-list-card .kp-list-main {
-    gap: 5px;
-  }
   .listings:not(.view-grid) .kp-list-card .kp-list-price-badge {
-    margin-left: auto;
     min-width: 118px;
     padding: 8px 14px;
   }
@@ -2921,10 +2913,7 @@ body.kp-lightbox-open {
     row-gap: 6px;
     padding: 8px 12px 12px !important;
   }
-  .listings.view-grid .kp-list-card .kp-list-body-top {
-    display: contents;
-  }
-  .listings.view-grid .kp-list-card .kp-list-main {
+  .listings.view-grid .kp-list-card .kp-list-header {
     display: contents;
   }
   .listings.view-grid .kp-list-card .kp-list-title,
@@ -3078,13 +3067,14 @@ body.kp-lightbox-open {
     grid-template-areas:
       "title title"
       "shop price"
-      "tags tags";
+      "tags tags"
+      "footer footer";
     align-items: center;
     column-gap: 8px;
     row-gap: 5px;
     padding: 6px 9px 10px !important;
   }
-  .listings.view-grid .kp-list-main {
+  .listings.view-grid .kp-list-header {
     display: contents;
   }
   .listings.view-grid .kp-list-title,
@@ -3122,6 +3112,13 @@ body.kp-lightbox-open {
   .listings.view-grid .listing-tags-compact {
     grid-area: tags;
     margin: 0;
+  }
+  .listings.view-grid .kp-list-footer {
+    grid-area: footer;
+    border-top: none;
+    padding-top: 2px;
+    margin-top: 0;
+    font-size: 10px;
   }
   .listings.view-grid .listing-shop-biz,
   .listings.view-grid .business-badge,
