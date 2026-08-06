@@ -113,7 +113,7 @@ require __DIR__ . '/partials/layout-start.php';
                             <th>Cena</th>
                             <th>Object</th>
                             <th>Apple</th>
-                            <th>Free 5/dan</th>
+                            <th>Free <?= (int)imeiExtendedDailyLimit() ?>/dan</th>
                             <th>Uključen</th>
                         </tr>
                     </thead>

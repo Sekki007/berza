@@ -138,7 +138,7 @@ require __DIR__ . '/partials/layout-start.php';
                             $selected = in_array($serviceKey, $selectedServiceKeys, true);
                             ?>
                             <option value="<?= h($serviceKey) ?>"<?= $selected ? ' selected' : '' ?>>
-                                <?= h($serviceName) ?> — <?= $price ?> kredita<?= $freeDaily ? ' — besplatno do 5/dan' : '' ?><?= $appleOnly ? ' — samo Apple' : '' ?><?= $enabled ? '' : ' — trenutno isključen' ?>
+                                <?= h($serviceName) ?> — <?= $price ?> kredita<?= $freeDaily ? ' — besplatno do ' . (int)imeiExtendedDailyLimit() . '/dan' : '' ?><?= $appleOnly ? ' — samo Apple' : '' ?><?= $enabled ? '' : ' — trenutno isključen' ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
