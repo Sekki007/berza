@@ -8,6 +8,7 @@ requireAdmin();
 $settings = siteSettings();
 $services = imeiServiceCatalog();
 $providerStatus = imeiProviderStatus();
+$objectYesIds = ['1','2','3','4','5','6','8','9','11','13','14','17','18','19','22','23','27','33','34','39','41','47','51','61','62','64','69','71'];
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     requireCsrf('/admin_imei.php');
@@ -128,7 +129,7 @@ require __DIR__ . '/partials/layout-start.php';
             </div>
 
             <h3 style="margin-top:18px;">Dostupni servisi</h3>
-            <p class="form-hint">Online/Offline je status API providera. Uključen/Isključen je tvoja kontrola po servisu.</p>
+            <p class="form-hint">Kolona Object prikazuje da li servis po dokumentaciji vraća strukturisani JSON object (YES/NO).</p>
             <div class="table-scroll">
                 <table class="admin-table">
                     <thead>
@@ -136,9 +137,9 @@ require __DIR__ . '/partials/layout-start.php';
                             <th>ID</th>
                             <th>Naziv</th>
                             <th>Cena</th>
+                            <th>Object</th>
                             <th>Apple</th>
                             <th>Uključen</th>
-                            <th>Status</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -155,16 +156,19 @@ require __DIR__ . '/partials/layout-start.php';
                                 <td style="max-width:110px;">
                                     <input type="number" min="0" name="service_price[]" value="<?= (int)$service['price'] ?>" required>
                                 </td>
+                                <td>
+                                    <?php $sid = (string)$service['service_id']; ?>
+                                    <?php if (in_array($sid, $objectYesIds, true)): ?>
+                                        <span class="imei-badge imei-badge--good">YES</span>
+                                    <?php else: ?>
+                                        <span class="imei-badge imei-badge--unknown">NO</span>
+                                    <?php endif; ?>
+                                </td>
                                 <td style="text-align:center;">
                                     <input type="checkbox" name="service_apple_only[]" value="<?= h($key) ?>" <?= !empty($service['apple_only']) ? 'checked' : '' ?>>
                                 </td>
                                 <td style="text-align:center;">
                                     <input type="checkbox" name="service_enabled[]" value="<?= h($key) ?>" <?= !empty($service['enabled']) ? 'checked' : '' ?>>
-                                </td>
-                                <td>
-                                    <span class="imei-badge imei-badge--<?= $providerStatus['online'] ? 'good' : 'bad' ?>">
-                                        <?= $providerStatus['online'] ? 'online' : 'offline' ?>
-                                    </span>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

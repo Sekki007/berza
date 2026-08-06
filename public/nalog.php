@@ -515,7 +515,7 @@ require __DIR__ . '/partials/layout-start.php';
                 <?php if ($creditsOn || $topOn): ?>
                     <div class="account-hero-secondary<?= $creditsOn && $topOn ? ' has-multi' : '' ?>">
                         <?php if ($creditsOn): ?>
-                            <a class="btn-message btn-top-cta" href="?tab=krediti">Krediti: <?= number_format($userCredits, 0, ',', '.') ?></a>
+                            <a class="btn-message btn-top-cta" href="?tab=krediti">Stanje novčanika: <?= number_format($userCredits, 0, ',', '.') ?> din</a>
                         <?php endif; ?>
                         <?php if ($topOn): ?>
                             <a class="btn-message account-hero-promo" href="?tab=top">⭐ TOP promocije</a>
