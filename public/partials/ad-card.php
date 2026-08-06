@@ -3,6 +3,10 @@
 $type = getAdType($ad);
 $img = adPrimaryListingThumb($ad);
 $isSold = !empty($ad['is_sold']);
+$isBuy = isBuyListing($ad);
+$isTrade = isTradeListing($ad);
+$intentBadge = adIntentBadgeLabel($ad);
+$displayTitle = adDisplayTitle($ad);
 $cardImgPriority = !empty($cardImgPriority);
 $isPromoted = function_exists('isAdTopActive') ? isAdTopActive($ad) : !empty($ad['is_promoted']);
 $isHighlighted = function_exists('isAdHighlighted') ? isAdHighlighted($ad) : !empty($ad['is_highlighted']);
@@ -20,10 +24,12 @@ $cardShop = $cardSeller
 $cardShopUrl = $cardSeller ? shopUrlForUser($cardSeller) : '';
 $cardRatingSummary = $cardSeller ? getSellerRatingSummary((int)($cardSeller['id'] ?? 0)) : ['count' => 0, 'positive' => 0, 'negative' => 0];
 $categoryLabel = adCategoryLabel($ad);
-$rsdHint = !$priceOpen ? formatAdPriceRsd($ad) : '';
+$showBudgetHint = $isBuy && !$priceOpen && (float)($ad['price'] ?? 0) > 0;
+$rsdHint = (!$priceOpen && !$isBuy) ? formatAdPriceRsd($ad) : '';
 $location = trim((string)($ad['location'] ?? ''));
 $relativeTime = formatRelativeTime((string)($ad['created_at'] ?? ''));
 $imageCount = is_array($ad['images'] ?? null) ? count($ad['images']) : 0;
+$soldLabel = $isBuy ? 'Pronađeno' : 'Prodato';
 
 $shopCatalogMode = !empty($shopCatalogMode);
 $shopCatalogOwn = !empty($shopCatalogOwn);
@@ -31,11 +37,11 @@ $messagesOn = !empty(siteSettings()['enable_messages']);
 // Kad kartica ima traku za naručivanje, meta podaci idu u nju umesto preko dugmadi.
 $hasOrderBar = $shopCatalogMode && $messagesOn && !$isSold && !$shopCatalogOwn;
 ?>
-<article class="listing-card kp-list-card <?= $hasOrderBar ? 'kp-list-card--order' : '' ?> <?= $isSold ? 'is-sold listing-sold' : '' ?> <?= $isHighlighted ? 'listing-highlighted' : '' ?>" data-category="<?= h($type) ?>" data-ad-id="<?= $adId ?>">
+<article class="listing-card kp-list-card <?= $hasOrderBar ? 'kp-list-card--order' : '' ?> <?= $isSold ? 'is-sold listing-sold' : '' ?> <?= $isHighlighted ? 'listing-highlighted' : '' ?> <?= $isBuy ? 'is-buy' : '' ?> <?= $isTrade ? 'is-trade' : '' ?>" data-category="<?= h($type) ?>" data-listing-type="<?= h(getAdListingType($ad)) ?>" data-ad-id="<?= $adId ?>">
     <a href="<?= h($adHref) ?>" class="listing-link kp-list-link">
         <div class="listing-inner kp-list-inner">
             <div class="kp-list-media">
-                <div class="listing-thumb kp-list-thumb">
+                <div class="listing-thumb kp-list-thumb <?= $isBuy && !$img ? 'kp-list-thumb--seek' : '' ?>">
                     <?php if ($img): ?>
                         <img
                             src="<?= h($img) ?>"
@@ -47,6 +53,10 @@ $hasOrderBar = $shopCatalogMode && $messagesOn && !$isSold && !$shopCatalogOwn;
                             <?php if ($cardImgPriority): ?>fetchpriority="high"<?php endif; ?>
                             class="listing-thumb-img"
                         >
+                    <?php elseif ($isBuy): ?>
+                        <div class="kp-list-seek-placeholder" aria-hidden="true">
+                            <span>Tražim</span>
+                        </div>
                     <?php else: ?>
                         <div class="<?= $type === 'telefon' ? 'phone-silhouette' : 'parts-icon' ?>">
                             <?= $type === 'telefon' ? '' : strtoupper($categoryLabel) ?>
@@ -60,9 +70,10 @@ $hasOrderBar = $shopCatalogMode && $messagesOn && !$isSold && !$shopCatalogOwn;
                     <span class="kp-list-view-count" title="<?= $views ?> pregleda">
                         <span aria-hidden="true">👁</span> <?= $views ?>
                     </span>
+                    <?php if ($intentBadge !== ''): ?><span class="listing-badge-intent listing-badge-intent--<?= h(getAdListingType($ad)) ?>"><?= h($intentBadge) ?></span><?php endif; ?>
                     <?php if ($isPromoted): ?><span class="listing-badge-promo">TOP</span><?php endif; ?>
                     <?php if ($isHighlighted && !$isPromoted): ?><span class="listing-badge-hi">Istaknut</span><?php endif; ?>
-                    <?php if ($isSold): ?><span class="listing-badge-sold kp-list-badge kp-list-badge-sold">Prodato</span><?php endif; ?>
+                    <?php if ($isSold): ?><span class="listing-badge-sold kp-list-badge kp-list-badge-sold"><?= h($soldLabel) ?></span><?php endif; ?>
                 </div>
                 <?php if ($location !== '' && !$hasOrderBar): ?>
                     <div class="kp-list-thumb-meta">
@@ -72,7 +83,7 @@ $hasOrderBar = $shopCatalogMode && $messagesOn && !$isSold && !$shopCatalogOwn;
             </div>
             <div class="listing-body kp-list-body">
                 <div class="kp-list-main">
-                    <h2 class="listing-title kp-list-title"><?= h((string)$ad['title']) ?></h2>
+                    <h2 class="listing-title kp-list-title"><?= h($displayTitle) ?></h2>
 
                     <?php if ($cardShop !== ''): ?>
                         <div class="listing-shop kp-list-shop">
@@ -90,6 +101,9 @@ $hasOrderBar = $shopCatalogMode && $messagesOn && !$isSold && !$shopCatalogOwn;
                     <?php endif; ?>
 
                     <div class="listing-tags listing-tags-compact">
+                        <?php if ($intentBadge !== ''): ?>
+                            <span class="tag tag-intent-<?= h(getAdListingType($ad)) ?>"><?= h($intentBadge) ?></span>
+                        <?php endif; ?>
                         <span class="tag <?= $type === 'telefon' ? 'tag-cat-phone' : ($type === 'delovi' ? 'tag-cat-parts' : 'tag-cat-service') ?>">
                             <?= h($categoryLabel) ?>
                         </span>
@@ -109,9 +123,11 @@ $hasOrderBar = $shopCatalogMode && $messagesOn && !$isSold && !$shopCatalogOwn;
                     </div>
                 </div>
 
-                <div class="kp-list-price-badge <?= $priceOpen ? 'is-open' : '' ?>">
-                    <span class="kp-list-price-main"><?= $priceOpen ? 'Po dogovoru' : h(formatAdPrice($ad)) ?></span>
-                    <?php if ($rsdHint !== ''): ?>
+                <div class="kp-list-price-badge <?= $priceOpen ? 'is-open' : '' ?> <?= $isBuy ? 'is-buy' : '' ?> <?= $isTrade ? 'is-trade' : '' ?>">
+                    <span class="kp-list-price-main"><?= h(adCardPriceMainLabel($ad)) ?></span>
+                    <?php if ($showBudgetHint): ?>
+                        <span class="listing-price-rsd">budžet</span>
+                    <?php elseif ($rsdHint !== ''): ?>
                         <span class="listing-price-rsd"><?= h($rsdHint) ?></span>
                     <?php endif; ?>
                 </div>

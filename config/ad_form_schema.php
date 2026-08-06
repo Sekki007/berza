@@ -27,7 +27,7 @@ function adFormSchema(): array
     return [
         'listing_types' => [
             'sell' => 'Prodaja',
-            'buy' => 'Kupovina',
+            'buy' => 'Tražim / Kupovina',
             'trade' => 'Zamena',
             'service' => 'Nudim uslugu',
         ],
@@ -108,8 +108,77 @@ function normalizeListingType(string $type, string $adType = 'telefon'): string
 function listingTypeLabel(array $ad): string
 {
     $schema = adFormSchema();
-    $key = normalizeListingType((string)($ad['listing_type'] ?? 'sell'), getAdType($ad));
+    $key = getAdListingType($ad);
     return (string)($schema['listing_types'][$key] ?? 'Prodaja');
+}
+
+function getAdListingType(array $ad): string
+{
+    return normalizeListingType((string)($ad['listing_type'] ?? 'sell'), getAdType($ad));
+}
+
+function isBuyListing(array $ad): bool
+{
+    return getAdListingType($ad) === 'buy';
+}
+
+function isTradeListing(array $ad): bool
+{
+    return getAdListingType($ad) === 'trade';
+}
+
+/** Kratki bedž za listu/detalj (prazno za običnu prodaju). */
+function adIntentBadgeLabel(array $ad): string
+{
+    return match (getAdListingType($ad)) {
+        'buy' => 'Tražim',
+        'trade' => 'Zamena',
+        'service' => 'Usluga',
+        default => '',
+    };
+}
+
+/** Naslov sa jasnim prefiksom namere (Tražim / Zamena). */
+function adDisplayTitle(array $ad): string
+{
+    $title = trim((string)($ad['title'] ?? ''));
+    if ($title === '') {
+        return $title;
+    }
+    $lower = mb_strtolower($title);
+    $type = getAdListingType($ad);
+    if ($type === 'buy') {
+        if (
+            !str_starts_with($lower, 'tražim')
+            && !str_starts_with($lower, 'trazim')
+            && !str_starts_with($lower, 'kupujem')
+        ) {
+            return 'Tražim: ' . $title;
+        }
+    } elseif ($type === 'trade') {
+        if (
+            !str_starts_with($lower, 'zamena')
+            && !str_starts_with($lower, 'menjam')
+        ) {
+            return 'Zamena: ' . $title;
+        }
+    }
+    return $title;
+}
+
+/** Glavni tekst u ceni/status bloku na kartici. */
+function adCardPriceMainLabel(array $ad): string
+{
+    if (isBuyListing($ad)) {
+        if (!isAdPriceOpen($ad) && (float)($ad['price'] ?? 0) > 0) {
+            return 'Do ' . formatAdPrice($ad);
+        }
+        return 'Traži se';
+    }
+    if (isTradeListing($ad) && isAdPriceOpen($ad)) {
+        return 'Zamena';
+    }
+    return isAdPriceOpen($ad) ? 'Po dogovoru' : formatAdPrice($ad);
 }
 
 /**

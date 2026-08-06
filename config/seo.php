@@ -81,20 +81,20 @@ function seoListingMeta(array $filters = []): array
 function seoAdMeta(array $ad): array
 {
     $name = seoSiteName();
-    $title = trim((string)($ad['title'] ?? 'Oglas'));
+    $title = function_exists('adDisplayTitle') ? adDisplayTitle($ad) : trim((string)($ad['title'] ?? 'Oglas'));
     $location = trim((string)($ad['location'] ?? ''));
     $brand = trim((string)($ad['brand'] ?? ''));
-    $price = formatAdPrice($ad);
-    $bits = array_filter([$brand, $location, $price !== '' ? $price : null]);
+    $priceLabel = function_exists('adCardPriceMainLabel') ? adCardPriceMainLabel($ad) : formatAdPrice($ad);
+    $bits = array_filter([$brand, $location, $priceLabel !== '' ? $priceLabel : null]);
     $descSource = trim((string)($ad['description'] ?? ''));
     if ($descSource === '') {
         $descSource = $title . ($bits ? ' — ' . implode(', ', $bits) : '');
-    } elseif ($price !== '') {
-        // Cena na početku — bolji preview u Viber/FB
-        $descSource = $price . ' · ' . $descSource;
+    } elseif ($priceLabel !== '') {
+        // Cena / namera na početku — bolji preview u Viber/FB
+        $descSource = $priceLabel . ' · ' . $descSource;
     }
     return [
-        'title' => $title . ($price !== '' ? ' · ' . $price : '') . ($location !== '' ? ' · ' . $location : '') . ' — ' . $name,
+        'title' => $title . ($priceLabel !== '' ? ' · ' . $priceLabel : '') . ($location !== '' ? ' · ' . $location : '') . ' — ' . $name,
         'description' => seoTruncate($descSource),
     ];
 }

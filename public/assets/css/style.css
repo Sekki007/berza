@@ -1870,6 +1870,67 @@ a.rep-thumb:hover { opacity: 0.85; text-decoration: underline; }
   letter-spacing: .01em;
   white-space: nowrap;
 }
+.kp-list-card.is-buy{
+  border-color:#b7d0ef;
+  background:#f7fbff;
+}
+.kp-list-card.is-trade{
+  border-color:#d9c8f0;
+  background:#faf7ff;
+}
+.kp-list-price-badge.is-buy{
+  background:#1e5a96;
+  box-shadow:0 1px 3px rgba(30,90,150,.22);
+}
+.kp-list-price-badge.is-buy.is-open{
+  background:#eaf2fb;
+  color:#1e5a96;
+  border-color:#b7d0ef;
+  box-shadow:none;
+}
+.kp-list-price-badge.is-trade{
+  background:#6b3fa0;
+  box-shadow:0 1px 3px rgba(107,63,160,.22);
+}
+.kp-list-price-badge.is-trade.is-open{
+  background:#f4edfb;
+  color:#6b3fa0;
+  border-color:#d9c8f0;
+  box-shadow:none;
+}
+.tag-intent-buy{
+  background:#e8f1fb;color:#1e5a96;border:1px solid #b7d0ef;font-weight:700;
+}
+.tag-intent-trade{
+  background:#f4edfb;color:#6b3fa0;border:1px solid #d9c8f0;font-weight:700;
+}
+.tag-intent-service{
+  background:#fff8e1;color:#8a5a00;border:1px solid #ffe082;font-weight:700;
+}
+.listing-badge-intent{
+  position:absolute;top:8px;left:8px;z-index:2;
+  font-size:11px;font-weight:800;padding:4px 8px;border-radius:3px;
+}
+.listing-badge-intent--buy{background:#1e5a96;color:#fff;}
+.listing-badge-intent--trade{background:#6b3fa0;color:#fff;}
+.listing-badge-intent--service{background:#f0b429;color:#1a1a1a;}
+.listing-badge-promo{top:8px;left:8px;}
+.kp-list-thumb .listing-badge-intent + .listing-badge-promo,
+.kp-list-thumb .listing-badge-intent + .listing-badge-hi{
+  top:34px;
+}
+.kp-list-seek-placeholder{
+  width:100%;height:100%;min-height:110px;display:grid;place-items:center;
+  background:linear-gradient(160deg,#e8f1fb,#d5e6f7);color:#1e5a96;
+  font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;
+}
+.kp-list-thumb--seek{background:#e8f1fb;}
+.detail-intent{position:absolute;top:12px;left:12px;z-index:3;}
+.kp-gallery .listing-badge-intent ~ .listing-badge-promo{left:86px;}
+.kp-price-intent{color:#1e5a96 !important;}
+.kp-price-block.is-buy .kp-price-note{color:#1e5a96;}
+.kp-price-block.is-trade .kp-price{color:#6b3fa0;}
+.kp-detail-head.is-buy .kp-listing-title{color:#163a66;}
 .kp-list-loc {
   display: flex;
   align-items: center;

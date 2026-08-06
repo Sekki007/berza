@@ -99,7 +99,13 @@ if (!empty($seller['created_at'])) {
 $images = is_array($ad['images'] ?? null) ? $ad['images'] : [];
 $imageCount = count($images);
 $similarAds = getSimilarAds($ad);
-$waMsg = 'Zdravo, interesuje me oglas: ' . ($ad['title'] ?? '') . ' — ' . formatAdPrice($ad);
+$isBuy = isBuyListing($ad);
+$isTrade = isTradeListing($ad);
+$intentBadge = adIntentBadgeLabel($ad);
+$displayTitle = adDisplayTitle($ad);
+$waMsg = $isBuy
+    ? ('Zdravo, imam: ' . $displayTitle . (!isAdPriceOpen($ad) && (float)($ad['price'] ?? 0) > 0 ? (' — budžet ' . formatAdPrice($ad)) : '') . '. Da li te interesuje?')
+    : ('Zdravo, interesuje me oglas: ' . $displayTitle . ' — ' . formatAdPrice($ad));
 $isFav = isFavorite($id);
 $isOwnAd = isLoggedIn() && (int)currentUser()['id'] === (int)($ad['created_by'] ?? 0);
 $phone = (string)($ad['contact_phone'] ?? '');
@@ -335,22 +341,34 @@ $contactBlock = static function (string $formId = 'poruka') use (
                     </div>
                 </div>
             <?php endif; ?>
-            <?php if (!empty($ad['is_sold'])): ?><span class="listing-badge-sold detail-sold">Prodato</span><?php endif; ?>
+            <?php if ($intentBadge !== ''): ?><span class="listing-badge-intent listing-badge-intent--<?= h(getAdListingType($ad)) ?> detail-intent"><?= h($intentBadge) ?></span><?php endif; ?>
+            <?php if (!empty($ad['is_sold'])): ?><span class="listing-badge-sold detail-sold"><?= $isBuy ? 'Pronađeno' : 'Prodato' ?></span><?php endif; ?>
             <?php if (!empty($ad['is_promoted'])): ?><span class="listing-badge-promo detail-promo">TOP</span><?php endif; ?>
         </div>
 
-        <div class="kp-detail-head">
+        <div class="kp-detail-head <?= $isBuy ? 'is-buy' : '' ?> <?= $isTrade ? 'is-trade' : '' ?>">
             <div class="kp-title-row">
-                <h1 class="kp-listing-title"><?= h((string)$ad['title']) ?></h1>
+                <h1 class="kp-listing-title"><?= h($displayTitle) ?></h1>
             </div>
-            <div class="kp-price-block">
-                <div class="kp-price <?= $priceOpen ? 'kp-price-free' : '' ?>"><?= h(formatAdPrice($ad)) ?></div>
-                <?php if (!$priceOpen): ?>
-                    <?php $rsdHint = formatAdPriceRsd($ad); ?>
-                    <?php if ($rsdHint !== ''): ?>
-                        <div class="kp-price-rsd"><?= h($rsdHint) ?></div>
+            <div class="kp-price-block <?= $isBuy ? 'is-buy' : '' ?> <?= $isTrade ? 'is-trade' : '' ?>">
+                <?php if ($isBuy): ?>
+                    <div class="kp-price kp-price-intent"><?= h(adCardPriceMainLabel($ad)) ?></div>
+                    <?php if (!$priceOpen && $price > 0): ?>
+                        <span class="kp-price-note">Maksimalni budžet</span>
+                    <?php else: ?>
+                        <span class="kp-price-note">Kupovina — traži se uređaj</span>
                     <?php endif; ?>
-                    <span class="kp-price-note"><?= h(adPriceTypeLabel($ad)) ?></span>
+                <?php else: ?>
+                    <div class="kp-price <?= $priceOpen ? 'kp-price-free' : '' ?>"><?= h($isTrade && $priceOpen ? 'Zamena' : formatAdPrice($ad)) ?></div>
+                    <?php if (!$priceOpen): ?>
+                        <?php $rsdHint = formatAdPriceRsd($ad); ?>
+                        <?php if ($rsdHint !== ''): ?>
+                            <div class="kp-price-rsd"><?= h($rsdHint) ?></div>
+                        <?php endif; ?>
+                        <span class="kp-price-note"><?= h(adPriceTypeLabel($ad)) ?></span>
+                    <?php elseif ($isTrade): ?>
+                        <span class="kp-price-note">Zamena uređaja</span>
+                    <?php endif; ?>
                 <?php endif; ?>
             </div>
             <div class="kp-action-links">
@@ -369,11 +387,17 @@ $contactBlock = static function (string $formId = 'poruka') use (
 
         <div class="kp-card">
             <h3 class="kp-section-title kp-section-title--compact">Osnovne informacije</h3>
-            <?php if (!empty($ad['condition_state'])): ?>
-                <div class="kp-info-cond"><strong><?= h((string)$ad['condition_state']) ?></strong><?php if (!empty($ad['listing_type'])): ?> · <?= h(listingTypeLabel($ad)) ?><?php endif; ?></div>
-            <?php elseif (!empty($ad['listing_type'])): ?>
-                <div class="kp-info-cond"><strong><?= h(listingTypeLabel($ad)) ?></strong></div>
-            <?php endif; ?>
+            <div class="kp-info-cond">
+                <?php if ($intentBadge !== ''): ?>
+                    <strong><?= h($intentBadge) ?></strong>
+                    <?php if (!empty($ad['condition_state'])): ?> · <?= h((string)$ad['condition_state']) ?><?php endif; ?>
+                <?php elseif (!empty($ad['condition_state'])): ?>
+                    <strong><?= h((string)$ad['condition_state']) ?></strong>
+                    <?php if (!empty($ad['listing_type'])): ?> · <?= h(listingTypeLabel($ad)) ?><?php endif; ?>
+                <?php else: ?>
+                    <strong><?= h(listingTypeLabel($ad)) ?></strong>
+                <?php endif; ?>
+            </div>
         </div>
 
         <?php $attrRows = adAttributeRows($ad); ?>
