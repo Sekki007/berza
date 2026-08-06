@@ -51,6 +51,7 @@ function savedSearchFiltersFromInput(array $input): array
         'location' => trim((string)($input['location'] ?? '')),
         'condition' => trim((string)($input['condition'] ?? '')),
         'type' => trim((string)($input['type'] ?? '')),
+        'listing_type' => trim((string)($input['listing_type'] ?? '')),
         'device_type' => $deviceType,
         'min_price' => trim((string)($input['min_price'] ?? '')),
         'max_price' => trim((string)($input['max_price'] ?? '')),
@@ -59,6 +60,9 @@ function savedSearchFiltersFromInput(array $input): array
     ];
     if (!in_array($filters['type'], ['telefon', 'delovi', 'servis', ''], true)) {
         $filters['type'] = '';
+    }
+    if (!in_array($filters['listing_type'], ['sell', 'buy', 'trade', ''], true)) {
+        $filters['listing_type'] = '';
     }
     return array_filter($filters, static fn($v) => $v !== '');
 }
@@ -70,6 +74,10 @@ function savedSearchToPublicFilters(array $search): array
         $f = [];
     }
     $type = trim((string)($f['type'] ?? ''));
+    $listingType = trim((string)($f['listing_type'] ?? ''));
+    if (!in_array($listingType, ['sell', 'buy', 'trade'], true)) {
+        $listingType = '';
+    }
     $deviceType = trim((string)($f['device_type'] ?? ''));
     if ($deviceType !== '' && !in_array($deviceType, allowedDeviceTypes(), true)) {
         $deviceType = '';
@@ -85,6 +93,7 @@ function savedSearchToPublicFilters(array $search): array
         'min_price' => trim((string)($f['min_price'] ?? '')),
         'max_price' => trim((string)($f['max_price'] ?? '')),
         'device_type' => $deviceType,
+        'listing_type' => $listingType,
         'types' => $type !== '' ? [$type] : [],
         'sort' => 'newest',
     ];
@@ -98,9 +107,17 @@ function savedSearchLabel(array $search): string
     }
     $f = $search['filters'] ?? [];
     $parts = [];
-    foreach (['q', 'brand', 'model', 'location', 'type', 'condition'] as $key) {
+    foreach (['q', 'brand', 'model', 'location', 'type', 'listing_type', 'condition'] as $key) {
         $v = trim((string)($f[$key] ?? ''));
         if ($v !== '') {
+            if ($key === 'listing_type') {
+                $v = match ($v) {
+                    'sell' => 'Prodajem',
+                    'buy' => 'Tražim',
+                    'trade' => 'Zamena',
+                    default => $v,
+                };
+            }
             $parts[] = $v;
         }
     }

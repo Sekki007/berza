@@ -1041,6 +1041,13 @@ function getPublicAds(array $filters = []): array
         $ads = array_filter($ads, static fn($ad) => in_array(getAdType($ad), $types, true));
     }
 
+    $listingType = trim((string)($filters['listing_type'] ?? ''));
+    if (in_array($listingType, ['sell', 'buy', 'trade'], true)) {
+        $ads = array_filter($ads, static function ($ad) use ($listingType) {
+            return getAdListingType($ad) === $listingType;
+        });
+    }
+
     if ($deviceType !== '') {
         $ads = array_filter($ads, static function ($ad) use ($deviceType) {
             return getAdType($ad) === 'telefon' && getAdDeviceType($ad) === $deviceType;

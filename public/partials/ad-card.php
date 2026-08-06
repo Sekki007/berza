@@ -70,7 +70,6 @@ $hasOrderBar = $shopCatalogMode && $messagesOn && !$isSold && !$shopCatalogOwn;
                     <span class="kp-list-view-count" title="<?= $views ?> pregleda">
                         <span aria-hidden="true">👁</span> <?= $views ?>
                     </span>
-                    <?php if ($intentBadge !== ''): ?><span class="listing-badge-intent listing-badge-intent--<?= h(getAdListingType($ad)) ?>"><?= h($intentBadge) ?></span><?php endif; ?>
                     <?php if ($isPromoted): ?><span class="listing-badge-promo">TOP</span><?php endif; ?>
                     <?php if ($isHighlighted && !$isPromoted): ?><span class="listing-badge-hi">Istaknut</span><?php endif; ?>
                     <?php if ($isSold): ?><span class="listing-badge-sold kp-list-badge kp-list-badge-sold"><?= h($soldLabel) ?></span><?php endif; ?>

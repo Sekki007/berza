@@ -40,9 +40,13 @@ $categoryGroup = trim((string)($_GET['category_group'] ?? ''));
 $type = trim((string)($_GET['type'] ?? ''));
 $deviceType = trim((string)($_GET['device_type'] ?? ''));
 $equipmentGroup = trim((string)($_GET['equipment_group'] ?? ''));
+$listingType = trim((string)($_GET['listing_type'] ?? ''));
 $schema = adFormSchema();
 if (!in_array($type, ['telefon', 'delovi', 'servis'], true)) {
     $type = '';
+}
+if (!in_array($listingType, ['sell', 'buy', 'trade'], true)) {
+    $listingType = '';
 }
 if ($deviceType !== '' && !in_array($deviceType, allowedDeviceTypes(), true)) {
     $deviceType = '';
@@ -83,6 +87,7 @@ $filters = [
     'category_group' => $categoryGroup,
     'device_type' => $deviceType,
     'equipment_group' => $equipmentGroup,
+    'listing_type' => $listingType,
     'types' => $type !== '' ? [$type] : [],
     'sort' => $sort,
 ];
@@ -108,6 +113,7 @@ $queryBase = array_filter([
     'category_group' => $categoryGroup,
     'device_type' => $deviceType,
     'equipment_group' => $equipmentGroup,
+    'listing_type' => $listingType,
     'type' => $type,
     'sort' => $sort,
 ], static fn($v) => $v !== '');
@@ -180,9 +186,9 @@ $equipmentGroupLabels = [
     'parts' => 'Delovi',
     'oprema' => 'Oprema',
 ];
-$hasFilters = $search !== '' || $brand !== '' || $model !== '' || $location !== '' || $condition !== '' || $type !== '' || $deviceType !== '' || $equipmentGroup !== '' || $minPrice !== '' || $maxPrice !== '' || $categoryGroup !== '';
+$hasFilters = $search !== '' || $brand !== '' || $model !== '' || $location !== '' || $condition !== '' || $type !== '' || $listingType !== '' || $deviceType !== '' || $equipmentGroup !== '' || $minPrice !== '' || $maxPrice !== '' || $categoryGroup !== '';
 $activeFilterCount = 0;
-foreach ([$brand, $model, $location, $condition, $type, $deviceType, $equipmentGroup, $minPrice, $maxPrice, $categoryGroup] as $fv) {
+foreach ([$brand, $model, $location, $condition, $type, $listingType, $deviceType, $equipmentGroup, $minPrice, $maxPrice, $categoryGroup] as $fv) {
     if ($fv !== '') {
         $activeFilterCount++;
     }
@@ -190,12 +196,18 @@ foreach ([$brand, $model, $location, $condition, $type, $deviceType, $equipmentG
 $resetFiltersUrl = '/index.php' . ($search !== '' ? ('?' . http_build_query(['q' => $search])) : '');
 $activeChips = [];
 $chipDefs = [];
+$listingTypeLabels = [
+    'sell' => 'Prodajem',
+    'buy' => 'Tražim',
+    'trade' => 'Zamena',
+];
 if ($equipmentGroup !== '') {
     $chipDefs[] = ['key' => 'equipment_group', 'value' => $equipmentGroup, 'label' => $equipmentGroupLabels[$equipmentGroup] ?? $equipmentGroup, 'also_unset' => ['type']];
 } elseif ($type !== '') {
     $chipDefs[] = ['key' => 'type', 'value' => $type, 'label' => $typeLabels[$type] ?? $type];
 }
 $chipDefs = array_merge($chipDefs, [
+    ['key' => 'listing_type', 'value' => $listingType, 'label' => $listingTypeLabels[$listingType] ?? $listingType],
     ['key' => 'device_type', 'value' => $deviceType, 'label' => (string)($schema['device_types'][$deviceType] ?? $deviceType)],
     ['key' => 'brand', 'value' => $brand, 'label' => $brand],
     ['key' => 'model', 'value' => $model, 'label' => $model],

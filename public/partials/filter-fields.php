@@ -2,7 +2,7 @@
 declare(strict_types=1);
 /**
  * Shared listing filters (sidebar + mobile drawer).
- * Expects: $cfg, $schema, $type, $deviceType, $brand, $location, $condition,
+ * Expects: $cfg, $schema, $type, $listingType, $deviceType, $brand, $location, $condition,
  * $minPrice, $maxPrice, $model, $categoryGroup, $sort, $search, $filterLayout
  * $filterLayout: 'sidebar' | 'drawer'
  */
@@ -13,6 +13,13 @@ $typeOptions = [
     'delovi' => 'Oprema',
     'servis' => 'Servis',
 ];
+$listingTypeOptions = [
+    '' => 'Sve',
+    'sell' => 'Prodajem',
+    'buy' => 'Tražim',
+    'trade' => 'Zamena',
+];
+$listingType = $listingType ?? '';
 $pricePresets = [
     ['label' => 'do 100€', 'min' => '', 'max' => '100'],
     ['label' => '100–300€', 'min' => '100', 'max' => '300'],
@@ -33,11 +40,23 @@ $uid = $filterLayout === 'drawer' ? 'm' : 'd';
 <?php endif; ?>
 
 <div class="filter-field">
-    <span class="filter-label" id="filter-type-<?= h($uid) ?>">Tip oglasa</span>
+    <span class="filter-label" id="filter-type-<?= h($uid) ?>">Kategorija</span>
     <div class="filter-chips" role="radiogroup" aria-labelledby="filter-type-<?= h($uid) ?>">
         <?php foreach ($typeOptions as $val => $label): ?>
             <label class="filter-chip<?= $type === $val ? ' is-active' : '' ?>">
                 <input type="radio" name="type" value="<?= h($val) ?>" <?= $type === $val ? 'checked' : '' ?>>
+                <span><?= h($label) ?></span>
+            </label>
+        <?php endforeach; ?>
+    </div>
+</div>
+
+<div class="filter-field">
+    <span class="filter-label" id="filter-listing-<?= h($uid) ?>">Namera</span>
+    <div class="filter-chips" role="radiogroup" aria-labelledby="filter-listing-<?= h($uid) ?>">
+        <?php foreach ($listingTypeOptions as $val => $label): ?>
+            <label class="filter-chip<?= $listingType === $val ? ' is-active' : '' ?>">
+                <input type="radio" name="listing_type" value="<?= h($val) ?>" <?= $listingType === $val ? 'checked' : '' ?>>
                 <span><?= h($label) ?></span>
             </label>
         <?php endforeach; ?>

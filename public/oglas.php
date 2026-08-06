@@ -341,7 +341,6 @@ $contactBlock = static function (string $formId = 'poruka') use (
                     </div>
                 </div>
             <?php endif; ?>
-            <?php if ($intentBadge !== ''): ?><span class="listing-badge-intent listing-badge-intent--<?= h(getAdListingType($ad)) ?> detail-intent"><?= h($intentBadge) ?></span><?php endif; ?>
             <?php if (!empty($ad['is_sold'])): ?><span class="listing-badge-sold detail-sold"><?= $isBuy ? 'Pronađeno' : 'Prodato' ?></span><?php endif; ?>
             <?php if (!empty($ad['is_promoted'])): ?><span class="listing-badge-promo detail-promo">TOP</span><?php endif; ?>
         </div>
