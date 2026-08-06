@@ -29,6 +29,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $prices = $_POST['service_price'] ?? [];
     $enabledKeys = is_array($_POST['service_enabled'] ?? null) ? $_POST['service_enabled'] : [];
     $appleOnlyKeys = is_array($_POST['service_apple_only'] ?? null) ? $_POST['service_apple_only'] : [];
+    $freeDailyKeys = is_array($_POST['service_free_daily'] ?? null) ? $_POST['service_free_daily'] : [];
 
     $newServices = [];
     if (is_array($keys)) {
@@ -45,6 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'price' => max(0, (int)($prices[$i] ?? 0)),
                 'enabled' => in_array($key, $enabledKeys, true),
                 'apple_only' => in_array($key, $appleOnlyKeys, true),
+                'free_daily' => in_array($key, $freeDailyKeys, true),
             ];
         }
     }
@@ -54,6 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $extraPrices = is_array($_POST['new_service_price'] ?? null) ? $_POST['new_service_price'] : [];
     $extraEnabled = is_array($_POST['new_service_enabled'] ?? null) ? $_POST['new_service_enabled'] : [];
     $extraApple = is_array($_POST['new_service_apple_only'] ?? null) ? $_POST['new_service_apple_only'] : [];
+    $extraFreeDaily = is_array($_POST['new_service_free_daily'] ?? null) ? $_POST['new_service_free_daily'] : [];
     foreach ($extraIds as $i => $rawId) {
         $serviceId = preg_replace('/\D+/', '', (string)$rawId) ?? '';
         $label = trim((string)($extraLabels[$i] ?? ''));
@@ -74,6 +77,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             'price' => max(0, (int)($extraPrices[$i] ?? 0)),
             'enabled' => in_array((string)$i, $extraEnabled, true),
             'apple_only' => in_array((string)$i, $extraApple, true),
+            'free_daily' => in_array((string)$i, $extraFreeDaily, true),
         ];
     }
 
@@ -139,6 +143,7 @@ require __DIR__ . '/partials/layout-start.php';
                             <th>Cena</th>
                             <th>Object</th>
                             <th>Apple</th>
+                            <th>Free 5/dan</th>
                             <th>Uključen</th>
                         </tr>
                     </thead>
@@ -168,6 +173,9 @@ require __DIR__ . '/partials/layout-start.php';
                                     <input type="checkbox" name="service_apple_only[]" value="<?= h($key) ?>" <?= !empty($service['apple_only']) ? 'checked' : '' ?>>
                                 </td>
                                 <td style="text-align:center;">
+                                    <input type="checkbox" name="service_free_daily[]" value="<?= h($key) ?>" <?= !empty($service['free_daily']) ? 'checked' : '' ?>>
+                                </td>
+                                <td style="text-align:center;">
                                     <input type="checkbox" name="service_enabled[]" value="<?= h($key) ?>" <?= !empty($service['enabled']) ? 'checked' : '' ?>>
                                 </td>
                             </tr>
@@ -194,6 +202,9 @@ require __DIR__ . '/partials/layout-start.php';
                     </div>
                     <label class="type-chip" style="min-width:auto;flex:none;">
                         <input type="checkbox" name="new_service_apple_only[]" value="<?= (string)$i ?>"> Samo Apple
+                    </label>
+                    <label class="type-chip" style="min-width:auto;flex:none;">
+                        <input type="checkbox" name="new_service_free_daily[]" value="<?= (string)$i ?>"> Free 5/dan
                     </label>
                     <label class="type-chip" style="min-width:auto;flex:none;">
                         <input type="checkbox" name="new_service_enabled[]" value="<?= (string)$i ?>" checked> Uključen

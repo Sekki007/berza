@@ -74,6 +74,12 @@ function imeiExtendedDailyLimit(): int
     return max(0, (int)(siteSettings()['imei_free_checks_per_day'] ?? 5));
 }
 
+function imeiCreditUnitDin(): int
+{
+    // 1 "kredit" iz IMEI cenovnika = 100 din sa novčanika korisnika.
+    return 100;
+}
+
 function imeiCheckConfigured(): bool
 {
     if (!imeiCheckEnabled()) {
@@ -86,7 +92,7 @@ function imeiCheckConfigured(): bool
 }
 
 /**
- * @return list<array{key:string,service_id:string,label:string,price:int,enabled:bool,apple_only:bool}>
+ * @return list<array{key:string,service_id:string,label:string,price:int,enabled:bool,apple_only:bool,free_daily:bool}>
  */
 function imeiServiceCatalog(): array
 {
@@ -111,13 +117,14 @@ function imeiServiceCatalog(): array
             'price' => max(0, (int)($item['price'] ?? 0)),
             'enabled' => !empty($item['enabled']),
             'apple_only' => !empty($item['apple_only']),
+            'free_daily' => !empty($item['free_daily']),
         ];
     }
     return $out;
 }
 
 /**
- * @return list<array{key:string,service_id:string,label:string,price:int,enabled:bool,apple_only:bool}>
+ * @return list<array{key:string,service_id:string,label:string,price:int,enabled:bool,apple_only:bool,free_daily:bool}>
  */
 function imeiEnabledServices(): array
 {
@@ -125,7 +132,7 @@ function imeiEnabledServices(): array
 }
 
 /**
- * @return array{key:string,service_id:string,label:string,price:int,enabled:bool,apple_only:bool}|null
+ * @return array{key:string,service_id:string,label:string,price:int,enabled:bool,apple_only:bool,free_daily:bool}|null
  */
 function imeiServiceByKey(string $key): ?array
 {
@@ -457,11 +464,12 @@ function imeiExtendedChecksRemaining(?int $userId = null): int
     return max(0, imeiExtendedDailyLimit() - imeiExtendedChecksUsedToday($userId));
 }
 
-function recordImeiExtendedCheck(int $userId): void
+function recordImeiExtendedCheck(int $userId, int $count = 1): void
 {
     if ($userId <= 0) {
         return;
     }
+    $count = max(1, $count);
     $state = readJsonFile('imei_state.json');
     $daily = is_array($state['extended_daily'] ?? null) ? $state['extended_daily'] : [];
     $today = date('Y-m-d');
@@ -469,7 +477,7 @@ function recordImeiExtendedCheck(int $userId): void
     if ((string)($bucket['date'] ?? '') !== $today) {
         $bucket = ['date' => $today, 'count' => 0];
     }
-    $bucket['count'] = (int)($bucket['count'] ?? 0) + 1;
+    $bucket['count'] = (int)($bucket['count'] ?? 0) + $count;
     $daily[$userId] = $bucket;
     $state['extended_daily'] = $daily;
     writeJsonFile('imei_state.json', $state);
@@ -670,34 +678,40 @@ function checkImeiExtended(string $imei, array $requestedKeys, string $brand = '
         return ['ok' => true, 'extended' => $cached, 'cached' => true];
     }
 
-    $totalPrice = 0;
-    foreach ($services as $service) {
-        $totalPrice += (int)$service['price'];
-    }
     $freeRemaining = chargeableImeiFreeChecksRemaining($userId);
-    $usedFree = false;
+    $freeConsumed = 0;
     $chargedCredits = 0;
-    if ($freeRemaining > 0) {
-        $usedFree = true;
-    } elseif ($totalPrice > 0) {
+    $chargedDin = 0;
+    foreach ($services as $service) {
+        $price = (int)$service['price'];
+        $isFreeEligible = !empty($service['free_daily']);
+        if ($isFreeEligible && $freeRemaining > 0) {
+            $freeRemaining--;
+            $freeConsumed++;
+            continue;
+        }
+        $chargedCredits += max(0, $price);
+        $chargedDin += max(0, $price) * imeiCreditUnitDin();
+    }
+    $usedFree = $freeConsumed > 0;
+    if ($chargedDin > 0) {
         if (!creditsEnabled()) {
             return ['ok' => false, 'error' => 'Besplatne provere su potrošene, a kredit sistem je isključen.'];
         }
-        if (getUserCredits($userId) < $totalPrice) {
-            return ['ok' => false, 'error' => 'Nemaš dovoljno kredita. Potrebno: ' . $totalPrice . ', saldo: ' . getUserCredits($userId) . '.'];
+        if (getUserCredits($userId) < $chargedDin) {
+            return ['ok' => false, 'error' => 'Nemaš dovoljno sredstava. Potrebno: ' . number_format($chargedDin, 0, ',', '.') . ' din, saldo: ' . number_format(getUserCredits($userId), 0, ',', '.') . ' din.'];
         }
-        if (!adjustUserCredits($userId, -$totalPrice, 'imei_check', 'IMEI proširena provera')) {
+        if (!adjustUserCredits($userId, -$chargedDin, 'imei_check', 'IMEI proširena provera')) {
             return ['ok' => false, 'error' => 'Skidanje kredita nije uspelo. Pokušaj ponovo.'];
         }
-        $chargedCredits = $totalPrice;
     }
 
     $serviceResults = [];
     foreach ($services as $service) {
         $order = instantCreateOrder((string)$service['service_id'], $imei);
         if (empty($order['ok'])) {
-            if ($chargedCredits > 0) {
-                adjustUserCredits($userId, $chargedCredits, 'imei_refund', 'Povraćaj kredita: IMEI neuspešna provera');
+            if ($chargedDin > 0) {
+                adjustUserCredits($userId, $chargedDin, 'imei_refund', 'Povraćaj kredita: IMEI neuspešna provera');
             }
             return [
                 'ok' => false,
@@ -718,8 +732,8 @@ function checkImeiExtended(string $imei, array $requestedKeys, string $brand = '
         }
     }
 
-    if ($usedFree) {
-        recordImeiExtendedCheck($userId);
+    if ($freeConsumed > 0) {
+        recordImeiExtendedCheck($userId, $freeConsumed);
     }
     $extended = ['services' => $serviceResults];
     cacheImeiExtended($imei, $serviceKeys, $extended);
@@ -728,6 +742,7 @@ function checkImeiExtended(string $imei, array $requestedKeys, string $brand = '
         'extended' => $extended,
         'cached' => false,
         'charged_credits' => $chargedCredits,
+        'charged_din' => $chargedDin,
         'used_free' => $usedFree,
     ];
 }

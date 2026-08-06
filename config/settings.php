@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 /**
- * @return list<array{key:string,service_id:string,label:string,price:int,enabled:bool,apple_only:bool}>
+ * @return list<array{key:string,service_id:string,label:string,price:int,enabled:bool,apple_only:bool,free_daily:bool}>
  */
 function defaultImeiServices(): array
 {
-    return [
+    $services = [
         ['key' => 'svc_1', 'service_id' => '1', 'label' => 'Find My iPhone [ FMI ] (ON/OFF)', 'price' => 1, 'enabled' => true, 'apple_only' => true],
         ['key' => 'svc_2', 'service_id' => '2', 'label' => 'Warranty + Activation - Apple [IMEI/SN]', 'price' => 2, 'enabled' => true, 'apple_only' => true],
         ['key' => 'svc_3', 'service_id' => '3', 'label' => 'Apple FULL INFO [No Carrier]', 'price' => 7, 'enabled' => true, 'apple_only' => true],
@@ -52,6 +52,12 @@ function defaultImeiServices(): array
         ['key' => 'svc_73', 'service_id' => '73', 'label' => 'Apple Simlock - cheap - BETA', 'price' => 1, 'enabled' => true, 'apple_only' => true],
         ['key' => 'svc_74', 'service_id' => '74', 'label' => 'SOLD BY - simple- NEW', 'price' => 65, 'enabled' => true, 'apple_only' => false],
     ];
+    return array_map(static function (array $service): array {
+        if (!array_key_exists('free_daily', $service)) {
+            $service['free_daily'] = false;
+        }
+        return $service;
+    }, $services);
 }
 
 function defaultSiteSettings(): array

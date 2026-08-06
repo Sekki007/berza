@@ -14,6 +14,7 @@ $result = null;
 $extended = null;
 $extendedCached = false;
 $chargedCredits = 0;
+$chargedDin = 0;
 $usedFree = false;
 $services = imeiEnabledServices();
 $allServices = imeiServiceCatalog();
@@ -46,11 +47,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $extended = $ext['extended'];
                     $extendedCached = !empty($ext['cached']);
                     $chargedCredits = (int)($ext['charged_credits'] ?? 0);
+                    $chargedDin = (int)($ext['charged_din'] ?? 0);
                     $usedFree = !empty($ext['used_free']);
                     if (!$extendedCached && $usedFree) {
                         $billingInfo = 'Provera je uračunata u besplatni dnevni limit.';
                     } elseif (!$extendedCached && $chargedCredits > 0) {
-                        $billingInfo = 'Naplaćeno: ' . $chargedCredits . ' kredita.';
+                        $billingInfo = 'Naplaćeno: ' . $chargedCredits . ' kredita (' . number_format($chargedDin, 0, ',', '.') . ' din).';
                     }
                 } else {
                     $extendedError = (string)($ext['error'] ?? 'Proširena provera trenutno nije uspela.');
@@ -132,10 +134,11 @@ require __DIR__ . '/partials/layout-start.php';
                             $price = (int)$service['price'];
                             $appleOnly = !empty($service['apple_only']);
                             $enabled = !empty($enabledServiceMap[$serviceKey]);
+                            $freeDaily = !empty($service['free_daily']);
                             $selected = in_array($serviceKey, $selectedServiceKeys, true);
                             ?>
                             <option value="<?= h($serviceKey) ?>"<?= $selected ? ' selected' : '' ?>>
-                                <?= h($serviceName) ?> — <?= $price ?> kredita<?= $appleOnly ? ' — samo Apple' : '' ?><?= $enabled ? '' : ' — trenutno isključen' ?>
+                                <?= h($serviceName) ?> — <?= $price ?> kredita<?= $freeDaily ? ' — besplatno do 5/dan' : '' ?><?= $appleOnly ? ' — samo Apple' : '' ?><?= $enabled ? '' : ' — trenutno isključen' ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
