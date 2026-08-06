@@ -140,30 +140,14 @@ require __DIR__ . '/partials/layout-start.php';
                     <p class="imei-credit-note">Napomena: primer obračuna je <strong>1 kredit = 100 din</strong>. Tačna naplata zavisi od cenovnika koji admin podesi.</p>
                 </div>
 
-                <?php if (isLoggedIn() && imeiCheckDhruConfigured()): ?>
-                    <div class="imei-extended-picker">
-                        <p class="imei-extended-title">Proširena provera — izaberi servise</p>
-                        <?php foreach ($services as $service): ?>
-                            <?php
-                            $key = (string)$service['key'];
-                            $checked = in_array($key, $selectedServiceKeys, true);
-                            ?>
-                            <label class="imei-extended-option check-inline">
-                                <input type="checkbox" name="services[]" value="<?= h($key) ?>"<?= $checked ? ' checked' : '' ?>>
-                                <span>
-                                    <strong><?= h((string)$service['label']) ?></strong>
-                                    <span class="imei-extended-quota">Cena: <?= (int)$service['price'] ?> kredita<?= !empty($service['apple_only']) ? ' (samo Apple)' : '' ?></span>
-                                </span>
-                            </label>
-                        <?php endforeach; ?>
-                        <p class="imei-extended-quota" style="margin-top:8px;">
-                            Besplatno dnevno: <?= (int)$extendedRemaining ?> / <?= imeiExtendedDailyLimit() ?>.
-                            Posle toga provera se naplaćuje kreditima po izabranim servisima.
-                        </p>
-                    </div>
-                <?php elseif (!isLoggedIn()): ?>
+                <?php if (!isLoggedIn()): ?>
                     <p class="imei-extended-login">
                         <a href="/login.php?redirect=<?= rawurlencode('/provera-imei') ?>">Prijavi se</a> da koristiš proširene servise iz liste i naplatu preko kredita.
+                    </p>
+                <?php else: ?>
+                    <p class="imei-extended-login">
+                        Za proširenu proveru izaberi servis iz liste iznad i pokreni proveru.
+                        Besplatno dnevno: <?= (int)$extendedRemaining ?> / <?= imeiExtendedDailyLimit() ?>.
                     </p>
                 <?php endif; ?>
             </form>
