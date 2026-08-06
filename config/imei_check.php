@@ -39,7 +39,11 @@ function imeiCheckApiKey(): string
 function imeiCheckDhruApiKey(): string
 {
     $dhru = trim((string)envValue('IMEI_CHECK_DHRU_API_KEY', ''));
-    return $dhru !== '' ? $dhru : '';
+    if ($dhru !== '') {
+        return $dhru;
+    }
+    // Backward compatibility: ako novi env nije setovan, koristi stari ključ.
+    return trim((string)envValue('IMEI_CHECK_API_KEY', ''));
 }
 
 function imeiCheckDhruConfigured(): bool
