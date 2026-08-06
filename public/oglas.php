@@ -369,6 +369,9 @@ $contactBlock = static function (string $formId = 'poruka') use (
 
         <div class="kp-card">
             <h3 class="kp-section-title kp-section-title--compact">Osnovne informacije</h3>
+            <?php if (!empty($ad['imei_tac_verified'])): ?>
+                <p class="imei-listing-verified">✓ Model potvrđen IMEI proverom</p>
+            <?php endif; ?>
             <?php if (!empty($ad['condition_state'])): ?>
                 <div class="kp-info-cond"><strong><?= h((string)$ad['condition_state']) ?></strong><?php if (!empty($ad['listing_type'])): ?> · <?= h(listingTypeLabel($ad)) ?><?php endif; ?></div>
             <?php elseif (!empty($ad['listing_type'])): ?>

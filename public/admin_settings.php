@@ -308,7 +308,7 @@ require __DIR__ . '/partials/layout-start.php';
                 </div>
 
                 <h3 style="margin-top:22px;">Rok trajanja oglasa</h3>
-                <p class="form-hint">Oglas se automatski deaktivira posle isteka. Prodavač dobija upozorenje na profilu (i opciono email) nekoliko dana ranije.</p>
+                <p class="form-hint">Oglas se automatski deaktivira posle isteka. Prodavač dobija upozorenje na profilu (i po želji email) nekoliko dana ranije.</p>
                 <div class="form-group form-checks">
                     <input type="hidden" name="enable_ad_expiry" value="0">
                     <label class="type-chip" style="min-width:auto;flex:none;"><input type="checkbox" name="enable_ad_expiry" value="1" <?= !empty($settings['enable_ad_expiry']) ? 'checked' : '' ?>> Uključi rok trajanja oglasa</label>

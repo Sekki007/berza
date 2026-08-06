@@ -390,7 +390,7 @@ require __DIR__ . '/partials/layout-start.php';
                         </div>
                     </div>
                     <div class="form-group">
-                        <label>Komentar (opciono)</label>
+                        <label>Komentar (nije obavezno)</label>
                         <textarea name="comment" rows="3" maxlength="500" placeholder="Kako je prošao kontakt / kupovina?"></textarea>
                     </div>
                     <button class="btn-call" type="submit">Pošalji ocenu</button>

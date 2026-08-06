@@ -84,7 +84,7 @@ require __DIR__ . '/partials/layout-start.php';
                 </div>
                 <?php if (!isLoggedIn()): ?>
                     <div class="form-group">
-                        <label>Tvoje ime (opciono)</label>
+                        <label>Tvoje ime (nije obavezno)</label>
                         <input type="text" name="from_name" placeholder="Ime">
                     </div>
                 <?php endif; ?>

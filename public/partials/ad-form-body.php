@@ -49,7 +49,7 @@ $contactExtraOpen = $contactSorted !== $dc
             <?= csrfField() ?>
             <div class="ad-form-head">
                 <h2><?= $isEdit ? 'Izmeni oglas' : 'Novi oglas' ?></h2>
-                <p class="ad-form-sub">Popuni osnovno — ostalo je opciono.</p>
+                <p class="ad-form-sub">Popuni osnovno — ostalo nije obavezno.</p>
             </div>
 
             <?php if ($formError !== ''): ?>
@@ -148,7 +148,7 @@ $contactExtraOpen = $contactSorted !== $dc
                                 <option value="<?= h($sc['id']) ?>" <?= ($currentShopCategoryId ?? '') === $sc['id'] ? 'selected' : '' ?>><?= h($sc['name']) ?></option>
                             <?php endforeach; ?>
                         </select>
-                        <p class="form-hint">Opciono — za katalog na tvom izlogu. Upravljaj kategorijama u <a href="/nalog.php?tab=profil#shop-categories">Nalogu</a>.</p>
+                        <p class="form-hint">Nije obavezno — za katalog na tvom izlogu. Upravljaj kategorijama u <a href="/nalog.php?tab=profil#shop-categories">Nalogu</a>.</p>
                     </div>
                 <?php endif; ?>
 
@@ -213,7 +213,7 @@ $contactExtraOpen = $contactSorted !== $dc
                 </div>
                 <div class="form-row">
                     <div class="form-group">
-                        <label>Brend <span class="ad-form-optional">(opciono)</span></label>
+                        <label>Brend <span class="ad-form-optional">(nije obavezno)</span></label>
                         <select name="brand" data-phone-brand>
                             <option value="">—</option>
                             <?php foreach ($phoneBrands as $brand): ?>
@@ -222,11 +222,33 @@ $contactExtraOpen = $contactSorted !== $dc
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Model <span class="ad-form-optional">(opciono)</span></label>
+                        <label>Model <span class="ad-form-optional">(nije obavezno)</span></label>
                         <input name="model" id="ad-model" value="<?= h((string)$ad['model']) ?>" placeholder="npr. iPhone 13 Pro Max" autocomplete="off">
                     </div>
                 </div>
                 <p class="form-hint">Nije obavezno — dovoljan je naslov. Brend pomaže u filterima.</p>
+                <div class="form-group imei-listing-verify">
+                    <label for="ad-imei">IMEI provera <span class="ad-form-optional">(nije obavezno)</span></label>
+                    <div class="imei-listing-verify-row">
+                        <input
+                            id="ad-imei"
+                            name="imei"
+                            type="text"
+                            inputmode="numeric"
+                            pattern="[0-9 ]{15,20}"
+                            maxlength="20"
+                            placeholder="Unesi 15 cifara"
+                            autocomplete="off"
+                            data-ad-imei
+                        >
+                        <button type="button" class="btn-sm btn-sm-primary" data-ad-imei-check>Proveri i popuni</button>
+                    </div>
+                    <p class="form-hint">Proveravamo samo brend i model. IMEI se ne prikazuje niti čuva kao pun broj.</p>
+                    <p class="imei-listing-verify-result" data-ad-imei-result aria-live="polite" hidden></p>
+                    <?php if (!empty($ad['imei_tac_verified'])): ?>
+                        <p class="imei-listing-verified">✓ Model je već potvrđen IMEI proverom<?= !empty($ad['imei_tac_verified_at']) ? ' · ' . h(date('d.m.Y.', strtotime((string)$ad['imei_tac_verified_at']))) : '' ?>.</p>
+                    <?php endif; ?>
+                </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label>Stanje</label>
@@ -310,7 +332,7 @@ $contactExtraOpen = $contactSorted !== $dc
             <section class="ad-form-section" data-panel="delovi" <?= $currentType !== 'delovi' ? 'hidden' : '' ?>>
                 <h3 class="ad-form-section-title">Detalji opreme</h3>
                 <div class="form-group">
-                    <label>Brend <span class="ad-form-optional">(opciono)</span></label>
+                    <label>Brend <span class="ad-form-optional">(nije obavezno)</span></label>
                     <select name="brand_parts" data-parts-brand>
                         <option value="">—</option>
                         <?php foreach ($phoneBrands as $brand): ?>
@@ -450,7 +472,7 @@ $contactExtraOpen = $contactSorted !== $dc
                         <input name="shop_name" value="<?= h((string)($ad['shop_name'] ?? '')) ?>" placeholder="Iz profila ako ostaviš prazno" autocomplete="organization">
                     </div>
                     <div class="form-group">
-                        <label>Oznaka (opciono)</label>
+                        <label>Oznaka (nije obavezno)</label>
                         <input name="badge" placeholder="npr. Garancija" value="<?= h((string)($ad['badge'] ?? '')) ?>">
                     </div>
                     <div class="form-group form-checks">
@@ -472,7 +494,7 @@ $contactExtraOpen = $contactSorted !== $dc
                 $pkgs = topPackages();
                 ?>
                 <section class="ad-form-section ad-form-section--promo">
-                    <h3 class="ad-form-section-title">Istakni oglas <span class="ad-form-optional">(opciono)</span></h3>
+                    <h3 class="ad-form-section-title">Istakni oglas <span class="ad-form-optional">(nije obavezno)</span></h3>
                     <p class="form-hint" style="margin-top:0;">Možeš ostaviti besplatno.<?= $creditsOnForm ? ' Saldo: <strong>' . h(formatCredits($bal)) . '</strong>.' : '' ?></p>
                     <div class="promo-pick-list">
                         <label class="promo-pick-option">

@@ -45,7 +45,7 @@ require __DIR__ . '/partials/layout-start.php';
                         <input type="text" name="title" required maxlength="180" value="<?= h((string)($guide['title'] ?? '')) ?>">
                     </div>
                     <div class="form-group">
-                        <label>Slug (opciono)</label>
+                        <label>Slug (nije obavezno)</label>
                         <input type="text" name="slug" maxlength="180" value="<?= h((string)($guide['slug'] ?? '')) ?>">
                     </div>
                 </div>

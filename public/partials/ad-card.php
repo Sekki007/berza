@@ -94,6 +94,7 @@ $hasOrderBar = $shopCatalogMode && $messagesOn && !$isSold && !$shopCatalogOwn;
                             <?= h($categoryLabel) ?>
                         </span>
                         <?php if ($isPromoted): ?><span class="kp-list-badge">TOP</span><?php endif; ?>
+                        <?php if (!empty($ad['imei_tac_verified'])): ?><span class="imei-verification-badge">✓ Model potvrđen</span><?php endif; ?>
                     </div>
 
                     <div class="listing-desktop-extra">
@@ -101,6 +102,9 @@ $hasOrderBar = $shopCatalogMode && $messagesOn && !$isSold && !$shopCatalogOwn;
                         <div class="listing-tags">
                             <?php if (!empty($ad['badge'])): ?>
                                 <span class="tag tag-green"><?= h((string)$ad['badge']) ?></span>
+                            <?php endif; ?>
+                            <?php if (!empty($ad['imei_tac_verified'])): ?>
+                                <span class="imei-verification-badge">✓ Model potvrđen IMEI proverom</span>
                             <?php endif; ?>
                             <?php if (!empty($ad['model'])): ?>
                                 <span class="tag tag-gray"><?= h((string)$ad['model']) ?></span>

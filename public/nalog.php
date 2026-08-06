@@ -1549,7 +1549,7 @@ require __DIR__ . '/partials/layout-start.php';
                     </div>
 
                     <div class="profile-section" data-private-shop <?= $accountType === 'business' ? 'hidden' : '' ?>>
-                        <h3 class="profile-section-title">Izlog (opciono)</h3>
+                        <h3 class="profile-section-title">Izlog (nije obavezno)</h3>
                         <div class="form-group">
                             <label>Naziv izloga</label>
                             <input type="text" name="shop_name_private" value="<?= h((string)($profile['shop_name'] ?? '')) ?>" placeholder="npr. tvoje ime ili nick za izlog" <?= $accountType === 'business' ? 'disabled' : '' ?>>

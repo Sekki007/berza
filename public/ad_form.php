@@ -48,6 +48,11 @@ $ad = [
     'shop_name' => '',
     'shop_category_id' => '',
     'badge' => '',
+    'imei_tac_verified' => 0,
+    'imei_tac_verified_at' => null,
+    'imei_tac_hash' => '',
+    'imei_tac_brand' => '',
+    'imei_tac_model' => '',
     'images' => [],
     'is_active' => 1,
     'is_promoted' => 0,
@@ -137,6 +142,28 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $storage = $adType === 'telefon' ? trim((string)($_POST['storage'] ?? '')) : '';
     $model = $adType === 'servis' ? '' : trim((string)($_POST['model'] ?? ''));
+    $imeiForVerification = $adType === 'telefon' ? normalizeImei((string)($_POST['imei'] ?? '')) : '';
+    $imeiVerification = null;
+    if ($imeiForVerification !== '') {
+        if (!isValidImei($imeiForVerification)) {
+            $formError = 'IMEI za potvrdu mora imati 15 ispravnih cifara.';
+        } else {
+            $imeiCheck = checkImeiModel($imeiForVerification);
+            if (empty($imeiCheck['ok']) || !is_array($imeiCheck['result'] ?? null)) {
+                $formError = (string)($imeiCheck['error'] ?? 'IMEI provera trenutno nije uspela. Pokušaj ponovo ili objavi oglas bez IMEI provere.');
+            } else {
+                $imeiVerification = $imeiCheck['result'];
+                $verifiedBrand = trim((string)($imeiVerification['brand'] ?? ''));
+                $verifiedModel = trim((string)($imeiVerification['model'] ?? $imeiVerification['name'] ?? ''));
+                if ($verifiedBrand !== '') {
+                    $brand = $verifiedBrand;
+                }
+                if ($verifiedModel !== '') {
+                    $model = $verifiedModel;
+                }
+            }
+        }
+    }
     $categoryGroup = trim((string)($_POST['category_group'] ?? ''));
     if ($adType === 'telefon') {
         $categoryGroup = 'phones';
@@ -167,6 +194,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'shop_name' => trim((string)($_POST['shop_name'] ?? '')),
         'shop_category_id' => normalizeAdShopCategoryId($profile, (string)($_POST['shop_category_id'] ?? '')),
         'badge' => trim((string)($_POST['badge'] ?? '')),
+        'imei_tac_verified' => $adType === 'telefon' ? ($imeiVerification !== null ? 1 : (int)($ad['imei_tac_verified'] ?? 0)) : 0,
+        'imei_tac_verified_at' => $adType === 'telefon' ? ($imeiVerification !== null ? date('Y-m-d H:i:s') : ($ad['imei_tac_verified_at'] ?? null)) : null,
+        'imei_tac_hash' => $adType === 'telefon' ? ($imeiVerification !== null ? hash('sha256', $imeiForVerification) : (string)($ad['imei_tac_hash'] ?? '')) : '',
+        'imei_tac_brand' => $adType === 'telefon' ? ($imeiVerification !== null ? trim((string)($imeiVerification['brand'] ?? '')) : (string)($ad['imei_tac_brand'] ?? '')) : '',
+        'imei_tac_model' => $adType === 'telefon' ? ($imeiVerification !== null ? trim((string)($imeiVerification['model'] ?? $imeiVerification['name'] ?? '')) : (string)($ad['imei_tac_model'] ?? '')) : '',
         'is_active' => isset($_POST['is_active']) ? 1 : 0,
         'is_sold' => isset($_POST['is_sold']) ? 1 : 0,
         'is_promoted' => (int)($ad['is_promoted'] ?? 0),
