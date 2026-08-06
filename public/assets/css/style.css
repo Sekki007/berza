@@ -350,6 +350,14 @@ body.account-menu-open{overflow:hidden;}
   display:inline-flex !important;align-items:center;justify-content:center;
   border:0;border-radius:8px;cursor:pointer;white-space:nowrap;
 }
+.imei-services-public{
+  margin-top:14px;padding:12px;border:1px solid #d7dee8;border-radius:10px;background:#f8fafc;
+}
+.imei-service-preview{
+  width:100%;padding:10px 11px;border:1px solid var(--border);border-radius:8px;
+  font-size:13px;background:#fff;
+}
+.imei-credit-note{margin:8px 0 0;font-size:12px;color:var(--text-muted);}
 .imei-message,.imei-result{margin-top:18px;border-radius:10px;padding:15px;}
 .imei-message{display:grid;gap:3px;}
 .imei-message--error{border:1px solid #efc4c1;background:#fff4f3;color:#9c251d;}

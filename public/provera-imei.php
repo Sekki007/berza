@@ -16,6 +16,11 @@ $extendedCached = false;
 $chargedCredits = 0;
 $usedFree = false;
 $services = imeiEnabledServices();
+$allServices = imeiServiceCatalog();
+$enabledServiceMap = [];
+foreach ($services as $enabledService) {
+    $enabledServiceMap[(string)$enabledService['key']] = true;
+}
 $serviceLabels = [];
 foreach ($services as $service) {
     $serviceLabels[(string)$service['key']] = (string)$service['label'];
@@ -115,6 +120,25 @@ require __DIR__ . '/partials/layout-start.php';
                     <button class="btn-call imei-submit" type="submit">Proveri besplatno</button>
                 </div>
                 <p id="imei-help" class="form-hint">IMEI možeš pronaći pozivom na <strong>*#06#</strong> ili u Podešavanja → O telefonu.</p>
+                <div class="imei-services-public">
+                    <label class="imei-label" for="imei-service-preview">Lista svih servisa i cena</label>
+                    <select id="imei-service-preview" class="imei-service-preview" aria-label="Lista servisa i cena">
+                        <?php foreach ($allServices as $service): ?>
+                            <?php
+                            $serviceKey = (string)$service['key'];
+                            $serviceId = (string)$service['service_id'];
+                            $serviceName = (string)$service['label'];
+                            $price = (int)$service['price'];
+                            $appleOnly = !empty($service['apple_only']);
+                            $enabled = !empty($enabledServiceMap[$serviceKey]);
+                            ?>
+                            <option>
+                                ID <?= h($serviceId) ?> — <?= h($serviceName) ?> — <?= $price ?> kredita<?= $appleOnly ? ' — samo Apple' : '' ?><?= $enabled ? '' : ' — trenutno isključen' ?>
+                            </option>
+                        <?php endforeach; ?>
+                    </select>
+                    <p class="imei-credit-note">Napomena: primer obračuna je <strong>1 kredit = 100 din</strong>. Tačna naplata zavisi od cenovnika koji admin podesi.</p>
+                </div>
 
                 <?php if (isLoggedIn() && imeiCheckDhruConfigured()): ?>
                     <div class="imei-extended-picker">
@@ -139,7 +163,7 @@ require __DIR__ . '/partials/layout-start.php';
                     </div>
                 <?php elseif (!isLoggedIn()): ?>
                     <p class="imei-extended-login">
-                        <a href="/login.php?redirect=<?= rawurlencode('/provera-imei') ?>">Prijavi se</a> da biraš proširene IMEI servise i koristiš kredite.
+                        <a href="/login.php?redirect=<?= rawurlencode('/provera-imei') ?>">Prijavi se</a> da koristiš proširene servise iz liste i naplatu preko kredita.
                     </p>
                 <?php endif; ?>
             </form>

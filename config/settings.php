@@ -2,6 +2,58 @@
 
 declare(strict_types=1);
 
+/**
+ * @return list<array{key:string,service_id:string,label:string,price:int,enabled:bool,apple_only:bool}>
+ */
+function defaultImeiServices(): array
+{
+    return [
+        ['key' => 'svc_1', 'service_id' => '1', 'label' => 'Find My iPhone [ FMI ] (ON/OFF)', 'price' => 1, 'enabled' => true, 'apple_only' => true],
+        ['key' => 'svc_2', 'service_id' => '2', 'label' => 'Warranty + Activation - Apple [IMEI/SN]', 'price' => 2, 'enabled' => true, 'apple_only' => true],
+        ['key' => 'svc_3', 'service_id' => '3', 'label' => 'Apple FULL INFO [No Carrier]', 'price' => 7, 'enabled' => true, 'apple_only' => true],
+        ['key' => 'svc_4', 'service_id' => '4', 'label' => 'iCloud Clean/Lost Check', 'price' => 2, 'enabled' => true, 'apple_only' => true],
+        ['key' => 'svc_5', 'service_id' => '5', 'label' => 'Blacklist Status (GSMA) -updated', 'price' => 2, 'enabled' => true, 'apple_only' => false],
+        ['key' => 'svc_6', 'service_id' => '6', 'label' => 'Blacklist Pro Check (GSMA) -with history', 'price' => 9, 'enabled' => true, 'apple_only' => false],
+        ['key' => 'svc_8', 'service_id' => '8', 'label' => 'Samsung Info (S1) (IMEI)', 'price' => 4, 'enabled' => true, 'apple_only' => false],
+        ['key' => 'svc_9', 'service_id' => '9', 'label' => 'SOLD BY + GSX', 'price' => 100, 'enabled' => true, 'apple_only' => false],
+        ['key' => 'svc_10', 'service_id' => '10', 'label' => 'IMEI to Model [all brands][IMEI/SN]', 'price' => 1, 'enabled' => true, 'apple_only' => false],
+        ['key' => 'svc_11', 'service_id' => '11', 'label' => 'IMEI to Brand/Model/Name', 'price' => 1, 'enabled' => true, 'apple_only' => false],
+        ['key' => 'svc_13', 'service_id' => '13', 'label' => 'Model + Color + Storage + FMI (+config code)', 'price' => 2, 'enabled' => true, 'apple_only' => false],
+        ['key' => 'svc_14', 'service_id' => '14', 'label' => 'IMEI to SN (Full Convertor)', 'price' => 2, 'enabled' => true, 'apple_only' => false],
+        ['key' => 'svc_15', 'service_id' => '15', 'label' => 'T-mobile (ESN) PRO Check', 'price' => 4, 'enabled' => true, 'apple_only' => false],
+        ['key' => 'svc_16', 'service_id' => '16', 'label' => 'Verizon (ESN) Clean/Lost Status', 'price' => 3, 'enabled' => true, 'apple_only' => false],
+        ['key' => 'svc_17', 'service_id' => '17', 'label' => 'Huawei IMEI Info', 'price' => 7, 'enabled' => true, 'apple_only' => false],
+        ['key' => 'svc_18', 'service_id' => '18', 'label' => 'iMac FMI Status On/Off', 'price' => 30, 'enabled' => true, 'apple_only' => true],
+        ['key' => 'svc_19', 'service_id' => '19', 'label' => 'Apple FULL INFO [+Carrier] B (+MDM ) -updated', 'price' => 15, 'enabled' => true, 'apple_only' => true],
+        ['key' => 'svc_21', 'service_id' => '21', 'label' => 'SAMSUNG INFO & KNOX GUARD (S2)', 'price' => 14, 'enabled' => true, 'apple_only' => false],
+        ['key' => 'svc_22', 'service_id' => '22', 'label' => 'Apple BASIC INFO (PRO) - new', 'price' => 5, 'enabled' => true, 'apple_only' => true],
+        ['key' => 'svc_23', 'service_id' => '23', 'label' => 'Apple Carrier Check (S2) -updated', 'price' => 4, 'enabled' => true, 'apple_only' => true],
+        ['key' => 'svc_25', 'service_id' => '25', 'label' => 'XIAOMI MI LOCK & INFO', 'price' => 5, 'enabled' => true, 'apple_only' => false],
+        ['key' => 'svc_27', 'service_id' => '27', 'label' => 'ONEPLUS IMEI INFO', 'price' => 4, 'enabled' => true, 'apple_only' => false],
+        ['key' => 'svc_33', 'service_id' => '33', 'label' => 'Replacement Status (Active Device)', 'price' => 1, 'enabled' => true, 'apple_only' => false],
+        ['key' => 'svc_34', 'service_id' => '34', 'label' => 'Replaced Status (Original Device)', 'price' => 1, 'enabled' => true, 'apple_only' => false],
+        ['key' => 'svc_36', 'service_id' => '36', 'label' => 'Samsung Info (S1) + Blacklist', 'price' => 6, 'enabled' => true, 'apple_only' => false],
+        ['key' => 'svc_37', 'service_id' => '37', 'label' => 'Samsung Info & KNOX GUARD (S1)', 'price' => 8, 'enabled' => true, 'apple_only' => false],
+        ['key' => 'svc_39', 'service_id' => '39', 'label' => 'APPLE FULL INFO [+Carrier] A-updated', 'price' => 10, 'enabled' => true, 'apple_only' => true],
+        ['key' => 'svc_41', 'service_id' => '41', 'label' => 'MDM Status ON/OFF + Fmi + ModelDesc', 'price' => 23, 'enabled' => true, 'apple_only' => true],
+        ['key' => 'svc_47', 'service_id' => '47', 'label' => 'CHIMAERA Check – Apple Block', 'price' => 45, 'enabled' => true, 'apple_only' => true],
+        ['key' => 'svc_50', 'service_id' => '50', 'label' => 'Apple SERIAL Info(model,size,color)', 'price' => 1, 'enabled' => true, 'apple_only' => true],
+        ['key' => 'svc_51', 'service_id' => '51', 'label' => 'Warranty + Activation - Apple [SN]', 'price' => 1, 'enabled' => true, 'apple_only' => true],
+        ['key' => 'svc_52', 'service_id' => '52', 'label' => 'Apple Model Description (Model, Color, Size)', 'price' => 12, 'enabled' => true, 'apple_only' => true],
+        ['key' => 'svc_58', 'service_id' => '58', 'label' => 'Honor Info', 'price' => 5, 'enabled' => true, 'apple_only' => false],
+        ['key' => 'svc_61', 'service_id' => '61', 'label' => 'Apple Demo Unit Device Info', 'price' => 14, 'enabled' => true, 'apple_only' => true],
+        ['key' => 'svc_62', 'service_id' => '62', 'label' => 'EID INFO (IMEI TO EID)', 'price' => 2, 'enabled' => true, 'apple_only' => false],
+        ['key' => 'svc_63', 'service_id' => '63', 'label' => 'Motorola Info', 'price' => 5, 'enabled' => true, 'apple_only' => false],
+        ['key' => 'svc_64', 'service_id' => '64', 'label' => 'Model Description + MPN+ FMI', 'price' => 25, 'enabled' => true, 'apple_only' => false],
+        ['key' => 'svc_67', 'service_id' => '67', 'label' => 'Warranty Pro +Activation -Apple [IMEI/SN]', 'price' => 3, 'enabled' => true, 'apple_only' => true],
+        ['key' => 'svc_69', 'service_id' => '69', 'label' => 'Apple Info Custom + Carrier V2 (IMEI/SN)', 'price' => 7, 'enabled' => true, 'apple_only' => true],
+        ['key' => 'svc_71', 'service_id' => '71', 'label' => 'Apple IMEI Pair Lookup (IMEI1+IMEI2)', 'price' => 1, 'enabled' => true, 'apple_only' => true],
+        ['key' => 'svc_72', 'service_id' => '72', 'label' => 'Google Pixel Info + Warranty (S2)', 'price' => 10, 'enabled' => true, 'apple_only' => false],
+        ['key' => 'svc_73', 'service_id' => '73', 'label' => 'Apple Simlock - cheap - BETA', 'price' => 1, 'enabled' => true, 'apple_only' => true],
+        ['key' => 'svc_74', 'service_id' => '74', 'label' => 'SOLD BY - simple- NEW', 'price' => 65, 'enabled' => true, 'apple_only' => false],
+    ];
+}
+
 function defaultSiteSettings(): array
 {
     return [
@@ -72,11 +124,7 @@ function defaultSiteSettings(): array
         'google_tag_require_consent' => true,
         'ga4_property_id' => '',
         'imei_free_checks_per_day' => 5,
-        'imei_services' => [
-            ['key' => 'blacklist', 'service_id' => '5', 'label' => 'Blacklist (GSMA)', 'price' => 2, 'enabled' => true, 'apple_only' => false],
-            ['key' => 'fmi', 'service_id' => '1', 'label' => 'Find My iPhone', 'price' => 1, 'enabled' => true, 'apple_only' => true],
-            ['key' => 'icloud', 'service_id' => '4', 'label' => 'iCloud Clean/Lost', 'price' => 2, 'enabled' => true, 'apple_only' => true],
-        ],
+        'imei_services' => defaultImeiServices(),
     ];
 }
 

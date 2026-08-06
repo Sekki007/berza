@@ -815,3 +815,21 @@ function imeiCheckAccountInfo(): array
         'currency' => trim((string)($data['currency'] ?? 'USD')),
     ];
 }
+
+/**
+ * @return array{online:bool,detail:string}
+ */
+function imeiProviderStatus(): array
+{
+    if (!imeiCheckEnabled()) {
+        return ['online' => false, 'detail' => 'IMEI provera je isključena.'];
+    }
+    if (!imeiCheckDhruConfigured()) {
+        return ['online' => false, 'detail' => 'Instant API ključ nije podešen.'];
+    }
+    $balance = instantApiRequest('balance');
+    if (empty($balance['ok'])) {
+        return ['online' => false, 'detail' => trim((string)($balance['detail'] ?? 'Provider ne odgovara.'))];
+    }
+    return ['online' => true, 'detail' => 'Provider odgovara na API zahteve.'];
+}
