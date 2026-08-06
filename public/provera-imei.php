@@ -6,23 +6,43 @@ require_once dirname(__DIR__) . '/config/bootstrap.php';
 
 $error = '';
 $errorDetail = '';
+$extendedError = '';
+$extendedErrorDetail = '';
 $checkedImei = '';
+$wantExtended = false;
 $result = null;
+$extended = null;
+$extendedCached = false;
+$extendedRemaining = isLoggedIn() ? imeiExtendedChecksRemaining() : 0;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     requireCsrf('/provera-imei');
     $checkedImei = normalizeImei((string)($_POST['imei'] ?? ''));
+    $wantExtended = !empty($_POST['extended']);
     if (!isValidImei($checkedImei)) {
         $error = 'Unesi ispravan IMEI od 15 cifara.';
     } else {
         $check = checkImeiModel($checkedImei);
         if (!empty($check['ok']) && is_array($check['result'] ?? null)) {
             $result = $check['result'];
+            if ($wantExtended) {
+                $brand = trim((string)($result['brand'] ?? ''));
+                $name = trim((string)($result['name'] ?? ''));
+                $ext = checkImeiExtended($checkedImei, $brand, $name);
+                if (!empty($ext['ok']) && is_array($ext['extended'] ?? null)) {
+                    $extended = $ext['extended'];
+                    $extendedCached = !empty($ext['cached']);
+                } else {
+                    $extendedError = (string)($ext['error'] ?? 'Proširena provera trenutno nije uspela.');
+                    $extendedErrorDetail = (string)($ext['detail'] ?? '');
+                }
+            }
         } else {
             $error = (string)($check['error'] ?? 'Provera trenutno nije uspela. Pokušaj ponovo.');
             $errorDetail = (string)($check['detail'] ?? '');
         }
     }
+    $extendedRemaining = isLoggedIn() ? imeiExtendedChecksRemaining() : 0;
 }
 
 $pageTitle = 'Besplatna IMEI provera telefona — KupiTelefon';
@@ -75,11 +95,33 @@ require __DIR__ . '/partials/layout-start.php';
                         maxlength="20"
                         placeholder="Unesi 15 cifara"
                         aria-describedby="imei-help"
+                        value="<?= h($checkedImei) ?>"
                         required
                     >
                     <button class="btn-call imei-submit" type="submit">Proveri besplatno</button>
                 </div>
                 <p id="imei-help" class="form-hint">IMEI možeš pronaći pozivom na <strong>*#06#</strong> ili u Podešavanja → O telefonu.</p>
+
+                <?php if (isLoggedIn() && imeiCheckDhruConfigured()): ?>
+                    <label class="imei-extended-option check-inline">
+                        <input type="checkbox" name="extended" value="1"<?= $wantExtended ? ' checked' : '' ?><?= $extendedRemaining <= 0 ? ' disabled' : '' ?>>
+                        <span>
+                            <strong>Proširena provera</strong> — blacklist status, Find My iPhone i iCloud (za Apple)
+                            <span class="imei-extended-quota">
+                                <?php if ($extendedRemaining > 0): ?>
+                                    Preostalo danas: <strong><?= (int)$extendedRemaining ?></strong> od <?= imeiExtendedDailyLimit() ?>
+                                <?php else: ?>
+                                    Dnevni limit od <?= imeiExtendedDailyLimit() ?> proširenih provera je iskorišćen
+                                <?php endif; ?>
+                            </span>
+                        </span>
+                    </label>
+                <?php elseif (!isLoggedIn()): ?>
+                    <p class="imei-extended-login">
+                        <a href="/login.php?redirect=<?= rawurlencode('/provera-imei') ?>">Prijavi se</a>
+                        za do <?= imeiExtendedDailyLimit() ?> proširenih provera dnevno (blacklist, iCloud/FMI za Apple).
+                    </p>
+                <?php endif; ?>
             </form>
 
             <?php if ($error !== ''): ?>
@@ -97,7 +139,6 @@ require __DIR__ . '/partials/layout-start.php';
                 $brand = trim((string)($result['brand'] ?? ''));
                 $model = trim((string)($result['model'] ?? ''));
                 $name = trim((string)($result['name'] ?? ''));
-                $displayName = $name !== '' ? $name : trim($brand . ' ' . $model);
                 ?>
                 <div class="imei-result" aria-live="polite">
                     <div class="imei-result-head">
@@ -127,12 +168,58 @@ require __DIR__ . '/partials/layout-start.php';
                         <a class="btn-sm btn-sm-primary" href="/index.php?brand=<?= rawurlencode($brand) ?>">Pogledaj <?= h($brand) ?> oglase</a>
                     <?php endif; ?>
                 </div>
+
+                <?php if ($extendedError !== ''): ?>
+                    <div class="imei-message imei-message--error" role="alert">
+                        <strong>Proširena provera nije uspela</strong>
+                        <span><?= h($extendedError) ?></span>
+                        <?php if ($extendedErrorDetail !== '' && isAdmin()): ?>
+                            <span class="imei-admin-detail">Detalj (vidi samo admin): <?= h($extendedErrorDetail) ?></span>
+                        <?php endif; ?>
+                    </div>
+                <?php endif; ?>
+
+                <?php if (is_array($extended)): ?>
+                    <div class="imei-extended-result" aria-live="polite">
+                        <div class="imei-extended-head">
+                            <strong>Proširena provera</strong>
+                            <?php if ($extendedCached): ?>
+                                <span class="imei-extended-note">Iz keša (ne troši dnevni limit)</span>
+                            <?php endif; ?>
+                        </div>
+                        <div class="imei-extended-grid">
+                            <?php
+                            $rows = [
+                                ['title' => 'Blacklist (GSMA)', 'data' => $extended['blacklist'] ?? []],
+                            ];
+                            if (is_array($extended['fmi'] ?? null)) {
+                                $rows[] = ['title' => 'Find My iPhone', 'data' => $extended['fmi']];
+                            }
+                            if (is_array($extended['icloud'] ?? null)) {
+                                $rows[] = ['title' => 'iCloud status', 'data' => $extended['icloud']];
+                            }
+                            foreach ($rows as $row):
+                                $level = (string)($row['data']['level'] ?? 'unknown');
+                                $label = (string)($row['data']['label'] ?? 'Nepoznato');
+                                $detail = (string)($row['data']['detail'] ?? '');
+                            ?>
+                                <article class="imei-extended-item">
+                                    <h3><?= h($row['title']) ?></h3>
+                                    <span class="imei-badge imei-badge--<?= h($level) ?>"><?= h($label) ?></span>
+                                    <?php if ($detail !== ''): ?>
+                                        <p><?= h($detail) ?></p>
+                                    <?php endif; ?>
+                                </article>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endif; ?>
             <?php endif; ?>
         </section>
 
         <section class="imei-info-grid">
             <article class="form-card">
-                <h2>Šta ova besplatna provera pokazuje?</h2>
+                <h2>Šta besplatna provera pokazuje?</h2>
                 <ul>
                     <li>brend telefona</li>
                     <li>model i naziv uređaja</li>
@@ -140,14 +227,20 @@ require __DIR__ . '/partials/layout-start.php';
                 </ul>
             </article>
             <article class="form-card">
-                <h2>Važno pre kupovine</h2>
-                <p>Uporedi rezultat sa modelom u oglasu, kutijom i podacima u telefonu. Ako se podaci ne poklapaju, traži objašnjenje pre plaćanja.</p>
-                <a href="/vodic/provera-polovnog-iphone-a">Pročitaj vodič za proveru telefona →</a>
+                <h2>Proširena provera (prijavljeni korisnici)</h2>
+                <ul>
+                    <li>blacklist status (GSMA)</li>
+                    <li>Find My iPhone i iCloud status za Apple uređaje</li>
+                    <li><?= imeiExtendedDailyLimit() ?> provera dnevno besplatno po nalogu</li>
+                </ul>
+                <?php if (!isLoggedIn()): ?>
+                    <a href="/login.php?redirect=<?= rawurlencode('/provera-imei') ?>">Prijavi se za proširenu proveru →</a>
+                <?php endif; ?>
             </article>
         </section>
 
         <p class="imei-disclaimer">
-            Besplatna provera prikazuje osnovne podatke o modelu. Ne proverava blacklist status, vlasništvo, iCloud/Activation Lock, SIM zaključavanje niti garantuje da telefon nije prijavljen kao izgubljen ili ukraden. Podatke obezbeđuje spoljni servis IMEICheck.com.
+            Osnovna provera prikazuje brend i model. Proširena provera koristi spoljne servise i ne garantuje 100% tačnost niti pravnu validnost. Uvek uporedi rezultat sa stanjem telefona i traži objašnjenje ako se podaci ne poklapaju.
         </p>
     </main>
 </div>
