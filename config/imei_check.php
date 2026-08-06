@@ -17,8 +17,8 @@ function imeiCheckEnabled(): bool
 
 function imeiCheckApiUrl(): string
 {
-    $url = trim((string)envValue('IMEI_CHECK_URL', 'https://dhru.checkimei.com'));
-    return rtrim($url !== '' ? $url : 'https://dhru.checkimei.com', '/') . '/api/index.php';
+    $url = trim((string)envValue('IMEI_CHECK_URL', 'https://alpha.imeicheck.com/api/php-api'));
+    return rtrim($url !== '' ? $url : 'https://alpha.imeicheck.com/api/php-api', '/');
 }
 
 function imeiCheckFreeUrl(): string
@@ -48,7 +48,7 @@ function imeiCheckDhruApiKey(): string
 
 function imeiCheckDhruConfigured(): bool
 {
-    return imeiCheckUsername() !== '' && imeiCheckDhruApiKey() !== '';
+    return imeiCheckDhruApiKey() !== '';
 }
 
 function imeiCheckServiceBlacklist(): string
@@ -252,36 +252,27 @@ function cacheImeiModel(string $imei, array $result): void
 }
 
 /**
- * Poziv DHRU Fusion API-ja. Dodatni parametri idu kao base64(JSON).
+ * Poziv alpha.imeicheck.com php-api endpointa.
  *
  * @param array<string,string> $parameters
  * @return array{ok:bool,data?:array,detail?:string}
  */
-function dhruApiRequest(string $action, array $parameters = []): array
+function instantApiRequest(string $endpoint, array $parameters = []): array
 {
     if (!function_exists('curl_init')) {
         return ['ok' => false, 'detail' => 'PHP cURL ekstenzija nije dostupna.'];
     }
 
-    $payload = [
-        'username' => imeiCheckUsername(),
-        'apiaccesskey' => imeiCheckDhruApiKey(),
-        'action' => $action,
-        'requestformat' => 'JSON',
-    ];
-    if ($parameters !== []) {
-        $payload['parameters'] = base64_encode((string)json_encode($parameters));
-    }
-
-    $ch = curl_init(imeiCheckApiUrl());
+    $payload = array_merge(['key' => imeiCheckDhruApiKey()], $parameters);
+    $url = imeiCheckApiUrl() . '/' . ltrim($endpoint, '/');
+    $ch = curl_init($url . '?' . http_build_query($payload));
     curl_setopt_array($ch, [
-        CURLOPT_POST => true,
-        CURLOPT_POSTFIELDS => http_build_query($payload),
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_FOLLOWLOCATION => false,
         CURLOPT_CONNECTTIMEOUT => 5,
         CURLOPT_TIMEOUT => 25,
         CURLOPT_USERAGENT => 'KupiTelefon.rs/1.0',
+        CURLOPT_HTTPHEADER => ['Accept: application/json'],
     ]);
     $body = curl_exec($ch);
     $http = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
@@ -303,16 +294,18 @@ function dhruApiRequest(string $action, array $parameters = []): array
 
     $decoded = json_decode($body, true);
     if (!is_array($decoded)) {
-        return ['ok' => false, 'detail' => 'Neispravan JSON: ' . mb_substr(trim(strip_tags($body)), 0, 200)];
-    }
-    if (isset($decoded['ERROR'])) {
-        $first = is_array($decoded['ERROR']) ? ($decoded['ERROR'][0] ?? []) : [];
-        $message = is_array($first) ? trim((string)($first['MESSAGE'] ?? '')) : '';
-        return ['ok' => false, 'detail' => $message !== '' ? $message : 'Servis je vratio grešku bez opisa.'];
+        return ['ok' => false, 'detail' => 'Neispravan JSON: ' . mb_substr(trim((string)$body), 0, 200)];
     }
 
-    $success = is_array($decoded['SUCCESS'] ?? null) ? ($decoded['SUCCESS'][0] ?? []) : [];
-    return ['ok' => true, 'data' => is_array($success) ? $success : []];
+    $status = strtolower(trim((string)($decoded['status'] ?? '')));
+    if (in_array($status, ['failed', 'error'], true)) {
+        $detail = trim((string)($decoded['result'] ?? $decoded['message'] ?? $decoded['error'] ?? $decoded['detail'] ?? 'Provider je vratio grešku.'));
+        return ['ok' => false, 'detail' => $detail !== '' ? $detail : 'Provider je vratio grešku.'];
+    }
+    if (isset($decoded['error']) && trim((string)$decoded['error']) !== '') {
+        return ['ok' => false, 'detail' => trim((string)$decoded['error'])];
+    }
+    return ['ok' => true, 'data' => $decoded];
 }
 
 /**
@@ -383,7 +376,7 @@ function imeiCheckParseResult(array $data): array
 {
     $result = ['brand' => '', 'model' => '', 'name' => ''];
 
-    $text = dhruResponseText($data);
+    $text = instantResponseText($data);
     if ($text === '') {
         return $result;
     }
@@ -410,10 +403,10 @@ function imeiCheckParseResult(array $data): array
     return $result;
 }
 
-function dhruResponseText(array $data): string
+function instantResponseText(array $data): string
 {
     $text = '';
-    foreach (['RESULT', 'result', 'DESCRIPTION', 'MESSAGE'] as $field) {
+    foreach (['result', 'RESULT', 'message', 'MESSAGE'] as $field) {
         if (is_string($data[$field] ?? null) && trim((string)$data[$field]) !== '') {
             $text .= "\n" . $data[$field];
         }
@@ -573,44 +566,47 @@ function interpretGenericStatus(string $text): array
 }
 
 /**
- * @return array{ok:bool,text?:string,detail?:string}
+ * @return array{ok:bool,text?:string,detail?:string,object?:array}
  */
-function dhruInstantOrder(string $serviceId, string $imei): array
+function instantCreateOrder(string $serviceId, string $imei): array
 {
     if (!imeiCheckDhruConfigured()) {
-        return ['ok' => false, 'detail' => 'DHRU nije podešen.'];
+        return ['ok' => false, 'detail' => 'IMEI instant API nije podešen.'];
     }
 
-    $order = dhruApiRequest('placeimeiorder', [
-        'ID' => $serviceId,
-        'IMEI' => $imei,
+    $order = instantApiRequest('create', [
+        'service' => $serviceId,
+        'imei' => $imei,
     ]);
     if (empty($order['ok'])) {
-        return ['ok' => false, 'detail' => (string)($order['detail'] ?? 'DHRU order failed')];
+        return ['ok' => false, 'detail' => (string)($order['detail'] ?? 'Instant order failed')];
     }
 
     $data = is_array($order['data'] ?? null) ? $order['data'] : [];
-    $text = dhruResponseText($data);
-    $orderId = trim((string)($data['ID'] ?? $data['REFERENCEID'] ?? ''));
+    $status = strtolower(trim((string)($data['status'] ?? '')));
+    if (in_array($status, ['failed', 'error'], true)) {
+        $detail = trim((string)($data['result'] ?? $data['message'] ?? 'Provider je odbio zahtev.'));
+        return ['ok' => false, 'detail' => $detail !== '' ? $detail : 'Provider je odbio zahtev.'];
+    }
+
+    $text = instantResponseText($data);
+    $orderId = trim((string)($data['orderId'] ?? ''));
     if ($text === '' && $orderId !== '') {
-        for ($attempt = 0; $attempt < 3; $attempt++) {
-            sleep(2);
-            $fetched = dhruApiRequest('getimeiorder', ['ID' => $orderId]);
-            if (empty($fetched['ok'])) {
-                continue;
-            }
-            $text = dhruResponseText(is_array($fetched['data'] ?? null) ? $fetched['data'] : []);
-            if ($text !== '') {
-                break;
-            }
+        $history = instantApiRequest('history', ['orderId' => $orderId]);
+        if (!empty($history['ok']) && is_array($history['data'] ?? null)) {
+            $text = instantResponseText((array)$history['data']);
         }
     }
 
     if ($text === '') {
-        return ['ok' => false, 'detail' => 'Prazan odgovor DHRU servisa (proveri kredit na nalogu).'];
+        return ['ok' => false, 'detail' => 'Prazan odgovor servisa (proveri API key, Linked IP i kredit).'];
     }
 
-    return ['ok' => true, 'text' => $text];
+    return [
+        'ok' => true,
+        'text' => $text,
+        'object' => is_array($data['object'] ?? null) ? $data['object'] : [],
+    ];
 }
 
 /**
@@ -683,7 +679,7 @@ function checkImeiExtended(string $imei, array $requestedKeys, string $brand = '
 
     $serviceResults = [];
     foreach ($services as $service) {
-        $order = dhruInstantOrder((string)$service['service_id'], $imei);
+        $order = instantCreateOrder((string)$service['service_id'], $imei);
         if (empty($order['ok'])) {
             if ($chargedCredits > 0) {
                 adjustUserCredits($userId, $chargedCredits, 'imei_refund', 'Povraćaj kredita: IMEI neuspešna provera');
@@ -792,15 +788,15 @@ function imeiCheckAccountInfo(): array
         return ['ok' => true, 'credit' => 'FREE', 'currency' => 'TAC', 'provider' => 'free_with_key'];
     }
 
-    $info = dhruApiRequest('accountinfo');
+    $info = instantApiRequest('balance');
     if (empty($info['ok'])) {
         return ['ok' => false, 'detail' => (string)($info['detail'] ?? '')];
     }
 
-    $account = is_array($info['data']['AccoutInfo'] ?? null) ? $info['data']['AccoutInfo'] : [];
+    $data = is_array($info['data'] ?? null) ? $info['data'] : [];
     return [
         'ok' => true,
-        'credit' => trim((string)($account['credit'] ?? '0.00')),
-        'currency' => trim((string)($account['currency'] ?? 'USD')),
+        'credit' => trim((string)($data['credit'] ?? $data['balance'] ?? '0.00')),
+        'currency' => trim((string)($data['currency'] ?? 'USD')),
     ];
 }
