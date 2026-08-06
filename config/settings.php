@@ -71,6 +71,8 @@ function defaultSiteSettings(): array
         'footer_copyright' => 'KupiTelefon © 2026',
         'contact_email' => 'podrska@kupitelefon.rs',
         'contact_phone' => '',
+        'telegram_channel_url' => 'https://t.me/kupitelefon',
+        'viber_community_url' => 'https://invite.viber.com/?g2=AQBMjKShYTQtKFbrUb2YOEJazXmjRUYLEX3UIgJuHs6Ba3KiLYm4yCSCkJgkI1P2',
         'items_per_page' => 20,
         'max_promoted_ads' => 3,
         'show_promoted_section' => true,

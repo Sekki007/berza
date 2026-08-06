@@ -106,6 +106,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'footer_copyright' => trim((string)($_POST['footer_copyright'] ?? $current['footer_copyright'])),
         'contact_email' => trim((string)($_POST['contact_email'] ?? $current['contact_email'])),
         'contact_phone' => trim((string)($_POST['contact_phone'] ?? $current['contact_phone'])),
+        'telegram_channel_url' => trim((string)($_POST['telegram_channel_url'] ?? ($current['telegram_channel_url'] ?? ''))),
+        'viber_community_url' => trim((string)($_POST['viber_community_url'] ?? ($current['viber_community_url'] ?? ''))),
         'items_per_page' => (int)($_POST['items_per_page'] ?? $current['items_per_page']),
         'max_promoted_ads' => (int)($_POST['max_promoted_ads'] ?? $current['max_promoted_ads']),
         'show_promoted_section' => (string)($_POST['show_promoted_section'] ?? '0') === '1',
@@ -247,6 +249,16 @@ require __DIR__ . '/partials/layout-start.php';
                     <div class="form-group">
                         <label>Kontakt telefon</label>
                         <input name="contact_phone" value="<?= h((string)$settings['contact_phone']) ?>">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Telegram kanal (URL)</label>
+                        <input type="url" name="telegram_channel_url" placeholder="https://t.me/kupitelefon" value="<?= h((string)($settings['telegram_channel_url'] ?? '')) ?>">
+                    </div>
+                    <div class="form-group">
+                        <label>Viber zajednica (invite URL)</label>
+                        <input type="url" name="viber_community_url" placeholder="https://invite.viber.com/..." value="<?= h((string)($settings['viber_community_url'] ?? '')) ?>">
                     </div>
                 </div>
             </div>

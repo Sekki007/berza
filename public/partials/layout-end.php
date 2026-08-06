@@ -78,6 +78,24 @@ if ($user) {
                     <?php endif; ?>
                     <a href="mailto:podrska@kupitelefon.rs">Podrška</a>
                 </div>
+                <?php
+                $tgFollow = trim((string)($site['telegram_channel_url'] ?? ''));
+                $viberFollow = trim((string)($site['viber_community_url'] ?? ''));
+                if ($tgFollow !== '' || $viberFollow !== ''):
+                ?>
+                <div class="site-footer-col site-footer-col--social">
+                    <h4>Pratite nas</h4>
+                    <p class="site-footer-social-note">Novi oglasi i novosti — zapratite kanal.</p>
+                    <div class="site-footer-social">
+                        <?php if ($tgFollow !== ''): ?>
+                            <a class="site-social-btn site-social-btn--telegram" href="<?= h($tgFollow) ?>" target="_blank" rel="noopener noreferrer">Telegram kanal</a>
+                        <?php endif; ?>
+                        <?php if ($viberFollow !== ''): ?>
+                            <a class="site-social-btn site-social-btn--viber" href="<?= h($viberFollow) ?>" target="_blank" rel="noopener noreferrer">Viber zajednica</a>
+                        <?php endif; ?>
+                    </div>
+                </div>
+                <?php endif; ?>
             </nav>
         </div>
         <div class="site-footer-bottom">
@@ -195,6 +213,28 @@ if ($user) {
                         </span>
                     </a>
                 <?php endif; ?>
+                <?php
+                $tgFollowMenu = trim((string)($site['telegram_channel_url'] ?? ''));
+                $viberFollowMenu = trim((string)($site['viber_community_url'] ?? ''));
+                ?>
+                <?php if ($tgFollowMenu !== ''): ?>
+                    <a href="<?= h($tgFollowMenu) ?>" class="mobile-account-menu-item" target="_blank" rel="noopener noreferrer">
+                        <span class="mobile-account-menu-icon">T</span>
+                        <span class="mobile-account-menu-text">
+                            <strong>Telegram kanal</strong>
+                            <small>Prati nove oglase</small>
+                        </span>
+                    </a>
+                <?php endif; ?>
+                <?php if ($viberFollowMenu !== ''): ?>
+                    <a href="<?= h($viberFollowMenu) ?>" class="mobile-account-menu-item" target="_blank" rel="noopener noreferrer">
+                        <span class="mobile-account-menu-icon">V</span>
+                        <span class="mobile-account-menu-text">
+                            <strong>Viber zajednica</strong>
+                            <small>Pridruži se grupi</small>
+                        </span>
+                    </a>
+                <?php endif; ?>
                 <a href="/logout.php" class="mobile-account-menu-item mobile-account-menu-item-danger">
                     <span class="mobile-account-menu-icon">↩</span>
                     <span class="mobile-account-menu-text">
@@ -233,13 +273,35 @@ if ($user) {
                         <small>Servis i prodaja telefona</small>
                     </span>
                 </a>
-                <a href="/kako-radi.php" class="mobile-account-menu-item">
-                    <span class="mobile-account-menu-icon">ℹ</span>
-                    <span class="mobile-account-menu-text">
-                        <strong>Kako radi</strong>
-                        <small>Kratko uputstvo</small>
-                    </span>
-                </a>
+                    <a href="/kako-radi.php" class="mobile-account-menu-item">
+                        <span class="mobile-account-menu-icon">ℹ</span>
+                        <span class="mobile-account-menu-text">
+                            <strong>Kako radi</strong>
+                            <small>Kratko uputstvo</small>
+                        </span>
+                    </a>
+                    <?php
+                    $tgFollowMenu = trim((string)($site['telegram_channel_url'] ?? ''));
+                    $viberFollowMenu = trim((string)($site['viber_community_url'] ?? ''));
+                    ?>
+                    <?php if ($tgFollowMenu !== ''): ?>
+                        <a href="<?= h($tgFollowMenu) ?>" class="mobile-account-menu-item" target="_blank" rel="noopener noreferrer">
+                            <span class="mobile-account-menu-icon">T</span>
+                            <span class="mobile-account-menu-text">
+                                <strong>Telegram kanal</strong>
+                                <small>Prati nove oglase</small>
+                            </span>
+                        </a>
+                    <?php endif; ?>
+                    <?php if ($viberFollowMenu !== ''): ?>
+                        <a href="<?= h($viberFollowMenu) ?>" class="mobile-account-menu-item" target="_blank" rel="noopener noreferrer">
+                            <span class="mobile-account-menu-icon">V</span>
+                            <span class="mobile-account-menu-text">
+                                <strong>Viber zajednica</strong>
+                                <small>Pridruži se grupi</small>
+                            </span>
+                        </a>
+                    <?php endif; ?>
             <?php endif; ?>
         </nav>
     </aside>

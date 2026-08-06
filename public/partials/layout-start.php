@@ -80,6 +80,16 @@ $compareCount = count(compareIds());
         <div class="topbar-inner">
             <span><?= h(siteTagline()) ?></span>
             <div class="topbar-links">
+                <?php
+                $tgFollow = trim((string)($site['telegram_channel_url'] ?? ''));
+                $viberFollow = trim((string)($site['viber_community_url'] ?? ''));
+                ?>
+                <?php if ($tgFollow !== ''): ?>
+                    <a href="<?= h($tgFollow) ?>" target="_blank" rel="noopener noreferrer">Telegram</a>
+                <?php endif; ?>
+                <?php if ($viberFollow !== ''): ?>
+                    <a href="<?= h($viberFollow) ?>" target="_blank" rel="noopener noreferrer">Viber</a>
+                <?php endif; ?>
                 <a href="/servisi">Firme</a>
                 <a href="/vodici">Vodiči</a>
                 <a href="/provera-imei">Provera IMEI</a>
