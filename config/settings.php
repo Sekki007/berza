@@ -71,6 +71,12 @@ function defaultSiteSettings(): array
         'google_tag_ads_id' => '',
         'google_tag_require_consent' => true,
         'ga4_property_id' => '',
+        'imei_free_checks_per_day' => 5,
+        'imei_services' => [
+            ['key' => 'blacklist', 'service_id' => '5', 'label' => 'Blacklist (GSMA)', 'price' => 2, 'enabled' => true, 'apple_only' => false],
+            ['key' => 'fmi', 'service_id' => '1', 'label' => 'Find My iPhone', 'price' => 1, 'enabled' => true, 'apple_only' => true],
+            ['key' => 'icloud', 'service_id' => '4', 'label' => 'iCloud Clean/Lost', 'price' => 2, 'enabled' => true, 'apple_only' => true],
+        ],
     ];
 }
 
@@ -123,11 +129,15 @@ function saveSiteSettings(array $input): bool
             $settings[$key] = !empty($value) && (string)$value !== '0';
         } elseif ($key === 'eur_rsd_rate') {
             $settings[$key] = max(1.0, (float)$value);
+        } elseif ($key === 'imei_free_checks_per_day') {
+            $settings[$key] = max(0, (int)$value);
         } elseif (is_int($defaultValue)) {
             $settings[$key] = max(1, (int)$value);
         } elseif (is_float($defaultValue)) {
             $settings[$key] = (float)$value;
         } elseif ($key === 'top_packages' && is_array($defaultValue)) {
+            $settings[$key] = is_array($value) ? array_values($value) : $defaultValue;
+        } elseif ($key === 'imei_services' && is_array($defaultValue)) {
             $settings[$key] = is_array($value) ? array_values($value) : $defaultValue;
         } elseif ($key === 'email_templates') {
             $settings[$key] = is_array($value) ? parseEmailTemplatesPost($value) : [];

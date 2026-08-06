@@ -6,35 +6,49 @@ require_once dirname(__DIR__) . '/config/bootstrap.php';
 
 $error = '';
 $errorDetail = '';
+$billingInfo = '';
 $extendedError = '';
-$extendedErrorDetail = '';
 $checkedImei = '';
-$wantExtended = false;
+$selectedServiceKeys = [];
 $result = null;
 $extended = null;
 $extendedCached = false;
-$extendedRemaining = isLoggedIn() ? imeiExtendedChecksRemaining() : 0;
+$chargedCredits = 0;
+$usedFree = false;
+$services = imeiEnabledServices();
+$serviceLabels = [];
+foreach ($services as $service) {
+    $serviceLabels[(string)$service['key']] = (string)$service['label'];
+}
+$extendedRemaining = isLoggedIn() ? chargeableImeiFreeChecksRemaining((int)(currentUser()['id'] ?? 0)) : 0;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     requireCsrf('/provera-imei');
     $checkedImei = normalizeImei((string)($_POST['imei'] ?? ''));
-    $wantExtended = !empty($_POST['extended']);
+    $selectedServiceKeys = normalizeRequestedImeiServiceKeys((array)($_POST['services'] ?? []));
     if (!isValidImei($checkedImei)) {
         $error = 'Unesi ispravan IMEI od 15 cifara.';
     } else {
         $check = checkImeiModel($checkedImei);
         if (!empty($check['ok']) && is_array($check['result'] ?? null)) {
             $result = $check['result'];
-            if ($wantExtended) {
+            if ($selectedServiceKeys !== []) {
                 $brand = trim((string)($result['brand'] ?? ''));
                 $name = trim((string)($result['name'] ?? ''));
-                $ext = checkImeiExtended($checkedImei, $brand, $name);
+                $ext = checkImeiExtended($checkedImei, $selectedServiceKeys, $brand, $name);
                 if (!empty($ext['ok']) && is_array($ext['extended'] ?? null)) {
                     $extended = $ext['extended'];
                     $extendedCached = !empty($ext['cached']);
+                    $chargedCredits = (int)($ext['charged_credits'] ?? 0);
+                    $usedFree = !empty($ext['used_free']);
+                    if (!$extendedCached && $usedFree) {
+                        $billingInfo = 'Provera je uračunata u besplatni dnevni limit.';
+                    } elseif (!$extendedCached && $chargedCredits > 0) {
+                        $billingInfo = 'Naplaćeno: ' . $chargedCredits . ' kredita.';
+                    }
                 } else {
                     $extendedError = (string)($ext['error'] ?? 'Proširena provera trenutno nije uspela.');
-                    $extendedErrorDetail = (string)($ext['detail'] ?? '');
+                    $errorDetail = (string)($ext['detail'] ?? '');
                 }
             }
         } else {
@@ -42,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $errorDetail = (string)($check['detail'] ?? '');
         }
     }
-    $extendedRemaining = isLoggedIn() ? imeiExtendedChecksRemaining() : 0;
+    $extendedRemaining = isLoggedIn() ? chargeableImeiFreeChecksRemaining((int)(currentUser()['id'] ?? 0)) : 0;
 }
 
 $pageTitle = 'Besplatna IMEI provera telefona — KupiTelefon';
@@ -103,23 +117,29 @@ require __DIR__ . '/partials/layout-start.php';
                 <p id="imei-help" class="form-hint">IMEI možeš pronaći pozivom na <strong>*#06#</strong> ili u Podešavanja → O telefonu.</p>
 
                 <?php if (isLoggedIn() && imeiCheckDhruConfigured()): ?>
-                    <label class="imei-extended-option check-inline">
-                        <input type="checkbox" name="extended" value="1"<?= $wantExtended ? ' checked' : '' ?><?= $extendedRemaining <= 0 ? ' disabled' : '' ?>>
-                        <span>
-                            <strong>Proširena provera</strong> — blacklist status, Find My iPhone i iCloud (za Apple)
-                            <span class="imei-extended-quota">
-                                <?php if ($extendedRemaining > 0): ?>
-                                    Preostalo danas: <strong><?= (int)$extendedRemaining ?></strong> od <?= imeiExtendedDailyLimit() ?>
-                                <?php else: ?>
-                                    Dnevni limit od <?= imeiExtendedDailyLimit() ?> proširenih provera je iskorišćen
-                                <?php endif; ?>
-                            </span>
-                        </span>
-                    </label>
+                    <div class="imei-extended-picker">
+                        <p class="imei-extended-title">Proširena provera — izaberi servise</p>
+                        <?php foreach ($services as $service): ?>
+                            <?php
+                            $key = (string)$service['key'];
+                            $checked = in_array($key, $selectedServiceKeys, true);
+                            ?>
+                            <label class="imei-extended-option check-inline">
+                                <input type="checkbox" name="services[]" value="<?= h($key) ?>"<?= $checked ? ' checked' : '' ?>>
+                                <span>
+                                    <strong><?= h((string)$service['label']) ?></strong>
+                                    <span class="imei-extended-quota">Cena: <?= (int)$service['price'] ?> kredita<?= !empty($service['apple_only']) ? ' (samo Apple)' : '' ?></span>
+                                </span>
+                            </label>
+                        <?php endforeach; ?>
+                        <p class="imei-extended-quota" style="margin-top:8px;">
+                            Besplatno dnevno: <?= (int)$extendedRemaining ?> / <?= imeiExtendedDailyLimit() ?>.
+                            Posle toga provera se naplaćuje kreditima po izabranim servisima.
+                        </p>
+                    </div>
                 <?php elseif (!isLoggedIn()): ?>
                     <p class="imei-extended-login">
-                        <a href="/login.php?redirect=<?= rawurlencode('/provera-imei') ?>">Prijavi se</a>
-                        za do <?= imeiExtendedDailyLimit() ?> proširenih provera dnevno (blacklist, iCloud/FMI za Apple).
+                        <a href="/login.php?redirect=<?= rawurlencode('/provera-imei') ?>">Prijavi se</a> da biraš proširene IMEI servise i koristiš kredite.
                     </p>
                 <?php endif; ?>
             </form>
@@ -173,8 +193,8 @@ require __DIR__ . '/partials/layout-start.php';
                     <div class="imei-message imei-message--error" role="alert">
                         <strong>Proširena provera nije uspela</strong>
                         <span><?= h($extendedError) ?></span>
-                        <?php if ($extendedErrorDetail !== '' && isAdmin()): ?>
-                            <span class="imei-admin-detail">Detalj (vidi samo admin): <?= h($extendedErrorDetail) ?></span>
+                        <?php if ($errorDetail !== '' && isAdmin()): ?>
+                            <span class="imei-admin-detail">Detalj (vidi samo admin): <?= h($errorDetail) ?></span>
                         <?php endif; ?>
                     </div>
                 <?php endif; ?>
@@ -185,26 +205,20 @@ require __DIR__ . '/partials/layout-start.php';
                             <strong>Proširena provera</strong>
                             <?php if ($extendedCached): ?>
                                 <span class="imei-extended-note">Iz keša (ne troši dnevni limit)</span>
+                            <?php elseif ($billingInfo !== ''): ?>
+                                <span class="imei-extended-note"><?= h($billingInfo) ?></span>
                             <?php endif; ?>
                         </div>
                         <div class="imei-extended-grid">
                             <?php
-                            $rows = [
-                                ['title' => 'Blacklist (GSMA)', 'data' => $extended['blacklist'] ?? []],
-                            ];
-                            if (is_array($extended['fmi'] ?? null)) {
-                                $rows[] = ['title' => 'Find My iPhone', 'data' => $extended['fmi']];
-                            }
-                            if (is_array($extended['icloud'] ?? null)) {
-                                $rows[] = ['title' => 'iCloud status', 'data' => $extended['icloud']];
-                            }
-                            foreach ($rows as $row):
-                                $level = (string)($row['data']['level'] ?? 'unknown');
-                                $label = (string)($row['data']['label'] ?? 'Nepoznato');
-                                $detail = (string)($row['data']['detail'] ?? '');
+                            $serviceResults = is_array($extended['services'] ?? null) ? $extended['services'] : [];
+                            foreach ($serviceResults as $serviceKey => $serviceData):
+                                $level = (string)($serviceData['level'] ?? 'unknown');
+                                $label = (string)($serviceData['label'] ?? 'Nepoznato');
+                                $detail = (string)($serviceData['detail'] ?? '');
                             ?>
                                 <article class="imei-extended-item">
-                                    <h3><?= h($row['title']) ?></h3>
+                                    <h3><?= h((string)($serviceLabels[(string)$serviceKey] ?? $serviceKey)) ?></h3>
                                     <span class="imei-badge imei-badge--<?= h($level) ?>"><?= h($label) ?></span>
                                     <?php if ($detail !== ''): ?>
                                         <p><?= h($detail) ?></p>
@@ -229,9 +243,9 @@ require __DIR__ . '/partials/layout-start.php';
             <article class="form-card">
                 <h2>Proširena provera (prijavljeni korisnici)</h2>
                 <ul>
-                    <li>blacklist status (GSMA)</li>
-                    <li>Find My iPhone i iCloud status za Apple uređaje</li>
-                    <li><?= imeiExtendedDailyLimit() ?> provera dnevno besplatno po nalogu</li>
+                    <li>sam biraš servis(e) iz liste</li>
+                    <li>cenu i dostupnost servisa podešava admin</li>
+                    <li>posle besplatnog limita troši kredite po izabranoj proveri</li>
                 </ul>
                 <?php if (!isLoggedIn()): ?>
                     <a href="/login.php?redirect=<?= rawurlencode('/provera-imei') ?>">Prijavi se za proširenu proveru →</a>

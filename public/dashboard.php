@@ -75,7 +75,10 @@ require __DIR__ . '/partials/layout-start.php';
             <div class="form-card" style="margin-top:12px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;padding:16px 16px 0;gap:8px;flex-wrap:wrap;">
                     <h2 style="font-size:16px;margin:0;">IMEI provera</h2>
-                    <a href="/provera-imei" style="font-size:13px;">Otvori stranicu →</a>
+                    <div style="display:flex;gap:10px;align-items:center;">
+                        <a href="/admin_imei.php" style="font-size:13px;">Podesi cene →</a>
+                        <a href="/provera-imei" style="font-size:13px;">Otvori stranicu →</a>
+                    </div>
                 </div>
                 <div class="stats-grid" style="padding:12px 16px 16px;gap:8px;">
                     <?php if (!empty($imeiAccount['ok'])): ?>

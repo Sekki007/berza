@@ -12,6 +12,7 @@ $adminLinks = [
     ['id' => 'ads', 'href' => '/ads.php', 'label' => 'Oglasi'],
     ['id' => 'top', 'href' => '/admin_top.php', 'label' => 'TOP' . ($pendingTop > 0 ? " ($pendingTop)" : '')],
     ['id' => 'credits', 'href' => '/admin_credits.php', 'label' => 'Krediti' . ($pendingCredits > 0 ? " ($pendingCredits)" : '')],
+    ['id' => 'imei', 'href' => '/admin_imei.php', 'label' => 'IMEI cene'],
     ['id' => 'analytics', 'href' => '/admin_analytics.php', 'label' => 'Posete (GA)'],
     ['id' => 'guides', 'href' => '/admin_guides.php', 'label' => 'Vodiči'],
     ['id' => 'settings', 'href' => '/admin_settings.php', 'label' => 'Podešavanja'],

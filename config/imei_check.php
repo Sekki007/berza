@@ -5,21 +5,8 @@ declare(strict_types=1);
 /**
  * IMEI provera.
  *
- * Primarno: besplatan TAC endpoint (free_with_key).
- * Proširena provera (blacklist, iCloud/FMI za Apple): DHRU, samo ulogovani, 5/dan.
- *
- * Env (free):
- *   IMEI_CHECK_ENABLED=true
- *   IMEI_CHECK_API_KEY=...
- *   IMEI_CHECK_FREE_URL=https://alpha.imeicheck.com/api/free_with_key/modelBrandName
- *
- * Env (proširena provera — DHRU, samo ulogovani, 5/dan):
- *   IMEI_CHECK_URL=https://dhru.checkimei.com
- *   IMEI_CHECK_USERNAME=...
- *   IMEI_CHECK_DHRU_API_KEY=...   # Access key iz DHRU dashboarda (drugačiji od free TAC ključa)
- *   IMEI_CHECK_SERVICE_BLACKLIST=5
- *   IMEI_CHECK_SERVICE_FMI=1
- *   IMEI_CHECK_SERVICE_ICLOUD=4
+ * Osnovna provera (brand/model) je preko free TAC endpointa.
+ * Proširene provere (DHRU servisi) korisnik bira iz liste, a cene i dostupnost podešava admin.
  */
 
 function imeiCheckEnabled(): bool
@@ -80,7 +67,7 @@ function imeiCheckServiceIcloud(): string
 
 function imeiExtendedDailyLimit(): int
 {
-    return 5;
+    return max(0, (int)(siteSettings()['imei_free_checks_per_day'] ?? 5));
 }
 
 function imeiCheckConfigured(): bool
@@ -92,6 +79,58 @@ function imeiCheckConfigured(): bool
         return false;
     }
     return true;
+}
+
+/**
+ * @return list<array{key:string,service_id:string,label:string,price:int,enabled:bool,apple_only:bool}>
+ */
+function imeiServiceCatalog(): array
+{
+    $raw = siteSettings()['imei_services'] ?? [];
+    $out = [];
+    if (!is_array($raw)) {
+        return $out;
+    }
+    foreach ($raw as $item) {
+        if (!is_array($item)) {
+            continue;
+        }
+        $key = trim((string)($item['key'] ?? ''));
+        $serviceId = preg_replace('/\D+/', '', (string)($item['service_id'] ?? '')) ?? '';
+        if ($key === '' || $serviceId === '') {
+            continue;
+        }
+        $out[] = [
+            'key' => $key,
+            'service_id' => $serviceId,
+            'label' => trim((string)($item['label'] ?? strtoupper($key))),
+            'price' => max(0, (int)($item['price'] ?? 0)),
+            'enabled' => !empty($item['enabled']),
+            'apple_only' => !empty($item['apple_only']),
+        ];
+    }
+    return $out;
+}
+
+/**
+ * @return list<array{key:string,service_id:string,label:string,price:int,enabled:bool,apple_only:bool}>
+ */
+function imeiEnabledServices(): array
+{
+    return array_values(array_filter(imeiServiceCatalog(), static fn($s) => !empty($s['enabled'])));
+}
+
+/**
+ * @return array{key:string,service_id:string,label:string,price:int,enabled:bool,apple_only:bool}|null
+ */
+function imeiServiceByKey(string $key): ?array
+{
+    foreach (imeiServiceCatalog() as $service) {
+        if ($service['key'] === $key) {
+            return $service;
+        }
+    }
+    return null;
 }
 
 function normalizeImei(string $value): string
@@ -424,35 +463,40 @@ function recordImeiExtendedCheck(int $userId): void
     writeJsonFile('imei_state.json', $state);
 }
 
-/**
- * @return array{blacklist:array,fmi:?array,icloud:?array}|null
- */
-function cachedImeiExtended(string $imei): ?array
+function chargeableImeiFreeChecksRemaining(int $userId): int
 {
-    $state = readJsonFile('imei_state.json');
-    $cache = is_array($state['extended_cache'] ?? null) ? $state['extended_cache'] : [];
-    $entry = $cache[hash('sha256', $imei)] ?? null;
-    if (!is_array($entry) || (int)($entry['expires_at'] ?? 0) < time()) {
-        return null;
-    }
-    return [
-        'blacklist' => is_array($entry['blacklist'] ?? null) ? $entry['blacklist'] : [],
-        'fmi' => is_array($entry['fmi'] ?? null) ? $entry['fmi'] : null,
-        'icloud' => is_array($entry['icloud'] ?? null) ? $entry['icloud'] : null,
-    ];
+    return max(0, imeiExtendedDailyLimit() - imeiExtendedChecksUsedToday($userId));
+}
+
+function imeiExtendedCacheKey(string $imei, array $serviceKeys): string
+{
+    sort($serviceKeys);
+    return hash('sha256', $imei . '|' . implode(',', $serviceKeys));
 }
 
 /**
- * @param array{blacklist:array,fmi:?array,icloud:?array} $extended
+ * @return array{services:array<string,array{level:string,label:string,detail:string}>}|null
  */
-function cacheImeiExtended(string $imei, array $extended): void
+function cachedImeiExtended(string $imei, array $serviceKeys): ?array
 {
     $state = readJsonFile('imei_state.json');
     $cache = is_array($state['extended_cache'] ?? null) ? $state['extended_cache'] : [];
-    $cache[hash('sha256', $imei)] = [
-        'blacklist' => $extended['blacklist'],
-        'fmi' => $extended['fmi'],
-        'icloud' => $extended['icloud'],
+    $entry = $cache[imeiExtendedCacheKey($imei, $serviceKeys)] ?? null;
+    if (!is_array($entry) || (int)($entry['expires_at'] ?? 0) < time()) {
+        return null;
+    }
+    return ['services' => is_array($entry['services'] ?? null) ? $entry['services'] : []];
+}
+
+/**
+ * @param array{services:array<string,array{level:string,label:string,detail:string}>} $extended
+ */
+function cacheImeiExtended(string $imei, array $serviceKeys, array $extended): void
+{
+    $state = readJsonFile('imei_state.json');
+    $cache = is_array($state['extended_cache'] ?? null) ? $state['extended_cache'] : [];
+    $cache[imeiExtendedCacheKey($imei, $serviceKeys)] = [
+        'services' => $extended['services'],
         'expires_at' => time() + 86400,
     ];
     $state['extended_cache'] = $cache;
@@ -513,6 +557,18 @@ function interpretIcloudStatus(string $text): array
 }
 
 /**
+ * @return array{level:string,label:string,detail:string}
+ */
+function interpretGenericStatus(string $text): array
+{
+    $trimmed = trim($text);
+    if ($trimmed === '') {
+        return ['level' => 'unknown', 'label' => 'Nepoznato', 'detail' => 'Nema podataka'];
+    }
+    return ['level' => 'unknown', 'label' => 'Rezultat', 'detail' => mb_substr($trimmed, 0, 280)];
+}
+
+/**
  * @return array{ok:bool,text?:string,detail?:string}
  */
 function dhruInstantOrder(string $serviceId, string $imei): array
@@ -554,9 +610,10 @@ function dhruInstantOrder(string $serviceId, string $imei): array
 }
 
 /**
- * @return array{ok:bool,extended?:array{blacklist:array,fmi:?array,icloud:?array},error?:string,detail?:string,cached?:bool}
+ * @param list<string> $requestedKeys
+ * @return array{ok:bool,extended?:array{services:array<string,array{level:string,label:string,detail:string}>},error?:string,detail?:string,cached?:bool,charged_credits?:int,used_free?:bool}
  */
-function checkImeiExtended(string $imei, string $brand = '', string $name = ''): array
+function checkImeiExtended(string $imei, array $requestedKeys, string $brand = '', string $name = ''): array
 {
     if (!isLoggedIn()) {
         return ['ok' => false, 'error' => 'Proširena provera je dostupna samo prijavljenim korisnicima.'];
@@ -568,49 +625,111 @@ function checkImeiExtended(string $imei, string $brand = '', string $name = ''):
         return ['ok' => false, 'error' => 'Unesi ispravan IMEI od 15 cifara.'];
     }
 
+    $requestedKeys = array_values(array_unique(array_map('trim', $requestedKeys)));
+    $enabled = imeiEnabledServices();
+    $enabledByKey = [];
+    foreach ($enabled as $svc) {
+        $enabledByKey[$svc['key']] = $svc;
+    }
+
+    $services = [];
+    $isApple = isAppleDevice($brand, $name);
+    foreach ($requestedKeys as $key) {
+        if (!isset($enabledByKey[$key])) {
+            continue;
+        }
+        $svc = $enabledByKey[$key];
+        if (!empty($svc['apple_only']) && !$isApple) {
+            continue;
+        }
+        $services[] = $svc;
+    }
+    if ($services === []) {
+        return ['ok' => false, 'error' => 'Izaberi bar jedan dostupan servis za proširenu proveru.'];
+    }
+
+    $serviceKeys = array_values(array_map(static fn($s) => (string)$s['key'], $services));
     $userId = (int)(currentUser()['id'] ?? 0);
-    $cached = cachedImeiExtended($imei);
+    $cached = cachedImeiExtended($imei, $serviceKeys);
     if ($cached !== null) {
         return ['ok' => true, 'extended' => $cached, 'cached' => true];
     }
 
-    if (imeiExtendedChecksRemaining($userId) <= 0) {
-        return [
-            'ok' => false,
-            'error' => 'Iskoristio si dnevni limit od ' . imeiExtendedDailyLimit() . ' proširenih provera. Pokušaj sutra.',
-        ];
+    $totalPrice = 0;
+    foreach ($services as $service) {
+        $totalPrice += (int)$service['price'];
+    }
+    $freeRemaining = chargeableImeiFreeChecksRemaining($userId);
+    $usedFree = false;
+    $chargedCredits = 0;
+    if ($freeRemaining > 0) {
+        $usedFree = true;
+    } elseif ($totalPrice > 0) {
+        if (!creditsEnabled()) {
+            return ['ok' => false, 'error' => 'Besplatne provere su potrošene, a kredit sistem je isključen.'];
+        }
+        if (getUserCredits($userId) < $totalPrice) {
+            return ['ok' => false, 'error' => 'Nemaš dovoljno kredita. Potrebno: ' . $totalPrice . ', saldo: ' . getUserCredits($userId) . '.'];
+        }
+        if (!adjustUserCredits($userId, -$totalPrice, 'imei_check', 'IMEI proširena provera')) {
+            return ['ok' => false, 'error' => 'Skidanje kredita nije uspelo. Pokušaj ponovo.'];
+        }
+        $chargedCredits = $totalPrice;
     }
 
-    $blacklistOrder = dhruInstantOrder(imeiCheckServiceBlacklist(), $imei);
-    if (empty($blacklistOrder['ok'])) {
-        return [
-            'ok' => false,
-            'error' => 'Proširena provera trenutno nije uspela.',
-            'detail' => (string)($blacklistOrder['detail'] ?? ''),
-        ];
+    $serviceResults = [];
+    foreach ($services as $service) {
+        $order = dhruInstantOrder((string)$service['service_id'], $imei);
+        if (empty($order['ok'])) {
+            if ($chargedCredits > 0) {
+                adjustUserCredits($userId, $chargedCredits, 'imei_refund', 'Povraćaj kredita: IMEI neuspešna provera');
+            }
+            return [
+                'ok' => false,
+                'error' => 'Proširena provera trenutno nije uspela.',
+                'detail' => (string)($order['detail'] ?? ''),
+            ];
+        }
+        $text = (string)($order['text'] ?? '');
+        $key = (string)$service['key'];
+        if ($key === 'blacklist') {
+            $serviceResults[$key] = interpretBlacklistStatus($text);
+        } elseif ($key === 'fmi') {
+            $serviceResults[$key] = interpretFmiStatus($text);
+        } elseif ($key === 'icloud') {
+            $serviceResults[$key] = interpretIcloudStatus($text);
+        } else {
+            $serviceResults[$key] = interpretGenericStatus($text);
+        }
     }
 
-    $extended = [
-        'blacklist' => interpretBlacklistStatus((string)$blacklistOrder['text']),
-        'fmi' => null,
-        'icloud' => null,
+    if ($usedFree) {
+        recordImeiExtendedCheck($userId);
+    }
+    $extended = ['services' => $serviceResults];
+    cacheImeiExtended($imei, $serviceKeys, $extended);
+    return [
+        'ok' => true,
+        'extended' => $extended,
+        'cached' => false,
+        'charged_credits' => $chargedCredits,
+        'used_free' => $usedFree,
     ];
+}
 
-    if (isAppleDevice($brand, $name)) {
-        $fmiOrder = dhruInstantOrder(imeiCheckServiceFmi(), $imei);
-        if (!empty($fmiOrder['ok'])) {
-            $extended['fmi'] = interpretFmiStatus((string)$fmiOrder['text']);
-        }
-        $icloudOrder = dhruInstantOrder(imeiCheckServiceIcloud(), $imei);
-        if (!empty($icloudOrder['ok'])) {
-            $extended['icloud'] = interpretIcloudStatus((string)$icloudOrder['text']);
+/**
+ * @return list<string>
+ */
+function normalizeRequestedImeiServiceKeys(array $input): array
+{
+    $keys = [];
+    foreach ($input as $value) {
+        $key = trim((string)$value);
+        if ($key !== '') {
+            $keys[] = $key;
         }
     }
-
-    recordImeiExtendedCheck($userId);
-    cacheImeiExtended($imei, $extended);
-
-    return ['ok' => true, 'extended' => $extended, 'cached' => false];
+    return array_values(array_unique($keys));
 }
 
 /**
@@ -635,7 +754,6 @@ function checkImeiModel(string $imei): array
         return $rate;
     }
 
-    // 1) Primarno pokušaj besplatan TAC endpoint.
     $free = freeTacApiRequest($imei);
     if (!empty($free['ok']) && is_array($free['result'] ?? null)) {
         $result = $free['result'];
@@ -646,8 +764,13 @@ function checkImeiModel(string $imei): array
 
     if (empty($free['ok']) || !is_array($free['result'] ?? null)) {
         $detail = (string)($free['detail'] ?? 'Nema podataka o modelu.');
-        return ['ok' => false, 'error' => 'IMEI nije pronađen u bazi. Proveri broj i pokušaj ponovo.', 'detail' => $detail];
+        return [
+            'ok' => false,
+            'error' => 'IMEI nije pronađen u bazi. Proveri broj i pokušaj ponovo.',
+            'detail' => $detail,
+        ];
     }
+    return ['ok' => false, 'error' => 'IMEI provera nije uspela.'];
 }
 
 /**
