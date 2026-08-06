@@ -1729,70 +1729,6 @@
     window.addEventListener('beforeunload', stop);
   }
 
-  function initAdImeiVerification() {
-    const form = one('[data-ad-form]');
-    if (!form) return;
-    const input = one('[data-ad-imei]', form);
-    const button = one('[data-ad-imei-check]', form);
-    const result = one('[data-ad-imei-result]', form);
-    const brand = one('[data-phone-brand]', form);
-    const model = one('#ad-model', form);
-    if (!input || !button || !result || !brand || !model) return;
-
-    function show(message, isError) {
-      result.textContent = message;
-      result.classList.toggle('is-error', !!isError);
-      result.hidden = false;
-    }
-
-    button.addEventListener('click', function () {
-      const imei = (input.value || '').replace(/\D/g, '');
-      if (imei.length !== 15) {
-        show('Unesi IMEI od 15 cifara.', true);
-        input.focus();
-        return;
-      }
-
-      const data = new FormData();
-      data.append('imei', imei);
-      const token = document.querySelector('meta[name="csrf-token"]');
-      if (token) data.append('_csrf', token.getAttribute('content') || '');
-      button.disabled = true;
-      button.textContent = 'Provera…';
-      show('Proveravamo brend i model…', false);
-
-      fetch('/api/imei-tac.php', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: { 'Accept': 'application/json' },
-        body: data
-      })
-        .then(function (response) { return response.json(); })
-        .then(function (data) {
-          if (!data || !data.ok) {
-            show((data && data.error) || 'IMEI provera trenutno nije uspela.', true);
-            return;
-          }
-          const foundBrand = (data.brand || '').trim();
-          const foundModel = (data.model || data.name || '').trim();
-          const matchingOption = Array.from(brand.options).find(function (option) {
-            return option.value.toLowerCase() === foundBrand.toLowerCase();
-          });
-          if (matchingOption) brand.value = matchingOption.value;
-          if (foundModel) model.value = foundModel;
-          brand.dispatchEvent(new Event('change', { bubbles: true }));
-          show('✓ Pronađen uređaj: ' + (foundBrand || 'nepoznat brend') + (foundModel ? ' ' + foundModel : '') + '. Polja su popunjena i biće potvrđena pri objavi.', false);
-        })
-        .catch(function () {
-          show('IMEI provera trenutno nije uspela. Pokušaj ponovo.', true);
-        })
-        .finally(function () {
-          button.disabled = false;
-          button.textContent = 'Proveri i popuni';
-        });
-    });
-  }
-
   function showLiveToast(count) {
     const existing = one('[data-msg-toast]');
     if (existing) existing.remove();
@@ -2097,7 +2033,6 @@
     initFormTypeSelect();
     initCategoryGroupSync();
     initAdFormExtras();
-    initAdImeiVerification();
     initActiveNav();
     initAccountMenu();
     initAccountTabs();

@@ -227,28 +227,6 @@ $contactExtraOpen = $contactSorted !== $dc
                     </div>
                 </div>
                 <p class="form-hint">Nije obavezno — dovoljan je naslov. Brend pomaže u filterima.</p>
-                <div class="form-group imei-listing-verify">
-                    <label for="ad-imei">IMEI provera <span class="ad-form-optional">(nije obavezno)</span></label>
-                    <div class="imei-listing-verify-row">
-                        <input
-                            id="ad-imei"
-                            name="imei"
-                            type="text"
-                            inputmode="numeric"
-                            pattern="[0-9 ]{15,20}"
-                            maxlength="20"
-                            placeholder="Unesi 15 cifara"
-                            autocomplete="off"
-                            data-ad-imei
-                        >
-                        <button type="button" class="btn-sm btn-sm-primary" data-ad-imei-check>Proveri i popuni</button>
-                    </div>
-                    <p class="form-hint">Proveravamo samo brend i model. IMEI se ne prikazuje niti čuva kao pun broj.</p>
-                    <p class="imei-listing-verify-result" data-ad-imei-result aria-live="polite" hidden></p>
-                    <?php if (!empty($ad['imei_tac_verified'])): ?>
-                        <p class="imei-listing-verified">✓ Model je već potvrđen IMEI proverom<?= !empty($ad['imei_tac_verified_at']) ? ' · ' . h(date('d.m.Y.', strtotime((string)$ad['imei_tac_verified_at']))) : '' ?>.</p>
-                    <?php endif; ?>
-                </div>
                 <div class="form-row">
                     <div class="form-group">
                         <label>Stanje</label>
