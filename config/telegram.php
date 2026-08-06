@@ -36,9 +36,87 @@ function telegramLinkCodeLength(): int
     return max(6, min(10, (int)envValue('TELEGRAM_LINK_CODE_LEN', '7')));
 }
 
+function telegramChannelId(): string
+{
+    return trim((string)envValue('TELEGRAM_CHANNEL_ID', ''));
+}
+
+function telegramChannelUsername(): string
+{
+    return ltrim(trim((string)envValue('TELEGRAM_CHANNEL_USERNAME', '')), '@');
+}
+
+function telegramChannelUrl(): string
+{
+    $user = telegramChannelUsername();
+    if ($user !== '') {
+        return 'https://t.me/' . $user;
+    }
+    return '';
+}
+
+function telegramWelcomeEnabled(): bool
+{
+    $flag = strtolower(trim((string)envValue('TELEGRAM_WELCOME_ENABLED', 'true')));
+    return in_array($flag, ['1', 'true', 'yes', 'on'], true);
+}
+
+function telegramWelcomeDeleteSeconds(): int
+{
+    $settings = function_exists('siteSettings') ? siteSettings() : [];
+    if (isset($settings['telegram_welcome_delete_sec'])) {
+        return max(0, (int)$settings['telegram_welcome_delete_sec']);
+    }
+    return max(0, (int)envValue('TELEGRAM_WELCOME_DELETE_SEC', '45'));
+}
+
 function telegramApiUrl(string $method): string
 {
     return 'https://api.telegram.org/bot' . telegramBotToken() . '/' . ltrim($method, '/');
+}
+
+/**
+ * @param array<string, mixed> $payload
+ * @return array{ok:bool,result?:array,description?:string}
+ */
+function telegramApiRequest(string $method, array $payload = []): array
+{
+    if (!telegramEnabled() || !function_exists('curl_init')) {
+        return ['ok' => false, 'description' => 'Telegram nije podešen ili cURL nedostaje.'];
+    }
+
+    $ch = curl_init(telegramApiUrl($method));
+    if ($ch === false) {
+        return ['ok' => false, 'description' => 'curl_init failed'];
+    }
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 15,
+        CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
+        CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
+    ]);
+    $raw = curl_exec($ch);
+    $curlErr = curl_error($ch);
+    curl_close($ch);
+
+    if (!is_string($raw) || $raw === '') {
+        return ['ok' => false, 'description' => $curlErr !== '' ? $curlErr : 'Prazan odgovor Telegram API-ja.'];
+    }
+    $decoded = json_decode($raw, true);
+    if (!is_array($decoded)) {
+        return ['ok' => false, 'description' => 'Neispravan JSON odgovor.'];
+    }
+    if (empty($decoded['ok'])) {
+        return [
+            'ok' => false,
+            'description' => trim((string)($decoded['description'] ?? 'Telegram API greška')),
+        ];
+    }
+    return [
+        'ok' => true,
+        'result' => is_array($decoded['result'] ?? null) ? $decoded['result'] : [],
+    ];
 }
 
 function generateTelegramLinkCode(int $length): string
@@ -154,40 +232,59 @@ function linkTelegramChatToUser(int $userId, int|string $chatId, string $usernam
     ]);
 }
 
-function telegramSendMessage(string $chatId, string $text): bool
+/**
+ * @param array{parse_mode?:string,disable_web_page_preview?:bool,reply_markup?:array} $extra
+ */
+function telegramSendMessage(string $chatId, string $text, array $extra = []): bool
 {
     if (!telegramEnabled() || trim($chatId) === '' || trim($text) === '') {
         return false;
     }
-    if (!function_exists('curl_init')) {
-        return false;
-    }
 
-    $payload = [
+    $payload = array_merge([
         'chat_id' => $chatId,
         'text' => $text,
         'disable_web_page_preview' => true,
-    ];
+    ], $extra);
 
-    $ch = curl_init(telegramApiUrl('sendMessage'));
-    if ($ch === false) {
+    $res = telegramApiRequest('sendMessage', $payload);
+    return !empty($res['ok']);
+}
+
+/**
+ * @param array{parse_mode?:string,disable_web_page_preview?:bool} $extra
+ * @return array{ok:bool,message_id?:int,description?:string}
+ */
+function telegramSendMessageDetailed(string $chatId, string $text, array $extra = []): array
+{
+    if (!telegramEnabled() || trim($chatId) === '' || trim($text) === '') {
+        return ['ok' => false, 'description' => 'invalid'];
+    }
+    $payload = array_merge([
+        'chat_id' => $chatId,
+        'text' => $text,
+        'disable_web_page_preview' => true,
+    ], $extra);
+    $res = telegramApiRequest('sendMessage', $payload);
+    if (empty($res['ok'])) {
+        return ['ok' => false, 'description' => (string)($res['description'] ?? '')];
+    }
+    return [
+        'ok' => true,
+        'message_id' => (int)($res['result']['message_id'] ?? 0),
+    ];
+}
+
+function telegramDeleteMessage(string $chatId, int $messageId): bool
+{
+    if ($messageId <= 0 || trim($chatId) === '') {
         return false;
     }
-    curl_setopt_array($ch, [
-        CURLOPT_POST => true,
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT => 12,
-        CURLOPT_HTTPHEADER => ['Content-Type: application/json'],
-        CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
+    $res = telegramApiRequest('deleteMessage', [
+        'chat_id' => $chatId,
+        'message_id' => $messageId,
     ]);
-    $raw = curl_exec($ch);
-    $ok = false;
-    if ($raw !== false) {
-        $decoded = json_decode((string)$raw, true);
-        $ok = is_array($decoded) && !empty($decoded['ok']);
-    }
-    curl_close($ch);
-    return $ok;
+    return !empty($res['ok']);
 }
 
 function telegramPreferenceKeyForType(string $type): string
@@ -236,7 +333,7 @@ function sendUserTelegramNotification(int $userId, string $type, string $title, 
         $parts[] = 'Otvori: ' . $absolute;
     }
     $text = trim(implode("\n\n", array_filter($parts, static fn($v) => trim((string)$v) !== '')));
-    return telegramSendMessage($chatId, $text);
+    return telegramSendMessage($chatId, $text) !== false;
 }
 
 function parseTelegramLinkCodeFromText(string $text): string
@@ -245,10 +342,10 @@ function parseTelegramLinkCodeFromText(string $text): string
     if ($text === '') {
         return '';
     }
-    if (preg_match('/^\/start\s+link_([A-Za-z0-9]+)$/', $text, $m)) {
+    if (preg_match('/^\/start(?:@\w+)?\s+link_([A-Za-z0-9]+)$/i', $text, $m)) {
         return strtoupper((string)$m[1]);
     }
-    if (preg_match('/^\/start\s+([A-Za-z0-9]+)$/', $text, $m)) {
+    if (preg_match('/^\/start(?:@\w+)?\s+([A-Za-z0-9]+)$/i', $text, $m)) {
         return strtoupper((string)$m[1]);
     }
     if (preg_match('/^[A-Za-z0-9]{6,10}$/', $text) === 1) {
@@ -257,24 +354,264 @@ function parseTelegramLinkCodeFromText(string $text): string
     return '';
 }
 
-function handleTelegramWebhookUpdate(array $update): void
+function telegramIsConfiguredChannel(string $chatId, string $chatUsername = ''): bool
 {
-    $msg = $update['message'] ?? $update['edited_message'] ?? null;
-    if (!is_array($msg)) {
+    $configuredId = telegramChannelId();
+    if ($configuredId !== '' && (string)$chatId === $configuredId) {
+        return true;
+    }
+    $configuredUser = telegramChannelUsername();
+    $chatUsername = ltrim(trim($chatUsername), '@');
+    if ($configuredUser !== '' && $chatUsername !== '' && strcasecmp($configuredUser, $chatUsername) === 0) {
+        return true;
+    }
+    // Ako nije setovan konkretan kanal, dozvoli sve kanale/grupe gde je bot admin.
+    return $configuredId === '' && $configuredUser === '';
+}
+
+function telegramWelcomeMessageTemplate(): string
+{
+    $settings = function_exists('siteSettings') ? siteSettings() : [];
+    $custom = trim((string)($settings['telegram_welcome_text'] ?? ''));
+    if ($custom !== '') {
+        return $custom;
+    }
+    return "Zdravo {name}! 👋\n\nDobrodošao/la u KupiTelefon kanal.\nOvde delimo oglase, savete i novosti sa sajta.\n\n🌐 {site}\n📢 {channel}";
+}
+
+function telegramFormatWelcomeText(string $displayName): string
+{
+    $name = trim($displayName) !== '' ? trim($displayName) : 'dobrodošao/la';
+    $site = rtrim(function_exists('appBaseUrl') ? appBaseUrl() : 'https://kupitelefon.rs', '/');
+    $channel = telegramChannelUrl();
+    if ($channel === '') {
+        $channel = $site;
+    }
+    $tpl = telegramWelcomeMessageTemplate();
+    return strtr($tpl, [
+        '{name}' => $name,
+        '{site}' => $site,
+        '{channel}' => $channel,
+    ]);
+}
+
+function telegramPrivateStartText(): string
+{
+    $site = rtrim(function_exists('appBaseUrl') ? appBaseUrl() : 'https://kupitelefon.rs', '/');
+    $channel = telegramChannelUrl();
+    $lines = [
+        'Zdravo! Ja sam bot sajta KupiTelefon.rs 📱',
+        '',
+        'Moguće je:',
+        '• povezati nalog i dobijati obaveštenja',
+        '• pratiti novosti u našem kanalu',
+        '',
+        'Poveži nalog: otvori Nalog → Telegram na sajtu, pa klikni Start.',
+        'Sajt: ' . $site,
+    ];
+    if ($channel !== '') {
+        $lines[] = 'Kanal: ' . $channel;
+    }
+    $lines[] = '';
+    $lines[] = 'Komande: /start /help /kanal';
+    return implode("\n", $lines);
+}
+
+function telegramHelpText(): string
+{
+    $channel = telegramChannelUrl();
+    $lines = [
+        'KupiTelefon bot — pomoć',
+        '',
+        '/start — početna poruka',
+        '/help — ova lista',
+        '/kanal — link ka Telegram kanalu',
+        '',
+        'Za obaveštenja: u Nalogu na sajtu klikni „Poveži Telegram”.',
+    ];
+    if ($channel !== '') {
+        $lines[] = '';
+        $lines[] = 'Kanal: ' . $channel;
+    }
+    return implode("\n", $lines);
+}
+
+/**
+ * @return list<string>
+ */
+function telegramWebhookAllowedUpdates(): array
+{
+    return ['message', 'edited_message', 'chat_member', 'my_chat_member'];
+}
+
+/**
+ * @return array{ok:bool,description?:string,result?:array}
+ */
+function telegramSetWebhook(string $publicUrl, ?string $secret = null): array
+{
+    $secret = $secret ?? telegramWebhookSecret();
+    $payload = [
+        'url' => $publicUrl,
+        'allowed_updates' => telegramWebhookAllowedUpdates(),
+        'drop_pending_updates' => false,
+    ];
+    if ($secret !== '') {
+        $payload['secret_token'] = $secret;
+    }
+    return telegramApiRequest('setWebhook', $payload);
+}
+
+/**
+ * @return array{ok:bool,description?:string,result?:array}
+ */
+function telegramGetWebhookInfo(): array
+{
+    return telegramApiRequest('getWebhookInfo', []);
+}
+
+function telegramMemberDisplayName(array $user): string
+{
+    $first = trim((string)($user['first_name'] ?? ''));
+    $last = trim((string)($user['last_name'] ?? ''));
+    $username = ltrim(trim((string)($user['username'] ?? '')), '@');
+    $full = trim($first . ' ' . $last);
+    if ($full !== '') {
+        return $full;
+    }
+    if ($username !== '') {
+        return '@' . $username;
+    }
+    return 'novi član';
+}
+
+function telegramMentionHtml(array $user): string
+{
+    $id = (int)($user['id'] ?? 0);
+    $label = htmlspecialchars(telegramMemberDisplayName($user), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+    if ($id > 0) {
+        return '<a href="tg://user?id=' . $id . '">' . $label . '</a>';
+    }
+    return $label;
+}
+
+function handleTelegramChannelMemberUpdate(array $update): void
+{
+    if (!telegramWelcomeEnabled()) {
         return;
     }
-    $chatId = (string)($msg['chat']['id'] ?? '');
+
+    $cm = $update['chat_member'] ?? null;
+    if (!is_array($cm)) {
+        return;
+    }
+
+    $chat = is_array($cm['chat'] ?? null) ? $cm['chat'] : [];
+    $chatId = (string)($chat['id'] ?? '');
+    $chatType = (string)($chat['type'] ?? '');
+    $chatUsername = (string)($chat['username'] ?? '');
+    if ($chatId === '' || !in_array($chatType, ['channel', 'supergroup', 'group'], true)) {
+        return;
+    }
+    if (!telegramIsConfiguredChannel($chatId, $chatUsername)) {
+        return;
+    }
+
+    $oldStatus = (string)($cm['old_chat_member']['status'] ?? '');
+    $newMember = is_array($cm['new_chat_member'] ?? null) ? $cm['new_chat_member'] : [];
+    $newStatus = (string)($newMember['status'] ?? '');
+    $user = is_array($newMember['user'] ?? null) ? $newMember['user'] : [];
+    if (!empty($user['is_bot'])) {
+        return;
+    }
+
+    $joined = in_array($newStatus, ['member', 'administrator', 'restricted'], true)
+        && in_array($oldStatus, ['left', 'kicked', ''], true);
+    if (!$joined) {
+        return;
+    }
+
+    $name = telegramMemberDisplayName($user);
+    $site = rtrim(function_exists('appBaseUrl') ? appBaseUrl() : 'https://kupitelefon.rs', '/');
+    $channel = telegramChannelUrl();
+    if ($channel === '') {
+        $channel = $site;
+    }
+    $mention = telegramMentionHtml($user);
+    $textHtml = 'Zdravo ' . $mention . "! 👋<br><br>"
+        . 'Dobrodošao/la u <b>KupiTelefon</b> kanal.<br>'
+        . 'Ovde delimo oglase, savete i novosti sa sajta.<br><br>'
+        . '🌐 ' . htmlspecialchars($site, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '<br>'
+        . '📢 ' . htmlspecialchars($channel, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+
+    $custom = trim((string)((function_exists('siteSettings') ? siteSettings() : [])['telegram_welcome_text'] ?? ''));
+    if ($custom !== '') {
+        $plain = telegramFormatWelcomeText($name);
+        $textHtml = nl2br(htmlspecialchars($plain, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), false);
+        $textHtml = str_replace(
+            htmlspecialchars($name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
+            $mention,
+            $textHtml
+        );
+    }
+
+    $sent = telegramSendMessageDetailed($chatId, $textHtml, [
+        'parse_mode' => 'HTML',
+        'disable_web_page_preview' => true,
+    ]);
+    if (empty($sent['ok'])) {
+        telegramSendMessage($chatId, telegramFormatWelcomeText($name));
+    }
+
+    // Privatna poruka radi samo ako je korisnik ranije pokrenuo bota (/start).
+    $userId = (int)($user['id'] ?? 0);
+    if ($userId > 0) {
+        telegramSendMessage(
+            (string)$userId,
+            "Hvala što pratiš KupiTelefon! 🙌\n\n" . telegramPrivateStartText()
+        );
+    }
+}
+
+function handleTelegramPrivateMessage(array $msg): void
+{
+    $chat = is_array($msg['chat'] ?? null) ? $msg['chat'] : [];
+    $chatType = (string)($chat['type'] ?? '');
+    if ($chatType !== 'private') {
+        return;
+    }
+
+    $chatId = (string)($chat['id'] ?? '');
     $text = trim((string)($msg['text'] ?? ''));
     if ($chatId === '' || $text === '') {
         return;
     }
-    $code = parseTelegramLinkCodeFromText($text);
-    $tgUser = trim((string)($msg['from']['username'] ?? ''));
 
-    if ($code === '') {
+    $tgUser = trim((string)($msg['from']['username'] ?? ''));
+    $cmd = mb_strtolower(trim(explode(' ', $text, 2)[0]));
+    $cmd = preg_replace('/@\w+$/', '', $cmd) ?? $cmd;
+
+    if ($cmd === '/help' || $cmd === 'help') {
+        telegramSendMessage($chatId, telegramHelpText());
+        return;
+    }
+    if ($cmd === '/kanal' || $cmd === '/channel') {
+        $channel = telegramChannelUrl();
         telegramSendMessage(
             $chatId,
-            "Pošalji kod za povezivanje iz KupiTelefon naloga.\n\nPrimer: AB12CD3"
+            $channel !== '' ? ('Naš kanal: ' . $channel) : 'Telegram kanal još nije podešen. Poseti kupitelefon.rs'
+        );
+        return;
+    }
+
+    $code = parseTelegramLinkCodeFromText($text);
+    if ($code === '') {
+        if ($cmd === '/start' || str_starts_with($cmd, '/start')) {
+            telegramSendMessage($chatId, telegramPrivateStartText());
+            return;
+        }
+        telegramSendMessage(
+            $chatId,
+            "Pošalji kod za povezivanje iz KupiTelefon naloga.\n\nPrimer: AB12CD3\n\nIli koristi /help"
         );
         return;
     }
@@ -295,8 +632,47 @@ function handleTelegramWebhookUpdate(array $update): void
     }
 
     $name = trim((string)($user['full_name'] ?? $user['username'] ?? 'korisniče'));
+    $channel = telegramChannelUrl();
+    $extra = $channel !== '' ? ("\n\nPrati i kanal: " . $channel) : '';
     telegramSendMessage(
         $chatId,
-        "Uspešno povezano sa nalogom {$name}.\nTelegram obaveštenja su uključena."
+        "Uspešno povezano sa nalogom {$name}.\nTelegram obaveštenja su uključena." . $extra
     );
+}
+
+function handleTelegramWebhookUpdate(array $update): void
+{
+    if (isset($update['chat_member']) && is_array($update['chat_member'])) {
+        handleTelegramChannelMemberUpdate($update);
+        return;
+    }
+
+    // Bot dodat/uklonjen iz kanala — samo zabeleži tiho (nema akcije).
+    if (isset($update['my_chat_member'])) {
+        return;
+    }
+
+    $msg = $update['message'] ?? $update['edited_message'] ?? null;
+    if (!is_array($msg)) {
+        return;
+    }
+
+    // Grupe: stariji tip update-a za nove članove.
+    if (!empty($msg['new_chat_members']) && is_array($msg['new_chat_members']) && telegramWelcomeEnabled()) {
+        $chat = is_array($msg['chat'] ?? null) ? $msg['chat'] : [];
+        $chatId = (string)($chat['id'] ?? '');
+        $chatUsername = (string)($chat['username'] ?? '');
+        if ($chatId !== '' && telegramIsConfiguredChannel($chatId, $chatUsername)) {
+            foreach ($msg['new_chat_members'] as $member) {
+                if (!is_array($member) || !empty($member['is_bot'])) {
+                    continue;
+                }
+                $text = telegramFormatWelcomeText(telegramMemberDisplayName($member));
+                telegramSendMessage($chatId, $text);
+            }
+        }
+        return;
+    }
+
+    handleTelegramPrivateMessage($msg);
 }

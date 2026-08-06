@@ -116,6 +116,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'enable_messages' => (string)($_POST['enable_messages'] ?? '0') === '1',
         'enable_whatsapp' => (string)($_POST['enable_whatsapp'] ?? '0') === '1',
         'enable_favorites' => (string)($_POST['enable_favorites'] ?? '0') === '1',
+        'telegram_welcome_text' => trim((string)($_POST['telegram_welcome_text'] ?? ($current['telegram_welcome_text'] ?? ''))),
+        'telegram_welcome_delete_sec' => (int)($_POST['telegram_welcome_delete_sec'] ?? ($current['telegram_welcome_delete_sec'] ?? 0)),
         'enable_ad_expiry' => (string)($_POST['enable_ad_expiry'] ?? '0') === '1',
         'ad_max_active_days' => (int)($_POST['ad_max_active_days'] ?? $current['ad_max_active_days'] ?? 30),
         'ad_expiry_warning_days' => (int)($_POST['ad_expiry_warning_days'] ?? $current['ad_expiry_warning_days'] ?? 3),
@@ -305,6 +307,25 @@ require __DIR__ . '/partials/layout-start.php';
                     <label class="type-chip" style="min-width:auto;flex:none;"><input type="checkbox" name="enable_whatsapp" value="1" <?= !empty($settings['enable_whatsapp']) ? 'checked' : '' ?>> WhatsApp dugme na oglasu</label>
                     <input type="hidden" name="enable_favorites" value="0">
                     <label class="type-chip" style="min-width:auto;flex:none;"><input type="checkbox" name="enable_favorites" value="1" <?= !empty($settings['enable_favorites']) ? 'checked' : '' ?>> Omiljeni oglasi</label>
+                </div>
+
+                <h3 style="margin-top:22px;">Telegram kanal — dobrodošlica</h3>
+                <p class="form-hint">
+                    Bot mora biti <strong>admin</strong> u kanalu. U <code>.env</code> podesi
+                    <code>TELEGRAM_CHANNEL_ID</code> (npr. <code>-100…</code>) i/ili
+                    <code>TELEGRAM_CHANNEL_USERNAME</code>, pa pokreni
+                    <code>php tools/telegram_setup.php</code> da registruje webhook sa
+                    <code>chat_member</code> update-ima.
+                </p>
+                <div class="form-group">
+                    <label>Tekst dobrodošlice (prazno = podrazumevani)</label>
+                    <textarea name="telegram_welcome_text" rows="5" placeholder="Zdravo {name}! …">{name}, {site}, {channel}"><?= h((string)($settings['telegram_welcome_text'] ?? '')) ?></textarea>
+                    <p class="form-hint">Placeholders: <code>{name}</code>, <code>{site}</code>, <code>{channel}</code></p>
+                </div>
+                <div class="form-group">
+                    <label>Auto-brisanje dobrodošlice (sekunde, 0 = ne briši)</label>
+                    <input type="number" min="0" max="600" name="telegram_welcome_delete_sec" value="<?= (int)($settings['telegram_welcome_delete_sec'] ?? 0) ?>">
+                    <p class="form-hint">Trenutno se poruka ne briše automatski iz webhook-a (Telegram zahteva brz odgovor). Ostavi 0.</p>
                 </div>
 
                 <h3 style="margin-top:22px;">Rok trajanja oglasa</h3>

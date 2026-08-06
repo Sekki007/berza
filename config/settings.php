@@ -131,6 +131,8 @@ function defaultSiteSettings(): array
         'ga4_property_id' => '',
         'imei_free_checks_per_day' => 5,
         'imei_services' => defaultImeiServices(),
+        'telegram_welcome_text' => '',
+        'telegram_welcome_delete_sec' => 0,
     ];
 }
 
@@ -184,6 +186,8 @@ function saveSiteSettings(array $input): bool
         } elseif ($key === 'eur_rsd_rate') {
             $settings[$key] = max(1.0, (float)$value);
         } elseif ($key === 'imei_free_checks_per_day') {
+            $settings[$key] = max(0, (int)$value);
+        } elseif ($key === 'telegram_welcome_delete_sec') {
             $settings[$key] = max(0, (int)$value);
         } elseif (is_int($defaultValue)) {
             $settings[$key] = max(1, (int)$value);
