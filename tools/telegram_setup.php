@@ -7,8 +7,8 @@ declare(strict_types=1);
  *
  * Primeri:
  *   php tools/telegram_setup.php
- *   php tools/telegram_setup.php https://kupitelefon.rs/api/telegram-webhook.php
  *   php tools/telegram_setup.php status
+ *   php tools/telegram_setup.php probe
  *   php tools/telegram_setup.php post-info
  *   php tools/telegram_setup.php test-ad 123
  */
@@ -31,17 +31,38 @@ if ($arg === 'status') {
     }
     echo json_encode($info['result'] ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL;
     echo "\nChannel target: " . (telegramChannelChatId() !== '' ? telegramChannelChatId() : '(nije setovan)') . PHP_EOL;
+    echo 'CHANNEL_ID env: ' . (telegramChannelId() !== '' ? telegramChannelId() : '(prazno)') . PHP_EOL;
+    echo 'CHANNEL_USERNAME env: ' . (telegramChannelUsername() !== '' ? ('@' . telegramChannelUsername()) : '(prazno)') . PHP_EOL;
     echo 'Post ads: ' . (telegramPostAdsEnabled() ? 'ON' : 'OFF') . PHP_EOL;
     exit(0);
 }
 
-if ($arg === 'post-info') {
-    if (telegramChannelChatId() === '') {
-        fwrite(STDERR, "Setuj TELEGRAM_CHANNEL_ID ili TELEGRAM_CHANNEL_USERNAME u .env\n");
+if ($arg === 'probe') {
+    echo "Proveravam kanal...\n";
+    echo 'Target: ' . (telegramChannelChatId() !== '' ? telegramChannelChatId() : '(nije setovan)') . PHP_EOL;
+    $probe = telegramProbeChannel();
+    if (empty($probe['ok'])) {
+        fwrite(STDERR, 'PROBE FAIL: ' . (string)($probe['error'] ?? '') . PHP_EOL);
+        if (!empty($probe['chat'])) {
+            echo json_encode($probe['chat'], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL;
+        }
+        echo "\nKako naći CHANNEL_ID:\n";
+        echo "1) Bot mora biti admin kanala.\n";
+        echo "2) Objavite bilo šta u kanalu (kao admin).\n";
+        echo "3) Privremeno: curl 'https://api.telegram.org/bot<TOKEN>/getUpdates'\n";
+        echo "   Traži chat.id tipa -100...\n";
+        echo "4) Ubaci u .env: TELEGRAM_CHANNEL_ID=-100...\n";
         exit(1);
     }
-    if (!telegramPostChannelInfo()) {
-        fwrite(STDERR, "Slanje info poruke u kanal nije uspelo. Proveri da je bot admin kanala.\n");
+    echo "PROBE OK — bot vidi kanal i admin je.\n";
+    echo json_encode($probe['chat'] ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL;
+    exit(0);
+}
+
+if ($arg === 'post-info') {
+    $res = telegramPostChannelInfo();
+    if (empty($res['ok'])) {
+        fwrite(STDERR, 'FAIL: ' . (string)($res['error'] ?? '') . PHP_EOL);
         exit(1);
     }
     echo "Info poruka poslata u kanal.\n";
@@ -59,10 +80,10 @@ if ($arg === 'test-ad') {
         fwrite(STDERR, "Oglas #{$adId} nije pronađen.\n");
         exit(1);
     }
-    // Dozvoli re-test: skini marker.
-    unset($ad['telegram_channel_posted_at']);
-    if (!telegramNotifyChannelNewAd($ad)) {
-        fwrite(STDERR, "Objava oglasa u kanal nije uspela. Proveri CHANNEL_ID i da je bot admin.\n");
+    echo 'Channel target: ' . (telegramChannelChatId() !== '' ? telegramChannelChatId() : '(nije setovan)') . PHP_EOL;
+    $res = telegramNotifyChannelNewAd($ad, true);
+    if (empty($res['ok'])) {
+        fwrite(STDERR, 'FAIL: ' . (string)($res['error'] ?? '') . PHP_EOL);
         exit(1);
     }
     echo "Oglas #{$adId} objavljen u Telegram kanal.\n";
@@ -112,10 +133,9 @@ if (!empty($info['ok'])) {
 echo "\nVažno o KANALU:\n";
 echo "- Članovi kanala NE MOGU da šalju /info botu (Telegram ograničenje).\n";
 echo "- Bot u kanalu OBJAVLJUJE oglase i info poruke kao admin.\n";
-echo "- Za /info koristi privatni chat sa botom ili grupu.\n";
-echo "- Pošalji info u kanal: php tools/telegram_setup.php post-info\n";
+echo "- Provera kanala: php tools/telegram_setup.php probe\n";
+echo "- Info u kanal: php tools/telegram_setup.php post-info\n";
 echo "\nProveri još:\n";
 echo "1) Bot je administrator kanala (Post messages).\n";
-echo "2) TELEGRAM_CHANNEL_ID ili TELEGRAM_CHANNEL_USERNAME u .env.\n";
+echo "2) TELEGRAM_CHANNEL_ID=-100... u .env\n";
 echo "3) TELEGRAM_POST_ADS_ENABLED=true\n";
-echo "4) TELEGRAM_WELCOME_ENABLED=true\n";

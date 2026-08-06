@@ -363,69 +363,125 @@ function telegramFormatAdChannelPost(array $ad): string
 }
 
 /**
- * Objavi novi oglas u Telegram kanal. Ne baca greške ka saveAd toku.
+ * Objavi novi oglas u Telegram kanal.
+ *
+ * @return array{ok:bool,error?:string}
  */
-function telegramNotifyChannelNewAd(array $ad): bool
+function telegramNotifyChannelNewAd(array $ad, bool $force = false): array
 {
-    if (!telegramEnabled() || !telegramPostAdsEnabled()) {
-        return false;
+    if (!telegramEnabled()) {
+        return ['ok' => false, 'error' => 'Telegram nije uključen (TELEGRAM_ENABLED / TOKEN).'];
+    }
+    if (!telegramPostAdsEnabled()) {
+        return ['ok' => false, 'error' => 'TELEGRAM_POST_ADS_ENABLED nije true.'];
     }
     if ((int)($ad['is_active'] ?? 0) !== 1) {
-        return false;
+        return ['ok' => false, 'error' => 'Oglas nije aktivan.'];
     }
-    if (!empty($ad['telegram_channel_posted_at'])) {
-        return false;
+    if (!$force && !empty($ad['telegram_channel_posted_at'])) {
+        return ['ok' => false, 'error' => 'Oglas je već objavljen u kanal (' . (string)$ad['telegram_channel_posted_at'] . ').'];
     }
 
     $chatId = telegramChannelChatId();
     if ($chatId === '') {
-        return false;
+        return ['ok' => false, 'error' => 'Nije setovan TELEGRAM_CHANNEL_ID niti TELEGRAM_CHANNEL_USERNAME.'];
     }
 
     $text = telegramFormatAdChannelPost($ad);
     $photo = '';
     if (function_exists('adPrimaryImage')) {
-        $rel = trim((string)adPrimaryImage($ad));
+        $rel = trim((string)(adPrimaryImage($ad) ?? ''));
         if ($rel !== '') {
             $photo = absoluteUrl($rel);
         }
     }
 
+    $lastError = '';
     $ok = false;
     if ($photo !== '') {
         $sent = telegramSendPhoto($chatId, $photo, $text);
-        $ok = !empty($sent['ok']);
-    }
-    if (!$ok) {
-        $ok = telegramSendMessage($chatId, $text, ['disable_web_page_preview' => false]);
-    }
-
-    if ($ok) {
-        $adId = (int)($ad['id'] ?? 0);
-        if ($adId > 0) {
-            // Označi da je već poslato (bez rekurzije saveAd).
-            $ads = readJsonFile('ads.json');
-            foreach ($ads as &$row) {
-                if ((int)($row['id'] ?? 0) === $adId) {
-                    $row['telegram_channel_posted_at'] = date('Y-m-d H:i:s');
-                    break;
-                }
-            }
-            unset($row);
-            writeJsonFile('ads.json', $ads);
+        if (!empty($sent['ok'])) {
+            $ok = true;
+        } else {
+            $lastError = 'sendPhoto: ' . (string)($sent['description'] ?? 'neuspelo');
         }
     }
-    return $ok;
+    if (!$ok) {
+        $sentMsg = telegramSendMessageDetailed($chatId, $text, ['disable_web_page_preview' => false]);
+        if (!empty($sentMsg['ok'])) {
+            $ok = true;
+        } else {
+            $msgErr = (string)($sentMsg['description'] ?? 'neuspelo');
+            $lastError = $lastError !== '' ? ($lastError . ' | sendMessage: ' . $msgErr) : ('sendMessage: ' . $msgErr);
+        }
+    }
+
+    if (!$ok) {
+        return ['ok' => false, 'error' => $lastError !== '' ? $lastError : 'Nepoznata greška pri slanju.'];
+    }
+
+    $adId = (int)($ad['id'] ?? 0);
+    if ($adId > 0) {
+        $ads = readJsonFile('ads.json');
+        foreach ($ads as &$row) {
+            if ((int)($row['id'] ?? 0) === $adId) {
+                $row['telegram_channel_posted_at'] = date('Y-m-d H:i:s');
+                break;
+            }
+        }
+        unset($row);
+        writeJsonFile('ads.json', $ads);
+    }
+    return ['ok' => true];
 }
 
-function telegramPostChannelInfo(): bool
+/**
+ * @return array{ok:bool,error?:string}
+ */
+function telegramPostChannelInfo(): array
 {
     $chatId = telegramChannelChatId();
     if ($chatId === '') {
-        return false;
+        return ['ok' => false, 'error' => 'Nije setovan TELEGRAM_CHANNEL_ID niti TELEGRAM_CHANNEL_USERNAME.'];
     }
     $text = telegramInfoText() . "\n\n(Bot odgovara na /info u privatnom chatu ili grupi. U kanalu članovi ne mogu da šalju komande — ovde bot objavljuje novosti i oglase.)";
-    return telegramSendMessage($chatId, $text, ['disable_web_page_preview' => false]);
+    $sent = telegramSendMessageDetailed($chatId, $text, ['disable_web_page_preview' => false]);
+    if (empty($sent['ok'])) {
+        return ['ok' => false, 'error' => (string)($sent['description'] ?? 'Slanje nije uspelo.')];
+    }
+    return ['ok' => true];
+}
+
+/**
+ * @return array{ok:bool,error?:string,chat?:array}
+ */
+function telegramProbeChannel(): array
+{
+    $chatId = telegramChannelChatId();
+    if ($chatId === '') {
+        return ['ok' => false, 'error' => 'Nije setovan TELEGRAM_CHANNEL_ID niti TELEGRAM_CHANNEL_USERNAME.'];
+    }
+    $chat = telegramApiRequest('getChat', ['chat_id' => $chatId]);
+    if (empty($chat['ok'])) {
+        return [
+            'ok' => false,
+            'error' => 'getChat: ' . (string)($chat['description'] ?? 'neuspelo') . ' (target=' . $chatId . ')',
+        ];
+    }
+    $me = telegramApiRequest('getMe', []);
+    $member = telegramApiRequest('getChatMember', [
+        'chat_id' => $chatId,
+        'user_id' => (int)($me['result']['id'] ?? 0),
+    ]);
+    $status = (string)($member['result']['status'] ?? '');
+    if (!in_array($status, ['administrator', 'creator'], true)) {
+        return [
+            'ok' => false,
+            'error' => 'Bot nije admin kanala (status=' . ($status !== '' ? $status : 'unknown') . '). Dodaj bota kao administratora sa Post messages.',
+            'chat' => $chat['result'] ?? [],
+        ];
+    }
+    return ['ok' => true, 'chat' => $chat['result'] ?? []];
 }
 
 function telegramPreferenceKeyForType(string $type): string
