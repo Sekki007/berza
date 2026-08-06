@@ -413,7 +413,7 @@ function telegramPrivateStartText(): string
         $lines[] = 'Kanal: ' . $channel;
     }
     $lines[] = '';
-    $lines[] = 'Komande: /start /help /kanal';
+    $lines[] = 'Komande: /info /start /help /kanal';
     return implode("\n", $lines);
 }
 
@@ -423,10 +423,12 @@ function telegramHelpText(): string
     $lines = [
         'KupiTelefon bot — pomoć',
         '',
+        '/info — kratke informacije o sajtu',
         '/start — početna poruka',
         '/help — ova lista',
         '/kanal — link ka Telegram kanalu',
         '',
+        'U grupi piši npr. /info@' . (telegramBotUsername() !== '' ? telegramBotUsername() : 'Kupitelefonrs_bot'),
         'Za obaveštenja: u Nalogu na sajtu klikni „Poveži Telegram”.',
     ];
     if ($channel !== '') {
@@ -436,12 +438,34 @@ function telegramHelpText(): string
     return implode("\n", $lines);
 }
 
+function telegramInfoText(): string
+{
+    $site = rtrim(function_exists('appBaseUrl') ? appBaseUrl() : 'https://kupitelefon.rs', '/');
+    $channel = telegramChannelUrl();
+    $lines = [
+        '📱 KupiTelefon.rs',
+        '',
+        'Berza polovnih telefona, delova i servisa u Srbiji.',
+        'Objavi oglas besplatno i pronađi kupca brže.',
+        '',
+        'Sajt: ' . $site,
+        'Objavi oglas: ' . $site . '/ad_form.php',
+        'IMEI provera: ' . $site . '/provera-imei',
+    ];
+    if ($channel !== '') {
+        $lines[] = 'Telegram kanal: ' . $channel;
+    }
+    $lines[] = '';
+    $lines[] = 'Komande: /info /help /kanal /start';
+    return implode("\n", $lines);
+}
+
 /**
  * @return list<string>
  */
 function telegramWebhookAllowedUpdates(): array
 {
-    return ['message', 'edited_message', 'chat_member', 'my_chat_member'];
+    return ['message', 'edited_message', 'channel_post', 'chat_member', 'my_chat_member'];
 }
 
 /**
@@ -572,46 +596,76 @@ function handleTelegramChannelMemberUpdate(array $update): void
     }
 }
 
-function handleTelegramPrivateMessage(array $msg): void
+function handleTelegramChatMessage(array $msg): void
 {
     $chat = is_array($msg['chat'] ?? null) ? $msg['chat'] : [];
     $chatType = (string)($chat['type'] ?? '');
-    if ($chatType !== 'private') {
+    $isPrivate = $chatType === 'private';
+    $isGroup = in_array($chatType, ['group', 'supergroup'], true);
+    $isChannel = $chatType === 'channel';
+    if (!$isPrivate && !$isGroup && !$isChannel) {
         return;
     }
 
     $chatId = (string)($chat['id'] ?? '');
-    $text = trim((string)($msg['text'] ?? ''));
+    $text = trim((string)($msg['text'] ?? $msg['caption'] ?? ''));
     if ($chatId === '' || $text === '') {
         return;
     }
 
     $tgUser = trim((string)($msg['from']['username'] ?? ''));
-    $cmd = mb_strtolower(trim(explode(' ', $text, 2)[0]));
+    $firstToken = trim(explode(' ', $text, 2)[0]);
+    $cmd = mb_strtolower($firstToken);
     $cmd = preg_replace('/@\w+$/', '', $cmd) ?? $cmd;
 
-    if ($cmd === '/help' || $cmd === 'help') {
+    // U grupi/kanalu reaguj samo na komande (ne na običan chat).
+    $isCommand = str_starts_with($cmd, '/');
+    if (!$isPrivate && !$isCommand) {
+        return;
+    }
+
+    if (in_array($cmd, ['/info', '/about', 'info'], true)) {
+        telegramSendMessage($chatId, telegramInfoText());
+        return;
+    }
+    if (in_array($cmd, ['/help', 'help', '/pomoc', '/pomoć'], true)) {
         telegramSendMessage($chatId, telegramHelpText());
         return;
     }
-    if ($cmd === '/kanal' || $cmd === '/channel') {
+    if (in_array($cmd, ['/kanal', '/channel', '/grupa'], true)) {
         $channel = telegramChannelUrl();
         telegramSendMessage(
             $chatId,
-            $channel !== '' ? ('Naš kanal: ' . $channel) : 'Telegram kanal još nije podešen. Poseti kupitelefon.rs'
+            $channel !== '' ? ('Naš kanal: ' . $channel) : ('Sajt: ' . rtrim(appBaseUrl(), '/'))
         );
+        return;
+    }
+    if ($cmd === '/start' || str_starts_with($cmd, '/start')) {
+        // Ako /start ima link kod, obradi ispod.
+        $codeFromStart = parseTelegramLinkCodeFromText($text);
+        if ($codeFromStart === '') {
+            telegramSendMessage($chatId, $isPrivate ? telegramPrivateStartText() : telegramInfoText());
+            return;
+        }
+    }
+
+    // Povezivanje naloga radi samo u privatnom chatu.
+    if (!$isPrivate) {
+        if ($isCommand) {
+            telegramSendMessage($chatId, "Nepoznata komanda.\nProbaj /info ili /help");
+        }
         return;
     }
 
     $code = parseTelegramLinkCodeFromText($text);
     if ($code === '') {
-        if ($cmd === '/start' || str_starts_with($cmd, '/start')) {
-            telegramSendMessage($chatId, telegramPrivateStartText());
+        if ($isCommand) {
+            telegramSendMessage($chatId, "Nepoznata komanda.\nProbaj /info ili /help");
             return;
         }
         telegramSendMessage(
             $chatId,
-            "Pošalji kod za povezivanje iz KupiTelefon naloga.\n\nPrimer: AB12CD3\n\nIli koristi /help"
+            "Pošalji kod za povezivanje iz KupiTelefon naloga.\n\nPrimer: AB12CD3\n\nIli koristi /info"
         );
         return;
     }
@@ -652,7 +706,7 @@ function handleTelegramWebhookUpdate(array $update): void
         return;
     }
 
-    $msg = $update['message'] ?? $update['edited_message'] ?? null;
+    $msg = $update['message'] ?? $update['edited_message'] ?? $update['channel_post'] ?? null;
     if (!is_array($msg)) {
         return;
     }
@@ -671,8 +725,11 @@ function handleTelegramWebhookUpdate(array $update): void
                 telegramSendMessage($chatId, $text);
             }
         }
-        return;
+        // Nemoj return odmah — ako ima i text, obradi komandu ispod.
+        if (trim((string)($msg['text'] ?? '')) === '') {
+            return;
+        }
     }
 
-    handleTelegramPrivateMessage($msg);
+    handleTelegramChatMessage($msg);
 }

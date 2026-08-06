@@ -48,14 +48,31 @@ if (empty($set['ok'])) {
     exit(1);
 }
 
-echo "Webhook OK.\n\n";
+echo "Webhook OK.\n";
+
+$commands = telegramApiRequest('setMyCommands', [
+    'commands' => [
+        ['command' => 'info', 'description' => 'Informacije o KupiTelefon.rs'],
+        ['command' => 'help', 'description' => 'Lista komandi'],
+        ['command' => 'kanal', 'description' => 'Link ka Telegram kanalu'],
+        ['command' => 'start', 'description' => 'Početak / povezivanje naloga'],
+    ],
+]);
+if (!empty($commands['ok'])) {
+    echo "Bot komande (/info, /help…) registrovane.\n";
+} else {
+    echo 'setMyCommands upozorenje: ' . (string)($commands['description'] ?? '') . PHP_EOL;
+}
+
+echo "\n";
 $info = telegramGetWebhookInfo();
 if (!empty($info['ok'])) {
     echo json_encode($info['result'] ?? [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) . PHP_EOL;
 }
 
 echo "\nProveri još:\n";
-echo "1) Bot je administrator kanala (može da šalje poruke).\n";
+echo "1) Bot je administrator kanala/grupe (može da šalje poruke).\n";
 echo "2) TELEGRAM_CHANNEL_ID ili TELEGRAM_CHANNEL_USERNAME u .env.\n";
 echo "3) TELEGRAM_WELCOME_ENABLED=true\n";
-echo "4) Uđi u kanal test nalogom i proveri dobrodošlicu.\n";
+echo "4) U grupi pošalji /info (ili /info@tvoj_bot)\n";
+echo "5) BotFather → /setprivacy → Disable (da bot vidi komande u grupi pouzdanije)\n";
