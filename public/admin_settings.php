@@ -314,8 +314,10 @@ require __DIR__ . '/partials/layout-start.php';
                     Bot mora biti <strong>admin</strong> u kanalu. U <code>.env</code> podesi
                     <code>TELEGRAM_CHANNEL_ID</code> (npr. <code>-100…</code>) i/ili
                     <code>TELEGRAM_CHANNEL_USERNAME</code>, pa pokreni
-                    <code>php tools/telegram_setup.php</code> da registruje webhook sa
-                    <code>chat_member</code> update-ima.
+                    <code>php tools/telegram_setup.php</code>.
+                    U kanalu članovi ne mogu da šalju komande botu — bot tamo objavljuje oglase i info.
+                    Za <code>/info</code> koristi privatni chat ili grupu. Info u kanal:
+                    <code>php tools/telegram_setup.php post-info</code>.
                 </p>
                 <div class="form-group">
                     <label>Tekst dobrodošlice (prazno = podrazumevani)</label>

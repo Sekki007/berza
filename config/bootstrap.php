@@ -933,6 +933,9 @@ function saveAd(array $payload, ?int $adId = null): int
                 if (!$wasActive && $isActiveNow && function_exists('notifySavedSearchesForAd')) {
                     notifySavedSearchesForAd($adId);
                 }
+                if (!$wasActive && $isActiveNow && function_exists('telegramNotifyChannelNewAd')) {
+                    telegramNotifyChannelNewAd($payload);
+                }
                 return $adId;
             }
         }
@@ -959,6 +962,9 @@ function saveAd(array $payload, ?int $adId = null): int
     writeJsonFile('ads.json', $ads);
     if ((int)($payload['is_active'] ?? 0) === 1 && function_exists('notifySavedSearchesForAd')) {
         notifySavedSearchesForAd($newId);
+    }
+    if ((int)($payload['is_active'] ?? 0) === 1 && function_exists('telegramNotifyChannelNewAd')) {
+        telegramNotifyChannelNewAd($payload);
     }
     return $newId;
 }

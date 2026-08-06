@@ -46,6 +46,16 @@ function telegramChannelUsername(): string
     return ltrim(trim((string)envValue('TELEGRAM_CHANNEL_USERNAME', '')), '@');
 }
 
+function telegramChannelChatId(): string
+{
+    $id = telegramChannelId();
+    if ($id !== '') {
+        return $id;
+    }
+    $user = telegramChannelUsername();
+    return $user !== '' ? ('@' . $user) : '';
+}
+
 function telegramChannelUrl(): string
 {
     $user = telegramChannelUsername();
@@ -58,6 +68,12 @@ function telegramChannelUrl(): string
 function telegramWelcomeEnabled(): bool
 {
     $flag = strtolower(trim((string)envValue('TELEGRAM_WELCOME_ENABLED', 'true')));
+    return in_array($flag, ['1', 'true', 'yes', 'on'], true);
+}
+
+function telegramPostAdsEnabled(): bool
+{
+    $flag = strtolower(trim((string)envValue('TELEGRAM_POST_ADS_ENABLED', 'true')));
     return in_array($flag, ['1', 'true', 'yes', 'on'], true);
 }
 
@@ -285,6 +301,131 @@ function telegramDeleteMessage(string $chatId, int $messageId): bool
         'message_id' => $messageId,
     ]);
     return !empty($res['ok']);
+}
+
+/**
+ * @return array{ok:bool,message_id?:int,description?:string}
+ */
+function telegramSendPhoto(string $chatId, string $photoUrl, string $caption = ''): array
+{
+    if (!telegramEnabled() || trim($chatId) === '' || trim($photoUrl) === '') {
+        return ['ok' => false, 'description' => 'invalid'];
+    }
+    $payload = [
+        'chat_id' => $chatId,
+        'photo' => $photoUrl,
+        'disable_notification' => false,
+    ];
+    if (trim($caption) !== '') {
+        $payload['caption'] = mb_substr(trim($caption), 0, 1024);
+    }
+    $res = telegramApiRequest('sendPhoto', $payload);
+    if (empty($res['ok'])) {
+        return ['ok' => false, 'description' => (string)($res['description'] ?? '')];
+    }
+    return [
+        'ok' => true,
+        'message_id' => (int)($res['result']['message_id'] ?? 0),
+    ];
+}
+
+function telegramFormatAdChannelPost(array $ad): string
+{
+    $intent = function_exists('adIntentBadgeLabel') ? adIntentBadgeLabel($ad) : '';
+    $title = function_exists('adDisplayTitle') ? adDisplayTitle($ad) : trim((string)($ad['title'] ?? 'Oglas'));
+    $price = function_exists('adCardPriceMainLabel') ? adCardPriceMainLabel($ad) : formatAdPrice($ad);
+    $location = trim((string)($ad['location'] ?? ''));
+    $category = function_exists('adCategoryLabel') ? adCategoryLabel($ad) : '';
+    $url = absoluteUrl(adUrl($ad));
+
+    $lines = [];
+    if ($intent !== '') {
+        $lines[] = '🔎 ' . $intent;
+    } else {
+        $lines[] = '📱 Novi oglas';
+    }
+    $lines[] = '';
+    $lines[] = $title;
+    if ($price !== '') {
+        $lines[] = '💰 ' . $price;
+    }
+    if ($location !== '') {
+        $lines[] = '📍 ' . $location;
+    }
+    if ($category !== '') {
+        $lines[] = '🏷️ ' . $category;
+    }
+    $lines[] = '';
+    $lines[] = '👉 ' . $url;
+    $lines[] = '';
+    $lines[] = 'kupitelefon.rs';
+    return implode("\n", $lines);
+}
+
+/**
+ * Objavi novi oglas u Telegram kanal. Ne baca greške ka saveAd toku.
+ */
+function telegramNotifyChannelNewAd(array $ad): bool
+{
+    if (!telegramEnabled() || !telegramPostAdsEnabled()) {
+        return false;
+    }
+    if ((int)($ad['is_active'] ?? 0) !== 1) {
+        return false;
+    }
+    if (!empty($ad['telegram_channel_posted_at'])) {
+        return false;
+    }
+
+    $chatId = telegramChannelChatId();
+    if ($chatId === '') {
+        return false;
+    }
+
+    $text = telegramFormatAdChannelPost($ad);
+    $photo = '';
+    if (function_exists('adPrimaryImage')) {
+        $rel = trim((string)adPrimaryImage($ad));
+        if ($rel !== '') {
+            $photo = absoluteUrl($rel);
+        }
+    }
+
+    $ok = false;
+    if ($photo !== '') {
+        $sent = telegramSendPhoto($chatId, $photo, $text);
+        $ok = !empty($sent['ok']);
+    }
+    if (!$ok) {
+        $ok = telegramSendMessage($chatId, $text, ['disable_web_page_preview' => false]);
+    }
+
+    if ($ok) {
+        $adId = (int)($ad['id'] ?? 0);
+        if ($adId > 0) {
+            // Označi da je već poslato (bez rekurzije saveAd).
+            $ads = readJsonFile('ads.json');
+            foreach ($ads as &$row) {
+                if ((int)($row['id'] ?? 0) === $adId) {
+                    $row['telegram_channel_posted_at'] = date('Y-m-d H:i:s');
+                    break;
+                }
+            }
+            unset($row);
+            writeJsonFile('ads.json', $ads);
+        }
+    }
+    return $ok;
+}
+
+function telegramPostChannelInfo(): bool
+{
+    $chatId = telegramChannelChatId();
+    if ($chatId === '') {
+        return false;
+    }
+    $text = telegramInfoText() . "\n\n(Bot odgovara na /info u privatnom chatu ili grupi. U kanalu članovi ne mogu da šalju komande — ovde bot objavljuje novosti i oglase.)";
+    return telegramSendMessage($chatId, $text, ['disable_web_page_preview' => false]);
 }
 
 function telegramPreferenceKeyForType(string $type): string
