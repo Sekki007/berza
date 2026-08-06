@@ -297,13 +297,28 @@ function instantApiRequest(string $endpoint, array $parameters = []): array
         return ['ok' => false, 'detail' => 'Neispravan JSON: ' . mb_substr(trim((string)$body), 0, 200)];
     }
 
-    $status = strtolower(trim((string)($decoded['status'] ?? '')));
+    $statusRaw = (string)($decoded['status'] ?? $decoded['Status'] ?? '');
+    $status = strtolower(trim($statusRaw));
     if (in_array($status, ['failed', 'error'], true)) {
-        $detail = trim((string)($decoded['result'] ?? $decoded['message'] ?? $decoded['error'] ?? $decoded['detail'] ?? 'Provider je vratio grešku.'));
+        $detail = trim((string)(
+            $decoded['result']
+            ?? $decoded['Result']
+            ?? $decoded['message']
+            ?? $decoded['Message']
+            ?? $decoded['error']
+            ?? $decoded['Error']
+            ?? $decoded['detail']
+            ?? $decoded['Detail']
+            ?? ''
+        ));
+        if ($detail === '') {
+            $detail = 'Provider je vratio grešku: ' . mb_substr((string)json_encode($decoded, JSON_UNESCAPED_UNICODE), 0, 500);
+        }
         return ['ok' => false, 'detail' => $detail !== '' ? $detail : 'Provider je vratio grešku.'];
     }
-    if (isset($decoded['error']) && trim((string)$decoded['error']) !== '') {
-        return ['ok' => false, 'detail' => trim((string)$decoded['error'])];
+    $softError = trim((string)($decoded['error'] ?? $decoded['Error'] ?? ''));
+    if ($softError !== '') {
+        return ['ok' => false, 'detail' => $softError];
     }
     return ['ok' => true, 'data' => $decoded];
 }
