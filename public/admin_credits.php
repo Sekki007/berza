@@ -40,6 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $deposits = getCreditDeposits();
 $users = getUsers();
+$imeiUsage = imeiCreditUsageByUser(200);
 $pageTitle = 'Krediti / uplate — Admin';
 $activePage = 'nalog';
 $showSearch = false;
@@ -121,6 +122,43 @@ require __DIR__ . '/partials/layout-start.php';
                                         </form>
                                     <?php endif; ?>
                                 </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            <?php endif; ?>
+        </section>
+
+        <section class="form-card table-scroll" style="margin-top:12px;">
+            <h3 style="padding:16px 16px 0;">IMEI potrošnja kredita po korisniku</h3>
+            <?php if (!$imeiUsage): ?>
+                <p style="padding:10px 16px 16px;">Još nema IMEI kreditnih transakcija.</p>
+            <?php else: ?>
+                <table class="admin-table">
+                    <thead>
+                        <tr>
+                            <th>Korisnik</th>
+                            <th>Provera</th>
+                            <th>Potrošeno</th>
+                            <th>Refund</th>
+                            <th>Neto</th>
+                            <th>Poslednja aktivnost</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($imeiUsage as $row): ?>
+                            <tr>
+                                <td>
+                                    <?= h((string)$row['username']) ?>
+                                    <?php if ((string)$row['full_name'] !== ''): ?>
+                                        <div style="font-size:11px;color:var(--text-muted);"><?= h((string)$row['full_name']) ?></div>
+                                    <?php endif; ?>
+                                </td>
+                                <td><?= (int)$row['checks'] ?></td>
+                                <td><?= (int)$row['spent'] ?> kred</td>
+                                <td><?= (int)$row['refunded'] ?> kred</td>
+                                <td><strong><?= (int)$row['net'] ?> kred</strong></td>
+                                <td><?= h((string)($row['last_at'] ?: '—')) ?></td>
                             </tr>
                         <?php endforeach; ?>
                     </tbody>

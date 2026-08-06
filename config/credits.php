@@ -266,3 +266,57 @@ function adminGrantCredits(int $userId, int $amount, string $note = ''): bool
     }
     return $ok;
 }
+
+/**
+ * @return list<array{user_id:int,username:string,full_name:string,checks:int,spent:int,refunded:int,net:int,last_at:string}>
+ */
+function imeiCreditUsageByUser(int $limit = 100): array
+{
+    ensureCreditFiles();
+    $tx = readJsonFile('credit_transactions.json');
+    $grouped = [];
+    foreach ($tx as $row) {
+        $type = (string)($row['type'] ?? '');
+        if (!in_array($type, ['imei_check', 'imei_refund'], true)) {
+            continue;
+        }
+        $userId = (int)($row['user_id'] ?? 0);
+        if ($userId <= 0) {
+            continue;
+        }
+        if (!isset($grouped[$userId])) {
+            $u = findUserById($userId);
+            $grouped[$userId] = [
+                'user_id' => $userId,
+                'username' => (string)($u['username'] ?? ('#' . $userId)),
+                'full_name' => (string)($u['full_name'] ?? ''),
+                'checks' => 0,
+                'spent' => 0,
+                'refunded' => 0,
+                'net' => 0,
+                'last_at' => '',
+            ];
+        }
+        $amount = (int)($row['amount'] ?? 0);
+        if ($type === 'imei_check') {
+            $grouped[$userId]['checks']++;
+            $grouped[$userId]['spent'] += abs($amount);
+            $grouped[$userId]['net'] += abs($amount);
+        } else {
+            $grouped[$userId]['refunded'] += abs($amount);
+            $grouped[$userId]['net'] -= abs($amount);
+        }
+        $at = (string)($row['created_at'] ?? '');
+        if ($at !== '' && strcmp($at, (string)$grouped[$userId]['last_at']) > 0) {
+            $grouped[$userId]['last_at'] = $at;
+        }
+    }
+    $list = array_values($grouped);
+    usort($list, static function (array $a, array $b): int {
+        if ($a['net'] !== $b['net']) {
+            return $b['net'] <=> $a['net'];
+        }
+        return strcmp((string)$b['last_at'], (string)$a['last_at']);
+    });
+    return array_slice($list, 0, max(1, $limit));
+}

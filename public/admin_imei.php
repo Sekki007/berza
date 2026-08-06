@@ -48,6 +48,34 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    $extraIds = is_array($_POST['new_service_id'] ?? null) ? $_POST['new_service_id'] : [];
+    $extraLabels = is_array($_POST['new_service_label'] ?? null) ? $_POST['new_service_label'] : [];
+    $extraPrices = is_array($_POST['new_service_price'] ?? null) ? $_POST['new_service_price'] : [];
+    $extraEnabled = is_array($_POST['new_service_enabled'] ?? null) ? $_POST['new_service_enabled'] : [];
+    $extraApple = is_array($_POST['new_service_apple_only'] ?? null) ? $_POST['new_service_apple_only'] : [];
+    foreach ($extraIds as $i => $rawId) {
+        $serviceId = preg_replace('/\D+/', '', (string)$rawId) ?? '';
+        $label = trim((string)($extraLabels[$i] ?? ''));
+        if ($serviceId === '' || $label === '') {
+            continue;
+        }
+        $key = 'svc_' . $serviceId;
+        $suffix = 2;
+        $existingKeys = array_column($newServices, 'key');
+        while (in_array($key, $existingKeys, true)) {
+            $key = 'svc_' . $serviceId . '_' . $suffix;
+            $suffix++;
+        }
+        $newServices[] = [
+            'key' => $key,
+            'service_id' => $serviceId,
+            'label' => $label,
+            'price' => max(0, (int)($extraPrices[$i] ?? 0)),
+            'enabled' => in_array((string)$i, $extraEnabled, true),
+            'apple_only' => in_array((string)$i, $extraApple, true),
+        ];
+    }
+
     if ($newServices === []) {
         setFlash('danger', 'Mora ostati bar jedan IMEI servis.');
         header('Location: /admin_imei.php');
@@ -143,6 +171,31 @@ require __DIR__ . '/partials/layout-start.php';
                     </tbody>
                 </table>
             </div>
+
+            <h3 style="margin-top:16px;">Dodaj novi servis</h3>
+            <p class="form-hint">Upiši nove servise iz PHP LIST tabele (ID, naziv, cena) i sačuvaj.</p>
+            <?php for ($i = 0; $i < 3; $i++): ?>
+                <div class="form-row" style="align-items:end; margin-bottom:8px;">
+                    <div class="form-group" style="max-width:110px;">
+                        <label>ID</label>
+                        <input name="new_service_id[]" inputmode="numeric" pattern="[0-9]*">
+                    </div>
+                    <div class="form-group" style="flex:1;">
+                        <label>Naziv</label>
+                        <input name="new_service_label[]">
+                    </div>
+                    <div class="form-group" style="max-width:120px;">
+                        <label>Cena (krediti)</label>
+                        <input type="number" min="0" name="new_service_price[]" value="1">
+                    </div>
+                    <label class="type-chip" style="min-width:auto;flex:none;">
+                        <input type="checkbox" name="new_service_apple_only[]" value="<?= (string)$i ?>"> Samo Apple
+                    </label>
+                    <label class="type-chip" style="min-width:auto;flex:none;">
+                        <input type="checkbox" name="new_service_enabled[]" value="<?= (string)$i ?>" checked> Uključen
+                    </label>
+                </div>
+            <?php endfor; ?>
 
             <button class="btn-call" type="submit">Sačuvaj IMEI podešavanja</button>
         </form>
