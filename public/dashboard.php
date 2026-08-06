@@ -79,16 +79,27 @@ require __DIR__ . '/partials/layout-start.php';
                 </div>
                 <div class="stats-grid" style="padding:12px 16px 16px;gap:8px;">
                     <?php if (!empty($imeiAccount['ok'])): ?>
-                        <?php $imeiCredit = (float)($imeiAccount['credit'] ?? 0); ?>
-                        <div class="stat-card" style="border-left:3px solid <?= $imeiCredit > 0 ? 'var(--kp-green, #1a7f4b)' : '#c0392b' ?>;">
-                            <div class="label">Stanje kredita</div>
-                            <div class="value"><?= h((string)($imeiAccount['credit'] ?? '0.00')) ?> <?= h((string)($imeiAccount['currency'] ?? 'USD')) ?></div>
-                        </div>
-                        <?php if ($imeiCredit <= 0): ?>
+                        <?php if (($imeiAccount['provider'] ?? '') === 'free_with_key'): ?>
+                            <div class="stat-card" style="border-left:3px solid var(--kp-green, #1a7f4b);">
+                                <div class="label">Provider</div>
+                                <div class="value" style="font-size:13px;">IMEICheck free TAC (key)</div>
+                            </div>
                             <div class="stat-card">
                                 <div class="label">Status</div>
-                                <div class="value" style="font-size:13px;color:#c0392b;">Dopuni kredit — provera ne radi</div>
+                                <div class="value" style="font-size:13px;color:var(--kp-green, #1a7f4b);">Aktivno</div>
                             </div>
+                        <?php else: ?>
+                            <?php $imeiCredit = (float)($imeiAccount['credit'] ?? 0); ?>
+                            <div class="stat-card" style="border-left:3px solid <?= $imeiCredit > 0 ? 'var(--kp-green, #1a7f4b)' : '#c0392b' ?>;">
+                                <div class="label">Stanje kredita</div>
+                                <div class="value"><?= h((string)($imeiAccount['credit'] ?? '0.00')) ?> <?= h((string)($imeiAccount['currency'] ?? 'USD')) ?></div>
+                            </div>
+                            <?php if ($imeiCredit <= 0): ?>
+                                <div class="stat-card">
+                                    <div class="label">Status</div>
+                                    <div class="value" style="font-size:13px;color:#c0392b;">Dopuni kredit — provera ne radi</div>
+                                </div>
+                            <?php endif; ?>
                         <?php endif; ?>
                     <?php else: ?>
                         <div class="stat-card">

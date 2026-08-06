@@ -3,14 +3,20 @@
 declare(strict_types=1);
 
 /**
- * IMEI provera preko DHRU Fusion API-ja (imeicheck.com / checkimei.com).
+ * IMEI provera.
  *
- * Env:
+ * Primarno: besplatan TAC endpoint (free_with_key).
+ * Opciono: DHRU fallback (plaćeni servis).
+ *
+ * Env (free):
  *   IMEI_CHECK_ENABLED=true
+ *   IMEI_CHECK_API_KEY=...
+ *   IMEI_CHECK_FREE_URL=https://alpha.imeicheck.com/api/free_with_key/modelBrandName
+ *
+ * Env (optional DHRU fallback):
  *   IMEI_CHECK_URL=https://dhru.checkimei.com
  *   IMEI_CHECK_USERNAME=...
- *   IMEI_CHECK_API_KEY=...
- *   IMEI_CHECK_SERVICE_ID=11   # "IMEI to Brand/Model/Name"
+ *   IMEI_CHECK_SERVICE_ID=11
  */
 
 function imeiCheckEnabled(): bool
@@ -23,6 +29,11 @@ function imeiCheckApiUrl(): string
 {
     $url = trim((string)envValue('IMEI_CHECK_URL', 'https://dhru.checkimei.com'));
     return rtrim($url !== '' ? $url : 'https://dhru.checkimei.com', '/') . '/api/index.php';
+}
+
+function imeiCheckFreeUrl(): string
+{
+    return trim((string)envValue('IMEI_CHECK_FREE_URL', 'https://alpha.imeicheck.com/api/free_with_key/modelBrandName'));
 }
 
 function imeiCheckUsername(): string
@@ -43,7 +54,13 @@ function imeiCheckServiceId(): string
 
 function imeiCheckConfigured(): bool
 {
-    return imeiCheckEnabled() && imeiCheckUsername() !== '' && imeiCheckApiKey() !== '';
+    if (!imeiCheckEnabled()) {
+        return false;
+    }
+    if (imeiCheckApiKey() === '') {
+        return false;
+    }
+    return true;
 }
 
 function normalizeImei(string $value): string
@@ -225,6 +242,65 @@ function dhruApiRequest(string $action, array $parameters = []): array
 }
 
 /**
+ * @return array{ok:bool,result?:array{brand:string,model:string,name:string},detail?:string}
+ */
+function freeTacApiRequest(string $imei): array
+{
+    if (!function_exists('curl_init')) {
+        return ['ok' => false, 'detail' => 'PHP cURL ekstenzija nije dostupna.'];
+    }
+
+    $query = http_build_query([
+        'key' => imeiCheckApiKey(),
+        'imei' => $imei,
+        'format' => 'json',
+    ]);
+    $url = rtrim(imeiCheckFreeUrl(), '?') . '?' . $query;
+    $ch = curl_init($url);
+    curl_setopt_array($ch, [
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_FOLLOWLOCATION => false,
+        CURLOPT_CONNECTTIMEOUT => 5,
+        CURLOPT_TIMEOUT => 15,
+        CURLOPT_HTTPHEADER => ['Accept: application/json'],
+        CURLOPT_USERAGENT => 'KupiTelefon.rs/1.0',
+    ]);
+    $body = curl_exec($ch);
+    $http = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlError = curl_error($ch);
+    curl_close($ch);
+
+    if (!is_string($body) || $curlError !== '' || $http < 200 || $http >= 300) {
+        return ['ok' => false, 'detail' => 'HTTP ' . $http . ($curlError !== '' ? ' - ' . $curlError : '')];
+    }
+    if (trim($body) === '') {
+        return ['ok' => false, 'detail' => 'Prazan odgovor free TAC servisa.'];
+    }
+
+    $decoded = json_decode($body, true);
+    if (!is_array($decoded)) {
+        return ['ok' => false, 'detail' => 'Neispravan JSON free TAC servisa.'];
+    }
+
+    $status = strtolower(trim((string)($decoded['status'] ?? '')));
+    if ($status !== '' && !in_array($status, ['succes', 'success', 'ok'], true)) {
+        return ['ok' => false, 'detail' => trim((string)($decoded['result'] ?? $decoded['message'] ?? 'Free TAC servis je vratio grešku.'))];
+    }
+
+    $object = is_array($decoded['object'] ?? null) ? $decoded['object'] : [];
+    $result = [
+        'brand' => trim((string)($object['brand'] ?? '')),
+        'model' => trim((string)($object['model'] ?? '')),
+        'name' => trim((string)($object['name'] ?? '')),
+    ];
+    if ($result['brand'] === '' && $result['model'] === '' && $result['name'] === '') {
+        return ['ok' => false, 'detail' => trim((string)($decoded['result'] ?? 'Free TAC odgovor nema brand/model podatke.'))];
+    }
+
+    return ['ok' => true, 'result' => $result];
+}
+
+/**
  * Iz DHRU odgovora (HTML/tekst "Labela: vrednost") izvlači brend, model i naziv.
  *
  * @return array{brand:string,model:string,name:string}
@@ -290,44 +366,48 @@ function checkImeiModel(string $imei): array
         return $rate;
     }
 
-    $order = dhruApiRequest('placeimeiorder', [
-        'ID' => imeiCheckServiceId(),
-        'IMEI' => $imei,
-    ]);
-    if (empty($order['ok'])) {
-        error_log('IMEICheck placeimeiorder failed: ' . (string)($order['detail'] ?? ''));
-        return [
-            'ok' => false,
-            'error' => 'Servis za proveru trenutno ne odgovara. Pokušaj ponovo malo kasnije.',
-            'detail' => (string)($order['detail'] ?? ''),
-        ];
+    // 1) Primarno pokušaj besplatan TAC endpoint.
+    $free = freeTacApiRequest($imei);
+    if (!empty($free['ok']) && is_array($free['result'] ?? null)) {
+        $result = $free['result'];
+        recordImeiCheckRateLimit();
+        cacheImeiModel($imei, $result);
+        return ['ok' => true, 'result' => $result, 'cached' => false];
     }
 
-    $data = is_array($order['data'] ?? null) ? $order['data'] : [];
-    $result = imeiCheckParseResult($data);
-
-    // Instant servis obično vrati rezultat odmah; ako nije, dovuci ga po ID-u porudžbine.
-    $orderId = trim((string)($data['ID'] ?? $data['REFERENCEID'] ?? ''));
-    if ($result['brand'] === '' && $result['model'] === '' && $result['name'] === '' && $orderId !== '') {
-        for ($attempt = 0; $attempt < 3; $attempt++) {
-            sleep(2);
-            $fetched = dhruApiRequest('getimeiorder', ['ID' => $orderId]);
-            if (empty($fetched['ok'])) {
-                continue;
+    // 2) Ako je DHRU podešen, probaj fallback.
+    $result = ['brand' => '', 'model' => '', 'name' => ''];
+    $detail = (string)($free['detail'] ?? '');
+    if (imeiCheckUsername() !== '') {
+        $order = dhruApiRequest('placeimeiorder', [
+            'ID' => imeiCheckServiceId(),
+            'IMEI' => $imei,
+        ]);
+        if (!empty($order['ok'])) {
+            $data = is_array($order['data'] ?? null) ? $order['data'] : [];
+            $result = imeiCheckParseResult($data);
+            $orderId = trim((string)($data['ID'] ?? $data['REFERENCEID'] ?? ''));
+            if ($result['brand'] === '' && $result['model'] === '' && $result['name'] === '' && $orderId !== '') {
+                for ($attempt = 0; $attempt < 3; $attempt++) {
+                    sleep(2);
+                    $fetched = dhruApiRequest('getimeiorder', ['ID' => $orderId]);
+                    if (empty($fetched['ok'])) {
+                        continue;
+                    }
+                    $result = imeiCheckParseResult(is_array($fetched['data'] ?? null) ? $fetched['data'] : []);
+                    if ($result['brand'] !== '' || $result['model'] !== '' || $result['name'] !== '') {
+                        break;
+                    }
+                }
             }
-            $result = imeiCheckParseResult(is_array($fetched['data'] ?? null) ? $fetched['data'] : []);
-            if ($result['brand'] !== '' || $result['model'] !== '' || $result['name'] !== '') {
-                break;
-            }
+        } else {
+            $detail = trim($detail . ' | DHRU: ' . (string)($order['detail'] ?? ''));
         }
     }
 
     if ($result['brand'] === '' && $result['model'] === '' && $result['name'] === '') {
-        return [
-            'ok' => false,
-            'error' => 'IMEI nije pronađen u bazi. Proveri broj i pokušaj ponovo.',
-            'detail' => 'Odgovor bez podataka o modelu: ' . mb_substr((string)json_encode($data), 0, 200),
-        ];
+        $detail = $detail !== '' ? $detail : 'Nema podataka o modelu.';
+        return ['ok' => false, 'error' => 'IMEI nije pronađen u bazi. Proveri broj i pokušaj ponovo.', 'detail' => $detail];
     }
 
     recordImeiCheckRateLimit();
@@ -344,6 +424,10 @@ function imeiCheckAccountInfo(): array
 {
     if (!imeiCheckConfigured()) {
         return ['ok' => false, 'detail' => 'IMEI provera nije podešena.'];
+    }
+
+    if (imeiCheckUsername() === '') {
+        return ['ok' => true, 'credit' => 'FREE', 'currency' => 'TAC', 'provider' => 'free_with_key'];
     }
 
     $info = dhruApiRequest('accountinfo');
