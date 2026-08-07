@@ -845,10 +845,11 @@ body.page-ad-form {
 .account-menu a{display:block;padding:14px 16px;background:#fff;border:1px solid var(--border);border-radius:4px;margin-bottom:8px;color:var(--text);text-decoration:none;font-weight:bold;}
 
 .account-page { max-width: 920px; }
+.account-page > .breadcrumb { margin-bottom: 14px; }
 .account-hero {
-  display: flex; flex-direction: column; gap: 14px;
-  margin-bottom: 12px; padding: 16px 4px 14px;
-  border-bottom: 1px solid var(--border-light);
+  display: flex; flex-direction: column; gap: 16px;
+  margin-bottom: 12px; padding: 18px 16px;
+  background: #fff; border: 1px solid var(--border-light); border-radius: 12px;
 }
 .account-hero-main { display: flex; gap: 12px; align-items: flex-start; }
 .account-avatar { width: 56px; height: 56px; font-size: 20px; flex-shrink: 0; }
@@ -1027,7 +1028,7 @@ body.page-ad-form {
 @media (min-width: 768px) {
   .account-hero {
     flex-direction: row; justify-content: space-between; align-items: center;
-    gap: 20px; padding: 18px 8px 16px;
+    gap: 20px; padding: 22px 20px;
   }
   .account-avatar { width: 64px; height: 64px; font-size: 22px; }
   .account-name { font-size: 22px; }
