@@ -229,12 +229,23 @@ require __DIR__ . '/partials/layout-start.php';
                                 $level = (string)($serviceData['level'] ?? 'unknown');
                                 $label = (string)($serviceData['label'] ?? 'Nepoznato');
                                 $detail = (string)($serviceData['detail'] ?? '');
+                                $fields = imeiServiceDisplayFields(is_array($serviceData) ? $serviceData : []);
+                                $isRich = count($fields) >= 3;
                             ?>
-                                <article class="imei-extended-item">
+                                <article class="imei-extended-item<?= $isRich ? ' imei-extended-item--rich' : '' ?>">
                                     <h3><?= h((string)($serviceLabels[(string)$serviceKey] ?? $serviceKey)) ?></h3>
                                     <span class="imei-badge imei-badge--<?= h($level) ?>"><?= h($label) ?></span>
-                                    <?php if ($detail !== ''): ?>
-                                        <p><?= h($detail) ?></p>
+                                    <?php if ($fields !== []): ?>
+                                        <dl class="imei-extended-fields">
+                                            <?php foreach ($fields as $field): ?>
+                                                <div>
+                                                    <dt><?= h((string)$field['label']) ?></dt>
+                                                    <dd><?= nl2br(h((string)$field['value']), false) ?></dd>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </dl>
+                                    <?php elseif ($detail !== ''): ?>
+                                        <p class="imei-extended-detail"><?= nl2br(h($detail), false) ?></p>
                                     <?php endif; ?>
                                 </article>
                             <?php endforeach; ?>

@@ -152,7 +152,7 @@ if ($user) {
                         <span class="mobile-account-menu-icon">💰</span>
                         <span class="mobile-account-menu-text">
                             <strong>Krediti</strong>
-                            <small>Saldo: <?= formatCredits(getUserCredits((int)$user['id'])) ?></small>
+                            <small class="mobile-account-menu-meta"><?= formatCredits(getUserCredits((int)$user['id'])) ?></small>
                         </span>
                     </a>
                 <?php endif; ?>

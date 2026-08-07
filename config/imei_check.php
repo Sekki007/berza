@@ -441,6 +441,133 @@ function instantResponseText(array $data): string
     return trim(html_entity_decode(strip_tags($plain), ENT_QUOTES | ENT_HTML5, 'UTF-8'));
 }
 
+/**
+ * Čuva pun tekst odgovora (bez agresivnog skraćivanja).
+ */
+function imeiStatusDetail(string $text, int $max = 4000): string
+{
+    $trimmed = trim($text);
+    if ($trimmed === '') {
+        return '';
+    }
+    return mb_substr($trimmed, 0, max(80, $max));
+}
+
+/**
+ * Ako je API vratio sve u jednom redu, ubaci prelome ispred poznatih labela.
+ */
+function normalizeImeiResultText(string $text): string
+{
+    $text = str_replace(["\r\n", "\r"], "\n", trim($text));
+    $text = str_ireplace(['<br>', '<br/>', '<br />'], "\n", $text);
+    if (substr_count($text, "\n") >= 2) {
+        return $text;
+    }
+
+    $labels = [
+        'Valid Purchase Date',
+        'Purchase Date',
+        'Registered Device',
+        'Replaced Device',
+        'Loaner Device',
+        'Activation Status',
+        'Warranty Status',
+        'Find My iPhone',
+        'iCloud Lock',
+        'Blacklist Status',
+        'Serial Number',
+        'Refurbished',
+        'Carrier',
+        'Model',
+        'IMEI',
+        'Serial',
+        'SN',
+    ];
+    usort($labels, static fn(string $a, string $b): int => mb_strlen($b) <=> mb_strlen($a));
+
+    // Najduže labele prvo → token, da kraće ne pokvare duže (npr. Purchase Date vs Valid Purchase Date).
+    $tokens = [];
+    foreach ($labels as $i => $label) {
+        $token = "\x01IMEI{$i}\x02";
+        $pattern = '/' . preg_quote($label, '/') . '\s*:/iu';
+        $replaced = preg_replace($pattern, $token, $text, 1);
+        if (is_string($replaced) && $replaced !== $text) {
+            $text = $replaced;
+            $tokens[$token] = $label;
+        }
+    }
+
+    $text = preg_replace('/\s+(\x01IMEI\d+\x02)/u', "\n$1", $text) ?? $text;
+    foreach ($tokens as $token => $label) {
+        $text = str_replace($token, $label . ':', $text);
+    }
+
+    return trim($text);
+}
+
+/**
+ * @return list<array{label:string,value:string}>
+ */
+function parseImeiResultFields(string $text): array
+{
+    $normalized = normalizeImeiResultText($text);
+    if ($normalized === '') {
+        return [];
+    }
+
+    $fields = [];
+    foreach (explode("\n", $normalized) as $line) {
+        $line = trim($line);
+        if ($line === '') {
+            continue;
+        }
+        if (preg_match('/^([^:]{2,60}):\s*(.*)$/u', $line, $m)) {
+            $fields[] = [
+                'label' => trim((string)$m[1]),
+                'value' => trim((string)$m[2]),
+            ];
+            continue;
+        }
+        if ($fields !== []) {
+            $last = count($fields) - 1;
+            $prev = (string)$fields[$last]['value'];
+            $fields[$last]['value'] = trim($prev !== '' ? $prev . "\n" . $line : $line);
+        } else {
+            $fields[] = ['label' => 'Info', 'value' => $line];
+        }
+    }
+
+    return $fields;
+}
+
+/**
+ * @param array{level?:string,label?:string,detail?:string,fields?:mixed} $serviceData
+ * @return list<array{label:string,value:string}>
+ */
+function imeiServiceDisplayFields(array $serviceData): array
+{
+    if (!empty($serviceData['fields']) && is_array($serviceData['fields'])) {
+        $out = [];
+        foreach ($serviceData['fields'] as $row) {
+            if (!is_array($row)) {
+                continue;
+            }
+            $label = trim((string)($row['label'] ?? ''));
+            $value = trim((string)($row['value'] ?? ''));
+            if ($label === '' && $value === '') {
+                continue;
+            }
+            $out[] = ['label' => $label !== '' ? $label : 'Info', 'value' => $value];
+        }
+        if ($out !== []) {
+            return $out;
+        }
+    }
+
+    $detail = (string)($serviceData['detail'] ?? '');
+    return $detail !== '' ? parseImeiResultFields($detail) : [];
+}
+
 function imeiExtendedChecksUsedToday(int $userId): int
 {
     if ($userId <= 0) {
@@ -532,60 +659,96 @@ function isAppleDevice(string $brand, string $name = ''): bool
 }
 
 /**
- * @return array{level:string,label:string,detail:string}
+ * @return array{level:string,label:string,detail:string,fields:list<array{label:string,value:string}>}
  */
 function interpretBlacklistStatus(string $text): array
 {
-    $lower = strtolower($text);
-    if (preg_match('/\b(clean|not blacklisted|not listed|no blacklist)\b/i', $text)) {
-        return ['level' => 'good', 'label' => 'Čist', 'detail' => mb_substr(trim($text), 0, 280)];
+    $detail = imeiStatusDetail($text);
+    $fields = parseImeiResultFields($detail);
+    $lower = strtolower($detail);
+    if (preg_match('/\b(clean|not blacklisted|not listed|no blacklist)\b/i', $detail)) {
+        return ['level' => 'good', 'label' => 'Čist', 'detail' => $detail, 'fields' => $fields];
     }
-    if (preg_match('/\b(blacklist|blocked|stolen|lost|barred)\b/i', $text)) {
-        return ['level' => 'bad', 'label' => 'Na listi', 'detail' => mb_substr(trim($text), 0, 280)];
+    if (preg_match('/\b(blacklist|blocked|stolen|lost|barred)\b/i', $detail)) {
+        return ['level' => 'bad', 'label' => 'Na listi', 'detail' => $detail, 'fields' => $fields];
     }
-    return ['level' => 'unknown', 'label' => 'Nepoznato', 'detail' => $lower !== '' ? mb_substr(trim($text), 0, 280) : 'Nema podataka'];
+    return ['level' => 'unknown', 'label' => 'Nepoznato', 'detail' => $lower !== '' ? $detail : 'Nema podataka', 'fields' => $fields];
 }
 
 /**
- * @return array{level:string,label:string,detail:string}
+ * @return array{level:string,label:string,detail:string,fields:list<array{label:string,value:string}>}
  */
 function interpretFmiStatus(string $text): array
 {
-    $lower = strtolower($text);
-    if (preg_match('/\b(off|disabled|deactivated)\b/i', $text)) {
-        return ['level' => 'good', 'label' => 'Isključen', 'detail' => mb_substr(trim($text), 0, 280)];
+    $detail = imeiStatusDetail($text);
+    $fields = parseImeiResultFields($detail);
+    $lower = strtolower($detail);
+    if (preg_match('/\b(off|disabled|deactivated)\b/i', $detail)) {
+        return ['level' => 'good', 'label' => 'Isključen', 'detail' => $detail, 'fields' => $fields];
     }
-    if (preg_match('/\b(on|enabled|active)\b/i', $text)) {
-        return ['level' => 'bad', 'label' => 'Uključen', 'detail' => mb_substr(trim($text), 0, 280)];
+    if (preg_match('/\b(on|enabled|active)\b/i', $detail)) {
+        return ['level' => 'bad', 'label' => 'Uključen', 'detail' => $detail, 'fields' => $fields];
     }
-    return ['level' => 'unknown', 'label' => 'Nepoznato', 'detail' => $lower !== '' ? mb_substr(trim($text), 0, 280) : 'Nema podataka'];
+    return ['level' => 'unknown', 'label' => 'Nepoznato', 'detail' => $lower !== '' ? $detail : 'Nema podataka', 'fields' => $fields];
 }
 
 /**
- * @return array{level:string,label:string,detail:string}
+ * @return array{level:string,label:string,detail:string,fields:list<array{label:string,value:string}>}
  */
 function interpretIcloudStatus(string $text): array
 {
-    $lower = strtolower($text);
-    if (preg_match('/\b(clean)\b/i', $text)) {
-        return ['level' => 'good', 'label' => 'Clean', 'detail' => mb_substr(trim($text), 0, 280)];
+    $detail = imeiStatusDetail($text);
+    $fields = parseImeiResultFields($detail);
+    $lower = strtolower($detail);
+    if (preg_match('/\b(clean)\b/i', $detail)) {
+        return ['level' => 'good', 'label' => 'Clean', 'detail' => $detail, 'fields' => $fields];
     }
-    if (preg_match('/\b(lost)\b/i', $text)) {
-        return ['level' => 'bad', 'label' => 'Lost', 'detail' => mb_substr(trim($text), 0, 280)];
+    if (preg_match('/\b(lost)\b/i', $detail)) {
+        return ['level' => 'bad', 'label' => 'Lost', 'detail' => $detail, 'fields' => $fields];
     }
-    return ['level' => 'unknown', 'label' => 'Nepoznato', 'detail' => $lower !== '' ? mb_substr(trim($text), 0, 280) : 'Nema podataka'];
+    return ['level' => 'unknown', 'label' => 'Nepoznato', 'detail' => $lower !== '' ? $detail : 'Nema podataka', 'fields' => $fields];
 }
 
 /**
- * @return array{level:string,label:string,detail:string}
+ * @return array{level:string,label:string,detail:string,fields:list<array{label:string,value:string}>}
  */
 function interpretGenericStatus(string $text): array
 {
-    $trimmed = trim($text);
-    if ($trimmed === '') {
-        return ['level' => 'unknown', 'label' => 'Nepoznato', 'detail' => 'Nema podataka'];
+    $detail = imeiStatusDetail($text);
+    if ($detail === '') {
+        return ['level' => 'unknown', 'label' => 'Nepoznato', 'detail' => 'Nema podataka', 'fields' => []];
     }
-    return ['level' => 'unknown', 'label' => 'Rezultat', 'detail' => mb_substr($trimmed, 0, 280)];
+
+    $fields = parseImeiResultFields($detail);
+    $level = 'unknown';
+    $label = 'Rezultat';
+
+    foreach ($fields as $field) {
+        $fieldLabel = strtolower((string)$field['label']);
+        $fieldValue = trim((string)$field['value']);
+        $valueLower = strtolower($fieldValue);
+
+        if (str_contains($fieldLabel, 'warranty')) {
+            $label = $fieldValue !== '' ? $fieldValue : $label;
+            if (preg_match('/applecare|active|limited|in warranty|covered/i', $fieldValue)) {
+                $level = 'good';
+            } elseif (preg_match('/expired|out of warranty|no coverage|not covered/i', $fieldValue)) {
+                $level = 'bad';
+            }
+        } elseif (str_contains($fieldLabel, 'activation') && $label === 'Rezultat' && $fieldValue !== '') {
+            $label = $fieldValue;
+            if (str_contains($valueLower, 'activated')) {
+                $level = $level === 'unknown' ? 'good' : $level;
+            }
+        }
+    }
+
+    return [
+        'level' => $level,
+        'label' => $label,
+        'detail' => $detail,
+        'fields' => $fields,
+    ];
 }
 
 /**
