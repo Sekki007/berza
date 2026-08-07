@@ -128,31 +128,24 @@ if ($user) {
                     <span class="mobile-account-menu-icon">👤</span>
                     <span class="mobile-account-menu-text">
                         <strong>Moj nalog</strong>
-                        <small>Pregled, statistika, brze akcije</small>
+                        <small>Oglasi, profil, podešavanja</small>
                     </span>
                 </a>
-                <a href="/nalog.php?tab=oglasi" class="mobile-account-menu-item">
-                    <span class="mobile-account-menu-icon">📋</span>
-                    <span class="mobile-account-menu-text">
-                        <strong>Moji oglasi</strong>
-                        <small>Izmena, produženje, status</small>
-                    </span>
-                </a>
-                <?php if (topPurchaseEnabled()): ?>
-                    <a href="/nalog.php?tab=top" class="mobile-account-menu-item mobile-account-menu-item-accent">
-                        <span class="mobile-account-menu-icon">⭐</span>
-                        <span class="mobile-account-menu-text">
-                            <strong>Kupi TOP isticanje</strong>
-                            <small>Plaća se kreditima</small>
-                        </span>
-                    </a>
-                <?php endif; ?>
                 <?php if (creditsEnabled()): ?>
                     <a href="/nalog.php?tab=krediti" class="mobile-account-menu-item mobile-account-menu-item-accent">
                         <span class="mobile-account-menu-icon">💰</span>
                         <span class="mobile-account-menu-text">
                             <strong>Krediti</strong>
                             <small class="mobile-account-menu-meta"><?= formatCredits(getUserCredits((int)$user['id'])) ?></small>
+                        </span>
+                    </a>
+                <?php endif; ?>
+                <?php if (topPurchaseEnabled()): ?>
+                    <a href="/nalog.php?tab=top" class="mobile-account-menu-item">
+                        <span class="mobile-account-menu-icon">⭐</span>
+                        <span class="mobile-account-menu-text">
+                            <strong>TOP isticanje</strong>
+                            <small>Plaća se kreditima</small>
                         </span>
                     </a>
                 <?php endif; ?>
@@ -164,16 +157,6 @@ if ($user) {
                     </span>
                     <?= renderUnreadBadge($unreadNotifications) ?>
                 </a>
-                <?php if (!empty($site['enable_messages'])): ?>
-                    <a href="/poruke.php" class="mobile-account-menu-item">
-                        <span class="mobile-account-menu-icon">💬</span>
-                        <span class="mobile-account-menu-text">
-                            <strong>Poruke</strong>
-                            <small>Razgovori sa kupcima</small>
-                        </span>
-                        <?= renderUnreadBadge($unreadMessages) ?>
-                    </a>
-                <?php endif; ?>
                 <?php if (!empty($site['enable_favorites'])): ?>
                     <a href="/favorites.php" class="mobile-account-menu-item">
                         <span class="mobile-account-menu-icon">♡</span>
@@ -188,20 +171,6 @@ if ($user) {
                     <span class="mobile-account-menu-text">
                         <strong>Moj izlog</strong>
                         <small>Javni profil prodavca</small>
-                    </span>
-                </a>
-                <a href="/nalog.php?tab=profil" class="mobile-account-menu-item">
-                    <span class="mobile-account-menu-icon">✎</span>
-                    <span class="mobile-account-menu-text">
-                        <strong>Profil</strong>
-                        <small>Ime, telefon, email</small>
-                    </span>
-                </a>
-                <a href="/ad_form.php" class="mobile-account-menu-item mobile-account-menu-item-accent">
-                    <span class="mobile-account-menu-icon">＋</span>
-                    <span class="mobile-account-menu-text">
-                        <strong>Novi oglas</strong>
-                        <small>Telefon, deo ili servis</small>
                     </span>
                 </a>
                 <?php if (isAdmin()): ?>
