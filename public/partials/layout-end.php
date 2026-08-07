@@ -281,11 +281,7 @@ if ($user) {
             <a href="/index.php#search" data-nav="pretraga" data-focus-search class="<?= $activePage === 'pretraga' ? 'active' : '' ?>"><span class="mobile-bar-icon">🔎</span><span>Pretraga</span></a>
             <a href="<?= $user ? '/ad_form.php' : '/login.php' ?>" data-nav="dodaj" class="mobile-bar-add <?= $activePage === 'dodaj' ? 'active' : '' ?>"><span class="mobile-bar-icon">＋</span><span>Dodaj</span></a>
             <a href="<?= $user ? '/poruke.php' : '/login.php' ?>" data-nav="poruke" class="nav-with-badge <?= $activePage === 'poruke' ? 'active' : '' ?>"><span class="mobile-bar-icon">💬</span><span>Poruke</span><?= $user ? renderUnreadBadge($unreadMessages) : '' ?></a>
-            <button type="button" data-nav="nalog" data-open-account-menu class="mobile-bar-account nav-with-badge <?= $activePage === 'nalog' ? 'active' : '' ?>" aria-label="Nalog meni" aria-expanded="false" aria-controls="mobile-account-menu">
-                <span class="mobile-bar-icon">👤</span>
-                <span>Nalog</span>
-                <?= $user ? renderUnreadBadge($unreadNotifications) : '' ?>
-            </button>
+            <a href="<?= $user ? '/nalog.php' : '/login.php' ?>" data-nav="nalog" class="nav-with-badge <?= $activePage === 'nalog' ? 'active' : '' ?>"><span class="mobile-bar-icon">👤</span><span>Nalog</span><?= $user ? renderUnreadBadge($unreadNotifications) : '' ?></a>
         </nav>
     <?php endif; ?>
 

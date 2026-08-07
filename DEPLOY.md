@@ -65,6 +65,46 @@ server {
 
 Bez ova `rewrite` pravila, pretty URL linkovi neće raditi (otvaranje oglasa, izloga i mini sajta).
 
+### HTTP / www → HTTPS (obavezno)
+
+Ako neko pošalje `www.kupitelefon.rs` bez `https://`, telefoni i chat aplikacije često otvore **HTTP**.
+Kod nas je provereno:
+
+- `https://kupitelefon.rs` → radi
+- `https://www.kupitelefon.rs` → radi
+- `http://kupitelefon.rs` i `http://www.kupitelefon.rs` → **404** (Cloudflare)
+
+**1) Cloudflare (glavni fix)**
+
+1. Otvori [Cloudflare Dashboard](https://dash.cloudflare.com) → domen `kupitelefon.rs`
+2. **SSL/TLS** → **Edge Certificates**
+3. Uključi **Always Use HTTPS**
+4. (Preporuka) **Rules** → **Redirect Rules** → nova pravila:
+   - `http://*` → `https://kupitelefon.rs${uri}` (301), ili
+   - `www.kupitelefon.rs/*` → `https://kupitelefon.rs/${path}` (301)
+
+**2) Nginx (backup na origin serveru)**
+
+Ispred glavnog `server` bloka dodaj:
+
+```nginx
+server {
+    listen 80;
+    server_name kupitelefon.rs www.kupitelefon.rs;
+    return 301 https://kupitelefon.rs$request_uri;
+}
+
+server {
+    listen 443 ssl http2;
+    server_name www.kupitelefon.rs;
+    # isti SSL cert kao za kupitelefon.rs (Let's Encrypt / Cloudflare origin)
+    return 301 https://kupitelefon.rs$request_uri;
+}
+```
+
+Glavni HTTPS `server` neka ima samo `server_name kupitelefon.rs;`.
+
+Posle izmene: `sudo nginx -t && sudo systemctl reload nginx`.
 
 ---
 

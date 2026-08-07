@@ -495,7 +495,13 @@ require __DIR__ . '/partials/layout-start.php';
     <main class="content account-page">
         <div class="breadcrumb"><a href="/index.php">Početna</a> › Moj nalog</div>
 
-        <section class="account-hero form-card">
+        <?php
+        $statActive = count($activeAds);
+        $statSold = count($soldAds);
+        $statTotal = count($myAds);
+        $statInactive = max(0, $statTotal - $statActive - $statSold);
+        ?>
+        <section class="account-hero">
             <div class="account-hero-main">
                 <?= renderShopAvatarHtml($profile, $initials, 'account-avatar') ?>
                 <div class="account-hero-info">
@@ -503,78 +509,48 @@ require __DIR__ . '/partials/layout-start.php';
                         <h1 class="account-name"><?= h($displayName) ?></h1>
                         <div class="account-name-badges"><?= renderSellerBadges($profile) ?></div>
                     </div>
-                    <p class="account-username">Izlog: <a href="<?= h($shopLink) ?>"><?= h(userShopSlug($profile)) ?></a></p>
                     <div class="account-rep"><?= renderReputation($summary, $shopLink) ?></div>
+                    <a class="account-izlog-link" href="<?= h($shopLink) ?>">Otvori izlog →</a>
                 </div>
             </div>
             <div class="account-hero-actions">
-                <div class="account-hero-primary-row">
-                    <a class="btn-call account-hero-primary" href="/ad_form.php">+ Novi oglas</a>
-                    <a class="btn-message account-hero-izlog" href="<?= h($shopLink) ?>">Moj izlog</a>
-                </div>
-                <?php if ($creditsOn || $topOn): ?>
-                    <div class="account-hero-secondary<?= $creditsOn && $topOn ? ' has-multi' : '' ?>">
-                        <?php if ($creditsOn): ?>
-                            <a class="btn-message btn-top-cta" href="?tab=krediti">Stanje novčanika: <?= number_format($userCredits, 0, ',', '.') ?> din</a>
-                        <?php endif; ?>
-                        <?php if ($topOn): ?>
-                            <a class="btn-message account-hero-promo" href="?tab=top">⭐ TOP promocije</a>
-                        <?php endif; ?>
-                    </div>
-                <?php endif; ?>
-            </div>
-        </section>
-
-        <?php
-        $statActive = count($activeAds);
-        $statSold = count($soldAds);
-        $statTotal = count($myAds);
-        $statInactive = max(0, $statTotal - $statActive - $statSold);
-        ?>
-        <section class="account-overview form-card">
-            <div class="account-overview-block">
-                <div class="account-overview-head">
-                    <h2>Oglasi</h2>
-                    <a href="?tab=oglasi">Vidi sve</a>
-                </div>
-                <div class="account-overview-ads">
-                    <a class="account-ov-stat" href="?tab=oglasi">
-                        <strong><?= $statActive ?></strong>
-                        <span>Aktivni</span>
-                    </a>
-                    <div class="account-ov-stat">
-                        <strong><?= $statSold ?></strong>
-                        <span>Prodato</span>
-                    </div>
-                    <div class="account-ov-stat">
-                        <strong><?= $statTotal ?></strong>
-                        <span>Ukupno</span>
-                    </div>
-                </div>
-                <?php if ($statInactive > 0): ?>
-                    <p class="account-overview-note"><?= $statInactive ?> neaktivnih (isključeni ili istekli)</p>
-                <?php endif; ?>
-            </div>
-
-            <div class="account-overview-inbox">
-                <?php if (!empty($site['enable_messages'])): ?>
-                    <a class="account-ov-chip<?= $unread > 0 ? ' has-count' : '' ?>" href="/poruke.php">
-                        <span>Poruke</span>
-                        <em><?= (int)$unread ?></em>
-                    </a>
-                <?php endif; ?>
-                <a class="account-ov-chip<?= $unreadNotifs > 0 ? ' has-count' : '' ?>" href="?tab=obavestenja">
-                    <span>Obaveštenja</span>
-                    <em><?= (int)$unreadNotifs ?></em>
-                </a>
+                <a class="btn-call account-hero-primary" href="/ad_form.php">+ Novi oglas</a>
                 <?php if ($creditsOn): ?>
-                    <a class="account-ov-chip account-ov-chip-credits" href="?tab=krediti">
-                        <span>Krediti</span>
-                        <em><?= number_format($userCredits, 0, ',', '.') ?></em>
-                    </a>
+                    <a class="account-hero-credits" href="?tab=krediti"><?= number_format($userCredits, 0, ',', '.') ?> din</a>
                 <?php endif; ?>
             </div>
         </section>
+
+        <section class="account-pulse" aria-label="Pregled stanja">
+            <a class="account-pulse-item" href="?tab=oglasi">
+                <strong><?= $statActive ?></strong>
+                <span>aktivnih</span>
+            </a>
+            <?php if (!empty($site['enable_messages'])): ?>
+                <a class="account-pulse-item<?= $unread > 0 ? ' has-count' : '' ?>" href="/poruke.php">
+                    <strong><?= (int)$unread ?></strong>
+                    <span>poruka</span>
+                </a>
+            <?php endif; ?>
+            <a class="account-pulse-item<?= $unreadNotifs > 0 ? ' has-count' : '' ?>" href="?tab=obavestenja">
+                <strong><?= (int)$unreadNotifs ?></strong>
+                <span>obaveštenja</span>
+            </a>
+            <?php if ($creditsOn): ?>
+                <a class="account-pulse-item account-pulse-item--credits" href="?tab=krediti">
+                    <strong><?= number_format($userCredits, 0, ',', '.') ?></strong>
+                    <span>din</span>
+                </a>
+            <?php else: ?>
+                <a class="account-pulse-item" href="?tab=oglasi">
+                    <strong><?= $statTotal ?></strong>
+                    <span>ukupno</span>
+                </a>
+            <?php endif; ?>
+        </section>
+        <?php if ($statInactive > 0 && $tab === 'pregled'): ?>
+            <p class="account-pulse-note"><?= $statInactive ?> neaktivnih (isključeni ili istekli)</p>
+        <?php endif; ?>
 
         <nav class="account-tabs" aria-label="Sekcije naloga">
             <a href="?tab=pregled" class="<?= $tab === 'pregled' ? 'active' : '' ?>">Pregled</a>
@@ -595,98 +571,10 @@ require __DIR__ . '/partials/layout-start.php';
             <a href="?tab=profil" class="<?= $tab === 'profil' ? 'active' : '' ?>">Profil</a>
         </nav>
         <?php if ($tab === 'pregled'): ?>
-            <section class="account-quick form-card">
-                <button type="button" class="account-quick-toggle" data-account-quick-toggle aria-expanded="false" aria-controls="account-quick-list">
-                    <span class="account-quick-toggle-main">
-                        <strong>Brze akcije</strong>
-                        <small>Oglasi, poruke, izlog i ostalo</small>
-                    </span>
-                    <span class="account-quick-chevron" aria-hidden="true">▾</span>
-                </button>
-                <div id="account-quick-list" class="account-quick-panel" data-account-quick-panel hidden>
-                    <div class="account-quick-grid">
-                        <a class="account-quick-item" href="/ad_form.php">
-                            <span class="account-quick-icon">＋</span>
-                            <strong>Postavi oglas</strong>
-                            <span>Telefon, deo ili servis</span>
-                        </a>
-                        <?php if ($creditsOn): ?>
-                            <a class="account-quick-item account-quick-top" href="?tab=krediti">
-                                <span class="account-quick-icon">💰</span>
-                                <strong>Dopuna kredita</strong>
-                                <span>Saldo: <?= formatCredits($userCredits) ?></span>
-                            </a>
-                        <?php endif; ?>
-                        <?php if ($topOn): ?>
-                            <a class="account-quick-item account-quick-top" href="?tab=oglasi">
-                                <span class="account-quick-icon">⭐</span>
-                                <strong>Promocije</strong>
-                                <span>TOP, obnova, plavo isticanje</span>
-                            </a>
-                        <?php endif; ?>
-                        <?php if (!empty($site['enable_messages'])): ?>
-                            <a class="account-quick-item" href="/poruke.php">
-                                <span class="account-quick-icon">💬</span>
-                                <strong>Poruke<?= $unread > 0 ? ' (' . $unread . ')' : '' ?></strong>
-                                <span>Razgovori sa kupcima</span>
-                            </a>
-                        <?php endif; ?>
-                        <a class="account-quick-item" href="?tab=obavestenja">
-                            <span class="account-quick-icon">🔔</span>
-                            <strong>Obaveštenja<?= $unreadNotifs > 0 ? ' (' . $unreadNotifs . ')' : '' ?></strong>
-                            <span>Istek oglasa i ostalo</span>
-                        </a>
-                        <?php if (!empty($site['enable_favorites'])): ?>
-                            <a class="account-quick-item" href="/favorites.php">
-                                <span class="account-quick-icon">♡</span>
-                                <strong>Omiljeni</strong>
-                                <span>Sačuvani oglasi</span>
-                            </a>
-                        <?php endif; ?>
-                        <a class="account-quick-item" href="<?= h($shopLink) ?>">
-                            <span class="account-quick-icon">🏪</span>
-                            <strong>Izlog</strong>
-                            <span>Javni profil prodavca</span>
-                        </a>
-                        <?php if (isAdmin()): ?>
-                            <a class="account-quick-item" href="/dashboard.php">
-                                <span class="account-quick-icon">⚙</span>
-                                <strong>Admin panel</strong>
-                                <span>Prijave, korisnici, oglasi</span>
-                            </a>
-                        <?php endif; ?>
-                        <a class="account-quick-item account-quick-danger" href="/logout.php">
-                            <span class="account-quick-icon">↩</span>
-                            <strong>Odjava</strong>
-                            <span>Izlaz iz naloga</span>
-                        </a>
-                    </div>
-                </div>
-            </section>
-
-            <?php if ($topOn && $activeAds): ?>
-                <section class="form-card account-top-banner">
-                    <div class="account-top-banner-text">
-                        <h2>⭐ Istakni oglas (TOP)</h2>
-                        <p>Kupi paket pa tvoj oglas ide na vrh liste i u sekciju istaknutih.</p>
-                    </div>
-                    <a class="btn-call" href="?tab=top" style="width:auto;min-width:160px;">Kupi TOP →</a>
-                </section>
-            <?php endif; ?>
-
-            <section class="form-card shop-share-card">
-                <h2>Podeli izlog</h2>
-                <p class="form-hint">Jedan link za sve tvoje oglase i ocene — pošalji kupcu.</p>
-                <div class="account-share-row">
-                    <input type="text" class="shop-link-input" readonly value="<?= h($fullShopUrl) ?>" data-copy-full>
-                    <button type="button" class="btn-message" data-copy-link data-copy-url="<?= h($shopLink) ?>">Kopiraj</button>
-                </div>
-            </section>
-
-            <section class="form-card">
+            <section class="account-recent">
                 <div class="account-section-head">
                     <h2>Nedavni oglasi</h2>
-                    <a href="?tab=oglasi">Vidi sve →</a>
+                    <a href="?tab=oglasi">Vidi sve</a>
                 </div>
                 <?php if (!$myAds): ?>
                     <div class="account-empty">
@@ -697,16 +585,23 @@ require __DIR__ . '/partials/layout-start.php';
                     <div class="account-ad-list">
                         <?php foreach (array_slice($myAds, 0, 4) as $ad): ?>
                             <?php
-                            $type = getAdType($ad);
                             $statusLabel = !empty($ad['is_sold']) ? 'Prodato' : ((int)($ad['is_active'] ?? 0) === 1 ? 'Aktivan' : 'Neaktivan');
                             $statusClass = !empty($ad['is_sold']) ? 'is-sold' : ((int)($ad['is_active'] ?? 0) === 1 ? 'is-active' : 'is-off');
                             $daysLeft = $expiryOn ? adDaysRemaining($ad) : null;
+                            $primaryImg = adPrimaryImage($ad);
+                            $thumbUrl = $primaryImg ? adListingThumbUrl($primaryImg) : '';
                             ?>
-                            <div class="account-ad-row">
+                            <div class="account-ad-row account-ad-row--compact">
+                                <a href="/oglas.php?id=<?= (int)$ad['id'] ?>" class="account-ad-thumb" aria-hidden="true" tabindex="-1">
+                                    <?php if ($thumbUrl !== ''): ?>
+                                        <img src="<?= h($thumbUrl) ?>" alt="" width="56" height="56" loading="lazy" decoding="async">
+                                    <?php else: ?>
+                                        <span class="account-ad-thumb-empty"></span>
+                                    <?php endif; ?>
+                                </a>
                                 <div class="account-ad-main">
                                     <a href="/oglas.php?id=<?= (int)$ad['id'] ?>" class="account-ad-title"><?= h((string)$ad['title']) ?></a>
                                     <div class="account-ad-meta">
-                                        <span><?= h(adCategoryLabel($ad)) ?></span>
                                         <span><?= h(formatAdPrice($ad)) ?></span>
                                         <span class="account-ad-status <?= $statusClass ?>"><?= h($statusLabel) ?></span>
                                         <?php if ($daysLeft !== null && (int)($ad['is_active'] ?? 0) === 1 && empty($ad['is_sold'])): ?>
@@ -717,7 +612,6 @@ require __DIR__ . '/partials/layout-start.php';
                                     </div>
                                 </div>
                                 <div class="account-ad-actions">
-                                    <a class="btn-sm" href="/oglas.php?id=<?= (int)$ad['id'] ?>">Pogledaj</a>
                                     <a class="btn-sm btn-sm-primary" href="/ad_form.php?id=<?= (int)$ad['id'] ?>">Izmeni</a>
                                 </div>
                             </div>
@@ -725,6 +619,21 @@ require __DIR__ . '/partials/layout-start.php';
                     </div>
                 <?php endif; ?>
             </section>
+
+            <section class="account-share-compact">
+                <div class="account-share-compact-label">
+                    <strong>Podeli izlog</strong>
+                    <span>Jedan link za kupce</span>
+                </div>
+                <div class="account-share-row">
+                    <input type="text" class="shop-link-input" readonly value="<?= h($fullShopUrl) ?>" data-copy-full aria-label="Link izloga">
+                    <button type="button" class="btn-message" data-copy-link data-copy-url="<?= h($shopLink) ?>">Kopiraj</button>
+                </div>
+            </section>
+
+            <?php if ($topOn && $activeAds): ?>
+                <a class="account-top-hint" href="?tab=top">Istakni oglas (TOP) →</a>
+            <?php endif; ?>
 
         <?php elseif ($tab === 'oglasi'): ?>
             <section class="form-card">
