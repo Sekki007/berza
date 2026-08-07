@@ -570,10 +570,27 @@ function telegramWelcomeMessageTemplate(): string
 {
     $settings = function_exists('siteSettings') ? siteSettings() : [];
     $custom = trim((string)($settings['telegram_welcome_text'] ?? ''));
-    if ($custom !== '') {
+    // Stari pokvaren placeholder iz admin forme: {name}, {site}, {channel}">
+    if ($custom !== '' && !telegramWelcomeTextLooksBroken($custom)) {
         return $custom;
     }
-    return "Zdravo {name}! 👋\n\nDobrodošao/la u KupiTelefon kanal.\nOvde delimo oglase, savete i novosti sa sajta.\n\n🌐 {site}\n📢 {channel}";
+    return "Zdravo {name}! 👋\n\nDobrodošao/la u KupiTelefon zajednicu.\nOvde delimo oglase, savete i novosti sa sajta.\n\n🌐 {site}\n📢 {channel}";
+}
+
+function telegramWelcomeTextLooksBroken(string $text): bool
+{
+    $t = trim($text);
+    if ($t === '') {
+        return false;
+    }
+    // Tipičan ostatak pokvarenog HTML placeholder-a iz admina
+    if (preg_match('/^\s*\{name\}\s*,\s*\{site\}\s*,\s*\{channel\}\s*"?\s*>?\s*$/u', $t)) {
+        return true;
+    }
+    if (str_contains($t, '{channel}">') || str_contains($t, '{channel}" >')) {
+        return true;
+    }
+    return false;
 }
 
 function telegramFormatWelcomeText(string $displayName): string
@@ -590,6 +607,54 @@ function telegramFormatWelcomeText(string $displayName): string
         '{site}' => $site,
         '{channel}' => $channel,
     ]);
+}
+
+/**
+ * HTML welcome — Telegram ne podržava <br>, koristi \n.
+ */
+function telegramBuildWelcomeHtml(array $user): string
+{
+    $mention = telegramMentionHtml($user);
+    $name = telegramMemberDisplayName($user);
+    $site = rtrim(function_exists('appBaseUrl') ? appBaseUrl() : 'https://kupitelefon.rs', '/');
+    $channel = telegramChannelUrl();
+    if ($channel === '') {
+        $channel = $site;
+    }
+
+    $settings = function_exists('siteSettings') ? siteSettings() : [];
+    $custom = trim((string)($settings['telegram_welcome_text'] ?? ''));
+    if ($custom !== '' && !telegramWelcomeTextLooksBroken($custom)) {
+        $token = '[[[TG_MENTION]]]';
+        $withToken = strtr($custom, [
+            '{name}' => $token,
+            '{site}' => $site,
+            '{channel}' => $channel,
+        ]);
+        $html = htmlspecialchars($withToken, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        return str_replace(htmlspecialchars($token, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), $mention, $html);
+    }
+
+    return 'Zdravo ' . $mention . "! 👋\n\n"
+        . "Dobrodošao/la u <b>KupiTelefon</b> zajednicu.\n"
+        . "Ovde delimo oglase, savete i novosti sa sajta.\n\n"
+        . '🌐 ' . htmlspecialchars($site, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . "\n"
+        . '📢 ' . htmlspecialchars($channel, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+}
+
+function telegramSendWelcomeToChat(string $chatId, array $user): void
+{
+    if ($chatId === '' || $user === []) {
+        return;
+    }
+    $html = telegramBuildWelcomeHtml($user);
+    $sent = telegramSendMessageDetailed($chatId, $html, [
+        'parse_mode' => 'HTML',
+        'disable_web_page_preview' => true,
+    ]);
+    if (empty($sent['ok'])) {
+        telegramSendMessage($chatId, telegramFormatWelcomeText(telegramMemberDisplayName($user)));
+    }
 }
 
 function telegramPrivateStartText(): string
@@ -751,37 +816,7 @@ function handleTelegramChannelMemberUpdate(array $update): void
         return;
     }
 
-    $name = telegramMemberDisplayName($user);
-    $site = rtrim(function_exists('appBaseUrl') ? appBaseUrl() : 'https://kupitelefon.rs', '/');
-    $channel = telegramChannelUrl();
-    if ($channel === '') {
-        $channel = $site;
-    }
-    $mention = telegramMentionHtml($user);
-    $textHtml = 'Zdravo ' . $mention . "! 👋<br><br>"
-        . 'Dobrodošao/la u <b>KupiTelefon</b> kanal.<br>'
-        . 'Ovde delimo oglase, savete i novosti sa sajta.<br><br>'
-        . '🌐 ' . htmlspecialchars($site, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '<br>'
-        . '📢 ' . htmlspecialchars($channel, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
-
-    $custom = trim((string)((function_exists('siteSettings') ? siteSettings() : [])['telegram_welcome_text'] ?? ''));
-    if ($custom !== '') {
-        $plain = telegramFormatWelcomeText($name);
-        $textHtml = nl2br(htmlspecialchars($plain, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'), false);
-        $textHtml = str_replace(
-            htmlspecialchars($name, ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8'),
-            $mention,
-            $textHtml
-        );
-    }
-
-    $sent = telegramSendMessageDetailed($chatId, $textHtml, [
-        'parse_mode' => 'HTML',
-        'disable_web_page_preview' => true,
-    ]);
-    if (empty($sent['ok'])) {
-        telegramSendMessage($chatId, telegramFormatWelcomeText($name));
-    }
+    telegramSendWelcomeToChat($chatId, $user);
 
     // Privatna poruka radi samo ako je korisnik ranije pokrenuo bota (/start).
     $userId = (int)($user['id'] ?? 0);
@@ -913,13 +948,12 @@ function handleTelegramWebhookUpdate(array $update): void
         $chat = is_array($msg['chat'] ?? null) ? $msg['chat'] : [];
         $chatId = (string)($chat['id'] ?? '');
         $chatUsername = (string)($chat['username'] ?? '');
-        if ($chatId !== '' && telegramIsConfiguredChannel($chatId, $chatUsername)) {
+                if ($chatId !== '' && telegramIsConfiguredChannel($chatId, $chatUsername)) {
             foreach ($msg['new_chat_members'] as $member) {
                 if (!is_array($member) || !empty($member['is_bot'])) {
                     continue;
                 }
-                $text = telegramFormatWelcomeText(telegramMemberDisplayName($member));
-                telegramSendMessage($chatId, $text);
+                telegramSendWelcomeToChat($chatId, $member);
             }
         }
         // Nemoj return odmah — ako ima i text, obradi komandu ispod.

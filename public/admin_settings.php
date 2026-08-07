@@ -118,7 +118,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'enable_messages' => (string)($_POST['enable_messages'] ?? '0') === '1',
         'enable_whatsapp' => (string)($_POST['enable_whatsapp'] ?? '0') === '1',
         'enable_favorites' => (string)($_POST['enable_favorites'] ?? '0') === '1',
-        'telegram_welcome_text' => trim((string)($_POST['telegram_welcome_text'] ?? ($current['telegram_welcome_text'] ?? ''))),
+        'telegram_welcome_text' => (static function () use ($current): string {
+            $text = trim((string)($_POST['telegram_welcome_text'] ?? ($current['telegram_welcome_text'] ?? '')));
+            if ($text !== '' && function_exists('telegramWelcomeTextLooksBroken') && telegramWelcomeTextLooksBroken($text)) {
+                return '';
+            }
+            return $text;
+        })(),
         'telegram_welcome_delete_sec' => (int)($_POST['telegram_welcome_delete_sec'] ?? ($current['telegram_welcome_delete_sec'] ?? 0)),
         'enable_ad_expiry' => (string)($_POST['enable_ad_expiry'] ?? '0') === '1',
         'ad_max_active_days' => (int)($_POST['ad_max_active_days'] ?? $current['ad_max_active_days'] ?? 30),
@@ -333,8 +339,8 @@ require __DIR__ . '/partials/layout-start.php';
                 </p>
                 <div class="form-group">
                     <label>Tekst dobrodošlice (prazno = podrazumevani)</label>
-                    <textarea name="telegram_welcome_text" rows="5" placeholder="Zdravo {name}! …">{name}, {site}, {channel}"><?= h((string)($settings['telegram_welcome_text'] ?? '')) ?></textarea>
-                    <p class="form-hint">Placeholders: <code>{name}</code>, <code>{site}</code>, <code>{channel}</code></p>
+                    <textarea name="telegram_welcome_text" rows="5" placeholder="Zdravo {name}! Dobrodošao/la. Sajt: {site} Kanal: {channel}"><?= h((string)($settings['telegram_welcome_text'] ?? '')) ?></textarea>
+                    <p class="form-hint">Placeholders: <code>{name}</code>, <code>{site}</code>, <code>{channel}</code>. Ostavi prazno za podrazumevani tekst.</p>
                 </div>
                 <div class="form-group">
                     <label>Auto-brisanje dobrodošlice (sekunde, 0 = ne briši)</label>
