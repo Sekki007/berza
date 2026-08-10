@@ -209,7 +209,7 @@ function findMiscategorizedAds(?array $ads = null): array
             continue;
         }
         $blob = $title . ' ' . $desc;
-        $guess = kpGuessCategoryGroup($blob);
+        $guess = kpGuessCategoryGroup($blob, $title);
         $curType = trim((string)($ad['ad_type'] ?? 'telefon'));
         $curGroup = trim((string)($ad['category_group'] ?? ''));
         $sugType = (string)($guess['ad_type'] ?? 'telefon');
@@ -311,19 +311,24 @@ function applyCategoryFixes(array $fixes, array $allowed): array
         $ad['ad_type'] = $sugType;
         $ad['category_group'] = $sugGroup;
         $ad['category'] = categoryFromAdType($sugType);
-        if ($sugType === 'telefon' && empty($ad['device_type'])) {
-            $ad['device_type'] = kpGuessDeviceType(
-                trim((string)($ad['title'] ?? '')) . ' ' . trim((string)($ad['description'] ?? ''))
-            );
-        }
-        if ($sugType === 'delovi' && empty($ad['equipment_type'])) {
-            $ad['equipment_type'] = kpGuessEquipmentType(
-                trim((string)($ad['title'] ?? '')) . ' ' . trim((string)($ad['description'] ?? '')),
-                $sugGroup
-            );
-        }
-        if ($sugType === 'servis') {
+        $title = trim((string)($ad['title'] ?? ''));
+        $desc = trim((string)($ad['description'] ?? ''));
+        $blob = $title . ' ' . $desc;
+        if ($sugType === 'telefon') {
+            $ad['device_type'] = kpGuessDeviceType($blob);
+            $ad['equipment_type'] = '';
+            if ($brand = kpGuessBrand($blob)) {
+                if (trim((string)($ad['brand'] ?? '')) === '') {
+                    $ad['brand'] = $brand;
+                }
+            }
+        } elseif ($sugType === 'delovi') {
+            $ad['equipment_type'] = kpGuessEquipmentType($blob, $sugGroup);
+            $ad['device_type'] = '';
+        } elseif ($sugType === 'servis') {
             $ad['brand'] = '';
+            $ad['equipment_type'] = '';
+            $ad['device_type'] = '';
         }
         $ad['updated_at'] = date('Y-m-d H:i:s');
         $ad = normalizeAdDefaults($ad);

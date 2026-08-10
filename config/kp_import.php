@@ -142,36 +142,111 @@ function kpGuessDeviceType(string $text): string
     return 'phone';
 }
 
-function kpGuessCategoryGroup(string $text): array
+/**
+ * Predloži ad_type + category_group iz teksta oglasa.
+ * Naslov ima prioritet: slabije reči u opisu (maska/punjač uz telefon) ne smeju
+ * da pretvore ceo uređaj u „delovi“.
+ *
+ * @return array{ad_type:string, category_group:string}
+ */
+function kpGuessCategoryGroup(string $text, string $title = ''): array
 {
-    $lower = mb_strtolower($text);
-
-    if (preg_match('/\b(servis|zamena ekrana|popravka|repair|deblok|dekod|flash|software)\b/u', $lower)) {
-        return ['ad_type' => 'servis', 'category_group' => 'service'];
+    $blob = mb_strtolower(trim($text));
+    $titleLower = mb_strtolower(trim($title));
+    if ($titleLower === '') {
+        // Ako nije prosleđen naslov, uzmi prvu liniju / kratak početak kao proxy.
+        $titleLower = preg_split('/\R/u', $blob, 2)[0] ?? $blob;
+        if (mb_strlen($titleLower) > 140) {
+            $titleLower = mb_substr($titleLower, 0, 140);
+        }
     }
 
-    $partsKeywords = '/\b(ekran|displej|lcd|baterija|maska|futrola|punjač|punjac|kabl|staklo|deo|delovi|flex|kamera module|touch)\b/u';
-    if (preg_match($partsKeywords, $lower)) {
-        $group = 'other_parts';
-        if (preg_match('/\b(iphone|apple|ipad)\b/u', $lower)) {
-            $group = 'iphone_parts';
-        } elseif (preg_match('/\b(samsung|galaxy)\b/u', $lower)) {
-            $group = 'samsung_parts';
-        } elseif (preg_match('/\b(xiaomi|redmi|poco)\b/u', $lower)) {
-            $group = 'xiaomi_parts';
-        } elseif (preg_match('/\b(huawei|honor)\b/u', $lower)) {
-            $group = 'huawei_honor_parts';
-        } elseif (preg_match('/\b(punjač|punjac|kabl|charger|cable)\b/u', $lower)) {
-            $group = 'chargers_cables';
-        } elseif (preg_match('/\b(maska|futrola|case)\b/u', $lower)) {
-            $group = 'cases_protection';
-        } elseif (preg_match('/\b(airpods|slušalice|slusalice|earbuds)\b/u', $lower)) {
-            $group = 'audio_accessories';
+    if (preg_match('/\b(servis|zamena ekrana|popravka|repair|deblok|dekod|flash|software)\b/u', $blob)
+        && !preg_match('/\b(za\s+delov|org\s*sh|service\s*pack)\b/u', $titleLower)
+        && !preg_match('/(\d{1,2}\s*\/\s*\d{2,4}|\b\d{2,4}\s*gb\b)/u', $titleLower)
+    ) {
+        // „Garancija / servis“ u opisu telefona nije usluga — samo ako nema signala uređaja/dela u naslovu
+        if (!preg_match('/\b(iphone|samsung|xiaomi|galaxy|honor|huawei|pixel|redmi)\b/u', $titleLower)
+            || preg_match('/\b(servis|popravka|zamena|deblok|dekod)\b/u', $titleLower)) {
+            return ['ad_type' => 'servis', 'category_group' => 'service'];
         }
-        return ['ad_type' => 'delovi', 'category_group' => $group];
+    }
+
+    // Telefon prodat isključivo za delove
+    if (preg_match('/\bza\s+delov/u', $blob)) {
+        return ['ad_type' => 'delovi', 'category_group' => kpGuessPartsBrandGroup($titleLower !== '' ? $titleLower : $blob)];
+    }
+
+    $strongParts = '/\b(ekran|displej|lcd|oled|baterija|flex|touch|service\s*pack|kućište|kuciste|maticn|org\s*sh|sh\s*delovi|screen|kamera\s*module|camera\s*module|back\s*glass)\b/u';
+    $weakParts = '/\b(maska|futrola|punjač|punjac|kabl|staklo|deo|delovi|case|charger|cable)\b/u';
+
+    if (preg_match($strongParts, $titleLower)) {
+        return ['ad_type' => 'delovi', 'category_group' => kpResolvePartsGroup($titleLower !== '' ? $titleLower : $blob)];
+    }
+
+    // Ceo uređaj: memorija u naslovu (8/256, 12/512gb, 256gb…) ili „mobilni telefon“
+    $wholeDeviceTitle = '/(\d{1,2}\s*\/\s*\d{2,4}\s*(gb|tb)?)|\b\d{2,4}\s*(gb|tb)\b|\bmobilni\s+telefon\b|\b(sim\s*free|dual\s*sim)\b/u';
+    if (preg_match($wholeDeviceTitle, $titleLower)) {
+        return ['ad_type' => 'telefon', 'category_group' => 'phones'];
+    }
+
+    // Brend + model u naslovu bez reči za deo
+    if (preg_match('/\b(iphone|galaxy|samsung|xiaomi|redmi|poco|huawei|honor|pixel|oneplus|motorola|nokia|oppo|vivo|realme)\b/u', $titleLower)
+        && !preg_match($strongParts, $titleLower)
+        && !preg_match($weakParts, $titleLower)
+    ) {
+        return ['ad_type' => 'telefon', 'category_group' => 'phones'];
+    }
+
+    // Jaki delovi u celom tekstu (naslov nije uređaj)
+    if (preg_match($strongParts, $blob)) {
+        return ['ad_type' => 'delovi', 'category_group' => kpResolvePartsGroup($blob)];
+    }
+
+    // Slabi delovi/oprema samo ako naslov nije ceo uređaj
+    if (preg_match($weakParts, $blob)) {
+        return ['ad_type' => 'delovi', 'category_group' => kpResolvePartsGroup($blob)];
     }
 
     return ['ad_type' => 'telefon', 'category_group' => 'phones'];
+}
+
+function kpGuessPartsBrandGroup(string $lower): string
+{
+    if (preg_match('/\b(iphone|apple|ipad)\b/u', $lower)) {
+        return 'iphone_parts';
+    }
+    if (preg_match('/\b(samsung|galaxy)\b/u', $lower)) {
+        return 'samsung_parts';
+    }
+    if (preg_match('/\b(xiaomi|redmi|poco)\b/u', $lower)) {
+        return 'xiaomi_parts';
+    }
+    if (preg_match('/\b(huawei|honor)\b/u', $lower)) {
+        return 'huawei_honor_parts';
+    }
+    return 'other_parts';
+}
+
+function kpResolvePartsGroup(string $lower): string
+{
+    $brandGroup = kpGuessPartsBrandGroup($lower);
+    if ($brandGroup !== 'other_parts') {
+        // Brend-specifične grupe za rezervne delove; oprema ide u namenske grupe
+        if (preg_match('/\b(ekran|displej|lcd|oled|baterija|flex|touch|service\s*pack|kućište|kuciste|maticn|org\s*sh|sh\s*delovi|screen|deo|delovi)\b/u', $lower)) {
+            return $brandGroup;
+        }
+    }
+    if (preg_match('/\b(punjač|punjac|kabl|charger|cable)\b/u', $lower)) {
+        return 'chargers_cables';
+    }
+    if (preg_match('/\b(maska|futrola|case)\b/u', $lower)) {
+        return 'cases_protection';
+    }
+    if (preg_match('/\b(airpods|slušalice|slusalice|earbuds)\b/u', $lower)) {
+        return 'audio_accessories';
+    }
+    return $brandGroup;
 }
 
 function kpMapCondition(string $kpCondition, string $adType): string
@@ -245,7 +320,7 @@ function kpBuildDefaultMapping(array $kpAd, ?array $targetUser, ?array $seller =
     $desc = trim((string)($kpAd['description'] ?? $kpAd['description_short'] ?? ''));
     $blob = $title . ' ' . $desc;
 
-    $guess = kpGuessCategoryGroup($blob);
+    $guess = kpGuessCategoryGroup($blob, $title);
     $adType = $guess['ad_type'];
     $categoryGroup = $guess['category_group'];
     $brand = kpGuessBrand($blob);
