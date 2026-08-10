@@ -257,18 +257,21 @@ $contactBlock = static function (string $formId = 'poruka') use (
         <form method="GET" action="/index.php" class="filter-box">
             <div class="filter-head">Filteri</div>
             <div class="filter-body">
-                <select class="filter-select" name="type">
-                    <option value="">Svi tipovi oglasa</option>
-                    <option value="telefon" <?= $type === 'telefon' ? 'selected' : '' ?>>Uređaji</option>
-                    <option value="delovi" <?= $type === 'delovi' ? 'selected' : '' ?>>Oprema</option>
-                    <option value="servis" <?= $type === 'servis' ? 'selected' : '' ?>>Servisne usluge</option>
+                <select class="filter-select" name="browse_cat">
+                    <option value="">Sve kategorije</option>
+                    <option value="telefon" <?= getAdType($ad) === 'telefon' ? 'selected' : '' ?>>Telefoni</option>
+                    <option value="parts" <?= getAdType($ad) === 'delovi' && adEquipmentGroup($ad) === 'parts' ? 'selected' : '' ?>>Delovi</option>
+                    <option value="oprema" <?= getAdType($ad) === 'delovi' && adEquipmentGroup($ad) !== 'parts' ? 'selected' : '' ?>>Oprema</option>
+                    <option value="servis" <?= getAdType($ad) === 'servis' ? 'selected' : '' ?>>Servis</option>
                 </select>
+                <?php if (getAdType($ad) === 'telefon'): ?>
                 <select class="filter-select" name="device_type">
                     <option value="">Tip uređaja (sve)</option>
                     <?php foreach (adFormSchema()['device_types'] as $dtKey => $dtLabel): ?>
                         <option value="<?= h($dtKey) ?>" <?= getAdDeviceType($ad) === $dtKey ? 'selected' : '' ?>><?= h($dtLabel) ?></option>
                     <?php endforeach; ?>
                 </select>
+                <?php endif; ?>
                 <?php if ($adBrand !== ''): ?>
                     <input type="hidden" name="brand" value="<?= h($adBrand) ?>">
                 <?php endif; ?>

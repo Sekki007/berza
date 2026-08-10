@@ -63,15 +63,15 @@ $contactExtraOpen = $contactSorted !== $dc
                         <label class="form-type-option <?= $currentType === 'telefon' ? 'selected' : '' ?>">
                             <input data-form-type type="radio" name="ad_type" value="telefon" <?= $currentType === 'telefon' ? 'checked' : '' ?>>
                             <span>
-                                <strong>Uređaj</strong>
-                                <small>Telefon, tablet…</small>
+                                <strong>Telefoni</strong>
+                                <small>Telefon, tablet, sat…</small>
                             </span>
                         </label>
                         <label class="form-type-option <?= $currentType === 'delovi' ? 'selected-parts' : '' ?>">
                             <input data-form-type type="radio" name="ad_type" value="delovi" <?= $currentType === 'delovi' ? 'checked' : '' ?>>
                             <span>
-                                <strong>Oprema</strong>
-                                <small>Delovi, punjači…</small>
+                                <strong>Delovi / oprema</strong>
+                                <small>Ekrani, maske, punjači…</small>
                             </span>
                         </label>
                         <label class="form-type-option <?= $currentType === 'servis' ? 'selected-service' : '' ?><?= !$allowServiceType ? ' is-locked' : '' ?>">

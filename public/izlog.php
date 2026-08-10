@@ -283,7 +283,7 @@ require __DIR__ . '/partials/layout-start.php';
                     <?php
                     $typeTabs = [
                         '' => ['label' => 'Sve', 'count' => $typeCounts['all']],
-                        'telefon' => ['label' => 'Uređaji', 'count' => $typeCounts['telefon']],
+                        'telefon' => ['label' => 'Telefoni', 'count' => $typeCounts['telefon']],
                         'delovi' => ['label' => 'Delovi / oprema', 'count' => $typeCounts['delovi']],
                         'servis' => ['label' => 'Servis', 'count' => $typeCounts['servis']],
                     ];

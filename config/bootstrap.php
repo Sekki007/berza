@@ -676,8 +676,57 @@ function adTypeLabel(string $type): string
 {
     return match ($type) {
         'servis' => 'Servis',
-        'delovi' => 'Oprema',
-        default => 'Uređaj',
+        'delovi' => 'Delovi',
+        default => 'Telefoni',
+    };
+}
+
+/**
+ * Ključ kategorije za browse/filter UI: telefon | parts | oprema | servis | ''.
+ */
+function browseCategoryKey(string $type = '', string $equipmentGroup = ''): string
+{
+    $equipmentGroup = trim($equipmentGroup);
+    if ($equipmentGroup === 'parts' || $equipmentGroup === 'oprema') {
+        return $equipmentGroup;
+    }
+    $type = trim($type);
+    if ($type === 'telefon') {
+        return 'telefon';
+    }
+    if ($type === 'servis') {
+        return 'servis';
+    }
+    if ($type === 'delovi') {
+        return 'oprema';
+    }
+    return '';
+}
+
+/**
+ * Mapira browse_cat (telefon|parts|oprema|servis) u type + equipment_group.
+ *
+ * @return array{type:string,equipment_group:string}
+ */
+function browseCategoryToFilters(string $browseCat): array
+{
+    return match (trim($browseCat)) {
+        'telefon' => ['type' => 'telefon', 'equipment_group' => ''],
+        'parts' => ['type' => 'delovi', 'equipment_group' => 'parts'],
+        'oprema' => ['type' => 'delovi', 'equipment_group' => 'oprema'],
+        'servis' => ['type' => 'servis', 'equipment_group' => ''],
+        default => ['type' => '', 'equipment_group' => ''],
+    };
+}
+
+function browseCategoryLabel(string $browseCat): string
+{
+    return match (trim($browseCat)) {
+        'telefon' => 'Telefoni',
+        'parts' => 'Delovi',
+        'oprema' => 'Oprema',
+        'servis' => 'Servis',
+        default => 'Sve',
     };
 }
 

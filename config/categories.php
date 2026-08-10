@@ -82,14 +82,14 @@ return [
             'models' => [],
         ],
         'phones' => [
-            'label' => 'Uređaji',
+            'label' => 'Telefoni',
             'ad_type' => 'telefon',
             'brand' => '',
             'equipment_type' => '',
             'models' => [],
         ],
         'service' => [
-            'label' => 'Servisne usluge',
+            'label' => 'Servis',
             'ad_type' => 'servis',
             'brand' => '',
             'equipment_type' => '',

@@ -44,11 +44,11 @@ function seoListingMeta(array $filters = []): array
         // keep broad
     }
     if ($type === 'telefon') {
-        $parts[] = 'Uređaji';
+        $parts[] = 'Telefoni';
     } elseif ($type === 'delovi') {
-        $parts[] = 'Oprema i delovi';
+        $parts[] = 'Delovi i oprema';
     } elseif ($type === 'servis') {
-        $parts[] = 'Servisne usluge';
+        $parts[] = 'Servis';
     }
     if ($deviceType !== '') {
         $labels = allowedDeviceTypes();
@@ -108,8 +108,8 @@ function seoListingHeading(array $filters = []): string
 
     $subject = match ($type) {
         'delovi' => 'Delovi i oprema',
-        'servis' => 'Servisne usluge',
-        'telefon' => 'Telefoni i uređaji',
+        'servis' => 'Servis',
+        'telefon' => 'Telefoni',
         default => 'Oglasi',
     };
     if ($brand !== '' && $model !== '') {

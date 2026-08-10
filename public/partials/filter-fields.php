@@ -3,14 +3,17 @@ declare(strict_types=1);
 /**
  * Shared listing filters (sidebar + mobile drawer).
  * Expects: $cfg, $schema, $type, $listingType, $deviceType, $brand, $location, $condition,
- * $minPrice, $maxPrice, $model, $categoryGroup, $sort, $search, $filterLayout
+ * $minPrice, $maxPrice, $model, $categoryGroup, $sort, $search, $filterLayout, $equipmentGroup
  * $filterLayout: 'sidebar' | 'drawer'
  */
 $filterLayout = $filterLayout ?? 'sidebar';
-$typeOptions = [
+$equipmentGroup = $equipmentGroup ?? '';
+$browseCat = browseCategoryKey((string)$type, (string)$equipmentGroup);
+$browseCatOptions = [
     '' => 'Sve',
-    'telefon' => 'Uređaji',
-    'delovi' => 'Oprema',
+    'telefon' => 'Telefoni',
+    'parts' => 'Delovi',
+    'oprema' => 'Oprema',
     'servis' => 'Servis',
 ];
 $listingTypeOptions = [
@@ -20,6 +23,9 @@ $listingTypeOptions = [
     'trade' => 'Zamena',
 ];
 $listingType = $listingType ?? '';
+$showDeviceType = $browseCat === '' || $browseCat === 'telefon';
+$showListingIntent = $browseCat !== 'servis';
+$showCondition = $browseCat !== 'servis';
 $pricePresets = [
     ['label' => 'do 100€', 'min' => '', 'max' => '100'],
     ['label' => '100–300€', 'min' => '100', 'max' => '300'],
@@ -35,22 +41,20 @@ $uid = $filterLayout === 'drawer' ? 'm' : 'd';
 <?php if ($categoryGroup !== ''): ?>
     <input type="hidden" name="category_group" value="<?= h($categoryGroup) ?>">
 <?php endif; ?>
-<?php if (!empty($equipmentGroup)): ?>
-    <input type="hidden" name="equipment_group" value="<?= h((string)$equipmentGroup) ?>">
-<?php endif; ?>
 
 <div class="filter-field">
     <span class="filter-label" id="filter-type-<?= h($uid) ?>">Kategorija</span>
-    <div class="filter-chips" role="radiogroup" aria-labelledby="filter-type-<?= h($uid) ?>">
-        <?php foreach ($typeOptions as $val => $label): ?>
-            <label class="filter-chip<?= $type === $val ? ' is-active' : '' ?>">
-                <input type="radio" name="type" value="<?= h($val) ?>" <?= $type === $val ? 'checked' : '' ?>>
+    <div class="filter-chips" role="radiogroup" aria-labelledby="filter-type-<?= h($uid) ?>" data-browse-cat-group>
+        <?php foreach ($browseCatOptions as $val => $label): ?>
+            <label class="filter-chip<?= $browseCat === $val ? ' is-active' : '' ?>">
+                <input type="radio" name="browse_cat" value="<?= h($val) ?>" <?= $browseCat === $val ? 'checked' : '' ?>>
                 <span><?= h($label) ?></span>
             </label>
         <?php endforeach; ?>
     </div>
 </div>
 
+<?php if ($showListingIntent): ?>
 <div class="filter-field">
     <span class="filter-label" id="filter-listing-<?= h($uid) ?>">Namera</span>
     <div class="filter-chips" role="radiogroup" aria-labelledby="filter-listing-<?= h($uid) ?>">
@@ -62,7 +66,9 @@ $uid = $filterLayout === 'drawer' ? 'm' : 'd';
         <?php endforeach; ?>
     </div>
 </div>
+<?php endif; ?>
 
+<?php if ($showDeviceType): ?>
 <div class="filter-field">
     <label class="filter-label" for="filter-device-<?= h($uid) ?>">Tip uređaja</label>
     <select class="filter-select" id="filter-device-<?= h($uid) ?>" name="device_type">
@@ -72,6 +78,7 @@ $uid = $filterLayout === 'drawer' ? 'm' : 'd';
         <?php endforeach; ?>
     </select>
 </div>
+<?php endif; ?>
 
 <div class="filter-field">
     <label class="filter-label" for="filter-brand-<?= h($uid) ?>">Brend</label>
@@ -105,6 +112,7 @@ $uid = $filterLayout === 'drawer' ? 'm' : 'd';
     </select>
 </div>
 
+<?php if ($showCondition): ?>
 <div class="filter-field">
     <span class="filter-label" id="filter-cond-<?= h($uid) ?>">Stanje</span>
     <div class="filter-chips filter-chips-wrap" role="radiogroup" aria-labelledby="filter-cond-<?= h($uid) ?>">
@@ -112,7 +120,10 @@ $uid = $filterLayout === 'drawer' ? 'm' : 'd';
             <input type="radio" name="condition" value="" <?= $condition === '' ? 'checked' : '' ?>>
             <span>Sve</span>
         </label>
-        <?php foreach ($cfg['conditions'] as $st): ?>
+        <?php
+        $conditionOptions = ['Novo', 'Kao novo', 'Polovno', 'Oštećeno/Za delove'];
+        foreach ($conditionOptions as $st):
+            ?>
             <label class="filter-chip<?= $condition === $st ? ' is-active' : '' ?>">
                 <input type="radio" name="condition" value="<?= h($st) ?>" <?= $condition === $st ? 'checked' : '' ?>>
                 <span><?= h($st) ?></span>
@@ -120,6 +131,7 @@ $uid = $filterLayout === 'drawer' ? 'm' : 'd';
         <?php endforeach; ?>
     </div>
 </div>
+<?php endif; ?>
 
 <div class="filter-field">
     <span class="filter-label">Cena (€)</span>

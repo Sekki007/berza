@@ -46,9 +46,10 @@ if ($user) {
                 <div class="site-footer-col">
                     <h4>Istraži</h4>
                     <a href="/index.php">Početna</a>
-                    <a href="/index.php?type=telefon">Uređaji</a>
-                    <a href="/index.php?type=delovi">Oprema</a>
-                    <a href="/index.php?type=servis">Servis oglasi</a>
+                    <a href="/index.php?type=telefon">Telefoni</a>
+                    <a href="/index.php?equipment_group=parts">Delovi</a>
+                    <a href="/index.php?equipment_group=oprema">Oprema</a>
+                    <a href="/index.php?type=servis">Servis</a>
                     <a href="/servisi">Firme po gradu</a>
                     <a href="/provera-imei">Besplatna IMEI provera</a>
                 </div>

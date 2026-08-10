@@ -69,8 +69,22 @@ if (is_array($landing) && !empty($landing['filters'])) {
         $type = (string)$landingFilters['type'];
     }
 }
+// Filter forma šalje browse_cat (Telefoni/Delovi/Oprema/Servis)
+if (array_key_exists('browse_cat', $_GET)) {
+    $mapped = browseCategoryToFilters(trim((string)$_GET['browse_cat']));
+    $type = $mapped['type'];
+    $equipmentGroup = $mapped['equipment_group'];
+}
 if ($equipmentGroup !== '' && $type === '') {
     $type = 'delovi';
+}
+// Ne prikazuj tip uređaja / nameru van konteksta
+if ($type === 'servis') {
+    $listingType = '';
+    $condition = '';
+    $deviceType = '';
+} elseif ($type === 'delovi') {
+    $deviceType = '';
 }
 $sort = trim((string)($_GET['sort'] ?? 'newest'));
 $page = max(1, (int)($_GET['page'] ?? 1));
@@ -179,7 +193,7 @@ if ($lcpThumb) {
 
 $typeLabels = [
     'telefon' => 'Telefoni',
-    'delovi' => 'Delovi / oprema',
+    'delovi' => 'Delovi',
     'servis' => 'Servis',
 ];
 $equipmentGroupLabels = [
