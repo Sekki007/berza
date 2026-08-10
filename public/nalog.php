@@ -1344,6 +1344,15 @@ require __DIR__ . '/partials/layout-start.php';
                             <input type="checkbox" name="notify_push" value="1" <?= !array_key_exists('notify_push', $profile) || !empty($profile['notify_push']) ? 'checked' : '' ?>>
                             <span>Push notifikacije na telefon (nove poruke i obaveštenja)</span>
                         </label>
+
+                        <h3 class="profile-section-title" style="margin-top:22px;">Web aplikacija (PWA)</h3>
+                        <p class="form-hint" style="margin-top:6px;">
+                            Dodaj KupiTelefon na početni ekran telefona — otvara se kao app (bez browser trake).
+                        </p>
+                        <ul class="form-hint" style="margin:8px 0 0;padding-left:18px;line-height:1.5;">
+                            <li><strong>Android (Chrome):</strong> meni ⋮ → „Instaliraj aplikaciju“ / „Dodaj na početni ekran“.</li>
+                            <li><strong>iPhone (Safari):</strong> Share → „Dodaj na početni ekran“.</li>
+                        </ul>
                     </div>
 
                     <div class="profile-actions">

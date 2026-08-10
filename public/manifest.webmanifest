@@ -1,0 +1,54 @@
+{
+  "name": "KupiTelefon.rs",
+  "short_name": "KupiTelefon",
+  "description": "Telefoni, delovi, oprema i servis — KupiTelefon.rs",
+  "lang": "sr",
+  "dir": "ltr",
+  "start_url": "/?utm_source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#ffffff",
+  "theme_color": "#3d9a50",
+  "categories": ["shopping", "lifestyle"],
+  "icons": [
+    {
+      "src": "/assets/img/pwa-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/img/pwa-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/assets/img/pwa-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Pretraga",
+      "short_name": "Pretraga",
+      "url": "/index.php#search",
+      "icons": [{ "src": "/assets/img/pwa-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Postavi oglas",
+      "short_name": "Dodaj",
+      "url": "/ad_form.php",
+      "icons": [{ "src": "/assets/img/pwa-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Poruke",
+      "short_name": "Poruke",
+      "url": "/poruke.php",
+      "icons": [{ "src": "/assets/img/pwa-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

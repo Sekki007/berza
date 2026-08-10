@@ -291,6 +291,17 @@ if ($user) {
         <span class="btn-sm btn-sm-primary">Otvori</span>
     </a>
 
+    <div class="pwa-install" data-pwa-install hidden>
+        <div class="pwa-install-text">
+            <strong>Dodaj KupiTelefon na telefon</strong>
+            <span data-pwa-install-hint>Brži pristup kao aplikacija — početni ekran.</span>
+        </div>
+        <div class="pwa-install-actions">
+            <button type="button" class="btn-sm btn-sm-primary" data-pwa-install-btn>Dodaj</button>
+            <button type="button" class="btn-sm" data-pwa-install-dismiss aria-label="Zatvori">Ne sad</button>
+        </div>
+    </div>
+
     <script src="<?= h(assetUrl('/assets/js/app.js')) ?>" defer></script>
     <?= renderFacebookPixelBootstrap() ?>
     <?= renderGoogleTagBootstrap() ?>

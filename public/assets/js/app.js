@@ -2162,6 +2162,75 @@
     }
   }
 
+  function isStandalonePwa() {
+    return window.matchMedia('(display-mode: standalone)').matches
+      || window.navigator.standalone === true;
+  }
+
+  function initPwa() {
+    if (!('serviceWorker' in navigator)) return;
+
+    // Ne registruj SW unutar Capacitor/Android WebView ako postoji nativni bridge
+    if (typeof isNativeApp === 'function' && isNativeApp()) return;
+
+    navigator.serviceWorker.register('/sw.js').catch(function () {});
+
+    var banner = one('[data-pwa-install]');
+    var installBtn = one('[data-pwa-install-btn]');
+    var dismissBtn = one('[data-pwa-install-dismiss]');
+    var hint = one('[data-pwa-install-hint]');
+    var deferredPrompt = null;
+    var dismissKey = 'kt_pwa_install_dismissed';
+
+    function dismissed() {
+      try { return localStorage.getItem(dismissKey) === '1'; } catch (e) { return false; }
+    }
+    function setDismissed() {
+      try { localStorage.setItem(dismissKey, '1'); } catch (e) {}
+    }
+
+    function showBanner(mode) {
+      if (!banner || isStandalonePwa() || dismissed()) return;
+      if (hint) {
+        hint.textContent = mode === 'ios'
+          ? 'iPhone: Share → „Dodaj na početni ekran“.'
+          : 'Brži pristup kao aplikacija — početni ekran.';
+      }
+      if (installBtn) installBtn.hidden = mode === 'ios';
+      banner.hidden = false;
+    }
+
+    window.addEventListener('beforeinstallprompt', function (e) {
+      e.preventDefault();
+      deferredPrompt = e;
+      showBanner('android');
+    });
+
+    // iOS Safari nema beforeinstallprompt
+    var isIos = /iphone|ipad|ipod/i.test(navigator.userAgent || '');
+    var isSafari = /safari/i.test(navigator.userAgent || '') && !/crios|fxios|edgios/i.test(navigator.userAgent || '');
+    if (isIos && isSafari && !isStandalonePwa()) {
+      showBanner('ios');
+    }
+
+    if (installBtn) {
+      installBtn.addEventListener('click', function () {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.finally(function () {
+          deferredPrompt = null;
+          if (banner) banner.hidden = true;
+        });
+      });
+    }
+    if (dismissBtn) {
+      dismissBtn.addEventListener('click', function () {
+        setDismissed();
+        if (banner) banner.hidden = true;
+      });
+    }
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
     initTypeFilters();
     initDrawer();
@@ -2194,5 +2263,6 @@
     initShareAd();
     initNativeChrome();
     initPushNotifications();
+    initPwa();
   });
 })();

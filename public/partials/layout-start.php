@@ -33,11 +33,17 @@ $compareCount = count(compareIds());
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#3d9a50">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="KupiTelefon">
     <?= csrfMetaTag() ?>
     <title><?= h($pageTitle) ?></title>
     <meta name="description" content="<?= h($pageDescription) ?>">
     <?php if ($robotsMeta !== ''): ?><meta name="robots" content="<?= h($robotsMeta) ?>"><?php endif; ?>
     <link rel="canonical" href="<?= h($canonicalUrl) ?>">
+    <link rel="manifest" href="/manifest.webmanifest">
     <meta property="og:type" content="<?= h($ogType ?? 'website') ?>">
     <meta property="og:title" content="<?= h($pageTitle) ?>">
     <meta property="og:description" content="<?= h($pageDescription) ?>">
@@ -57,7 +63,7 @@ $compareCount = count(compareIds());
     <link rel="preload" href="<?= h(assetUrl('/assets/css/style.css')) ?>" as="style">
     <link rel="stylesheet" href="<?= h(assetUrl('/assets/css/style.css')) ?>">
     <link rel="icon" type="image/png" href="/assets/img/favicon.png">
-    <link rel="apple-touch-icon" href="/assets/img/logo-mark.png">
+    <link rel="apple-touch-icon" href="/assets/img/pwa-192.png">
     <?php if (!empty($preloadImage)): ?>
         <link rel="preload" as="image" href="<?= h((string)$preloadImage) ?>" fetchpriority="high">
     <?php endif; ?>
