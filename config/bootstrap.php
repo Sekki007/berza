@@ -947,11 +947,34 @@ function saveAd(array $payload, ?int $adId = null): int
     }
 
     $newId = $maxId + 1;
+    if (isAdmin() && !empty($payload['_preset_id'])) {
+        $candidate = (int)$payload['_preset_id'];
+        $idTaken = false;
+        foreach ($ads as $existing) {
+            if ((int)($existing['id'] ?? 0) === $candidate) {
+                $idTaken = true;
+                break;
+            }
+        }
+        if (!$idTaken && $candidate > 0) {
+            $newId = $candidate;
+        }
+        unset($payload['_preset_id']);
+    }
     $payload['id'] = $newId;
-    $payload['created_by'] = (int)(currentUser()['id'] ?? 1);
+    if (isAdmin() && isset($payload['created_by']) && (int)$payload['created_by'] > 0) {
+        $payload['created_by'] = (int)$payload['created_by'];
+    } else {
+        $payload['created_by'] = (int)(currentUser()['id'] ?? 1);
+    }
     $payload['created_at'] = date('Y-m-d H:i:s');
     $payload['updated_at'] = date('Y-m-d H:i:s');
-    $payload['images'] = handleAdImageUploads($newId, $payload['images'] ?? []);
+    if (!empty($payload['_images_final'])) {
+        $payload['images'] = array_values(array_slice($payload['images'] ?? [], 0, 10));
+        unset($payload['_images_final']);
+    } else {
+        $payload['images'] = handleAdImageUploads($newId, $payload['images'] ?? []);
+    }
     ensureAdOgImage($payload, true);
     if (adExpiryEnabled()) {
         $payload['expires_at'] = computeAdExpiresAt($payload['created_at']);
@@ -1428,6 +1451,7 @@ require_once __DIR__ . '/compare.php';
 require_once __DIR__ . '/ad_stats.php';
 require_once __DIR__ . '/storefront.php';
 require_once __DIR__ . '/shop_catalog.php';
+require_once __DIR__ . '/kp_import.php';
 require_once __DIR__ . '/services_directory.php';
 require_once __DIR__ . '/listings_directory.php';
 require_once __DIR__ . '/facebook_pixel.php';

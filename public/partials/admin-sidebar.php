@@ -10,6 +10,7 @@ $adminLinks = [
     ['id' => 'reports', 'href' => '/admin_reports.php', 'label' => 'Prijave' . ($openReports > 0 ? " ($openReports)" : '')],
     ['id' => 'users', 'href' => '/admin_users.php', 'label' => 'Korisnici'],
     ['id' => 'ads', 'href' => '/ads.php', 'label' => 'Oglasi'],
+    ['id' => 'import', 'href' => '/admin_import.php', 'label' => 'KP uvoz'],
     ['id' => 'top', 'href' => '/admin_top.php', 'label' => 'TOP' . ($pendingTop > 0 ? " ($pendingTop)" : '')],
     ['id' => 'credits', 'href' => '/admin_credits.php', 'label' => 'Krediti' . ($pendingCredits > 0 ? " ($pendingCredits)" : '')],
     ['id' => 'imei', 'href' => '/admin_imei.php', 'label' => 'IMEI cene'],
