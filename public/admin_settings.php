@@ -110,6 +110,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'viber_community_url' => trim((string)($_POST['viber_community_url'] ?? ($current['viber_community_url'] ?? ''))),
         'items_per_page' => (int)($_POST['items_per_page'] ?? $current['items_per_page']),
         'max_promoted_ads' => (int)($_POST['max_promoted_ads'] ?? $current['max_promoted_ads']),
+        'max_ads_per_user_homepage' => (int)($_POST['max_ads_per_user_homepage'] ?? ($current['max_ads_per_user_homepage'] ?? 2)),
         'show_promoted_section' => (string)($_POST['show_promoted_section'] ?? '0') === '1',
         'show_ticker' => (string)($_POST['show_ticker'] ?? '0') === '1',
         'ticker_label' => trim((string)($_POST['ticker_label'] ?? $current['ticker_label'])),
@@ -280,6 +281,11 @@ require __DIR__ . '/partials/layout-start.php';
                         <label>Broj TOP oglasa</label>
                         <input type="number" min="1" max="10" name="max_promoted_ads" value="<?= (int)$settings['max_promoted_ads'] ?>">
                     </div>
+                </div>
+                <div class="form-group">
+                    <label>Maks. oglasa istog korisnika (početna / lista)</label>
+                    <input type="number" min="0" max="50" name="max_ads_per_user_homepage" value="<?= (int)($settings['max_ads_per_user_homepage'] ?? 2) ?>">
+                    <p class="form-hint">Sprečava da jedan korisnik zauzme celu listu. Podrazumevano 2. Unesi 0 za bez ograničenja.</p>
                 </div>
                 <div class="form-group form-checks">
                     <input type="hidden" name="show_promoted_section" value="0">

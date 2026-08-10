@@ -107,12 +107,19 @@ $filters = [
 ];
 
 $allAds = getPublicAds($filters);
+$maxPerUser = (int)($settings['max_ads_per_user_homepage'] ?? 0);
+if ($maxPerUser > 0) {
+    $allAds = limitAdsPerUser($allAds, $maxPerUser);
+}
 $pagination = paginateAds($allAds, $page, $perPage);
 $ads = $pagination['items'];
 $maxPromoted = max(1, (int)$settings['max_promoted_ads']);
 $promotedAds = [];
 if (!empty($settings['show_promoted_section'])) {
     $promotedAds = array_values(array_filter(getPublicAds(['sort' => 'newest']), static fn($a) => isAdTopActive($a) && empty($a['is_sold'])));
+    if ($maxPerUser > 0) {
+        $promotedAds = limitAdsPerUser($promotedAds, $maxPerUser);
+    }
     $promotedAds = array_slice($promotedAds, 0, $maxPromoted);
 }
 

@@ -537,6 +537,38 @@ function sortAds(array $ads, string $sort): array
     return $ads;
 }
 
+/**
+ * Ograniči broj oglasa istog korisnika u već sortiranoj listi (zadržava redosled).
+ * $maxPerUser <= 0 = bez ograničenja.
+ *
+ * @param list<array<string,mixed>> $ads
+ * @return list<array<string,mixed>>
+ */
+function limitAdsPerUser(array $ads, int $maxPerUser): array
+{
+    if ($maxPerUser <= 0) {
+        return array_values($ads);
+    }
+
+    $counts = [];
+    $out = [];
+    foreach ($ads as $ad) {
+        if (!is_array($ad)) {
+            continue;
+        }
+        $userId = (int)($ad['created_by'] ?? 0);
+        $key = $userId > 0 ? (string)$userId : 'anon:' . (int)($ad['id'] ?? 0);
+        $used = (int)($counts[$key] ?? 0);
+        if ($used >= $maxPerUser) {
+            continue;
+        }
+        $counts[$key] = $used + 1;
+        $out[] = $ad;
+    }
+
+    return $out;
+}
+
 function paginateAds(array $ads, int $page, int $perPage = 20): array
 {
     $total = count($ads);

@@ -75,6 +75,7 @@ function defaultSiteSettings(): array
         'viber_community_url' => 'https://invite.viber.com/?g2=AQBMjKShYTQtKFbrUb2YOEJazXmjRUYLEX3UIgJuHs6Ba3KiLYm4yCSCkJgkI1P2',
         'items_per_page' => 20,
         'max_promoted_ads' => 3,
+        'max_ads_per_user_homepage' => 2,
         'show_promoted_section' => true,
         'show_ticker' => true,
         'ticker_label' => 'Traže se:',
@@ -193,6 +194,8 @@ function saveSiteSettings(array $input): bool
         } elseif ($key === 'imei_free_checks_per_day') {
             $settings[$key] = max(0, (int)$value);
         } elseif ($key === 'telegram_welcome_delete_sec') {
+            $settings[$key] = max(0, (int)$value);
+        } elseif ($key === 'max_ads_per_user_homepage') {
             $settings[$key] = max(0, (int)$value);
         } elseif (is_int($defaultValue)) {
             $settings[$key] = max(1, (int)$value);
