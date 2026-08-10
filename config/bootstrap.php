@@ -647,13 +647,21 @@ function getAdType(array $ad): string
 /** Tipovi opreme koji spadaju u „Delovi“ (rezervni delovi). */
 function equipmentPartsTypes(): array
 {
-    return ['Rezervni delovi'];
+    $schema = function_exists('adFormSchema') ? adFormSchema() : [];
+    $list = $schema['parts_equipment_types'] ?? [
+        'Displej/LCD', 'Baterija', 'Kućište/Staklo', 'Kamera', 'Matična ploča', 'Alati za servis', 'Rezervni delovi',
+    ];
+    return array_values(array_filter(array_map('strval', $list)));
 }
 
 /** Tipovi opreme koji spadaju u „Oprema“ (maske, punjači…). */
 function equipmentOpremaTypes(): array
 {
-    return ['Maska/Futrola', 'Zaštitno staklo', 'Punjač/Kabl', 'Slušalice', 'PowerBank', 'Ostalo'];
+    $schema = function_exists('adFormSchema') ? adFormSchema() : [];
+    $list = $schema['oprema_equipment_types'] ?? [
+        'Maska/Futrola', 'Zaštitno staklo', 'Punjač/Kabl', 'Slušalice', 'PowerBank', 'Ostalo',
+    ];
+    return array_values(array_filter(array_map('strval', $list)));
 }
 
 /**
@@ -1139,6 +1147,29 @@ function getPublicAds(array $filters = []): array
                 return false;
             }
             return adEquipmentGroup($ad) === $equipmentGroup;
+        });
+    }
+
+    $equipmentType = trim((string)($filters['equipment_type'] ?? ''));
+    if ($equipmentType !== '') {
+        $ads = array_filter($ads, static function ($ad) use ($equipmentType) {
+            return getAdType($ad) === 'delovi'
+                && (string)($ad['equipment_type'] ?? '') === $equipmentType;
+        });
+    }
+
+    $minBattery = isset($filters['min_battery']) && $filters['min_battery'] !== ''
+        ? (int)$filters['min_battery']
+        : 0;
+    if ($minBattery > 0) {
+        $ads = array_filter($ads, static function ($ad) use ($minBattery) {
+            if (getAdType($ad) !== 'telefon') {
+                return false;
+            }
+            if (!isset($ad['battery_health']) || $ad['battery_health'] === '' || $ad['battery_health'] === null) {
+                return false;
+            }
+            return (int)$ad['battery_health'] >= $minBattery;
         });
     }
 

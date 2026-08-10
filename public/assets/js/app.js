@@ -303,15 +303,13 @@
 
     const brandSel = one('[data-phone-brand]', form);
     const batt = one('[data-battery-field]', form);
-    if (batt && brandSel) {
-      const isApple = (brandSel.value || '') === 'Apple';
-      batt.hidden = !isApple;
+    if (batt) {
+      batt.hidden = type !== 'telefon';
       const bh = batt.querySelector('input');
       if (bh) {
         var panel = batt.closest('[data-panel]');
         var panelHidden = panel && panel.hasAttribute('hidden');
-        bh.disabled = !isApple || !!panelHidden;
-        if (!isApple) bh.value = '';
+        bh.disabled = type !== 'telefon' || !!panelHidden;
       }
     }
     syncPhonePhotoRequirement(form, type);
@@ -379,35 +377,109 @@
     }
   }
 
+  function buildSuggestedAdTitle(form) {
+    const typeEl = one('[data-form-type]:checked', form);
+    const type = typeEl ? typeEl.value : 'telefon';
+    const parts = [];
+
+    if (type === 'delovi') {
+      const eq = one('[data-equipment-type]', form);
+      const brand = one('[data-parts-brand]', form);
+      const compat = one('input[name="compatible_models"]', form);
+      const eqVal = eq ? (eq.value || '').trim() : '';
+      const brandVal = brand ? (brand.value || '').trim() : '';
+      const compatVal = compat ? (compat.value || '').trim() : '';
+      if (eqVal && eqVal !== 'Ostalo' && eqVal !== 'Rezervni delovi') parts.push(eqVal);
+      else if (eqVal === 'Rezervni delovi') parts.push('Delovi');
+      if (brandVal && brandVal !== 'Ostalo') parts.push(brandVal);
+      if (compatVal) parts.push(compatVal);
+      const orig = one('select[name="originality"]', form);
+      const origVal = orig ? (orig.value || '').trim() : '';
+      if (origVal) parts.push(origVal);
+      return parts.join(' ').trim().slice(0, 120);
+    }
+
+    if (type === 'servis') {
+      return 'Servis';
+    }
+
+    const brand = one('[data-phone-brand]', form);
+    const model = one('#ad-model', form);
+    const storage = one('select[name="storage"]', form);
+    const color = one('input[name="color"]', form);
+    const condition = one('[data-cond-phone]', form);
+    const warranty = one('[data-warranty-toggle]', form);
+    const bh = one('[data-battery-field] input', form);
+    const b = brand ? (brand.value || '').trim() : '';
+    const m = model ? (model.value || '').trim() : '';
+    if (b && b !== 'Ostalo' && m && m.toLowerCase().indexOf(b.toLowerCase()) === 0) {
+      parts.push(m);
+    } else {
+      if (b && b !== 'Ostalo') parts.push(b);
+      if (m) parts.push(m);
+    }
+    const st = storage ? (storage.value || '').trim() : '';
+    if (st) parts.push(st);
+    const col = color ? (color.value || '').trim() : '';
+    if (col) parts.push(col);
+    const bits = [];
+    const cond = condition ? (condition.value || '').trim() : '';
+    if (cond && cond !== 'Polovno') bits.push(cond);
+    if (warranty && warranty.checked) bits.push('Garancija');
+    const bhVal = bh && bh.value !== '' ? parseInt(bh.value, 10) : 0;
+    if (bhVal > 0) bits.push('BH ' + bhVal + '%');
+    let title = parts.join(' ').trim();
+    if (bits.length) title = (title + ' - ' + bits.join(' / ')).trim();
+    return title.slice(0, 120);
+  }
+
   function initAdFormExtras() {
     const form = one('[data-ad-form]');
     if (!form) return;
 
-    const title = one('#listing-title', form);
+    const title = one('#ad-title', form) || one('[data-ad-title]', form);
     const model = one('#ad-model', form);
     const brand = one('[data-phone-brand]', form);
-    if (title && model && brand) {
-      function suggestTitle() {
-        if ((title.value || '').trim() !== '') return;
-        const b = (brand.value || '').trim();
-        const m = (model.value || '').trim();
-        if (!m) return;
-        title.placeholder = (b && b !== 'Ostalo' ? b + ' ' : '') + m;
-      }
-      model.addEventListener('change', suggestTitle);
-      model.addEventListener('blur', function () {
-        if ((title.value || '').trim() !== '') return;
-        const b = (brand.value || '').trim();
-        const m = (model.value || '').trim();
-        if (!m) return;
-        title.value = (b && b !== 'Ostalo' ? b + ' ' : '') + m;
+    const suggestBtn = one('[data-suggest-title]', form);
+
+    function fillSuggestedTitle(force) {
+      if (!title) return;
+      if (!force && (title.value || '').trim() !== '') return;
+      const suggested = buildSuggestedAdTitle(form);
+      if (!suggested) return;
+      title.value = suggested;
+    }
+
+    if (suggestBtn) {
+      suggestBtn.addEventListener('click', function () {
+        fillSuggestedTitle(true);
       });
+    }
+
+    if (title && model && brand) {
+      model.addEventListener('blur', function () { fillSuggestedTitle(false); });
       brand.addEventListener('change', function () {
         const typeEl = one('[data-form-type]:checked', form);
         syncAdFormByType(typeEl ? typeEl.value : 'telefon');
-        suggestTitle();
+        fillSuggestedTitle(false);
       });
+      const storage = one('select[name="storage"]', form);
+      if (storage) storage.addEventListener('change', function () { fillSuggestedTitle(false); });
     }
+
+    // Stepper: skrol do sekcije
+    form.querySelectorAll('[data-goto-step]').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        const step = btn.getAttribute('data-goto-step');
+        form.querySelectorAll('[data-goto-step]').forEach(function (b) {
+          b.classList.toggle('is-on', b === btn);
+        });
+        const target = one('[data-form-step="' + step + '"]', form);
+        if (target) {
+          target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      });
+    });
 
     function syncPriceUi() {
       const typeEl = one('[data-price-type]:checked', form);

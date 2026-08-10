@@ -44,12 +44,37 @@ function adFormSchema(): array
             'case' => 'Maska',
         ],
         'equipment_types' => [
+            // Rezervni delovi
+            'Displej/LCD',
+            'Baterija',
+            'Kućište/Staklo',
+            'Kamera',
+            'Matična ploča',
+            'Alati za servis',
+            'Rezervni delovi',
+            // Oprema
             'Maska/Futrola',
             'Zaštitno staklo',
             'Punjač/Kabl',
             'Slušalice',
             'PowerBank',
+            'Ostalo',
+        ],
+        'parts_equipment_types' => [
+            'Displej/LCD',
+            'Baterija',
+            'Kućište/Staklo',
+            'Kamera',
+            'Matična ploča',
+            'Alati za servis',
             'Rezervni delovi',
+        ],
+        'oprema_equipment_types' => [
+            'Maska/Futrola',
+            'Zaštitno staklo',
+            'Punjač/Kabl',
+            'Slušalice',
+            'PowerBank',
             'Ostalo',
         ],
         'device_types' => [
@@ -421,4 +446,89 @@ function adAttributeRows(array $ad): array
     }
 
     return $rows;
+}
+
+/**
+ * Predloži SEO naslov iz polja forme (bez AI).
+ */
+function suggestAdTitle(array $ad): string
+{
+    $type = getAdType($ad);
+    $parts = [];
+
+    if ($type === 'delovi') {
+        $eq = trim((string)($ad['equipment_type'] ?? ''));
+        $brand = trim((string)($ad['brand'] ?? ''));
+        $compat = trim((string)($ad['compatible_models'] ?? ''));
+        $model = trim((string)($ad['model'] ?? ''));
+        if ($eq !== '' && $eq !== 'Ostalo' && $eq !== 'Rezervni delovi') {
+            $parts[] = $eq;
+        } elseif ($eq === 'Rezervni delovi') {
+            $parts[] = 'Delovi';
+        }
+        if ($brand !== '' && $brand !== 'Ostalo') {
+            $parts[] = $brand;
+        }
+        if ($compat !== '') {
+            $parts[] = $compat;
+        } elseif ($model !== '') {
+            $parts[] = $model;
+        }
+        $orig = trim((string)($ad['originality'] ?? ''));
+        if ($orig !== '') {
+            $parts[] = $orig;
+        }
+    } elseif ($type === 'servis') {
+        $parts[] = 'Servis';
+        $brand = trim((string)($ad['brand'] ?? ''));
+        if ($brand !== '') {
+            $parts[] = $brand;
+        }
+        $title = trim((string)($ad['title'] ?? ''));
+        if ($title !== '' && $parts === ['Servis']) {
+            return mb_strimwidth($title, 0, 120, '');
+        }
+    } else {
+        $brand = trim((string)($ad['brand'] ?? ''));
+        $model = trim((string)($ad['model'] ?? ''));
+        $storage = trim((string)($ad['storage'] ?? ''));
+        $color = trim((string)($ad['color'] ?? ''));
+        $condition = trim((string)($ad['condition_state'] ?? ''));
+        if ($brand !== '' && $brand !== 'Ostalo') {
+            $parts[] = $brand;
+        }
+        if ($model !== '') {
+            // Avoid "Apple iPhone" duplication if model already has brand
+            if ($brand !== '' && $brand !== 'Ostalo' && str_starts_with(mb_strtolower($model), mb_strtolower($brand))) {
+                $parts = [$model];
+            } else {
+                $parts[] = $model;
+            }
+        }
+        if ($storage !== '') {
+            $parts[] = $storage;
+        }
+        if ($color !== '') {
+            $parts[] = $color;
+        }
+        $bits = [];
+        if ($condition !== '' && $condition !== 'Polovno') {
+            $bits[] = $condition;
+        }
+        if (!empty($ad['has_warranty'])) {
+            $bits[] = 'Garancija';
+        }
+        $bh = $ad['battery_health'] ?? null;
+        if ($bh !== null && $bh !== '' && (int)$bh > 0) {
+            $bits[] = 'BH ' . (int)$bh . '%';
+        }
+        $title = trim(implode(' ', array_filter($parts, static fn($p) => trim((string)$p) !== '')));
+        if ($bits !== []) {
+            $title = trim($title . ' - ' . implode(' / ', $bits));
+        }
+        return mb_strimwidth($title, 0, 120, '');
+    }
+
+    $title = trim(implode(' ', array_filter($parts, static fn($p) => trim((string)$p) !== '')));
+    return mb_strimwidth($title, 0, 120, '');
 }

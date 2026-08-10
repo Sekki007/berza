@@ -40,6 +40,8 @@ $categoryGroup = trim((string)($_GET['category_group'] ?? ''));
 $type = trim((string)($_GET['type'] ?? ''));
 $deviceType = trim((string)($_GET['device_type'] ?? ''));
 $equipmentGroup = trim((string)($_GET['equipment_group'] ?? ''));
+$equipmentType = trim((string)($_GET['equipment_type'] ?? ''));
+$minBattery = trim((string)($_GET['min_battery'] ?? ''));
 $listingType = trim((string)($_GET['listing_type'] ?? ''));
 $schema = adFormSchema();
 if (!in_array($type, ['telefon', 'delovi', 'servis'], true)) {
@@ -53,6 +55,13 @@ if ($deviceType !== '' && !in_array($deviceType, allowedDeviceTypes(), true)) {
 }
 if (!in_array($equipmentGroup, ['parts', 'oprema'], true)) {
     $equipmentGroup = '';
+}
+$allowedEquipTypes = array_map('strval', $schema['equipment_types'] ?? []);
+if ($equipmentType !== '' && !in_array($equipmentType, $allowedEquipTypes, true)) {
+    $equipmentType = '';
+}
+if ($minBattery !== '' && !in_array($minBattery, ['85', '90', '95', '100'], true)) {
+    $minBattery = '';
 }
 if (is_array($landing) && !empty($landing['filters'])) {
     $landingFilters = (array)$landing['filters'];
@@ -78,6 +87,17 @@ if (array_key_exists('browse_cat', $_GET)) {
 if ($equipmentGroup !== '' && $type === '') {
     $type = 'delovi';
 }
+if ($equipmentType !== '' && $type === '') {
+    $type = 'delovi';
+}
+if ($equipmentType !== '' && in_array($equipmentType, equipmentPartsTypes(), true)) {
+    $equipmentGroup = 'parts';
+} elseif ($equipmentType !== '' && in_array($equipmentType, equipmentOpremaTypes(), true)) {
+    $equipmentGroup = 'oprema';
+}
+if ($minBattery !== '' && $type === '') {
+    $type = 'telefon';
+}
 // Ne prikazuj tip uređaja / nameru van konteksta
 if ($type === 'servis') {
     $listingType = '';
@@ -101,6 +121,8 @@ $filters = [
     'category_group' => $categoryGroup,
     'device_type' => $deviceType,
     'equipment_group' => $equipmentGroup,
+    'equipment_type' => $equipmentType,
+    'min_battery' => $minBattery,
     'listing_type' => $listingType,
     'types' => $type !== '' ? [$type] : [],
     'sort' => $sort,
@@ -135,6 +157,8 @@ $queryBase = array_filter([
     'category_group' => $categoryGroup,
     'device_type' => $deviceType,
     'equipment_group' => $equipmentGroup,
+    'equipment_type' => $equipmentType,
+    'min_battery' => $minBattery,
     'listing_type' => $listingType,
     'type' => $type,
     'sort' => $sort,
@@ -208,9 +232,9 @@ $equipmentGroupLabels = [
     'parts' => 'Delovi',
     'oprema' => 'Oprema',
 ];
-$hasFilters = $search !== '' || $brand !== '' || $model !== '' || $location !== '' || $condition !== '' || $type !== '' || $listingType !== '' || $deviceType !== '' || $equipmentGroup !== '' || $minPrice !== '' || $maxPrice !== '' || $categoryGroup !== '';
+$hasFilters = $search !== '' || $brand !== '' || $model !== '' || $location !== '' || $condition !== '' || $type !== '' || $listingType !== '' || $deviceType !== '' || $equipmentGroup !== '' || $equipmentType !== '' || $minBattery !== '' || $minPrice !== '' || $maxPrice !== '' || $categoryGroup !== '';
 $activeFilterCount = 0;
-foreach ([$brand, $model, $location, $condition, $type, $listingType, $deviceType, $equipmentGroup, $minPrice, $maxPrice, $categoryGroup] as $fv) {
+foreach ([$brand, $model, $location, $condition, $type, $listingType, $deviceType, $equipmentGroup, $equipmentType, $minBattery, $minPrice, $maxPrice, $categoryGroup] as $fv) {
     if ($fv !== '') {
         $activeFilterCount++;
     }
@@ -231,6 +255,8 @@ if ($equipmentGroup !== '') {
 $chipDefs = array_merge($chipDefs, [
     ['key' => 'listing_type', 'value' => $listingType, 'label' => $listingTypeLabels[$listingType] ?? $listingType],
     ['key' => 'device_type', 'value' => $deviceType, 'label' => (string)($schema['device_types'][$deviceType] ?? $deviceType)],
+    ['key' => 'equipment_type', 'value' => $equipmentType, 'label' => $equipmentType],
+    ['key' => 'min_battery', 'value' => $minBattery, 'label' => $minBattery !== '' ? ('BH ' . $minBattery . '%+') : ''],
     ['key' => 'brand', 'value' => $brand, 'label' => $brand],
     ['key' => 'model', 'value' => $model, 'label' => $model],
     ['key' => 'location', 'value' => $location, 'label' => $location],
@@ -265,6 +291,56 @@ if ($minPrice !== '' || $maxPrice !== '') {
         'label' => $priceLabel,
         'href' => '/index.php' . ($qs !== '' ? ('?' . $qs) : ''),
     ];
+}
+
+// Predlozi filtera po nameri upita (npr. „lcd 15 pro“ → Samo delovi)
+$searchIntentHints = [];
+if ($search !== '') {
+    $searchIntent = searchQueryIntent(searchTokens($search));
+    $hintParams = $queryBase;
+    unset($hintParams['page'], $hintParams['browse_cat']);
+    $qLower = mb_strtolower($search);
+
+    if ($searchIntent === 'parts') {
+        $wantOprema = (bool)preg_match('/\b(maska|futrola|case|punjač|punjac|charger|kabl|cable|slušalice|airpods)\b/u', $qLower)
+            && !preg_match('/\b(lcd|oled|ekran|displej|screen|baterija|flex|deo|delovi)\b/u', $qLower);
+
+        if ($wantOprema) {
+            if ($equipmentGroup !== 'oprema') {
+                $params = array_merge($hintParams, ['type' => 'delovi', 'equipment_group' => 'oprema']);
+                unset($params['device_type']);
+                $qs = buildFilterQuery($params);
+                $searchIntentHints[] = [
+                    'label' => 'Samo oprema',
+                    'href' => '/index.php' . ($qs !== '' ? ('?' . $qs) : ''),
+                ];
+            }
+        } elseif (!($type === 'delovi' && $equipmentGroup === 'parts')) {
+            $params = array_merge($hintParams, ['type' => 'delovi', 'equipment_group' => 'parts']);
+            unset($params['device_type']);
+            $qs = buildFilterQuery($params);
+            $searchIntentHints[] = [
+                'label' => 'Samo delovi',
+                'href' => '/index.php' . ($qs !== '' ? ('?' . $qs) : ''),
+            ];
+        }
+    } elseif ($searchIntent === 'phone' && $type !== 'telefon') {
+        $params = array_merge($hintParams, ['type' => 'telefon']);
+        unset($params['equipment_group'], $params['device_type']);
+        $qs = buildFilterQuery($params);
+        $searchIntentHints[] = [
+            'label' => 'Samo telefoni',
+            'href' => '/index.php' . ($qs !== '' ? ('?' . $qs) : ''),
+        ];
+    } elseif ($searchIntent === 'service' && $type !== 'servis') {
+        $params = array_merge($hintParams, ['type' => 'servis']);
+        unset($params['equipment_group'], $params['device_type'], $params['brand'], $params['model']);
+        $qs = buildFilterQuery($params);
+        $searchIntentHints[] = [
+            'label' => 'Samo servis',
+            'href' => '/index.php' . ($qs !== '' ? ('?' . $qs) : ''),
+        ];
+    }
 }
 
 if ($search !== '') {
@@ -372,6 +448,8 @@ $homeCats = [
                             <input type="hidden" name="type" value="<?= h($type) ?>">
                             <input type="hidden" name="device_type" value="<?= h($deviceType) ?>">
                             <input type="hidden" name="equipment_group" value="<?= h($equipmentGroup) ?>">
+                            <input type="hidden" name="equipment_type" value="<?= h($equipmentType) ?>">
+                            <input type="hidden" name="min_battery" value="<?= h($minBattery) ?>">
                             <input type="hidden" name="min_price" value="<?= h($minPrice) ?>">
                             <input type="hidden" name="max_price" value="<?= h($maxPrice) ?>">
                             <input type="hidden" name="category_group" value="<?= h($categoryGroup) ?>">
@@ -409,12 +487,20 @@ $homeCats = [
             </div>
         </div>
 
-        <?php if ($activeChips !== []): ?>
-            <div class="active-filters" aria-label="Aktivni filteri">
+        <?php if ($activeChips !== [] || $searchIntentHints !== []): ?>
+            <div class="active-filters" aria-label="Filteri pretrage">
+                <?php if ($searchIntentHints !== []): ?>
+                    <span class="search-intent-label">Predlog:</span>
+                    <?php foreach ($searchIntentHints as $hint): ?>
+                        <a class="search-intent-chip" href="<?= h($hint['href']) ?>"><?= h($hint['label']) ?></a>
+                    <?php endforeach; ?>
+                <?php endif; ?>
                 <?php foreach ($activeChips as $chip): ?>
                     <a class="active-filter-chip" href="<?= h($chip['href']) ?>"><?= h($chip['label']) ?> <span aria-hidden="true">×</span></a>
                 <?php endforeach; ?>
-                <a class="active-filter-clear" href="<?= h($resetFiltersUrl) ?>">Poništi sve</a>
+                <?php if ($activeChips !== []): ?>
+                    <a class="active-filter-clear" href="<?= h($resetFiltersUrl) ?>">Poništi sve</a>
+                <?php endif; ?>
             </div>
         <?php endif; ?>
 

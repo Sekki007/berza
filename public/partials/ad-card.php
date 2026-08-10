@@ -106,6 +106,18 @@ $hasOrderBar = $shopCatalogMode && $messagesOn && !$isSold && !$shopCatalogOwn;
                         <span class="tag <?= $type === 'telefon' ? 'tag-cat-phone' : ($type === 'delovi' ? 'tag-cat-parts' : 'tag-cat-service') ?>">
                             <?= h($categoryLabel) ?>
                         </span>
+                        <?php
+                        $bhCard = $ad['battery_health'] ?? null;
+                        if ($type === 'telefon' && $bhCard !== null && $bhCard !== ''):
+                            ?>
+                            <span class="tag tag-bh">BH <?= (int)$bhCard ?>%</span>
+                        <?php endif; ?>
+                        <?php
+                        $eqCard = trim((string)($ad['equipment_type'] ?? ''));
+                        if ($type === 'delovi' && $eqCard !== '' && $eqCard !== 'Ostalo'):
+                            ?>
+                            <span class="tag tag-gray"><?= h($eqCard) ?></span>
+                        <?php endif; ?>
                         <?php if ($isPromoted): ?><span class="kp-list-badge">TOP</span><?php endif; ?>
                     </div>
 

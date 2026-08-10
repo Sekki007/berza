@@ -290,16 +290,29 @@ function kpExtractModel(string $title, string $brand): string
 
 function kpGuessEquipmentType(string $text, string $categoryGroup): string
 {
-    $cfg = categoriesConfig()['groups'][$categoryGroup] ?? null;
-    if ($cfg && !empty($cfg['equipment_type'])) {
-        return (string)$cfg['equipment_type'];
-    }
-
     $lower = mb_strtolower($text);
+    if (preg_match('/\b(alat|screwdriver|set alata|spudger)\b/u', $lower)) {
+        return 'Alati za servis';
+    }
+    if (preg_match('/\b(maticn|matičn|motherboard|logic\s*board)\b/u', $lower)) {
+        return 'Matična ploča';
+    }
+    if (preg_match('/\b(kamera|camera)\b/u', $lower)) {
+        return 'Kamera';
+    }
+    if (preg_match('/\b(kućište|kuciste|back\s*glass|frame)\b/u', $lower)) {
+        return 'Kućište/Staklo';
+    }
+    if (preg_match('/\b(baterija|battery)\b/u', $lower)) {
+        return 'Baterija';
+    }
+    if (preg_match('/\b(ekran|displej|lcd|oled|screen)\b/u', $lower)) {
+        return 'Displej/LCD';
+    }
     if (preg_match('/\b(maska|futrola)\b/u', $lower)) {
         return 'Maska/Futrola';
     }
-    if (preg_match('/\b(staklo)\b/u', $lower)) {
+    if (preg_match('/\b(zaštitno\s*staklo|zastitno\s*staklo|tempered)\b/u', $lower)) {
         return 'Zaštitno staklo';
     }
     if (preg_match('/\b(punjač|punjac|kabl)\b/u', $lower)) {
@@ -307,6 +320,14 @@ function kpGuessEquipmentType(string $text, string $categoryGroup): string
     }
     if (preg_match('/\b(slušalice|slusalice|airpods)\b/u', $lower)) {
         return 'Slušalice';
+    }
+    if (preg_match('/\b(powerbank|power\s*bank)\b/u', $lower)) {
+        return 'PowerBank';
+    }
+
+    $cfg = categoriesConfig()['groups'][$categoryGroup] ?? null;
+    if ($cfg && !empty($cfg['equipment_type'])) {
+        return (string)$cfg['equipment_type'];
     }
     return 'Rezervni delovi';
 }

@@ -56,7 +56,13 @@ $contactExtraOpen = $contactSorted !== $dc
                 <p class="form-hint ad-form-error" data-form-error><?= h($formError) ?></p>
             <?php endif; ?>
 
-            <section class="ad-form-section ad-form-section--core">
+            <nav class="ad-form-steps" aria-label="Koraci" data-ad-form-steps>
+                <button type="button" class="ad-form-step is-on" data-goto-step="1">1. Osnovno</button>
+                <button type="button" class="ad-form-step" data-goto-step="2">2. Detalji</button>
+                <button type="button" class="ad-form-step" data-goto-step="3">3. Slike</button>
+            </nav>
+
+            <section class="ad-form-section ad-form-section--core" data-form-step="1">
                 <div class="form-group ad-form-cat-group">
                     <label>1. Kategorija</label>
                     <div class="form-type-select">
@@ -136,7 +142,11 @@ $contactExtraOpen = $contactSorted !== $dc
 
                 <div class="form-group">
                     <label for="ad-title">Naslov *</label>
-                    <input name="title" id="ad-title" placeholder="npr. iPhone 13 Pro Max 256GB" value="<?= h((string)$ad['title']) ?>" required maxlength="120" autocomplete="off">
+                    <div class="ad-title-row">
+                        <input name="title" id="ad-title" data-ad-title placeholder="npr. iPhone 13 Pro Max 256GB" value="<?= h((string)$ad['title']) ?>" required maxlength="120" autocomplete="off">
+                        <button type="button" class="btn-sm" data-suggest-title title="Popuni naslov iz polja">Predloži</button>
+                    </div>
+                    <p class="form-hint">Možeš ručno ispraviti. „Predloži“ slaže naslov od brenda, modela, memorije…</p>
                 </div>
 
                 <?php if (!empty($shopCategoriesForForm)): ?>
@@ -200,7 +210,7 @@ $contactExtraOpen = $contactSorted !== $dc
                 </div>
             </section>
 
-            <section class="ad-form-section" data-panel="telefon" <?= $currentType !== 'telefon' ? 'hidden' : '' ?>>
+            <section class="ad-form-section" data-panel="telefon" data-form-step="2" <?= $currentType !== 'telefon' ? 'hidden' : '' ?>>
                 <h3 class="ad-form-section-title">Uređaj</h3>
                 <?php $currentDeviceType = getAdDeviceType($ad) ?: 'phone'; ?>
                 <div class="form-group">
@@ -285,8 +295,9 @@ $contactExtraOpen = $contactSorted !== $dc
                             </select>
                         </div>
                         <div class="form-group" data-battery-field>
-                            <label>Battery Health % <span class="form-hint-inline">(iPhone)</span></label>
+                            <label>Battery Health %</label>
                             <input type="number" name="battery_health" min="0" max="100" step="1" inputmode="numeric" value="<?= isset($ad['battery_health']) && $ad['battery_health'] !== null && $ad['battery_health'] !== '' ? h((string)$ad['battery_health']) : '' ?>" placeholder="npr. 87">
+                            <p class="form-hint">Preporučeno za iPhone; pomaže kupcima u filteru.</p>
                         </div>
                     </div>
                     <div class="form-group">
@@ -307,7 +318,7 @@ $contactExtraOpen = $contactSorted !== $dc
                 </div>
             </section>
 
-            <section class="ad-form-section" data-panel="delovi" <?= $currentType !== 'delovi' ? 'hidden' : '' ?>>
+            <section class="ad-form-section" data-panel="delovi" data-form-step="2" <?= $currentType !== 'delovi' ? 'hidden' : '' ?>>
                 <h3 class="ad-form-section-title">Detalji opreme</h3>
                 <div class="form-group">
                     <label>Brend <span class="ad-form-optional">(nije obavezno)</span></label>
@@ -320,12 +331,19 @@ $contactExtraOpen = $contactSorted !== $dc
                     <p class="form-hint" data-parts-brand-hint hidden>Popunjeno iz podkategorije.</p>
                 </div>
                 <div class="form-group" data-equipment-type-wrap>
-                    <label>Tip opreme <span class="ad-form-optional">(ako treba preciznije)</span></label>
+                    <label>Tip dela / opreme</label>
                     <select name="equipment_type" data-equipment-type>
                         <option value="">Izaberi</option>
-                        <?php foreach ($schema['equipment_types'] as $eq): ?>
-                            <option value="<?= h($eq) ?>" <?= ($ad['equipment_type'] ?? '') === $eq ? 'selected' : '' ?>><?= h($eq) ?></option>
-                        <?php endforeach; ?>
+                        <optgroup label="Rezervni delovi">
+                            <?php foreach (($schema['parts_equipment_types'] ?? []) as $eq): ?>
+                                <option value="<?= h($eq) ?>" <?= ($ad['equipment_type'] ?? '') === $eq ? 'selected' : '' ?>><?= h($eq) ?></option>
+                            <?php endforeach; ?>
+                        </optgroup>
+                        <optgroup label="Oprema">
+                            <?php foreach (($schema['oprema_equipment_types'] ?? []) as $eq): ?>
+                                <option value="<?= h($eq) ?>" <?= ($ad['equipment_type'] ?? '') === $eq ? 'selected' : '' ?>><?= h($eq) ?></option>
+                            <?php endforeach; ?>
+                        </optgroup>
                     </select>
                     <p class="form-hint">Često se popuni iz podkategorije — menjaš samo ako treba drugačije.</p>
                 </div>
@@ -354,7 +372,7 @@ $contactExtraOpen = $contactSorted !== $dc
                 </div>
             </section>
 
-            <section class="ad-form-section" data-panel="servis" <?= $currentType !== 'servis' ? 'hidden' : '' ?>>
+            <section class="ad-form-section" data-panel="servis" data-form-step="2" <?= $currentType !== 'servis' ? 'hidden' : '' ?>>
                 <h3 class="ad-form-section-title">Usluga</h3>
                 <div class="form-group">
                     <label>Vrsta usluge</label>
@@ -381,7 +399,7 @@ $contactExtraOpen = $contactSorted !== $dc
                 </div>
             </section>
 
-            <section class="ad-form-section">
+            <section class="ad-form-section" data-form-step="3">
                 <h3 class="ad-form-section-title">Fotografije <span data-photo-required <?= $currentType !== 'telefon' ? 'hidden' : '' ?>>*</span></h3>
                 <p class="form-hint" style="margin-top:0;">
                     <span data-phone-photo-hint <?= $currentType !== 'telefon' ? 'hidden' : '' ?>>Za telefon je obavezna najmanje jedna fotografija uređaja. </span>
@@ -415,7 +433,7 @@ $contactExtraOpen = $contactSorted !== $dc
                 </div>
             </section>
 
-            <section class="ad-form-section">
+            <section class="ad-form-section" data-form-step="3">
                 <h3 class="ad-form-section-title">Kontakt</h3>
                 <div class="form-row">
                     <div class="form-group">

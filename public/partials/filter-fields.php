@@ -133,6 +133,52 @@ $uid = $filterLayout === 'drawer' ? 'm' : 'd';
 </div>
 <?php endif; ?>
 
+<?php
+$equipmentType = $equipmentType ?? '';
+$minBattery = $minBattery ?? '';
+$showPartsEquip = $browseCat === 'parts' || ($browseCat === '' && $equipmentGroup === 'parts');
+$showBatteryFilter = $browseCat === '' || $browseCat === 'telefon';
+$partsEquipOptions = $schema['parts_equipment_types'] ?? [];
+?>
+
+<?php if ($showPartsEquip && $partsEquipOptions !== []): ?>
+<div class="filter-field">
+    <span class="filter-label" id="filter-equip-<?= h($uid) ?>">Vrsta dela</span>
+    <div class="filter-chips filter-chips-wrap" role="radiogroup" aria-labelledby="filter-equip-<?= h($uid) ?>">
+        <label class="filter-chip<?= $equipmentType === '' ? ' is-active' : '' ?>">
+            <input type="radio" name="equipment_type" value="" <?= $equipmentType === '' ? 'checked' : '' ?>>
+            <span>Sve</span>
+        </label>
+        <?php foreach ($partsEquipOptions as $eq): ?>
+            <?php if ($eq === 'Rezervni delovi') {
+                continue;
+            } ?>
+            <label class="filter-chip<?= $equipmentType === $eq ? ' is-active' : '' ?>">
+                <input type="radio" name="equipment_type" value="<?= h($eq) ?>" <?= $equipmentType === $eq ? 'checked' : '' ?>>
+                <span><?= h($eq) ?></span>
+            </label>
+        <?php endforeach; ?>
+    </div>
+</div>
+<?php endif; ?>
+
+<?php if ($showBatteryFilter): ?>
+<div class="filter-field">
+    <span class="filter-label" id="filter-bh-<?= h($uid) ?>">Battery Health</span>
+    <div class="filter-chips filter-chips-wrap" role="radiogroup" aria-labelledby="filter-bh-<?= h($uid) ?>">
+        <?php
+        $bhOptions = ['' => 'Sve', '85' => '85%+', '90' => '90%+', '95' => '95%+', '100' => '100%'];
+        foreach ($bhOptions as $val => $label):
+            ?>
+            <label class="filter-chip<?= (string)$minBattery === (string)$val ? ' is-active' : '' ?>">
+                <input type="radio" name="min_battery" value="<?= h((string)$val) ?>" <?= (string)$minBattery === (string)$val ? 'checked' : '' ?>>
+                <span><?= h($label) ?></span>
+            </label>
+        <?php endforeach; ?>
+    </div>
+</div>
+<?php endif; ?>
+
 <div class="filter-field">
     <span class="filter-label">Cena (€)</span>
     <div class="filter-price-row">
