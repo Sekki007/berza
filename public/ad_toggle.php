@@ -9,9 +9,14 @@ $adId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $action = trim((string)($_GET['action'] ?? ''));
 
 $ad = $adId > 0 ? getAdById($adId) : null;
+$return = trim((string)($_GET['return'] ?? ''));
+if ($return === '' || !str_starts_with($return, '/ads.php')) {
+    $return = '/ads.php';
+}
+
 if (!$ad) {
     setFlash('danger', 'Oglas nije pronađen.');
-    header('Location: /ads.php');
+    header('Location: ' . $return);
     exit;
 }
 
@@ -33,9 +38,9 @@ if ($action === 'sold') {
         setFlash('success', 'Oglas istaknut (TOP) na 7 dana.');
     }
 } else {
-    header('Location: /ads.php');
+    header('Location: ' . $return);
     exit;
 }
 
-header('Location: /ads.php');
+header('Location: ' . $return);
 exit;
