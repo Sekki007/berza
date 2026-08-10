@@ -665,6 +665,33 @@ function equipmentOpremaTypes(): array
 }
 
 /**
+ * Podgrupa tipova za formu: parts | oprema | both
+ */
+function categoryGroupEquipmentBucket(string $groupKey, ?array $group = null): string
+{
+    if ($group === null) {
+        $group = categoriesConfig()['groups'][$groupKey] ?? [];
+    }
+    if (!is_array($group)) {
+        $group = [];
+    }
+    $equip = trim((string)($group['equipment_type'] ?? ''));
+    if ($equip !== '' && in_array($equip, equipmentPartsTypes(), true)) {
+        return 'parts';
+    }
+    if ($equip !== '' && in_array($equip, equipmentOpremaTypes(), true)) {
+        return 'oprema';
+    }
+    if ($groupKey !== 'other_parts' && (str_ends_with($groupKey, '_parts') || $groupKey === 'android_parts')) {
+        return 'parts';
+    }
+    if (in_array($groupKey, ['chargers_cables', 'cases_protection', 'audio_accessories', 'watch_tablet_accessories'], true)) {
+        return 'oprema';
+    }
+    return 'both';
+}
+
+/**
  * Podgrupa za tip=delovi: parts | oprema.
  * Rezervni delovi → parts; sve ostalo (uključujući prazno) → oprema.
  */

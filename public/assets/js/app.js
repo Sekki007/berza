@@ -324,6 +324,30 @@
     syncPhonePhotoRequirement(form, type);
   }
 
+  function filterEquipmentTypeOptions(form, bucket) {
+    const equipSel = one('[data-equipment-type]', form);
+    if (!equipSel) return;
+    bucket = bucket || 'both';
+    const current = (equipSel.value || '').trim();
+    let currentStillVisible = current === '';
+
+    Array.prototype.forEach.call(equipSel.querySelectorAll('optgroup'), function (group) {
+      const gBucket = group.getAttribute('data-equip-bucket') || '';
+      const show = bucket === 'both' || gBucket === '' || gBucket === bucket;
+      group.hidden = !show;
+      group.disabled = !show;
+      Array.prototype.forEach.call(group.querySelectorAll('option'), function (opt) {
+        opt.hidden = !show;
+        opt.disabled = !show;
+        if (show && opt.value === current) currentStillVisible = true;
+      });
+    });
+
+    if (!currentStillVisible) {
+      equipSel.value = '';
+    }
+  }
+
   function applyCategoryGroupDefaults(form, forceEquip) {
     const cat = one('#ad-category', form);
     if (!cat) return;
@@ -332,9 +356,12 @@
 
     const brand = (opt.getAttribute('data-brand') || '').trim();
     const equip = (opt.getAttribute('data-equipment-type') || '').trim();
+    const bucket = (opt.getAttribute('data-equipment-bucket') || 'both').trim() || 'both';
     const partsBrand = one('[data-parts-brand]', form);
     const brandHint = one('[data-parts-brand-hint]', form);
     const equipSel = one('[data-equipment-type]', form);
+
+    filterEquipmentTypeOptions(form, bucket);
 
     if (partsBrand) {
       if (brand) {
@@ -353,10 +380,18 @@
     }
 
     if (equipSel) {
-      if (equip && (forceEquip || !(equipSel.value || '').trim())) {
-        equipSel.value = equip;
-      } else if (forceEquip && !equip) {
-        equipSel.value = '';
+      // Za „iPhone delovi“ ne forsira generički „Rezervni delovi“ — korisnik bira LCD/baterija…
+      const isGenericParts = equip === 'Rezervni delovi';
+      if (equip && !isGenericParts && (forceEquip || !(equipSel.value || '').trim())) {
+        // Samo ako je opcija vidljiva u filtriranoj listi
+        const matchOpt = Array.prototype.find.call(equipSel.options, function (o) {
+          return o.value === equip && !o.disabled && !o.hidden;
+        });
+        if (matchOpt) equipSel.value = equip;
+      } else if (forceEquip && (isGenericParts || !equip)) {
+        if (!equipSel.value || equipSel.options[equipSel.selectedIndex].disabled) {
+          equipSel.value = '';
+        }
       }
     }
   }

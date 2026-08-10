@@ -112,12 +112,14 @@ $contactExtraOpen = $contactSorted !== $dc
                             $gType = (string)($group['ad_type'] ?? '');
                             $gBrand = (string)($group['brand'] ?? '');
                             $gEquip = (string)($group['equipment_type'] ?? '');
+                            $gBucket = categoryGroupEquipmentBucket($key, $group);
                             ?>
                             <option
                                 value="<?= h($key) ?>"
                                 data-ad-type="<?= h($gType) ?>"
                                 data-brand="<?= h($gBrand) ?>"
                                 data-equipment-type="<?= h($gEquip) ?>"
+                                data-equipment-bucket="<?= h($gBucket) ?>"
                                 <?= ($ad['category_group'] ?? '') === $key ? 'selected' : '' ?>
                             ><?= h($group['label']) ?></option>
                         <?php endforeach; ?>
@@ -278,18 +280,22 @@ $contactExtraOpen = $contactSorted !== $dc
                     <label>Tip dela / opreme</label>
                     <select name="equipment_type" data-equipment-type data-title-source>
                         <option value="">Izaberi</option>
-                        <optgroup label="Rezervni delovi">
+                        <optgroup label="Rezervni delovi" data-equip-bucket="parts">
                             <?php foreach (($schema['parts_equipment_types'] ?? []) as $eq): ?>
-                                <option value="<?= h($eq) ?>" <?= ($ad['equipment_type'] ?? '') === $eq ? 'selected' : '' ?>><?= h($eq) ?></option>
+                                <?php if ($eq === 'Rezervni delovi') {
+                                    continue;
+                                } ?>
+                                <option value="<?= h($eq) ?>" data-equip-bucket="parts" <?= ($ad['equipment_type'] ?? '') === $eq ? 'selected' : '' ?>><?= h($eq) ?></option>
                             <?php endforeach; ?>
+                            <option value="Rezervni delovi" data-equip-bucket="parts" <?= ($ad['equipment_type'] ?? '') === 'Rezervni delovi' ? 'selected' : '' ?>>Ostalo (rezervni delovi)</option>
                         </optgroup>
-                        <optgroup label="Oprema">
+                        <optgroup label="Oprema" data-equip-bucket="oprema">
                             <?php foreach (($schema['oprema_equipment_types'] ?? []) as $eq): ?>
-                                <option value="<?= h($eq) ?>" <?= ($ad['equipment_type'] ?? '') === $eq ? 'selected' : '' ?>><?= h($eq) ?></option>
+                                <option value="<?= h($eq) ?>" data-equip-bucket="oprema" <?= ($ad['equipment_type'] ?? '') === $eq ? 'selected' : '' ?>><?= h($eq) ?></option>
                             <?php endforeach; ?>
                         </optgroup>
                     </select>
-                    <p class="form-hint">Često se popuni iz podkategorije — menjaš samo ako treba drugačije.</p>
+                    <p class="form-hint" data-equip-hint>Lista tipova zavisi od podkategorije (npr. iPhone delovi → samo delovi, bez maski).</p>
                 </div>
                 <div class="form-group">
                     <label>Kompatibilni modeli</label>

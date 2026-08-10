@@ -344,6 +344,7 @@ foreach ($cfg['groups'] as $key => $group) {
         'ad_type' => (string)($group['ad_type'] ?? ''),
         'brand' => (string)($group['brand'] ?? ''),
         'equipment_type' => (string)($group['equipment_type'] ?? ''),
+        'equipment_bucket' => categoryGroupEquipmentBucket($key, $group),
     ];
 }
 
