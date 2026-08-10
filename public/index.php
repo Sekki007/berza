@@ -107,6 +107,7 @@ $filters = [
 ];
 
 $allAds = getPublicAds($filters);
+$resultsTotal = count($allAds);
 $maxPerUser = (int)($settings['max_ads_per_user_homepage'] ?? 0);
 if ($maxPerUser > 0) {
     $allAds = limitAdsPerUser($allAds, $maxPerUser);
@@ -343,7 +344,7 @@ $homeCats = [
                 <?php $filterLayout = 'sidebar'; require __DIR__ . '/partials/filter-fields.php'; ?>
             </div>
             <div class="filter-panel-actions">
-                <button class="filter-apply" type="submit">Prikaži <?= (int)$pagination['total'] ?> oglasa</button>
+                <button class="filter-apply" type="submit">Prikaži <?= (int)$resultsTotal ?> oglasa</button>
             </div>
         </form>
     </aside>
@@ -357,7 +358,7 @@ $homeCats = [
         <?php endif; ?>
         <div class="listing-controls">
             <div class="results-meta">
-                <span class="results-count"><strong data-results-count data-results-total="<?= (int)$pagination['total'] ?>"><?= (int)$pagination['total'] ?></strong> oglasa</span>
+                <span class="results-count"><strong data-results-count data-results-total="<?= (int)$resultsTotal ?>"><?= (int)$resultsTotal ?></strong> oglasa</span>
                 <?php if ($hasFilters): ?>
                     <?php if (isLoggedIn()): ?>
                         <form method="POST" action="/nalog.php" class="save-search-form">
@@ -467,7 +468,7 @@ $homeCats = [
         </div>
         <div class="filter-drawer-footer">
             <a class="filter-drawer-reset" href="<?= h($resetFiltersUrl) ?>">Poništi</a>
-            <button class="filter-apply" type="submit">Prikaži <?= (int)$pagination['total'] ?> oglasa</button>
+            <button class="filter-apply" type="submit">Prikaži <?= (int)$resultsTotal ?> oglasa</button>
         </div>
     </form>
 </div>
