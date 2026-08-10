@@ -32,21 +32,78 @@ function kpParseImportJson(string $raw): array
     return ['ok' => true, 'data' => $data];
 }
 
-function kpExistingSourceIds(): array
+function kpNormalizeSourceId(string $sourceId, string $sourceUrl = ''): string
+{
+    $sourceId = trim($sourceId);
+    if ($sourceId !== '') {
+        return $sourceId;
+    }
+    if ($sourceUrl !== '' && preg_match('#/oglas/(\d+)#i', $sourceUrl, $m)) {
+        return (string)$m[1];
+    }
+    return '';
+}
+
+/**
+ * Mapa kp_source_id → ad_id. $fresh=true forsira ponovno čitanje.
+ *
+ * @return array<string, int>
+ */
+function kpExistingSourceIds(bool $fresh = false): array
 {
     static $cache = null;
+    if ($fresh) {
+        $cache = null;
+    }
     if ($cache !== null) {
         return $cache;
     }
 
     $cache = [];
     foreach (readJsonFile('ads.json') as $ad) {
-        $sid = trim((string)($ad['kp_source_id'] ?? ''));
+        if (!is_array($ad)) {
+            continue;
+        }
+        $sid = kpNormalizeSourceId(
+            (string)($ad['kp_source_id'] ?? ''),
+            (string)($ad['kp_source_url'] ?? '')
+        );
         if ($sid !== '') {
             $cache[$sid] = (int)($ad['id'] ?? 0);
         }
+        $url = trim((string)($ad['kp_source_url'] ?? ''));
+        if ($url !== '' && preg_match('#/oglas/(\d+)#i', $url, $m)) {
+            $fromUrl = (string)$m[1];
+            if (!isset($cache[$fromUrl])) {
+                $cache[$fromUrl] = (int)($ad['id'] ?? 0);
+            }
+        }
     }
     return $cache;
+}
+
+function kpFindDuplicate(string $sourceId, string $sourceUrl = '', ?array $extraIndex = null): array
+{
+    $sourceId = kpNormalizeSourceId($sourceId, $sourceUrl);
+    if ($sourceId === '') {
+        return ['ad_id' => 0, 'reason' => ''];
+    }
+
+    if (is_array($extraIndex) && isset($extraIndex[$sourceId])) {
+        $hit = $extraIndex[$sourceId];
+        if (is_int($hit) && $hit < 0) {
+            return ['ad_id' => 0, 'reason' => 'duplikat u ovom JSON fajlu'];
+        }
+        return ['ad_id' => (int)$hit, 'reason' => 'već uvezen (#' . (int)$hit . ')'];
+    }
+
+    $existing = kpExistingSourceIds();
+    if (isset($existing[$sourceId]) && (int)$existing[$sourceId] > 0) {
+        $id = (int)$existing[$sourceId];
+        return ['ad_id' => $id, 'reason' => 'već uvezen (#' . $id . ')'];
+    }
+
+    return ['ad_id' => 0, 'reason' => ''];
 }
 
 function kpGuessBrand(string $text): string
@@ -223,9 +280,15 @@ function kpBuildDefaultMapping(array $kpAd, ?array $targetUser, ?array $seller =
         $location = trim((string)($targetUser['location'] ?? ''));
     }
 
-    $sourceId = trim((string)($kpAd['source_id'] ?? ''));
-    $existing = kpExistingSourceIds();
-    $duplicateAdId = $sourceId !== '' ? ($existing[$sourceId] ?? 0) : 0;
+    $sourceId = kpNormalizeSourceId(
+        (string)($kpAd['source_id'] ?? ''),
+        (string)($kpAd['source_url'] ?? '')
+    );
+    $sourceUrl = trim((string)($kpAd['source_url'] ?? ''));
+    $dup = kpFindDuplicate($sourceId, $sourceUrl);
+    $duplicateAdId = (int)($dup['ad_id'] ?? 0);
+    $duplicateReason = (string)($dup['reason'] ?? '');
+    $isDuplicate = $duplicateAdId > 0 || $duplicateReason !== '';
 
     $images = [];
     foreach ($kpAd['images'] ?? [] as $img) {
@@ -236,10 +299,12 @@ function kpBuildDefaultMapping(array $kpAd, ?array $targetUser, ?array $seller =
     }
 
     return [
-        'selected' => $duplicateAdId === 0 ? 1 : 0,
+        'selected' => $isDuplicate ? 0 : 1,
+        'blocked_duplicate' => $isDuplicate ? 1 : 0,
         'source_id' => $sourceId,
-        'source_url' => trim((string)($kpAd['source_url'] ?? '')),
+        'source_url' => $sourceUrl,
         'duplicate_ad_id' => $duplicateAdId,
+        'duplicate_reason' => $duplicateReason !== '' ? $duplicateReason : ($isDuplicate ? 'duplikat' : ''),
         'title' => $title,
         'description' => $desc,
         'ad_type' => $adType,
@@ -268,12 +333,26 @@ function kpBuildDefaultMapping(array $kpAd, ?array $targetUser, ?array $seller =
  */
 function kpBuildDefaultMappings(array $kpAds, ?array $targetUser, ?array $seller = null): array
 {
+    kpExistingSourceIds(true);
     $out = [];
+    $seenInFile = [];
     foreach ($kpAds as $i => $kpAd) {
         if (!is_array($kpAd)) {
             continue;
         }
-        $out[$i] = kpBuildDefaultMapping($kpAd, $targetUser, $seller);
+        $map = kpBuildDefaultMapping($kpAd, $targetUser, $seller);
+        $sid = (string)($map['source_id'] ?? '');
+        if ($sid !== '') {
+            if (isset($seenInFile[$sid])) {
+                $map['selected'] = 0;
+                $map['blocked_duplicate'] = 1;
+                $map['duplicate_ad_id'] = 0;
+                $map['duplicate_reason'] = 'duplikat u ovom JSON fajlu (prvi: #' . ($seenInFile[$sid] + 1) . ')';
+            } else {
+                $seenInFile[$sid] = (int)$i;
+            }
+        }
+        $out[$i] = $map;
     }
     return $out;
 }
@@ -377,11 +456,34 @@ function kpUpdateAdImages(int $adId, array $images): void
  * @param array<string, mixed> $row
  * @return array{ok:bool, ad_id?:int, error?:string}
  */
-function kpImportSingleAd(array $row, int $targetUserId, ?array $targetUser): array
+function kpImportSingleAd(array $row, int $targetUserId, ?array $targetUser, ?array $batchIndex = null): array
 {
     $title = trim((string)($row['title'] ?? ''));
     if ($title === '') {
         return ['ok' => false, 'error' => 'Naslov je prazan.'];
+    }
+
+    $sourceId = kpNormalizeSourceId(
+        (string)($row['source_id'] ?? ''),
+        (string)($row['source_url'] ?? '')
+    );
+    $sourceUrl = trim((string)($row['source_url'] ?? ''));
+    $dup = kpFindDuplicate($sourceId, $sourceUrl, $batchIndex);
+    if ($dup['ad_id'] > 0 || $dup['reason'] !== '') {
+        return [
+            'ok' => false,
+            'blocked_duplicate' => true,
+            'error' => 'Blokiran duplikat' .
+                ($dup['reason'] !== '' ? ' — ' . $dup['reason'] : '') .
+                ': ' . $title,
+        ];
+    }
+    if (!empty($row['blocked_duplicate']) || (int)($row['duplicate_ad_id'] ?? 0) > 0) {
+        return [
+            'ok' => false,
+            'blocked_duplicate' => true,
+            'error' => 'Blokiran duplikat: ' . $title,
+        ];
     }
 
     $adType = trim((string)($row['ad_type'] ?? 'telefon'));
@@ -459,8 +561,8 @@ function kpImportSingleAd(array $row, int $targetUserId, ?array $targetUser): ar
         'images' => [],
         'created_by' => $targetUserId,
         '_images_final' => true,
-        'kp_source_id' => trim((string)($row['source_id'] ?? '')),
-        'kp_source_url' => trim((string)($row['source_url'] ?? '')),
+        'kp_source_id' => $sourceId,
+        'kp_source_url' => $sourceUrl,
         'views' => 0,
     ], $extras);
 
@@ -486,34 +588,74 @@ function kpImportSingleAd(array $row, int $targetUserId, ?array $targetUser): ar
         }
     }
 
-    return ['ok' => true, 'ad_id' => $adId];
+    return ['ok' => true, 'ad_id' => $adId, 'source_id' => $sourceId];
 }
 
 /**
  * @param array<int, array<string, mixed>> $rows
- * @return array{imported:int, skipped:int, errors:list<string>, ad_ids:list<int>}
+ * @return array{imported:int, skipped:int, blocked_duplicates:int, errors:list<string>, ad_ids:list<int>}
  */
 function kpImportBatch(array $rows, int $targetUserId): array
 {
     $targetUser = findUserById($targetUserId);
     if (!$targetUser) {
-        return ['imported' => 0, 'skipped' => 0, 'errors' => ['Korisnik nije pronađen.'], 'ad_ids' => []];
+        return [
+            'imported' => 0,
+            'skipped' => 0,
+            'blocked_duplicates' => 0,
+            'errors' => ['Korisnik nije pronađen.'],
+            'ad_ids' => [],
+        ];
     }
+
+    kpExistingSourceIds(true);
 
     $imported = 0;
     $skipped = 0;
+    $blocked = 0;
     $errors = [];
     $adIds = [];
+    /** @var array<string, int> $batchIndex */
+    $batchIndex = [];
 
     foreach ($rows as $row) {
+        $sourceId = kpNormalizeSourceId(
+            (string)($row['source_id'] ?? ''),
+            (string)($row['source_url'] ?? '')
+        );
+        $isDupRow = !empty($row['blocked_duplicate'])
+            || (int)($row['duplicate_ad_id'] ?? 0) > 0
+            || ($sourceId !== '' && isset($batchIndex[$sourceId]));
+
+        if ($isDupRow) {
+            $blocked++;
+            if ($sourceId !== '' && !isset($batchIndex[$sourceId])) {
+                $batchIndex[$sourceId] = (int)($row['duplicate_ad_id'] ?? -1);
+            }
+            continue;
+        }
+
         if (empty($row['selected'])) {
             $skipped++;
             continue;
         }
-        $result = kpImportSingleAd($row, $targetUserId, $targetUser);
+
+        $result = kpImportSingleAd($row, $targetUserId, $targetUser, $batchIndex);
+        if (!empty($result['blocked_duplicate'])) {
+            $blocked++;
+            if ($sourceId !== '') {
+                $dup = kpFindDuplicate($sourceId, (string)($row['source_url'] ?? ''));
+                $batchIndex[$sourceId] = (int)($dup['ad_id'] ?? -1);
+            }
+            continue;
+        }
         if ($result['ok']) {
             $imported++;
             $adIds[] = (int)$result['ad_id'];
+            if ($sourceId !== '') {
+                $batchIndex[$sourceId] = (int)$result['ad_id'];
+            }
+            kpExistingSourceIds(true);
         } else {
             $errors[] = (string)($result['error'] ?? 'Nepoznata greška.');
         }
@@ -522,6 +664,7 @@ function kpImportBatch(array $rows, int $targetUserId): array
     return [
         'imported' => $imported,
         'skipped' => $skipped,
+        'blocked_duplicates' => $blocked,
         'errors' => $errors,
         'ad_ids' => $adIds,
     ];

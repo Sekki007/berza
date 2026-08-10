@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="sr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>KP uvoz</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header>
+    <strong>KP → JSON</strong>
+    <span class="sub">KupiTelefon uvoz</span>
+  </header>
+
+  <p id="pageHint" class="hint">Otvori stranicu <strong>Svi oglasi</strong> prodavca na KupujemProdajem.</p>
+
+  <label class="field">
+    Šta kupiti
+    <select id="filterMode">
+      <option value="phones" selected>Samo telefoni</option>
+      <option value="devices">Telefoni + satovi + tableti</option>
+      <option value="all">Sve (bez skip filtera ispod)</option>
+    </select>
+  </label>
+
+  <label class="field">
+    Skip (preskoči ako naslov sadrži)
+    <textarea id="skipKeywords" rows="3" placeholder="torbica, maska, punjac…"></textarea>
+  </label>
+  <p class="hint" style="margin-top:-4px;font-size:11px;">Jedna reč/fraza po liniji ili zarezom. Prazno = podrazumevani skip (maske, punjači, laptop…).</p>
+
+  <label class="check">
+    <input type="checkbox" id="allPages" checked>
+    Više stranica (paginacija)
+  </label>
+  <label class="field">
+    Max stranica (za velike izloge, npr. 400 = sve ~359)
+    <input type="number" id="maxPages" min="1" max="1000" step="1" value="400">
+  </label>
+  <p class="hint" style="margin-top:-4px;font-size:11px;">Stavi <strong>400</strong> za cele izloge (~359 str.). Ako piše 1/2, max stranica ti je 2 — povećaj.</p>
+
+  <label class="check">
+    <input type="checkbox" id="includeDescriptions">
+    Puni opis oglasa (otvara svaki oglas)
+  </label>
+  <label class="check">
+    <input type="checkbox" id="includeDetails">
+    Detalji + sve slike iz galerije (sporije)
+  </label>
+  <label class="field">
+    Pauza između zahteva (ms)
+    <input type="number" id="delayMs" min="400" max="5000" step="100" value="1200">
+  </label>
+
+  <button type="button" id="btnScrape" class="btn primary">Pokupi oglase</button>
+  <button type="button" id="btnCancel" class="btn danger" hidden>Otkaži</button>
+  <button type="button" id="btnDownload" class="btn" disabled>Preuzmi JSON</button>
+
+  <div id="status" class="status" hidden></div>
+  <p class="hint" style="margin-top:8px;font-size:11px;">Scrape radi u pozadini — možeš zatvoriti ovaj popup. Badge na ikoni pokazuje napredak; kad piše OK, skini JSON.</p>
+  <pre id="preview" class="preview" hidden></pre>
+
+  <footer>
+    <span id="extVersion"></span>
+    JSON kasnije uvoziš u Admin panel za korisnika.
+  </footer>
+  <script src="popup.js"></script>
+</body>
+</html>

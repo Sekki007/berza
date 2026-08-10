@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "KP KupiTelefon uvoz",
+  "version": "1.4.2",
+  "description": "Pokupi oglase sa KupujemProdajem izloga u JSON fajl za uvoz na KupiTelefon.rs",
+  "permissions": ["activeTab", "scripting", "storage", "downloads", "alarms", "tabs"],
+  "host_permissions": [
+    "https://www.kupujemprodajem.com/*",
+    "https://kupujemprodajem.com/*",
+    "https://novi.kupujemprodajem.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "KP uvoz oglasa"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.kupujemprodajem.com/*",
+        "https://kupujemprodajem.com/*",
+        "https://novi.kupujemprodajem.com/*"
+      ],
+      "js": ["parser.js", "content.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}

@@ -97,8 +97,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 'download_images' => !empty($row['download_images']) ? 1 : 0,
                 'source_id' => (string)($default['source_id'] ?? ''),
                 'source_url' => (string)($default['source_url'] ?? ''),
+                'duplicate_ad_id' => (int)($default['duplicate_ad_id'] ?? 0),
+                'blocked_duplicate' => !empty($default['blocked_duplicate']) ? 1 : 0,
+                'duplicate_reason' => (string)($default['duplicate_reason'] ?? ''),
                 'image_urls' => is_array($default['image_urls'] ?? null) ? $default['image_urls'] : [],
             ]);
+            // Duplikati se ne smeju uvesti čak i ako je checkbox nekako označen
+            if (!empty($merged['blocked_duplicate']) || (int)$merged['duplicate_ad_id'] > 0) {
+                $merged['selected'] = 0;
+                $merged['blocked_duplicate'] = 1;
+            }
             $rows[] = $merged;
         }
 
@@ -107,6 +115,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $_SESSION['kp_import_result'] = $batch;
         $msg = 'Uvezeno ' . $batch['imported'] . ' oglasa.';
+        if (($batch['blocked_duplicates'] ?? 0) > 0) {
+            $msg .= ' Blokirano duplikata: ' . (int)$batch['blocked_duplicates'] . '.';
+        }
         if ($batch['skipped'] > 0) {
             $msg .= ' Preskočeno: ' . $batch['skipped'] . '.';
         }
@@ -127,6 +138,8 @@ $shopCategories = [];
 $seller = [];
 $adsCount = 0;
 $mappings = [];
+$dupCount = 0;
+$readyCount = 0;
 
 if (is_array($importSession)) {
     $targetUser = findUserById((int)($importSession['target_user_id'] ?? 0));
@@ -136,6 +149,13 @@ if (is_array($importSession)) {
     $seller = is_array($importSession['data']['seller'] ?? null) ? $importSession['data']['seller'] : [];
     $adsCount = count($importSession['data']['ads'] ?? []);
     $mappings = is_array($importSession['mappings'] ?? null) ? $importSession['mappings'] : [];
+    foreach ($mappings as $map) {
+        if (!empty($map['blocked_duplicate']) || (int)($map['duplicate_ad_id'] ?? 0) > 0) {
+            $dupCount++;
+        } else {
+            $readyCount++;
+        }
+    }
 }
 
 if ($step === 'preview' && (!is_array($importSession) || $mappings === [])) {
@@ -164,6 +184,7 @@ require __DIR__ . '/partials/layout-start.php';
             <section class="form-card">
                 <h3>Rezultat uvoza</h3>
                 <p><strong>Uvezeno:</strong> <?= (int)$result['imported'] ?> ·
+                    <strong>Blokirano duplikata:</strong> <?= (int)($result['blocked_duplicates'] ?? 0) ?> ·
                     <strong>Preskočeno:</strong> <?= (int)$result['skipped'] ?></p>
                 <?php if (!empty($result['ad_ids'])): ?>
                     <p style="font-size:13px;">ID novih oglasa: <?= h(implode(', ', array_map('strval', $result['ad_ids']))) ?></p>
@@ -197,8 +218,18 @@ require __DIR__ . '/partials/layout-start.php';
                             <?php endif; ?>
                         </div>
                     <?php endif; ?>
-                    <div><strong>Oglasa u JSON:</strong> <?= (int)$adsCount ?></div>
+                    <div><strong>Oglasa u JSON:</strong> <?= (int)$adsCount ?>
+                        · spremno <?= (int)$readyCount ?>
+                        <?php if ($dupCount > 0): ?>
+                            · <span style="color:#b45309;">duplikata <?= (int)$dupCount ?> (blokirano)</span>
+                        <?php endif; ?>
+                    </div>
                 </div>
+                <?php if ($dupCount > 0): ?>
+                    <p class="form-hint" style="margin-top:8px;color:#b45309;">
+                        Duplikati (isti KP <code>source_id</code> / već uvezeni oglasi) su obavezno blokirani — ne mogu se uvesti ponovo.
+                    </p>
+                <?php endif; ?>
                 <div class="kp-import-bulk" style="margin-top:12px;">
                     <label>Bulk tip
                         <select id="bulkAdType">
@@ -209,7 +240,7 @@ require __DIR__ . '/partials/layout-start.php';
                         </select>
                     </label>
                     <button type="button" class="btn-sm" id="btnApplyType">Primeni tip na označene</button>
-                    <button type="button" class="btn-sm" id="btnSelectAll">Označi sve</button>
+                    <button type="button" class="btn-sm" id="btnSelectAll">Označi nove</button>
                     <button type="button" class="btn-sm" id="btnSelectNone">Poništi sve</button>
                     <button type="button" class="btn-sm" id="btnActivateAll">Aktiviraj označene</button>
                 </div>
@@ -241,11 +272,21 @@ require __DIR__ . '/partials/layout-start.php';
                                     break;
                                 }
                                 $dupId = (int)($map['duplicate_ad_id'] ?? 0);
+                                $isDup = !empty($map['blocked_duplicate']) || $dupId > 0 || trim((string)($map['duplicate_reason'] ?? '')) !== '';
+                                $dupReason = trim((string)($map['duplicate_reason'] ?? ''));
+                                if ($dupReason === '' && $dupId > 0) {
+                                    $dupReason = 'već uvezen (#' . $dupId . ')';
+                                }
                                 ?>
-                                <tr class="kp-import-row<?= $dupId ? ' kp-import-dup' : '' ?>" data-index="<?= (int)$i ?>">
+                                <tr class="kp-import-row<?= $isDup ? ' kp-import-dup' : '' ?>" data-index="<?= (int)$i ?>"<?= $isDup ? ' data-duplicate="1"' : '' ?>>
                                     <td>
-                                        <input type="checkbox" name="import[<?= (int)$i ?>][selected]" value="1"
-                                            <?= !empty($map['selected']) ? 'checked' : '' ?>>
+                                        <?php if ($isDup): ?>
+                                            <input type="checkbox" disabled title="Duplikat — blokiran">
+                                            <input type="hidden" name="import[<?= (int)$i ?>][selected]" value="0">
+                                        <?php else: ?>
+                                            <input type="checkbox" name="import[<?= (int)$i ?>][selected]" value="1"
+                                                <?= !empty($map['selected']) ? 'checked' : '' ?>>
+                                        <?php endif; ?>
                                     </td>
                                     <td>
                                         <?php if ($thumb !== ''): ?>
@@ -257,13 +298,16 @@ require __DIR__ . '/partials/layout-start.php';
                                     </td>
                                     <td>
                                         <input class="kp-field kp-field-title" name="import[<?= (int)$i ?>][title]"
-                                            value="<?= h((string)($map['title'] ?? '')) ?>" required>
-                                        <textarea class="kp-field kp-field-desc" name="import[<?= (int)$i ?>][description]" rows="2"><?= h((string)($map['description'] ?? '')) ?></textarea>
-                                        <?php if ($dupId): ?>
-                                            <div class="kp-import-warn">Već uvezen (#<?= $dupId ?>)</div>
+                                            value="<?= h((string)($map['title'] ?? '')) ?>" required<?= $isDup ? ' readonly' : '' ?>>
+                                        <textarea class="kp-field kp-field-desc" name="import[<?= (int)$i ?>][description]" rows="2"<?= $isDup ? ' readonly' : '' ?>><?= h((string)($map['description'] ?? '')) ?></textarea>
+                                        <?php if ($isDup): ?>
+                                            <div class="kp-import-warn">⛔ Duplikat — <?= h($dupReason) ?></div>
                                         <?php endif; ?>
                                         <?php if (!empty($map['source_url'])): ?>
                                             <a href="<?= h((string)$map['source_url']) ?>" target="_blank" rel="noopener" style="font-size:11px;">KP link</a>
+                                        <?php endif; ?>
+                                        <?php if (!empty($map['source_id'])): ?>
+                                            <span style="font-size:10px;color:#888;"> · KP #<?= h((string)$map['source_id']) ?></span>
                                         <?php endif; ?>
                                     </td>
                                     <td>
@@ -413,8 +457,9 @@ require __DIR__ . '/partials/layout-start.php';
 .kp-import-thumb { width: 48px; height: 48px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border); }
 .kp-import-noimg { color: #aaa; }
 .kp-import-imgmeta { font-size: 10px; color: #888; margin-top: 2px; }
-.kp-import-warn { font-size: 11px; color: #b45309; margin-top: 4px; }
-.kp-import-dup { background: #fffbeb; }
+.kp-import-warn { font-size: 11px; color: #b45309; margin-top: 4px; font-weight: 600; }
+.kp-import-dup { background: #fff7ed; opacity: 0.92; }
+.kp-import-dup input[disabled] { cursor: not-allowed; }
 .kp-check-line { display: flex; align-items: center; gap: 4px; font-size: 11px; margin: 2px 0; white-space: nowrap; }
 </style>
 
@@ -451,14 +496,32 @@ require __DIR__ . '/partials/layout-start.php';
     });
 
     document.getElementById('btnSelectAll').addEventListener('click', function () {
-        document.querySelectorAll('.kp-import-row input[type=checkbox][name*="[selected]"]').forEach(function (cb) {
-            cb.checked = true;
+        document.querySelectorAll('.kp-import-row').forEach(function (row) {
+            if (row.getAttribute('data-duplicate') === '1') return;
+            var cb = row.querySelector('input[type=checkbox][name*="[selected]"]');
+            if (cb && !cb.disabled) cb.checked = true;
         });
     });
     document.getElementById('btnSelectNone').addEventListener('click', function () {
         document.querySelectorAll('.kp-import-row input[type=checkbox][name*="[selected]"]').forEach(function (cb) {
-            cb.checked = false;
+            if (!cb.disabled) cb.checked = false;
         });
+    });
+    document.getElementById('kpImportForm').addEventListener('submit', function (e) {
+        var ready = 0;
+        document.querySelectorAll('.kp-import-row').forEach(function (row) {
+            if (row.getAttribute('data-duplicate') === '1') return;
+            var cb = row.querySelector('input[type=checkbox][name*="[selected]"]');
+            if (cb && cb.checked) ready++;
+        });
+        if (ready === 0) {
+            e.preventDefault();
+            alert('Nema označenih novih oglasa za uvoz (duplikati su blokirani).');
+            return;
+        }
+        if (!confirm('Uvesti ' + ready + ' oglasa? Duplikati ostaju blokirani.')) {
+            e.preventDefault();
+        }
     });
     document.getElementById('btnActivateAll').addEventListener('click', function () {
         document.querySelectorAll('.kp-import-row').forEach(function (row) {
