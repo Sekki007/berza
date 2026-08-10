@@ -26,6 +26,46 @@ function searchTokens(string $query): array
     return array_values($tokens);
 }
 
+/**
+ * Namera iz upita: parts | service | phone | general
+ *
+ * @param list<string> $tokens
+ */
+function searchQueryIntent(array $tokens): string
+{
+    $joined = ' ' . implode(' ', array_map('strval', $tokens)) . ' ';
+
+    if (preg_match('/\b(servis|popravka|deblok|dekod|flash)\b/u', $joined)) {
+        return 'service';
+    }
+
+    // Delovi / oprema (lcd 15 pro, baterija s23, maska iphone…)
+    if (preg_match(
+        '/\b(lcd|oled|ekran|displej|screen|baterija|battery|maska|futrola|case|punjač|punjac|charger|kabl|cable|flex|staklo|glass|kućište|kuciste|maticn|touch|service\s*pack|org\s*sh|sh\s*delovi|deo|delovi|parts?)\b/u',
+        $joined
+    )) {
+        return 'parts';
+    }
+
+    if (preg_match('/\b(iphone|samsung|galaxy|xiaomi|redmi|honor|huawei|pixel|telefon|tablet|watch|sat)\b/u', $joined)) {
+        return 'phone';
+    }
+
+    return 'general';
+}
+
+function adTitleHasPartsKeyword(string $title): bool
+{
+    $title = mb_strtolower($title);
+    if ($title === '') {
+        return false;
+    }
+    return (bool)preg_match(
+        '/\b(lcd|oled|ekran|displej|screen|baterija|battery|maska|futrola|case|punjac|punjač|charger|kabl|cable|flex|staklo|glass|kućište|kuciste|touch|service\s*pack|org\s*sh|za\s+delov|deo|delovi)\b/u',
+        $title
+    );
+}
+
 function adSearchHaystack(array $ad): string
 {
     $acc = is_array($ad['accessories'] ?? null) ? implode(' ', $ad['accessories']) : '';
@@ -65,8 +105,11 @@ function scoreAdAgainstTokens(array $ad, array $tokens): int
     $model = mb_strtolower((string)($ad['model'] ?? ''));
     $brand = mb_strtolower((string)($ad['brand'] ?? ''));
     $location = mb_strtolower((string)($ad['location'] ?? ''));
+    $equipment = mb_strtolower((string)($ad['equipment_type'] ?? ''));
     $score = 0;
     $qJoined = implode(' ', array_map('strval', $tokens));
+    $intent = searchQueryIntent($tokens);
+    $adType = getAdType($ad);
 
     foreach ($tokens as $token) {
         $token = (string)$token;
@@ -85,6 +128,9 @@ function scoreAdAgainstTokens(array $ad, array $tokens): int
         if (str_contains($brand, $token)) {
             $score += 5;
         }
+        if ($equipment !== '' && str_contains($equipment, $token)) {
+            $score += 8;
+        }
         if (str_contains($location, $token)) {
             $score += 3;
         }
@@ -98,6 +144,40 @@ function scoreAdAgainstTokens(array $ad, array $tokens): int
     if ($qJoined !== '' && str_contains($model, $qJoined)) {
         $score += 15;
     }
+
+    // Namera: "lcd 15 pro" → delovi gore, telefoni (gde je lcd samo u opisu) van rezultata
+    if ($intent === 'parts') {
+        $partsInTitle = adTitleHasPartsKeyword($title);
+        if ($adType === 'delovi') {
+            $score += 45;
+            if ($partsInTitle) {
+                $score += 25;
+            }
+        } elseif ($adType === 'servis') {
+            $score += 10;
+        } elseif ($adType === 'telefon') {
+            // Telefon „za delove“ ili naslov koji je stvarno deo — ostavi; inače isključi
+            if ($partsInTitle || preg_match('/\bza\s+delov/u', $haystack)) {
+                $score += 15;
+            } else {
+                return -1;
+            }
+        }
+    } elseif ($intent === 'service') {
+        if ($adType === 'servis') {
+            $score += 40;
+        } elseif ($adType === 'telefon') {
+            $score -= 15;
+        }
+    } elseif ($intent === 'phone') {
+        if ($adType === 'telefon') {
+            $score += 20;
+        } elseif ($adType === 'delovi' && !adTitleHasPartsKeyword($title)) {
+            // Oglas delova koji samo pominje model u kompatibilnosti — blago niže
+            $score -= 8;
+        }
+    }
+
     if (!empty($ad['is_promoted'])) {
         $score += 2;
     }
