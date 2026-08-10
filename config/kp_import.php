@@ -670,6 +670,146 @@ function kpImportBatch(array $rows, int $targetUserId): array
     ];
 }
 
+/**
+ * Indeksi oglasa spremnih za uvoz (označeni, nisu duplikat, nisu već uvezeni u ovoj sesiji).
+ *
+ * @param array<int, array<string, mixed>> $mappings
+ * @return list<int>
+ */
+function kpPendingImportIndexes(array $mappings): array
+{
+    $out = [];
+    foreach ($mappings as $i => $map) {
+        if (!is_array($map)) {
+            continue;
+        }
+        if (!empty($map['imported'])) {
+            continue;
+        }
+        if (!empty($map['blocked_duplicate']) || (int)($map['duplicate_ad_id'] ?? 0) > 0) {
+            continue;
+        }
+        if (empty($map['selected'])) {
+            continue;
+        }
+        $out[] = (int)$i;
+    }
+    return $out;
+}
+
+/**
+ * Uvezi sledeću etapu iz sesijskih mapping-a (bez ogromnog POST-a cele tabele).
+ *
+ * @param array<string, mixed> $importSession
+ * @return array{
+ *   session: array<string, mixed>,
+ *   batch: array<string, mixed>,
+ *   pending_left: int,
+ *   done: bool
+ * }
+ */
+function kpImportSessionStage(array $importSession, int $batchSize): array
+{
+    $batchSize = max(1, min(100, $batchSize));
+    $mappings = is_array($importSession['mappings'] ?? null) ? $importSession['mappings'] : [];
+    $targetUserId = (int)($importSession['target_user_id'] ?? 0);
+
+    $pending = kpPendingImportIndexes($mappings);
+    $sliceIdx = array_slice($pending, 0, $batchSize);
+    $rows = [];
+    foreach ($sliceIdx as $i) {
+        $row = $mappings[$i];
+        $row['selected'] = 1;
+        $rows[] = $row;
+    }
+
+    $batch = $rows === []
+        ? [
+            'imported' => 0,
+            'skipped' => 0,
+            'blocked_duplicates' => 0,
+            'errors' => [],
+            'ad_ids' => [],
+        ]
+        : kpImportBatch($rows, $targetUserId);
+
+    // Osveži duplikate / označi uvezeno
+    kpExistingSourceIds(true);
+    $existing = kpExistingSourceIds();
+    foreach ($sliceIdx as $i) {
+        if (!isset($mappings[$i])) {
+            continue;
+        }
+        $sid = kpNormalizeSourceId(
+            (string)($mappings[$i]['source_id'] ?? ''),
+            (string)($mappings[$i]['source_url'] ?? '')
+        );
+        if ($sid !== '' && isset($existing[$sid])) {
+            $mappings[$i]['imported'] = 1;
+            $mappings[$i]['selected'] = 0;
+            $mappings[$i]['blocked_duplicate'] = 1;
+            $mappings[$i]['duplicate_ad_id'] = (int)$existing[$sid];
+            $mappings[$i]['duplicate_reason'] = 'uvezen u ovoj sesiji (#' . (int)$existing[$sid] . ')';
+        }
+    }
+
+    // Preostale koji su sad duplikati u bazi
+    foreach ($mappings as $i => &$map) {
+        if (!empty($map['imported']) || !empty($map['blocked_duplicate'])) {
+            continue;
+        }
+        $sid = kpNormalizeSourceId(
+            (string)($map['source_id'] ?? ''),
+            (string)($map['source_url'] ?? '')
+        );
+        if ($sid !== '' && isset($existing[$sid])) {
+            $map['selected'] = 0;
+            $map['blocked_duplicate'] = 1;
+            $map['duplicate_ad_id'] = (int)$existing[$sid];
+            $map['duplicate_reason'] = 'već uvezen (#' . (int)$existing[$sid] . ')';
+        }
+    }
+    unset($map);
+
+    $progress = is_array($importSession['progress'] ?? null) ? $importSession['progress'] : [
+        'imported' => 0,
+        'blocked_duplicates' => 0,
+        'skipped' => 0,
+        'errors' => [],
+        'ad_ids' => [],
+        'stages' => 0,
+    ];
+    $progress['imported'] = (int)$progress['imported'] + (int)($batch['imported'] ?? 0);
+    $progress['blocked_duplicates'] = (int)$progress['blocked_duplicates'] + (int)($batch['blocked_duplicates'] ?? 0);
+    $progress['skipped'] = (int)$progress['skipped'] + (int)($batch['skipped'] ?? 0);
+    $progress['errors'] = array_values(array_merge(
+        is_array($progress['errors'] ?? null) ? $progress['errors'] : [],
+        is_array($batch['errors'] ?? null) ? $batch['errors'] : []
+    ));
+    if (count($progress['errors']) > 40) {
+        $progress['errors'] = array_slice($progress['errors'], -40);
+    }
+    $progress['ad_ids'] = array_values(array_merge(
+        is_array($progress['ad_ids'] ?? null) ? $progress['ad_ids'] : [],
+        is_array($batch['ad_ids'] ?? null) ? $batch['ad_ids'] : []
+    ));
+    $progress['stages'] = (int)$progress['stages'] + 1;
+    $progress['last_batch_imported'] = (int)($batch['imported'] ?? 0);
+    $progress['last_batch_size'] = count($sliceIdx);
+
+    $importSession['mappings'] = $mappings;
+    $importSession['progress'] = $progress;
+
+    $pendingLeft = count(kpPendingImportIndexes($mappings));
+
+    return [
+        'session' => $importSession,
+        'batch' => $batch,
+        'pending_left' => $pendingLeft,
+        'done' => $pendingLeft === 0,
+    ];
+}
+
 function kpImportCategoryGroupsJson(): string
 {
     $cfg = categoriesConfig();

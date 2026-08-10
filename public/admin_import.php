@@ -53,82 +53,102 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $targetUser,
                 $parsed['data']['seller'] ?? null
             ),
+            'progress' => [
+                'imported' => 0,
+                'blocked_duplicates' => 0,
+                'skipped' => 0,
+                'errors' => [],
+                'ad_ids' => [],
+                'stages' => 0,
+            ],
         ];
 
         header('Location: /admin_import.php?step=preview');
         exit;
     }
 
-    if ($action === 'import') {
+    if ($action === 'bulk_session') {
+        if (!is_array($importSession) || empty($importSession['mappings'])) {
+            setFlash('danger', 'Nema učitane liste za uvoz.');
+            header('Location: /admin_import.php');
+            exit;
+        }
+        $mode = trim((string)($_POST['bulk_mode'] ?? ''));
+        $adType = trim((string)($_POST['bulk_ad_type'] ?? ''));
+        foreach ($importSession['mappings'] as $i => &$map) {
+            if (!is_array($map) || !empty($map['imported'])) {
+                continue;
+            }
+            $isDup = !empty($map['blocked_duplicate']) || (int)($map['duplicate_ad_id'] ?? 0) > 0;
+            if ($mode === 'select_new' && !$isDup) {
+                $map['selected'] = 1;
+            } elseif ($mode === 'select_none') {
+                $map['selected'] = 0;
+            } elseif ($mode === 'activate_selected' && !empty($map['selected']) && !$isDup) {
+                $map['is_active'] = 1;
+            } elseif ($mode === 'apply_type' && !empty($map['selected']) && !$isDup && in_array($adType, ['telefon', 'delovi', 'servis'], true)) {
+                $map['ad_type'] = $adType;
+                if ($adType === 'telefon') {
+                    $map['category_group'] = 'phones';
+                } elseif ($adType === 'servis') {
+                    $map['category_group'] = 'service';
+                }
+            }
+        }
+        unset($map);
+        $_SESSION['kp_import'] = $importSession;
+        setFlash('success', 'Bulk podešavanje sačuvano.');
+        header('Location: /admin_import.php?step=preview');
+        exit;
+    }
+
+    if ($action === 'import_stage') {
         if (!is_array($importSession) || empty($importSession['mappings'])) {
             setFlash('danger', 'Nema učitane liste za uvoz. Počni ponovo.');
             header('Location: /admin_import.php');
             exit;
         }
 
-        $posted = $_POST['import'] ?? [];
-        if (!is_array($posted)) {
-            setFlash('danger', 'Neispravan oblik forme.');
-            header('Location: /admin_import.php?step=preview');
+        @set_time_limit(300);
+        $batchSize = (int)($_POST['batch_size'] ?? 25);
+        $autoContinue = !empty($_POST['auto_continue']);
+
+        $stage = kpImportSessionStage($importSession, $batchSize);
+        $_SESSION['kp_import'] = $stage['session'];
+        $progress = $stage['session']['progress'] ?? [];
+
+        if ($stage['done']) {
+            $_SESSION['kp_import_result'] = [
+                'imported' => (int)($progress['imported'] ?? 0),
+                'skipped' => (int)($progress['skipped'] ?? 0),
+                'blocked_duplicates' => (int)($progress['blocked_duplicates'] ?? 0),
+                'errors' => is_array($progress['errors'] ?? null) ? $progress['errors'] : [],
+                'ad_ids' => is_array($progress['ad_ids'] ?? null) ? $progress['ad_ids'] : [],
+            ];
+            unset($_SESSION['kp_import']);
+            setFlash(
+                'success',
+                'Uvoz završen po etapama: ' . (int)($progress['imported'] ?? 0) . ' oglasa' .
+                ((int)($progress['blocked_duplicates'] ?? 0) > 0
+                    ? ', blokirano duplikata ' . (int)$progress['blocked_duplicates']
+                    : '') . '.'
+            );
+            header('Location: /admin_import.php?step=done');
             exit;
         }
 
-        $rows = [];
-        foreach ($importSession['mappings'] as $i => $default) {
-            $row = is_array($posted[$i] ?? null) ? $posted[$i] : [];
-            $merged = array_merge($default, [
-                'selected' => !empty($row['selected']) ? 1 : 0,
-                'title' => trim((string)($row['title'] ?? $default['title'] ?? '')),
-                'description' => trim((string)($row['description'] ?? $default['description'] ?? '')),
-                'ad_type' => trim((string)($row['ad_type'] ?? $default['ad_type'] ?? 'telefon')),
-                'category_group' => trim((string)($row['category_group'] ?? $default['category_group'] ?? '')),
-                'brand' => trim((string)($row['brand'] ?? $default['brand'] ?? '')),
-                'model' => trim((string)($row['model'] ?? $default['model'] ?? '')),
-                'device_type' => trim((string)($row['device_type'] ?? $default['device_type'] ?? 'phone')),
-                'equipment_type' => trim((string)($row['equipment_type'] ?? $default['equipment_type'] ?? '')),
-                'condition_state' => trim((string)($row['condition_state'] ?? $default['condition_state'] ?? '')),
-                'listing_type' => trim((string)($row['listing_type'] ?? $default['listing_type'] ?? 'sell')),
-                'price' => (float)($row['price'] ?? $default['price'] ?? 0),
-                'price_type' => trim((string)($row['price_type'] ?? $default['price_type'] ?? 'fixed')),
-                'currency' => trim((string)($row['currency'] ?? $default['currency'] ?? 'eur')),
-                'location' => trim((string)($row['location'] ?? $default['location'] ?? '')),
-                'shop_category_id' => trim((string)($row['shop_category_id'] ?? $default['shop_category_id'] ?? '')),
-                'is_active' => !empty($row['is_active']) ? 1 : 0,
-                'download_images' => !empty($row['download_images']) ? 1 : 0,
-                'source_id' => (string)($default['source_id'] ?? ''),
-                'source_url' => (string)($default['source_url'] ?? ''),
-                'duplicate_ad_id' => (int)($default['duplicate_ad_id'] ?? 0),
-                'blocked_duplicate' => !empty($default['blocked_duplicate']) ? 1 : 0,
-                'duplicate_reason' => (string)($default['duplicate_reason'] ?? ''),
-                'image_urls' => is_array($default['image_urls'] ?? null) ? $default['image_urls'] : [],
-            ]);
-            // Duplikati se ne smeju uvesti čak i ako je checkbox nekako označen
-            if (!empty($merged['blocked_duplicate']) || (int)$merged['duplicate_ad_id'] > 0) {
-                $merged['selected'] = 0;
-                $merged['blocked_duplicate'] = 1;
-            }
-            $rows[] = $merged;
+        $msg = 'Etapa ' . (int)($progress['stages'] ?? 0) . ': uvezeno +' .
+            (int)($progress['last_batch_imported'] ?? 0) .
+            ' (ukupno ' . (int)($progress['imported'] ?? 0) . '). Ostalo: ' .
+            (int)$stage['pending_left'] . '.';
+        setFlash('success', $msg);
+
+        if ($autoContinue && $stage['pending_left'] > 0) {
+            header('Location: /admin_import.php?step=preview&auto=1&batch=' . max(1, min(100, $batchSize)));
+            exit;
         }
 
-        $batch = kpImportBatch($rows, (int)$importSession['target_user_id']);
-        unset($_SESSION['kp_import']);
-
-        $_SESSION['kp_import_result'] = $batch;
-        $msg = 'Uvezeno ' . $batch['imported'] . ' oglasa.';
-        if (($batch['blocked_duplicates'] ?? 0) > 0) {
-            $msg .= ' Blokirano duplikata: ' . (int)$batch['blocked_duplicates'] . '.';
-        }
-        if ($batch['skipped'] > 0) {
-            $msg .= ' Preskočeno: ' . $batch['skipped'] . '.';
-        }
-        if ($batch['errors'] !== []) {
-            $msg .= ' Greške: ' . count($batch['errors']) . '.';
-            setFlash('warning', $msg);
-        } else {
-            setFlash('success', $msg);
-        }
-
-        header('Location: /admin_import.php?step=done');
+        header('Location: /admin_import.php?step=preview');
         exit;
     }
 }
@@ -140,6 +160,9 @@ $adsCount = 0;
 $mappings = [];
 $dupCount = 0;
 $readyCount = 0;
+$importedCount = 0;
+$pendingCount = 0;
+$progress = [];
 
 if (is_array($importSession)) {
     $targetUser = findUserById((int)($importSession['target_user_id'] ?? 0));
@@ -149,14 +172,23 @@ if (is_array($importSession)) {
     $seller = is_array($importSession['data']['seller'] ?? null) ? $importSession['data']['seller'] : [];
     $adsCount = count($importSession['data']['ads'] ?? []);
     $mappings = is_array($importSession['mappings'] ?? null) ? $importSession['mappings'] : [];
+    $progress = is_array($importSession['progress'] ?? null) ? $importSession['progress'] : [];
     foreach ($mappings as $map) {
+        if (!empty($map['imported'])) {
+            $importedCount++;
+            continue;
+        }
         if (!empty($map['blocked_duplicate']) || (int)($map['duplicate_ad_id'] ?? 0) > 0) {
             $dupCount++;
-        } else {
+        } elseif (!empty($map['selected'])) {
             $readyCount++;
         }
     }
+    $pendingCount = count(kpPendingImportIndexes($mappings));
 }
+
+$autoContinue = isset($_GET['auto']) && (string)$_GET['auto'] === '1';
+$autoBatch = max(1, min(100, (int)($_GET['batch'] ?? 25)));
 
 if ($step === 'preview' && (!is_array($importSession) || $mappings === [])) {
     header('Location: /admin_import.php');
@@ -219,36 +251,74 @@ require __DIR__ . '/partials/layout-start.php';
                         </div>
                     <?php endif; ?>
                     <div><strong>Oglasa u JSON:</strong> <?= (int)$adsCount ?>
-                        · spremno <?= (int)$readyCount ?>
+                        · spremno <?= (int)$pendingCount ?>
+                        <?php if ($importedCount > 0): ?>
+                            · uvezeno u sesiji <?= (int)$importedCount ?>
+                        <?php endif; ?>
                         <?php if ($dupCount > 0): ?>
-                            · <span style="color:#b45309;">duplikata <?= (int)$dupCount ?> (blokirano)</span>
+                            · <span style="color:#b45309;">duplikata <?= (int)$dupCount ?></span>
                         <?php endif; ?>
                     </div>
+                    <?php if (!empty($progress['stages'])): ?>
+                        <div><strong>Napredak:</strong> etapa <?= (int)$progress['stages'] ?> ·
+                            ukupno uvezeno <?= (int)($progress['imported'] ?? 0) ?></div>
+                    <?php endif; ?>
                 </div>
                 <?php if ($dupCount > 0): ?>
                     <p class="form-hint" style="margin-top:8px;color:#b45309;">
-                        Duplikati (isti KP <code>source_id</code> / već uvezeni oglasi) su obavezno blokirani — ne mogu se uvesti ponovo.
+                        Duplikati su blokirani. Veliki uvoz (npr. 600+) radi se <strong>po etapama</strong> — ne šalje celu tabelu odjednom (to ruši sesiju).
+                    </p>
+                <?php else: ?>
+                    <p class="form-hint" style="margin-top:8px;">
+                        Za velike liste koristi uvoz po etapama ispod (25–50 po koraku). Cela tabela se ne šalje u jednom POST-u.
                     </p>
                 <?php endif; ?>
-                <div class="kp-import-bulk" style="margin-top:12px;">
+
+                <form method="POST" class="kp-import-bulk" style="margin-top:12px;">
+                    <?= csrfField() ?>
+                    <input type="hidden" name="action" value="bulk_session">
                     <label>Bulk tip
-                        <select id="bulkAdType">
+                        <select name="bulk_ad_type" id="bulkAdType">
                             <option value="">—</option>
                             <option value="telefon">Telefoni</option>
                             <option value="delovi">Delovi</option>
                             <option value="servis">Servis</option>
                         </select>
                     </label>
-                    <button type="button" class="btn-sm" id="btnApplyType">Primeni tip na označene</button>
-                    <button type="button" class="btn-sm" id="btnSelectAll">Označi nove</button>
-                    <button type="button" class="btn-sm" id="btnSelectNone">Poništi sve</button>
-                    <button type="button" class="btn-sm" id="btnActivateAll">Aktiviraj označene</button>
-                </div>
+                    <button type="submit" class="btn-sm" name="bulk_mode" value="apply_type">Primeni tip na označene</button>
+                    <button type="submit" class="btn-sm" name="bulk_mode" value="select_new">Označi nove</button>
+                    <button type="submit" class="btn-sm" name="bulk_mode" value="select_none">Poništi oznake</button>
+                    <button type="submit" class="btn-sm" name="bulk_mode" value="activate_selected">Aktiviraj označene</button>
+                </form>
+
+                <form method="POST" id="kpStageForm" class="kp-stage-box" style="margin-top:14px;">
+                    <?= csrfField() ?>
+                    <input type="hidden" name="action" value="import_stage">
+                    <strong>Uvoz po etapama</strong>
+                    <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:8px;">
+                        <label>Po etapi
+                            <select name="batch_size" id="batchSize">
+                                <option value="10">10</option>
+                                <option value="25" selected>25</option>
+                                <option value="50">50</option>
+                                <option value="100">100</option>
+                            </select>
+                        </label>
+                        <label class="kp-check-line" style="margin:0;">
+                            <input type="checkbox" name="auto_continue" value="1" id="autoContinue" checked>
+                            Nastavi automatski do kraja
+                        </label>
+                        <button type="submit" class="btn-call" style="width:auto;min-width:200px;" <?= $pendingCount <= 0 ? 'disabled' : '' ?>>
+                            Uvezi sledeću etapu (<?= (int)$pendingCount ?> ostalo)
+                        </button>
+                    </div>
+                    <p class="form-hint" style="margin-top:8px;">
+                        Preporuka za 696 oglasa: <strong>25</strong> po etapi + auto nastavak. Ne zatvaraj tab dok radi.
+                    </p>
+                </form>
             </section>
 
-            <form method="POST" id="kpImportForm">
-                <input type="hidden" name="action" value="import">
-                <div class="form-card table-scroll kp-import-table-wrap">
+            <div class="form-card table-scroll kp-import-table-wrap">
                     <table class="admin-table kp-import-table">
                         <thead>
                             <tr>
@@ -256,7 +326,6 @@ require __DIR__ . '/partials/layout-start.php';
                                 <th style="width:56px;">Slika</th>
                                 <th>Naslov / opis</th>
                                 <th style="width:110px;">Tip</th>
-                                <th style="width:160px;">Kategorija</th>
                                 <th style="width:100px;">Brend</th>
                                 <th style="width:120px;">Cena</th>
                                 <th style="width:110px;">Lokacija</th>
@@ -272,20 +341,24 @@ require __DIR__ . '/partials/layout-start.php';
                                     break;
                                 }
                                 $dupId = (int)($map['duplicate_ad_id'] ?? 0);
-                                $isDup = !empty($map['blocked_duplicate']) || $dupId > 0 || trim((string)($map['duplicate_reason'] ?? '')) !== '';
+                                $isImported = !empty($map['imported']);
+                                $isDup = !$isImported && (!empty($map['blocked_duplicate']) || $dupId > 0 || trim((string)($map['duplicate_reason'] ?? '')) !== '');
                                 $dupReason = trim((string)($map['duplicate_reason'] ?? ''));
                                 if ($dupReason === '' && $dupId > 0) {
                                     $dupReason = 'već uvezen (#' . $dupId . ')';
                                 }
+                                $rowClass = $isImported ? ' kp-import-done' : ($isDup ? ' kp-import-dup' : '');
                                 ?>
-                                <tr class="kp-import-row<?= $isDup ? ' kp-import-dup' : '' ?>" data-index="<?= (int)$i ?>"<?= $isDup ? ' data-duplicate="1"' : '' ?>>
+                                <tr class="kp-import-row<?= $rowClass ?>" data-index="<?= (int)$i ?>">
                                     <td>
-                                        <?php if ($isDup): ?>
-                                            <input type="checkbox" disabled title="Duplikat — blokiran">
-                                            <input type="hidden" name="import[<?= (int)$i ?>][selected]" value="0">
+                                        <?php if ($isImported): ?>
+                                            ✓
+                                        <?php elseif ($isDup): ?>
+                                            ⛔
+                                        <?php elseif (!empty($map['selected'])): ?>
+                                            ●
                                         <?php else: ?>
-                                            <input type="checkbox" name="import[<?= (int)$i ?>][selected]" value="1"
-                                                <?= !empty($map['selected']) ? 'checked' : '' ?>>
+                                            ○
                                         <?php endif; ?>
                                     </td>
                                     <td>
@@ -297,11 +370,12 @@ require __DIR__ . '/partials/layout-start.php';
                                         <div class="kp-import-imgmeta"><?= (int)($map['image_count'] ?? 0) ?> sl.</div>
                                     </td>
                                     <td>
-                                        <input class="kp-field kp-field-title" name="import[<?= (int)$i ?>][title]"
-                                            value="<?= h((string)($map['title'] ?? '')) ?>" required<?= $isDup ? ' readonly' : '' ?>>
-                                        <textarea class="kp-field kp-field-desc" name="import[<?= (int)$i ?>][description]" rows="2"<?= $isDup ? ' readonly' : '' ?>><?= h((string)($map['description'] ?? '')) ?></textarea>
-                                        <?php if ($isDup): ?>
-                                            <div class="kp-import-warn">⛔ Duplikat — <?= h($dupReason) ?></div>
+                                        <div class="kp-field-title"><?= h((string)($map['title'] ?? '')) ?></div>
+                                        <div class="kp-field-desc" style="max-height:40px;overflow:hidden;"><?= h(mb_substr((string)($map['description'] ?? ''), 0, 160)) ?></div>
+                                        <?php if ($isImported): ?>
+                                            <div class="kp-import-ok">Uvezeno</div>
+                                        <?php elseif ($isDup): ?>
+                                            <div class="kp-import-warn">⛔ <?= h($dupReason) ?></div>
                                         <?php endif; ?>
                                         <?php if (!empty($map['source_url'])): ?>
                                             <a href="<?= h((string)$map['source_url']) ?>" target="_blank" rel="noopener" style="font-size:11px;">KP link</a>
@@ -310,86 +384,31 @@ require __DIR__ . '/partials/layout-start.php';
                                             <span style="font-size:10px;color:#888;"> · KP #<?= h((string)$map['source_id']) ?></span>
                                         <?php endif; ?>
                                     </td>
-                                    <td>
-                                        <select class="kp-ad-type" name="import[<?= (int)$i ?>][ad_type]">
-                                            <option value="telefon" <?= ($map['ad_type'] ?? '') === 'telefon' ? 'selected' : '' ?>>Telefon</option>
-                                            <option value="delovi" <?= ($map['ad_type'] ?? '') === 'delovi' ? 'selected' : '' ?>>Delovi</option>
-                                            <option value="servis" <?= ($map['ad_type'] ?? '') === 'servis' ? 'selected' : '' ?>>Servis</option>
-                                        </select>
-                                        <select name="import[<?= (int)$i ?>][listing_type]" style="margin-top:4px;width:100%;">
-                                            <?php foreach ($schema['listing_types'] as $k => $label): ?>
-                                                <option value="<?= h($k) ?>" <?= ($map['listing_type'] ?? 'sell') === $k ? 'selected' : '' ?>><?= h($label) ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
+                                    <td style="font-size:12px;">
+                                        <?= h((string)($map['ad_type'] ?? '')) ?><br>
+                                        <?= h((string)($map['listing_type'] ?? '')) ?>
                                     </td>
-                                    <td>
-                                        <select class="kp-category-group" name="import[<?= (int)$i ?>][category_group]"
-                                            data-selected="<?= h((string)($map['category_group'] ?? '')) ?>">
-                                        </select>
-                                        <?php if ($shopCategories !== []): ?>
-                                            <select name="import[<?= (int)$i ?>][shop_category_id]" style="margin-top:4px;width:100%;">
-                                                <option value="">Izlog kat.</option>
-                                                <?php foreach ($shopCategories as $sc): ?>
-                                                    <option value="<?= h((string)$sc['id']) ?>"
-                                                        <?= ($map['shop_category_id'] ?? '') === (string)$sc['id'] ? 'selected' : '' ?>>
-                                                        <?= h((string)$sc['name']) ?>
-                                                    </option>
-                                                <?php endforeach; ?>
-                                            </select>
-                                        <?php endif; ?>
+                                    <td style="font-size:12px;">
+                                        <?= h((string)($map['brand'] ?? '')) ?><br>
+                                        <?= h((string)($map['model'] ?? '')) ?>
                                     </td>
-                                    <td>
-                                        <input name="import[<?= (int)$i ?>][brand]" value="<?= h((string)($map['brand'] ?? '')) ?>" list="brandList">
-                                        <input name="import[<?= (int)$i ?>][model]" value="<?= h((string)($map['model'] ?? '')) ?>" placeholder="Model" style="margin-top:4px;width:100%;">
-                                        <select name="import[<?= (int)$i ?>][device_type]" class="kp-device-type" style="margin-top:4px;width:100%;">
-                                            <?php foreach ($schema['device_types'] as $k => $label): ?>
-                                                <option value="<?= h($k) ?>" <?= ($map['device_type'] ?? 'phone') === $k ? 'selected' : '' ?>><?= h($label) ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
+                                    <td style="font-size:12px;">
+                                        <?= h((string)(int)($map['price'] ?? 0)) ?>
+                                        <?= h(strtoupper((string)($map['currency'] ?? 'eur'))) ?>
                                     </td>
-                                    <td>
-                                        <input type="number" min="0" step="1" name="import[<?= (int)$i ?>][price]"
-                                            value="<?= h((string)(int)($map['price'] ?? 0)) ?>" style="width:100%;">
-                                        <select name="import[<?= (int)$i ?>][currency]" style="margin-top:4px;width:100%;">
-                                            <option value="eur" <?= ($map['currency'] ?? 'eur') === 'eur' ? 'selected' : '' ?>>EUR</option>
-                                            <option value="rsd" <?= ($map['currency'] ?? '') === 'rsd' ? 'selected' : '' ?>>RSD</option>
-                                        </select>
-                                        <select name="import[<?= (int)$i ?>][price_type]" style="margin-top:4px;width:100%;">
-                                            <option value="fixed" <?= ($map['price_type'] ?? '') === 'fixed' ? 'selected' : '' ?>>Fiksna</option>
-                                            <option value="negotiable" <?= ($map['price_type'] ?? '') === 'negotiable' ? 'selected' : '' ?>>Po dogovoru</option>
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <input name="import[<?= (int)$i ?>][location]" value="<?= h((string)($map['location'] ?? '')) ?>" required>
-                                        <select name="import[<?= (int)$i ?>][condition_state]" style="margin-top:4px;width:100%;">
-                                            <option value="">—</option>
-                                            <?php foreach ($schema['phone_conditions'] as $cond): ?>
-                                                <option value="<?= h($cond) ?>" <?= ($map['condition_state'] ?? '') === $cond ? 'selected' : '' ?>><?= h($cond) ?></option>
-                                            <?php endforeach; ?>
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <label class="kp-check-line">
-                                            <input type="checkbox" name="import[<?= (int)$i ?>][is_active]" value="1"
-                                                <?= !empty($map['is_active']) ? 'checked' : '' ?>> Aktivan
-                                        </label>
-                                        <label class="kp-check-line">
-                                            <input type="checkbox" name="import[<?= (int)$i ?>][download_images]" value="1"
-                                                <?= !empty($map['download_images']) ? 'checked' : '' ?>> Slike
-                                        </label>
+                                    <td style="font-size:12px;"><?= h((string)($map['location'] ?? '')) ?></td>
+                                    <td style="font-size:11px;">
+                                        <?= !empty($map['is_active']) ? 'aktivan' : 'neaktivan' ?><br>
+                                        <?= !empty($map['download_images']) ? 'slike' : 'bez slika' ?>
                                     </td>
                                 </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
-                </div>
+            </div>
 
-                <div class="form-card" style="margin-top:12px;display:flex;gap:10px;flex-wrap:wrap;align-items:center;">
-                    <button type="submit" class="btn-call" style="width:auto;min-width:180px;">Uvezi označene oglase</button>
-                    <span class="form-hint">Uvoz može potrajati (preuzimanje slika). Ne zatvaraj stranicu.</span>
-                </div>
-            </form>
-            <form method="POST" style="margin-top:-8px;margin-bottom:12px;">
+            <form method="POST" style="margin-top:12px;margin-bottom:12px;">
+                <?= csrfField() ?>
                 <input type="hidden" name="action" value="cancel">
                 <button type="submit" class="btn-sm">Otkaži uvoz</button>
             </form>
@@ -404,6 +423,7 @@ require __DIR__ . '/partials/layout-start.php';
             <section class="form-card">
                 <h3>1. JSON fajl i korisnik</h3>
                 <form method="POST" enctype="multipart/form-data">
+                    <?= csrfField() ?>
                     <input type="hidden" name="action" value="parse">
                     <div class="form-group">
                         <label>Korisnik (vlasnik oglasa)</label>
@@ -447,102 +467,36 @@ require __DIR__ . '/partials/layout-start.php';
 <style>
 .kp-import-summary { font-size: 13px; line-height: 1.7; }
 .kp-import-bulk { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; font-size: 13px; }
-.kp-import-table-wrap { padding: 0; }
-.kp-import-table { min-width: 1100px; }
-.kp-import-table input, .kp-import-table select, .kp-import-table textarea {
-    width: 100%; font-size: 12px; padding: 4px 6px; border: 1px solid var(--border); border-radius: 3px;
-}
-.kp-field-title { font-weight: bold; margin-bottom: 4px; }
-.kp-field-desc { min-height: 44px; resize: vertical; color: #555; }
+.kp-stage-box { padding: 12px; border: 1px solid #cfe8d4; background: #f3faf5; border-radius: 8px; }
+.kp-import-table-wrap { padding: 0; margin-top: 12px; }
+.kp-import-table { min-width: 900px; }
+.kp-field-title { font-weight: bold; margin-bottom: 4px; font-size: 13px; }
+.kp-field-desc { font-size: 12px; color: #555; }
 .kp-import-thumb { width: 48px; height: 48px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border); }
 .kp-import-noimg { color: #aaa; }
 .kp-import-imgmeta { font-size: 10px; color: #888; margin-top: 2px; }
 .kp-import-warn { font-size: 11px; color: #b45309; margin-top: 4px; font-weight: 600; }
+.kp-import-ok { font-size: 11px; color: #157a3a; margin-top: 4px; font-weight: 600; }
 .kp-import-dup { background: #fff7ed; opacity: 0.92; }
-.kp-import-dup input[disabled] { cursor: not-allowed; }
+.kp-import-done { background: #f0fdf4; }
 .kp-check-line { display: flex; align-items: center; gap: 4px; font-size: 11px; margin: 2px 0; white-space: nowrap; }
 </style>
 
-<?php if ($step === 'preview'): ?>
+<?php if ($step === 'preview' && $autoContinue && $pendingCount > 0): ?>
 <script>
 (function () {
-    var groups = <?= $categoryGroupsJson ?>;
-
-    function fillCategorySelect(select) {
-        var adType = select.closest('tr').querySelector('.kp-ad-type').value;
-        var selected = select.getAttribute('data-selected') || select.value;
-        select.innerHTML = '';
-        (groups[adType] || []).forEach(function (g) {
-            var opt = document.createElement('option');
-            opt.value = g.key;
-            opt.textContent = g.label;
-            if (g.key === selected) opt.selected = true;
-            select.appendChild(opt);
-        });
-        if (select.options.length === 1) {
-            select.options[0].selected = true;
-        }
+    var form = document.getElementById('kpStageForm');
+    if (!form) return;
+    var size = form.querySelector('#batchSize');
+    if (size) size.value = '<?= (int)$autoBatch ?>';
+    var auto = form.querySelector('#autoContinue');
+    if (auto) auto.checked = true;
+    var btn = form.querySelector('button[type=submit]');
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = 'Uvozim etapu… sačekaj';
     }
-
-    document.querySelectorAll('.kp-category-group').forEach(fillCategorySelect);
-
-    document.querySelectorAll('.kp-ad-type').forEach(function (sel) {
-        sel.addEventListener('change', function () {
-            var row = sel.closest('tr');
-            var cat = row.querySelector('.kp-category-group');
-            cat.setAttribute('data-selected', '');
-            fillCategorySelect(cat);
-        });
-    });
-
-    document.getElementById('btnSelectAll').addEventListener('click', function () {
-        document.querySelectorAll('.kp-import-row').forEach(function (row) {
-            if (row.getAttribute('data-duplicate') === '1') return;
-            var cb = row.querySelector('input[type=checkbox][name*="[selected]"]');
-            if (cb && !cb.disabled) cb.checked = true;
-        });
-    });
-    document.getElementById('btnSelectNone').addEventListener('click', function () {
-        document.querySelectorAll('.kp-import-row input[type=checkbox][name*="[selected]"]').forEach(function (cb) {
-            if (!cb.disabled) cb.checked = false;
-        });
-    });
-    document.getElementById('kpImportForm').addEventListener('submit', function (e) {
-        var ready = 0;
-        document.querySelectorAll('.kp-import-row').forEach(function (row) {
-            if (row.getAttribute('data-duplicate') === '1') return;
-            var cb = row.querySelector('input[type=checkbox][name*="[selected]"]');
-            if (cb && cb.checked) ready++;
-        });
-        if (ready === 0) {
-            e.preventDefault();
-            alert('Nema označenih novih oglasa za uvoz (duplikati su blokirani).');
-            return;
-        }
-        if (!confirm('Uvesti ' + ready + ' oglasa? Duplikati ostaju blokirani.')) {
-            e.preventDefault();
-        }
-    });
-    document.getElementById('btnActivateAll').addEventListener('click', function () {
-        document.querySelectorAll('.kp-import-row').forEach(function (row) {
-            var sel = row.querySelector('input[name*="[selected]"]');
-            if (sel && sel.checked) {
-                var active = row.querySelector('input[name*="[is_active]"]');
-                if (active) active.checked = true;
-            }
-        });
-    });
-    document.getElementById('btnApplyType').addEventListener('click', function () {
-        var type = document.getElementById('bulkAdType').value;
-        if (!type) return;
-        document.querySelectorAll('.kp-import-row').forEach(function (row) {
-            var sel = row.querySelector('input[name*="[selected]"]');
-            if (!sel || !sel.checked) return;
-            var adType = row.querySelector('.kp-ad-type');
-            adType.value = type;
-            adType.dispatchEvent(new Event('change'));
-        });
-    });
+    setTimeout(function () { form.submit(); }, 800);
 })();
 </script>
 <?php endif; ?>
