@@ -2167,6 +2167,13 @@
       || window.navigator.standalone === true;
   }
 
+  function isIosDevice() {
+    var ua = navigator.userAgent || '';
+    if (/iphone|ipad|ipod/i.test(ua)) return true;
+    // iPadOS desktop UA
+    return navigator.platform === 'MacIntel' && (navigator.maxTouchPoints || 0) > 1;
+  }
+
   function initPwa() {
     if (!('serviceWorker' in navigator)) return;
 
@@ -2177,10 +2184,13 @@
 
     var banner = one('[data-pwa-install]');
     var installBtn = one('[data-pwa-install-btn]');
+    var iosHelpBtn = one('[data-pwa-ios-help]');
     var dismissBtn = one('[data-pwa-install-dismiss]');
     var hint = one('[data-pwa-install-hint]');
+    var steps = one('[data-pwa-install-steps]');
     var deferredPrompt = null;
     var dismissKey = 'kt_pwa_install_dismissed';
+    var mode = 'android';
 
     function dismissed() {
       try { return localStorage.getItem(dismissKey) === '1'; } catch (e) { return false; }
@@ -2189,14 +2199,24 @@
       try { localStorage.setItem(dismissKey, '1'); } catch (e) {}
     }
 
-    function showBanner(mode) {
+    function setBtnVisible(btn, visible) {
+      if (!btn) return;
+      btn.hidden = !visible;
+      btn.classList.toggle('is-pwa-hidden', !visible);
+    }
+
+    function showBanner(nextMode) {
       if (!banner || isStandalonePwa() || dismissed()) return;
+      mode = nextMode || 'android';
       if (hint) {
         hint.textContent = mode === 'ios'
-          ? 'iPhone: Share → „Dodaj na početni ekran“.'
+          ? 'Na iPhone-u Apple ne dozvoljava jedan-klik instalaciju — koristi Share meni.'
           : 'Brži pristup kao aplikacija — početni ekran.';
       }
-      if (installBtn) installBtn.hidden = mode === 'ios';
+      if (steps) steps.hidden = true;
+      // iOS: sakrij „Dodaj“ (ne radi), prikaži „Kako?“
+      setBtnVisible(installBtn, mode !== 'ios');
+      setBtnVisible(iosHelpBtn, mode === 'ios');
       banner.hidden = false;
     }
 
@@ -2206,23 +2226,42 @@
       showBanner('android');
     });
 
-    // iOS Safari nema beforeinstallprompt
-    var isIos = /iphone|ipad|ipod/i.test(navigator.userAgent || '');
-    var isSafari = /safari/i.test(navigator.userAgent || '') && !/crios|fxios|edgios/i.test(navigator.userAgent || '');
-    if (isIos && isSafari && !isStandalonePwa()) {
+    // iOS (Safari / Chrome na iOS-u): samo uputstvo
+    if (isIosDevice() && !isStandalonePwa()) {
       showBanner('ios');
     }
 
     if (installBtn) {
       installBtn.addEventListener('click', function () {
-        if (!deferredPrompt) return;
-        deferredPrompt.prompt();
-        deferredPrompt.userChoice.finally(function () {
-          deferredPrompt = null;
-          if (banner) banner.hidden = true;
-        });
+        if (deferredPrompt) {
+          deferredPrompt.prompt();
+          deferredPrompt.userChoice.finally(function () {
+            deferredPrompt = null;
+            if (banner) banner.hidden = true;
+          });
+          return;
+        }
+        // Fallback ako je dugme vidljivo bez prompta
+        if (isIosDevice()) {
+          showBanner('ios');
+          if (steps) steps.hidden = false;
+          return;
+        }
+        if (hint) {
+          hint.textContent = 'Otvori meni pregledača → „Instaliraj aplikaciju“ / „Dodaj na početni ekran“.';
+        }
       });
     }
+
+    if (iosHelpBtn) {
+      iosHelpBtn.addEventListener('click', function () {
+        if (steps) {
+          steps.hidden = !steps.hidden;
+          iosHelpBtn.textContent = steps.hidden ? 'Kako?' : 'Sakrij';
+        }
+      });
+    }
+
     if (dismissBtn) {
       dismissBtn.addEventListener('click', function () {
         setDismissed();

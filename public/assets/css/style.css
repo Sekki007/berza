@@ -1462,15 +1462,18 @@ body.page-chat .footer,body.page-chat .site-footer{display:none;}
 .recent-ticker span { margin-right: 14px; }
 .pwa-install{
   position:fixed;left:12px;right:12px;bottom:calc(64px + env(safe-area-inset-bottom, 0px));
-  z-index:60;display:flex;gap:12px;align-items:center;justify-content:space-between;
+  z-index:60;display:flex;gap:12px;align-items:flex-start;justify-content:space-between;
   padding:12px 14px;background:#fff;border:1px solid var(--border);border-radius:12px;
   box-shadow:0 8px 28px rgba(0,0,0,.12);
 }
 .pwa-install[hidden]{display:none !important;}
-.pwa-install-text{display:flex;flex-direction:column;gap:2px;min-width:0;}
+.pwa-install-text{display:flex;flex-direction:column;gap:2px;min-width:0;flex:1;}
 .pwa-install-text strong{font-size:13px;color:var(--text);}
 .pwa-install-text span{font-size:12px;color:var(--text-muted);line-height:1.35;}
+.pwa-install-steps{margin:8px 0 0;padding-left:18px;font-size:12px;color:var(--text);line-height:1.45;}
+.pwa-install-steps[hidden]{display:none !important;}
 .pwa-install-actions{display:flex;gap:6px;flex-shrink:0;}
+.pwa-install-actions .btn-sm.is-pwa-hidden{display:none !important;}
 @media (min-width:900px){
   .pwa-install{left:auto;right:20px;bottom:20px;max-width:380px;}
 }

@@ -295,9 +295,15 @@ if ($user) {
         <div class="pwa-install-text">
             <strong>Dodaj KupiTelefon na telefon</strong>
             <span data-pwa-install-hint>Brži pristup kao aplikacija — početni ekran.</span>
+            <ol class="pwa-install-steps" data-pwa-install-steps hidden>
+                <li>Tapni <strong>Share</strong> (□↑) u Safari traci</li>
+                <li>Skroluj i izaberi <strong>Dodaj na početni ekran</strong></li>
+                <li>Potvrdi <strong>Dodaj</strong></li>
+            </ol>
         </div>
         <div class="pwa-install-actions">
             <button type="button" class="btn-sm btn-sm-primary" data-pwa-install-btn>Dodaj</button>
+            <button type="button" class="btn-sm btn-sm-primary" data-pwa-ios-help hidden>Kako?</button>
             <button type="button" class="btn-sm" data-pwa-install-dismiss aria-label="Zatvori">Ne sad</button>
         </div>
     </div>
