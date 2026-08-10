@@ -135,6 +135,9 @@ function defaultSiteSettings(): array
         'imei_services' => defaultImeiServices(),
         'telegram_welcome_text' => '',
         'telegram_welcome_delete_sec' => 0,
+        'ad_image_watermark' => true,
+        'ad_image_watermark_position' => 'bottom-right',
+        'ad_image_watermark_label' => 'KupiTelefon.rs',
     ];
 }
 

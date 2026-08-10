@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+require_once __DIR__ . '/image_watermark.php';
+
 function categoriesConfig(): array
 {
     static $config = null;
@@ -272,6 +274,9 @@ function compressAndSaveImage(string $tmpPath, string $destPath, string $mime): 
 
     $ok = imagejpeg($src, $destPath, 78);
     imagedestroy($src);
+    if ($ok && function_exists('applyAdImageWatermark') && adImagePathShouldWatermark($destPath)) {
+        applyAdImageWatermark($destPath);
+    }
     return (bool)$ok;
 }
 
