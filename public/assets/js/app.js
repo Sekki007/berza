@@ -208,6 +208,16 @@
         if (selected.value === 'delovi') opt.classList.add('selected-parts');
         if (selected.value === 'servis') opt.classList.add('selected-service');
         syncAdFormByType(selected.value);
+        const form = one('[data-ad-form]');
+        if (form) {
+          const title = one('[data-ad-title]', form);
+          const suggestBtn = one('[data-suggest-title]', form);
+          // tip promenjen → dozvoli auto naslov opet
+          if (suggestBtn) suggestBtn.click();
+          else if (title && !(title.value || '').trim()) {
+            title.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+        }
         const priceInput = one('[data-price-input]');
         if (priceInput) priceInput.dispatchEvent(new Event('change', { bubbles: true }));
       });
@@ -301,7 +311,6 @@
       }
     }
 
-    const brandSel = one('[data-phone-brand]', form);
     const batt = one('[data-battery-field]', form);
     if (batt) {
       batt.hidden = type !== 'telefon';
@@ -438,34 +447,55 @@
     if (!form) return;
 
     const title = one('#ad-title', form) || one('[data-ad-title]', form);
-    const model = one('#ad-model', form);
-    const brand = one('[data-phone-brand]', form);
     const suggestBtn = one('[data-suggest-title]', form);
+    const titleHint = one('[data-title-hint]', form);
+    let titleManual = !!(title && (title.value || '').trim() !== '' && form.getAttribute('data-is-edit') === '1');
+    // Na novom oglasu: auto; na edit ako već ima naslov — ne diraj dok ne klikne Osveži
+    if (title && (title.value || '').trim() !== '') {
+      // Ako je edit forma, smatraj ručnim dok ne osveži
+      const isEdit = !!one('.ad-form-head h2', form) && /Izmeni/i.test((one('.ad-form-head h2', form).textContent || ''));
+      titleManual = isEdit;
+    }
+
+    function setTitleHint() {
+      if (!titleHint) return;
+      titleHint.textContent = titleManual
+        ? 'Naslov je zaključan (ručno). Klikni „Osveži“ da se ponovo složi iz polja.'
+        : 'Naslov se ažurira dok popunjavaš brend/model… Ručna izmena ga zaključava.';
+    }
 
     function fillSuggestedTitle(force) {
       if (!title) return;
-      if (!force && (title.value || '').trim() !== '') return;
+      if (!force && titleManual) return;
       const suggested = buildSuggestedAdTitle(form);
       if (!suggested) return;
       title.value = suggested;
+      if (force) titleManual = false;
+      setTitleHint();
     }
 
     if (suggestBtn) {
       suggestBtn.addEventListener('click', function () {
+        titleManual = false;
         fillSuggestedTitle(true);
       });
     }
 
-    if (title && model && brand) {
-      model.addEventListener('blur', function () { fillSuggestedTitle(false); });
-      brand.addEventListener('change', function () {
-        const typeEl = one('[data-form-type]:checked', form);
-        syncAdFormByType(typeEl ? typeEl.value : 'telefon');
-        fillSuggestedTitle(false);
+    if (title) {
+      title.addEventListener('input', function () {
+        titleManual = true;
+        setTitleHint();
       });
-      const storage = one('select[name="storage"]', form);
-      if (storage) storage.addEventListener('change', function () { fillSuggestedTitle(false); });
     }
+
+    form.querySelectorAll('[data-title-source]').forEach(function (el) {
+      el.addEventListener('change', function () { fillSuggestedTitle(false); });
+      el.addEventListener('input', function () { fillSuggestedTitle(false); });
+      el.addEventListener('blur', function () { fillSuggestedTitle(false); });
+    });
+
+    setTitleHint();
+    if (!titleManual) fillSuggestedTitle(false);
 
     // Stepper: skrol do sekcije
     form.querySelectorAll('[data-goto-step]').forEach(function (btn) {
