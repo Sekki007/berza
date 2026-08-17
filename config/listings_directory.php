@@ -55,6 +55,7 @@ function listingLandingPath(array $filters): string
     $brand = trim((string)($filters['brand'] ?? ''));
     $model = trim((string)($filters['model'] ?? ''));
     $city = trim((string)($filters['location'] ?? ''));
+    $equipmentGroup = trim((string)($filters['equipment_group'] ?? ''));
 
     if ($brand !== '' && $city !== '') {
         return '/oglasi/' . rawurlencode(listingFacetSlug($brand)) . '/grad/' . rawurlencode(citySlug($city));
@@ -68,10 +69,62 @@ function listingLandingPath(array $filters): string
     if ($brand !== '') {
         return '/oglasi/' . rawurlencode(listingFacetSlug($brand));
     }
+    if ($type === 'delovi' && $equipmentGroup === 'oprema') {
+        return '/oglasi/oprema';
+    }
+    if ($type === 'delovi' && ($equipmentGroup === 'parts' || $equipmentGroup === '')) {
+        return '/oglasi/delovi';
+    }
     if ($type !== '') {
         return '/oglasi/' . rawurlencode(listingTypeSlug($type));
     }
     return '/';
+}
+
+/**
+ * 301 na čist URL kada su type/equipment_group već u path-u.
+ */
+function listingRequestCleanRedirect(string $requestUri): ?string
+{
+    if (($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'GET') {
+        return null;
+    }
+
+    $path = rtrim(parse_url($requestUri, PHP_URL_PATH) ?: '/', '/') ?: '/';
+    $queryStr = (string)(parse_url($requestUri, PHP_URL_QUERY) ?? '');
+    parse_str($queryStr, $query);
+
+    $equipmentGroup = trim((string)($query['equipment_group'] ?? ''));
+    $type = trim((string)($query['type'] ?? ''));
+
+    $keep = array_filter($query, static function ($v, $k) {
+        if (in_array($k, ['equipment_group', 'type'], true)) {
+            return false;
+        }
+        return $v !== '' && $v !== null;
+    }, ARRAY_FILTER_USE_BOTH);
+
+    $build = static function (string $targetPath) use ($keep): string {
+        $qs = $keep !== [] ? ('?' . http_build_query($keep)) : '';
+        return $targetPath . $qs;
+    };
+
+    if ($path === '/oglasi/delovi') {
+        if ($equipmentGroup === 'oprema') {
+            $target = $build('/oglasi/oprema');
+        } elseif ($equipmentGroup === 'parts' || $type === 'delovi') {
+            $target = $build('/oglasi/delovi');
+        } else {
+            return null;
+        }
+    } elseif ($path === '/oglasi/oprema' && ($equipmentGroup === 'oprema' || $type === 'delovi')) {
+        $target = $build('/oglasi/oprema');
+    } else {
+        return null;
+    }
+
+    $current = $path . ($queryStr !== '' ? '?' . $queryStr : '');
+    return $target !== $current ? $target : null;
 }
 
 function resolveListingLandingFromPath(string $path): ?array
@@ -105,7 +158,21 @@ function resolveListingLandingFromPath(string $path): ?array
         return ['filters' => ['location' => $city], 'path' => '/oglasi/grad/' . rawurlencode(citySlug($city))];
     }
 
-    $type = listingTypeFromSlug(rawurldecode($parts[0]));
+    $first = rawurldecode($parts[0]);
+    if ($first === 'oprema' && count($parts) === 1) {
+        return [
+            'filters' => ['type' => 'delovi', 'equipment_group' => 'oprema'],
+            'path' => '/oglasi/oprema',
+        ];
+    }
+
+    $type = listingTypeFromSlug($first);
+    if ($type === 'delovi' && count($parts) === 1) {
+        return [
+            'filters' => ['type' => 'delovi', 'equipment_group' => 'parts'],
+            'path' => '/oglasi/delovi',
+        ];
+    }
     if ($type !== '' && count($parts) === 1) {
         return ['filters' => ['type' => $type], 'path' => '/oglasi/' . rawurlencode(listingTypeSlug($type))];
     }
@@ -170,11 +237,19 @@ function listingLandingCandidatesForSitemap(): array
 {
     $out = [];
 
-    foreach (['telefon', 'delovi', 'servis'] as $type) {
+    foreach (['telefon', 'servis'] as $type) {
         $ads = getPublicAds(['types' => [$type], 'sort' => 'newest']);
         if (listingLandingIndexable(['type' => $type], $ads)) {
             $out[] = listingLandingPath(['type' => $type]);
         }
+    }
+    $partsAds = getPublicAds(['types' => ['delovi'], 'equipment_group' => 'parts', 'sort' => 'newest']);
+    if (listingLandingIndexable(['type' => 'delovi', 'equipment_group' => 'parts'], $partsAds)) {
+        $out[] = listingLandingPath(['type' => 'delovi', 'equipment_group' => 'parts']);
+    }
+    $opremaAds = getPublicAds(['types' => ['delovi'], 'equipment_group' => 'oprema', 'sort' => 'newest']);
+    if (listingLandingIndexable(['type' => 'delovi', 'equipment_group' => 'oprema'], $opremaAds)) {
+        $out[] = listingLandingPath(['type' => 'delovi', 'equipment_group' => 'oprema']);
     }
 
     $brands = (array)(categoriesConfig()['brands'] ?? []);

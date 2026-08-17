@@ -733,7 +733,7 @@ function browseCategoryKey(string $type = '', string $equipmentGroup = ''): stri
         return 'servis';
     }
     if ($type === 'delovi') {
-        return 'oprema';
+        return 'parts';
     }
     return '';
 }

@@ -47,8 +47,8 @@ if ($user) {
                     <h4>Istraži</h4>
                     <a href="/">Početna</a>
                     <a href="/oglasi/telefoni">Telefoni</a>
-                    <a href="/oglasi/delovi?equipment_group=parts">Delovi</a>
-                    <a href="/oglasi/delovi?equipment_group=oprema">Oprema</a>
+                    <a href="/oglasi/delovi">Delovi</a>
+                    <a href="/oglasi/oprema">Oprema</a>
                     <a href="/oglasi/servis">Servis</a>
                     <a href="/servisi">Firme po gradu</a>
                     <a href="/provera-imei">Besplatna IMEI provera</a>

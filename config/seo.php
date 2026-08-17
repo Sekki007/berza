@@ -34,6 +34,7 @@ function seoListingMeta(array $filters = []): array
     $name = seoSiteName();
     $parts = [];
     $type = (string)($filters['type'] ?? '');
+    $equipmentGroup = trim((string)($filters['equipment_group'] ?? ''));
     $brand = trim((string)($filters['brand'] ?? ''));
     $model = trim((string)($filters['model'] ?? ''));
     $location = trim((string)($filters['location'] ?? ''));
@@ -46,7 +47,7 @@ function seoListingMeta(array $filters = []): array
     if ($type === 'telefon') {
         $parts[] = 'Telefoni';
     } elseif ($type === 'delovi') {
-        $parts[] = 'Delovi i oprema';
+        $parts[] = $equipmentGroup === 'oprema' ? 'Oprema' : ($equipmentGroup === 'parts' ? 'Delovi' : 'Delovi i oprema');
     } elseif ($type === 'servis') {
         $parts[] = 'Servis';
     }
@@ -102,12 +103,13 @@ function seoAdMeta(array $ad): array
 function seoListingHeading(array $filters = []): string
 {
     $type = (string)($filters['type'] ?? '');
+    $equipmentGroup = trim((string)($filters['equipment_group'] ?? ''));
     $brand = trim((string)($filters['brand'] ?? ''));
     $model = trim((string)($filters['model'] ?? ''));
     $location = trim((string)($filters['location'] ?? ''));
 
     $subject = match ($type) {
-        'delovi' => 'Delovi i oprema',
+        'delovi' => $equipmentGroup === 'oprema' ? 'Oprema' : ($equipmentGroup === 'parts' ? 'Delovi' : 'Delovi i oprema'),
         'servis' => 'Servis',
         'telefon' => 'Telefoni',
         default => 'Oglasi',

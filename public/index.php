@@ -14,6 +14,12 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET' && $requestPath === '/index.
     }
 }
 
+$cleanListingRedirect = listingRequestCleanRedirect((string)($_SERVER['REQUEST_URI'] ?? '/'));
+if ($cleanListingRedirect !== null) {
+    header('Location: ' . $cleanListingRedirect, true, 301);
+    exit;
+}
+
 // Radi i bez nginx rewrite pravila: nepoznate putanje stižu ovde preko try_files.
 if (preg_match('#^/(?:vodici|blog)/?$#', $requestPath) === 1) {
     require __DIR__ . '/vodici.php';
@@ -100,6 +106,9 @@ if (is_array($landing) && !empty($landing['filters'])) {
     }
     if (!empty($landingFilters['type'])) {
         $type = (string)$landingFilters['type'];
+    }
+    if (!empty($landingFilters['equipment_group'])) {
+        $equipmentGroup = (string)$landingFilters['equipment_group'];
     }
 }
 // Filter forma šalje browse_cat (Telefoni/Delovi/Oprema/Servis)
@@ -188,6 +197,14 @@ $queryBase = array_filter([
     'sort' => $sort,
 ], static fn($v) => $v !== '');
 
+if (is_array($landing) && !empty($landing['filters'])) {
+    foreach (['type', 'brand', 'model', 'location', 'equipment_group'] as $landingKey) {
+        if (!empty($landing['filters'][$landingKey])) {
+            unset($queryBase[$landingKey]);
+        }
+    }
+}
+
 $seoMeta = seoListingMeta([
     'q' => $search,
     'brand' => $brand,
@@ -195,6 +212,7 @@ $seoMeta = seoListingMeta([
     'location' => $location,
     'type' => $type,
     'device_type' => $deviceType,
+    'equipment_group' => $equipmentGroup,
 ]);
 $pageTitle = $seoMeta['title'];
 $pageDescription = $seoMeta['description'];
@@ -421,10 +439,10 @@ $homeCats = [
 <div class="home-cat-wrap">
     <nav class="home-cat-tiles" aria-label="Kategorije">
         <?php foreach ($homeCats as $cat):
-            $catHref = listingLandingPath(['type' => $cat['type']]);
-            if ($cat['equipment_group'] !== '') {
-                $catHref .= '?' . http_build_query(['equipment_group' => $cat['equipment_group']]);
-            }
+            $catHref = listingLandingPath([
+                'type' => $cat['type'],
+                'equipment_group' => $cat['equipment_group'],
+            ]);
             $isActive = $type === $cat['type']
                 && (($cat['equipment_group'] === '' && $equipmentGroup === '')
                     || $equipmentGroup === $cat['equipment_group']);

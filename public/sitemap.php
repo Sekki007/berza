@@ -20,8 +20,8 @@ $staticPages = [
     ['/provera-imei', '0.8', 'monthly'],
     ['/oglasi/telefoni', '0.8', 'daily'],
     ['/oglasi/delovi', '0.7', 'daily'],
+    ['/oglasi/oprema', '0.7', 'daily'],
     ['/oglasi/servis', '0.8', 'daily'],
-    ['/oglasi/delovi?equipment_group=oprema', '0.7', 'daily'],
     ['/oglasi?device_type=tablet', '0.7', 'daily'],
     ['/oglasi?device_type=watch', '0.7', 'daily'],
 ];
