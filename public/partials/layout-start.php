@@ -99,7 +99,7 @@ $compareCount = count(compareIds());
                 <a href="/servisi">Firme</a>
                 <a href="/vodici">Vodiči</a>
                 <a href="/provera-imei">Provera IMEI</a>
-                <a href="/kako-radi.php">Kako radi</a>
+                <a href="/kako-radi">Kako radi</a>
                 <?php if (!empty($site['enable_favorites'])): ?><a href="/favorites.php">Omiljeni</a><?php endif; ?>
                 <?php if ($user): ?>
                     <?php if (!empty($site['enable_messages'])): ?>
@@ -108,7 +108,7 @@ $compareCount = count(compareIds());
                     <a class="nav-with-badge" href="/nalog.php?tab=obavestenja">Obaveštenja<?= renderUnreadBadge($unreadNotifications) ?></a>
                     <a href="/logout.php">Odjava</a>
                 <?php else: ?>
-                    <a href="/login.php">Prijava</a>
+                    <a href="/prijava">Prijava</a>
                 <?php endif; ?>
             </div>
         </div>
@@ -142,7 +142,7 @@ $compareCount = count(compareIds());
                 </form>
             <?php endif; ?>
 
-            <a class="btn-post" href="<?= $user ? '/ad_form.php' : '/login.php' ?>">Postavite oglas</a>
+            <a class="btn-post" href="<?= $user ? '/postavi-oglas' : '/prijava' ?>">Postavite oglas</a>
             <div class="header-user">
                 <?php if ($user): ?>
                     <span class="header-user-name" title="<?= h((string)$user['full_name']) ?>"><?= h((string)$user['full_name']) ?></span>
@@ -176,7 +176,7 @@ $compareCount = count(compareIds());
                     </nav>
                 <?php else: ?>
                     <nav class="header-nav" aria-label="Prijava">
-                        <a class="header-nav-link" href="/login.php" title="Prijava">
+                        <a class="header-nav-link" href="/prijava" title="Prijava">
                             <svg class="header-nav-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                                 <path d="M10 4H6.5A2.5 2.5 0 0 0 4 6.5v11A2.5 2.5 0 0 0 6.5 20H10" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
                                 <path d="M10.5 12H20m0 0-3.2-3.2M20 12l-3.2 3.2" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/>
@@ -184,7 +184,7 @@ $compareCount = count(compareIds());
                             <span class="header-nav-label">Prijava</span>
                         </a>
                         <?php if (!empty($site['enable_registration'])): ?>
-                            <a class="header-nav-link header-nav-primary" href="/register.php" title="Registracija">
+                            <a class="header-nav-link header-nav-primary" href="/registracija" title="Registracija">
                                 <span class="header-nav-label">Registracija</span>
                             </a>
                         <?php endif; ?>

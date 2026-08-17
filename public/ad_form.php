@@ -3,6 +3,13 @@
 declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/config/bootstrap.php';
+$requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?: '';
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET' && $requestPath === '/ad_form.php') {
+    $query = (string)(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_QUERY) ?? '');
+    $target = '/postavi-oglas' . ($query !== '' ? '?' . $query : '');
+    header('Location: ' . $target, true, 301);
+    exit;
+}
 requireLogin();
 require_once __DIR__ . '/partials/ad-form-chips.php';
 

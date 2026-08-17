@@ -20,6 +20,22 @@ if (preg_match('#^/provera-imei/?$#', $requestPath) === 1) {
     require __DIR__ . '/provera-imei.php';
     exit;
 }
+if (preg_match('#^/(prijava|login)/?$#', $requestPath) === 1) {
+    require __DIR__ . '/login.php';
+    exit;
+}
+if (preg_match('#^/(registracija|registracij|register)/?$#', $requestPath) === 1) {
+    require __DIR__ . '/register.php';
+    exit;
+}
+if (preg_match('#^/(postavi-oglas|dodaj-oglas)/?$#', $requestPath) === 1) {
+    require __DIR__ . '/ad_form.php';
+    exit;
+}
+if (preg_match('#^/kako-radi/?$#', $requestPath) === 1) {
+    require __DIR__ . '/kako-radi.php';
+    exit;
+}
 
 $cfg = categoriesConfig();
 $settings = siteSettings();

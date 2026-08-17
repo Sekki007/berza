@@ -59,6 +59,26 @@ if ($uri === '/provera-imei' || $uri === '/provera-imei/') {
     exit;
 }
 
+if (in_array($uri, ['/prijava', '/prijava/', '/login', '/login/'], true)) {
+    require __DIR__ . '/public/login.php';
+    exit;
+}
+
+if (in_array($uri, ['/registracija', '/registracija/', '/registracij', '/registracij/', '/register', '/register/'], true)) {
+    require __DIR__ . '/public/register.php';
+    exit;
+}
+
+if (in_array($uri, ['/postavi-oglas', '/postavi-oglas/', '/dodaj-oglas', '/dodaj-oglas/'], true)) {
+    require __DIR__ . '/public/ad_form.php';
+    exit;
+}
+
+if ($uri === '/kako-radi' || $uri === '/kako-radi/') {
+    require __DIR__ . '/public/kako-radi.php';
+    exit;
+}
+
 if (preg_match('#^/(vodic|blog)/([^/]+)/?$#', $uri, $m)) {
     $_GET['slug'] = rawurldecode($m[2]);
     require __DIR__ . '/public/vodic.php';

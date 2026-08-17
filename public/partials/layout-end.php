@@ -55,11 +55,11 @@ if ($user) {
                 </div>
                 <div class="site-footer-col">
                     <h4>Prodaja</h4>
-                    <a href="/ad_form.php">Postavi oglas</a>
-                    <a href="/kako-radi.php">Kako radi</a>
+                    <a href="/postavi-oglas">Postavi oglas</a>
+                    <a href="/kako-radi">Kako radi</a>
                     <?php if (empty($user)): ?>
-                        <a href="/register.php">Registracija</a>
-                        <a href="/login.php">Prijava</a>
+                        <a href="/registracija">Registracija</a>
+                        <a href="/prijava">Prijava</a>
                     <?php else: ?>
                         <a href="/nalog.php?tab=oglasi">Moji oglasi</a>
                         <?php if (topPurchaseEnabled()): ?><a href="/nalog.php?tab=top">TOP isticanje</a><?php endif; ?>
@@ -73,9 +73,9 @@ if ($user) {
                         <?php if (!empty($site['enable_favorites'])): ?><a href="/favorites.php">Omiljeni</a><?php endif; ?>
                         <a href="/nalog.php?tab=obavestenja">Obaveštenja</a>
                     <?php else: ?>
-                        <a href="/login.php">Prijava</a>
-                        <a href="/register.php">Napravi nalog</a>
-                        <a href="/kako-radi.php">Pomoć</a>
+                        <a href="/prijava">Prijava</a>
+                        <a href="/registracija">Napravi nalog</a>
+                        <a href="/kako-radi">Pomoć</a>
                     <?php endif; ?>
                     <a href="mailto:podrska@kupitelefon.rs">Podrška</a>
                 </div>
@@ -213,7 +213,7 @@ if ($user) {
                     </span>
                 </a>
             <?php else: ?>
-                <a href="/login.php" class="mobile-account-menu-item mobile-account-menu-item-accent">
+                <a href="/prijava" class="mobile-account-menu-item mobile-account-menu-item-accent">
                     <span class="mobile-account-menu-icon">🔑</span>
                     <span class="mobile-account-menu-text">
                         <strong>Prijava</strong>
@@ -221,7 +221,7 @@ if ($user) {
                     </span>
                 </a>
                 <?php if (!empty($site['enable_registration'])): ?>
-                    <a href="/register.php" class="mobile-account-menu-item">
+                    <a href="/registracija" class="mobile-account-menu-item">
                         <span class="mobile-account-menu-icon">＋</span>
                         <span class="mobile-account-menu-text">
                             <strong>Registracija</strong>
@@ -229,7 +229,7 @@ if ($user) {
                         </span>
                     </a>
                 <?php endif; ?>
-                <a href="/ad_form.php" class="mobile-account-menu-item">
+                <a href="/postavi-oglas" class="mobile-account-menu-item">
                     <span class="mobile-account-menu-icon">📋</span>
                     <span class="mobile-account-menu-text">
                         <strong>Postavi oglas</strong>
@@ -243,7 +243,7 @@ if ($user) {
                         <small>Servis i prodaja telefona</small>
                     </span>
                 </a>
-                    <a href="/kako-radi.php" class="mobile-account-menu-item">
+                    <a href="/kako-radi" class="mobile-account-menu-item">
                         <span class="mobile-account-menu-icon">ℹ</span>
                         <span class="mobile-account-menu-text">
                             <strong>Kako radi</strong>
@@ -280,9 +280,9 @@ if ($user) {
         <nav class="mobile-bar">
             <a href="/index.php" data-nav="oglasi" class="<?= $activePage === 'oglasi' ? 'active' : '' ?>"><span class="mobile-bar-icon">🏠</span><span>Oglasi</span></a>
             <a href="/index.php#search" data-nav="pretraga" data-focus-search class="<?= $activePage === 'pretraga' ? 'active' : '' ?>"><span class="mobile-bar-icon">🔎</span><span>Pretraga</span></a>
-            <a href="<?= $user ? '/ad_form.php' : '/login.php' ?>" data-nav="dodaj" class="mobile-bar-add <?= $activePage === 'dodaj' ? 'active' : '' ?>"><span class="mobile-bar-icon">＋</span><span>Dodaj</span></a>
-            <a href="<?= $user ? '/poruke.php' : '/login.php' ?>" data-nav="poruke" class="nav-with-badge <?= $activePage === 'poruke' ? 'active' : '' ?>"><span class="mobile-bar-icon">💬</span><span>Poruke</span><?= $user ? renderUnreadBadge($unreadMessages) : '' ?></a>
-            <a href="<?= $user ? '/nalog.php' : '/login.php' ?>" data-nav="nalog" class="nav-with-badge <?= $activePage === 'nalog' ? 'active' : '' ?>"><span class="mobile-bar-icon">👤</span><span>Nalog</span><?= $user ? renderUnreadBadge($unreadNotifications) : '' ?></a>
+            <a href="<?= $user ? '/postavi-oglas' : '/prijava' ?>" data-nav="dodaj" class="mobile-bar-add <?= $activePage === 'dodaj' ? 'active' : '' ?>"><span class="mobile-bar-icon">＋</span><span>Dodaj</span></a>
+            <a href="<?= $user ? '/poruke.php' : '/prijava' ?>" data-nav="poruke" class="nav-with-badge <?= $activePage === 'poruke' ? 'active' : '' ?>"><span class="mobile-bar-icon">💬</span><span>Poruke</span><?= $user ? renderUnreadBadge($unreadMessages) : '' ?></a>
+            <a href="<?= $user ? '/nalog.php' : '/prijava' ?>" data-nav="nalog" class="nav-with-badge <?= $activePage === 'nalog' ? 'active' : '' ?>"><span class="mobile-bar-icon">👤</span><span>Nalog</span><?= $user ? renderUnreadBadge($unreadNotifications) : '' ?></a>
         </nav>
     <?php endif; ?>
 

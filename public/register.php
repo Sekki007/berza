@@ -4,6 +4,14 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/config/bootstrap.php';
 
+$requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?: '';
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET' && $requestPath === '/register.php') {
+    $query = (string)(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_QUERY) ?? '');
+    $target = '/registracija' . ($query !== '' ? '?' . $query : '');
+    header('Location: ' . $target, true, 301);
+    exit;
+}
+
 if (isLoggedIn()) {
     header('Location: /nalog.php');
     exit;
@@ -92,6 +100,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $pageTitle = 'Registracija — KupiTelefon';
+$canonicalUrl = absoluteUrl('/registracija');
 $activePage = 'nalog';
 $minimalHeader = true;
 $showSearch = false;

@@ -4,6 +4,14 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/config/bootstrap.php';
 
+$requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?: '';
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET' && $requestPath === '/login.php') {
+    $query = (string)(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_QUERY) ?? '');
+    $target = '/prijava' . ($query !== '' ? '?' . $query : '');
+    header('Location: ' . $target, true, 301);
+    exit;
+}
+
 if (isLoggedIn()) {
     header('Location: ' . (isAdmin() ? '/dashboard.php' : '/nalog.php'));
     exit;
@@ -45,6 +53,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 }
 
 $pageTitle = 'Prijava — KupiTelefon';
+$canonicalUrl = absoluteUrl('/prijava');
 $activePage = 'nalog';
 $minimalHeader = true;
 $showSearch = false;
@@ -76,7 +85,7 @@ require __DIR__ . '/partials/layout-start.php';
                 <button class="btn-call" type="submit">Prijavi se</button>
             </form>
             <p style="margin-top:14px;font-size:13px;color:var(--text-muted);">
-                Nemaš nalog? <a href="/register.php">Registruj se</a>
+                Nemaš nalog? <a href="/registracija">Registruj se</a>
             </p>
             <p style="margin-top:8px;font-size:13px;color:var(--text-muted);">
                 <a href="/forgot-password.php">Zaboravljena lozinka?</a>

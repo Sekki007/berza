@@ -10,7 +10,10 @@ $urls = [];
 $urls[] = ['loc' => rtrim(absoluteUrl('/'), '/') . '/', 'priority' => '1.0', 'changefreq' => 'daily'];
 
 $staticPages = [
-    ['/kako-radi.php', '0.5', 'monthly'],
+    ['/kako-radi', '0.5', 'monthly'],
+    ['/prijava', '0.5', 'monthly'],
+    ['/registracija', '0.6', 'monthly'],
+    ['/postavi-oglas', '0.6', 'weekly'],
     ['/oglasi', '0.9', 'daily'],
     ['/vodici', '0.7', 'weekly'],
     ['/servisi', '0.9', 'daily'],
