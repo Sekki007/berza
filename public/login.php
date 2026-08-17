@@ -63,7 +63,7 @@ require __DIR__ . '/partials/layout-start.php';
 
 <div class="main-wrap">
     <main class="content">
-        <div class="breadcrumb"><a href="/index.php">Početna</a> › Prijava</div>
+        <div class="breadcrumb"><a href="/">Početna</a> › Prijava</div>
         <div class="form-card">
             <h2>Prijava</h2>
             <form method="POST">

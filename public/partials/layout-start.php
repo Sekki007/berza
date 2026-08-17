@@ -117,7 +117,7 @@ $compareCount = count(compareIds());
     <header class="header">
         <div class="header-inner">
             <div class="header-row">
-                <a href="/index.php" class="logo" aria-label="<?= h((string)($site['site_name'] ?? 'KupiTelefon')) ?>">
+                <a href="/" class="logo" aria-label="<?= h((string)($site['site_name'] ?? 'KupiTelefon')) ?>">
                     <img class="logo-mark" src="/assets/img/logo-mark.png" alt="" width="36" height="36" decoding="async">
                     <span class="logo-text">
                         <span class="logo-telefon"><?= h((string)$site['logo_telefon']) ?></span><span class="logo-berza"><?= h((string)$site['logo_berza']) ?></span>
@@ -133,7 +133,7 @@ $compareCount = count(compareIds());
             </div>
 
             <?php if ($showSearch): ?>
-                <form class="search-area" method="GET" action="/index.php" data-search-form autocomplete="off" id="search">
+                <form class="search-area" method="GET" action="/oglasi" data-search-form autocomplete="off" id="search">
                     <div class="search-wrap">
                         <input class="search-input" type="search" name="q" value="<?= h($searchValue) ?>" placeholder="<?= h((string)$site['search_placeholder']) ?>" data-search-input autocomplete="off" role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="search-suggest">
                         <div id="search-suggest" class="search-suggest" data-search-suggest hidden role="listbox"></div>
@@ -197,7 +197,7 @@ $compareCount = count(compareIds());
     <header class="header">
         <div class="header-inner">
             <div class="header-row">
-                <a href="/index.php" class="logo" aria-label="<?= h((string)($site['site_name'] ?? 'KupiTelefon')) ?>">
+                <a href="/" class="logo" aria-label="<?= h((string)($site['site_name'] ?? 'KupiTelefon')) ?>">
                     <img class="logo-mark" src="/assets/img/logo-mark.png" alt="" width="36" height="36" decoding="async">
                     <span class="logo-text">
                         <span class="logo-telefon"><?= h((string)$site['logo_telefon']) ?></span><span class="logo-berza"><?= h((string)$site['logo_berza']) ?></span>

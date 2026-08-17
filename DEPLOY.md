@@ -33,6 +33,7 @@ server {
     rewrite ^/servisi/([^/]+)/([^/]+)/?$ /servisi.php?city=$1&slug=$2&$args last;
     rewrite ^/servisi/([^/]+)/?$ /servisi.php?city=$1&$args last;
     rewrite ^/servisi/?$ /servisi.php?$args last;
+    rewrite ^/index\.php$ / permanent;
     rewrite ^/(prijava|login)/?$ /login.php?$args last;
     rewrite ^/(registracija|registracij|register)/?$ /register.php?$args last;
     rewrite ^/(postavi-oglas|dodaj-oglas)/?$ /ad_form.php?$args last;

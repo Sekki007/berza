@@ -148,7 +148,7 @@ function savedSearchAlertLink(array $search, array $newIds): string
         }
     }
     $query = buildFilterQuery($search['filters'] ?? []);
-    return '/index.php' . ($query !== '' ? '?' . $query : '');
+    return '/oglasi' . ($query !== '' ? '?' . $query : '');
 }
 
 function createSavedSearch(int $userId, array $filters, string $name = '', bool $alertEnabled = true): ?array

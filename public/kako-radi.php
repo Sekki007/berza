@@ -21,7 +21,7 @@ require __DIR__ . '/partials/layout-start.php';
 
 <div class="main-wrap">
     <main class="content">
-        <div class="breadcrumb"><a href="/index.php">Početna</a> › Kako radi</div>
+        <div class="breadcrumb"><a href="/">Početna</a> › Kako radi</div>
 
         <div class="form-card">
             <h2>Kako radi KupiTelefon</h2>

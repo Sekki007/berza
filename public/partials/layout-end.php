@@ -19,7 +19,7 @@ if ($user) {
     <footer class="site-footer">
         <div class="site-footer-inner">
             <div class="site-footer-brand">
-                <a href="/index.php" class="site-footer-logo" aria-label="<?= h((string)($site['site_name'] ?? 'KupiTelefon')) ?>">
+                <a href="/" class="site-footer-logo" aria-label="<?= h((string)($site['site_name'] ?? 'KupiTelefon')) ?>">
                     <img class="logo-mark logo-mark-footer" src="/assets/img/logo-mark.png" alt="" width="32" height="32" decoding="async">
                     <span class="logo-text">
                         <span class="logo-telefon"><?= h((string)$site['logo_telefon']) ?></span><span class="logo-berza"><?= h((string)$site['logo_berza']) ?></span>
@@ -45,11 +45,11 @@ if ($user) {
             <nav class="site-footer-nav" aria-label="Footer">
                 <div class="site-footer-col">
                     <h4>Istraži</h4>
-                    <a href="/index.php">Početna</a>
-                    <a href="/index.php?type=telefon">Telefoni</a>
-                    <a href="/index.php?equipment_group=parts">Delovi</a>
-                    <a href="/index.php?equipment_group=oprema">Oprema</a>
-                    <a href="/index.php?type=servis">Servis</a>
+                    <a href="/">Početna</a>
+                    <a href="/oglasi/telefoni">Telefoni</a>
+                    <a href="/oglasi/delovi?equipment_group=parts">Delovi</a>
+                    <a href="/oglasi/delovi?equipment_group=oprema">Oprema</a>
+                    <a href="/oglasi/servis">Servis</a>
                     <a href="/servisi">Firme po gradu</a>
                     <a href="/provera-imei">Besplatna IMEI provera</a>
                 </div>
@@ -278,8 +278,8 @@ if ($user) {
 
     <?php if (!$hideMobileBar): ?>
         <nav class="mobile-bar">
-            <a href="/index.php" data-nav="oglasi" class="<?= $activePage === 'oglasi' ? 'active' : '' ?>"><span class="mobile-bar-icon">🏠</span><span>Oglasi</span></a>
-            <a href="/index.php#search" data-nav="pretraga" data-focus-search class="<?= $activePage === 'pretraga' ? 'active' : '' ?>"><span class="mobile-bar-icon">🔎</span><span>Pretraga</span></a>
+            <a href="/" data-nav="oglasi" class="<?= $activePage === 'oglasi' ? 'active' : '' ?>"><span class="mobile-bar-icon">🏠</span><span>Oglasi</span></a>
+            <a href="/#search" data-nav="pretraga" data-focus-search class="<?= $activePage === 'pretraga' ? 'active' : '' ?>"><span class="mobile-bar-icon">🔎</span><span>Pretraga</span></a>
             <a href="<?= $user ? '/postavi-oglas' : '/prijava' ?>" data-nav="dodaj" class="mobile-bar-add <?= $activePage === 'dodaj' ? 'active' : '' ?>"><span class="mobile-bar-icon">＋</span><span>Dodaj</span></a>
             <a href="<?= $user ? '/poruke.php' : '/prijava' ?>" data-nav="poruke" class="nav-with-badge <?= $activePage === 'poruke' ? 'active' : '' ?>"><span class="mobile-bar-icon">💬</span><span>Poruke</span><?= $user ? renderUnreadBadge($unreadMessages) : '' ?></a>
             <a href="<?= $user ? '/nalog.php' : '/prijava' ?>" data-nav="nalog" class="nav-with-badge <?= $activePage === 'nalog' ? 'active' : '' ?>"><span class="mobile-bar-icon">👤</span><span>Nalog</span><?= $user ? renderUnreadBadge($unreadNotifications) : '' ?></a>

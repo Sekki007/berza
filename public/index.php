@@ -6,6 +6,14 @@ require_once dirname(__DIR__) . '/config/bootstrap.php';
 
 $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
 
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET' && $requestPath === '/index.php') {
+    $query = (string)(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_QUERY) ?? '');
+    if ($query === '') {
+        header('Location: /', true, 301);
+        exit;
+    }
+}
+
 // Radi i bez nginx rewrite pravila: nepoznate putanje stižu ovde preko try_files.
 if (preg_match('#^/(?:vodici|blog)/?$#', $requestPath) === 1) {
     require __DIR__ . '/vodici.php';
@@ -229,6 +237,12 @@ if ($queryBase === [] && !is_array($landing)) {
     $canonicalUrl = absoluteUrl('/');
     $jsonLd = [seoOrganizationJsonLd(), seoWebsiteJsonLd()];
 }
+$listBasePath = '/oglasi';
+if (is_array($landing) && !empty($landing['path'])) {
+    $listBasePath = (string)$landing['path'];
+} elseif ($queryBase === [] && !is_array($landing)) {
+    $listBasePath = '/';
+}
 $activePage = 'oglasi';
 $searchValue = $search;
 
@@ -255,7 +269,7 @@ foreach ([$brand, $model, $location, $condition, $type, $listingType, $deviceTyp
         $activeFilterCount++;
     }
 }
-$resetFiltersUrl = '/index.php' . ($search !== '' ? ('?' . http_build_query(['q' => $search])) : '');
+$resetFiltersUrl = $listBasePath . ($search !== '' ? ('?' . http_build_query(['q' => $search])) : '');
 $activeChips = [];
 $chipDefs = [];
 $listingTypeLabels = [
@@ -290,7 +304,7 @@ foreach ($chipDefs as $chip) {
     $qs = buildFilterQuery($params);
     $activeChips[] = [
         'label' => $chip['label'],
-        'href' => '/index.php' . ($qs !== '' ? ('?' . $qs) : ''),
+        'href' => $listBasePath . ($qs !== '' ? ('?' . $qs) : ''),
     ];
 }
 if ($minPrice !== '' || $maxPrice !== '') {
@@ -305,7 +319,7 @@ if ($minPrice !== '' || $maxPrice !== '') {
     $qs = buildFilterQuery($params);
     $activeChips[] = [
         'label' => $priceLabel,
-        'href' => '/index.php' . ($qs !== '' ? ('?' . $qs) : ''),
+        'href' => $listBasePath . ($qs !== '' ? ('?' . $qs) : ''),
     ];
 }
 
@@ -328,7 +342,7 @@ if ($search !== '') {
                 $qs = buildFilterQuery($params);
                 $searchIntentHints[] = [
                     'label' => 'Samo oprema',
-                    'href' => '/index.php' . ($qs !== '' ? ('?' . $qs) : ''),
+                    'href' => $listBasePath . ($qs !== '' ? ('?' . $qs) : ''),
                 ];
             }
         } elseif (!($type === 'delovi' && $equipmentGroup === 'parts')) {
@@ -337,7 +351,7 @@ if ($search !== '') {
             $qs = buildFilterQuery($params);
             $searchIntentHints[] = [
                 'label' => 'Samo delovi',
-                'href' => '/index.php' . ($qs !== '' ? ('?' . $qs) : ''),
+                'href' => $listBasePath . ($qs !== '' ? ('?' . $qs) : ''),
             ];
         }
     } elseif ($searchIntent === 'phone' && $type !== 'telefon') {
@@ -346,7 +360,7 @@ if ($search !== '') {
         $qs = buildFilterQuery($params);
         $searchIntentHints[] = [
             'label' => 'Samo telefoni',
-            'href' => '/index.php' . ($qs !== '' ? ('?' . $qs) : ''),
+            'href' => $listBasePath . ($qs !== '' ? ('?' . $qs) : ''),
         ];
     } elseif ($searchIntent === 'service' && $type !== 'servis') {
         $params = array_merge($hintParams, ['type' => 'servis']);
@@ -354,7 +368,7 @@ if ($search !== '') {
         $qs = buildFilterQuery($params);
         $searchIntentHints[] = [
             'label' => 'Samo servis',
-            'href' => '/index.php' . ($qs !== '' ? ('?' . $qs) : ''),
+            'href' => $listBasePath . ($qs !== '' ? ('?' . $qs) : ''),
         ];
     }
 }
@@ -542,10 +556,10 @@ $homeCats = [
         <?php if ($pagination['pages'] > 1): ?>
             <div class="pagination">
                 <?php if ($pagination['page'] > 1): ?>
-                    <a class="btn-sm" href="/index.php?<?= h(buildFilterQuery(array_merge($queryBase, ['page' => $pagination['page'] - 1]))) ?>">← Prethodna</a>
+                    <a class="btn-sm" href="<?= h($listBasePath) ?>?<?= h(buildFilterQuery(array_merge($queryBase, ['page' => $pagination['page'] - 1]))) ?>">← Prethodna</a>
                 <?php endif; ?>
                 <?php if ($pagination['page'] < $pagination['pages']): ?>
-                    <a class="btn-sm btn-sm-primary" href="/index.php?<?= h(buildFilterQuery(array_merge($queryBase, ['page' => $pagination['page'] + 1]))) ?>">Učitaj još</a>
+                    <a class="btn-sm btn-sm-primary" href="<?= h($listBasePath) ?>?<?= h(buildFilterQuery(array_merge($queryBase, ['page' => $pagination['page'] + 1]))) ?>">Učitaj još</a>
                 <?php endif; ?>
             </div>
         <?php endif; ?>

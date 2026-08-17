@@ -26,7 +26,7 @@ $adminLinks = [
     <?php foreach ($adminLinks as $link): ?>
         <a href="<?= h($link['href']) ?>" class="<?= $adminPage === $link['id'] ? 'active' : '' ?>"><?= h($link['label']) ?></a>
     <?php endforeach; ?>
-    <a href="/index.php">← Sajt</a>
+    <a href="/">← Sajt</a>
 </nav>
 <aside class="admin-sidebar">
     <div class="admin-sidebar-head">Admin panel</div>
@@ -35,6 +35,6 @@ $adminLinks = [
             <a href="<?= h($link['href']) ?>" class="<?= $adminPage === $link['id'] ? 'active' : '' ?>"><?= h($link['label']) ?></a>
         <?php endforeach; ?>
         <a href="/poruke.php">Poruke</a>
-        <a href="/index.php">← Nazad na sajt</a>
+        <a href="/">← Nazad na sajt</a>
     </nav>
 </aside>
