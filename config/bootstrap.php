@@ -50,6 +50,56 @@ function currentUser(): ?array
     return $_SESSION['user'] ?? null;
 }
 
+/** Korisnik je online ako je bio aktivan u poslednja 3 minuta. */
+function userOnlineTtlSeconds(): int
+{
+    return 180;
+}
+
+function isUserOnline(?array $user): bool
+{
+    if (!$user) {
+        return false;
+    }
+    $raw = trim((string)($user['last_seen_at'] ?? ''));
+    if ($raw === '') {
+        return false;
+    }
+    $ts = strtotime($raw);
+    if ($ts === false) {
+        return false;
+    }
+    return (time() - $ts) <= userOnlineTtlSeconds();
+}
+
+function renderOnlineBadge(?array $user): string
+{
+    if (!isUserOnline($user)) {
+        return '';
+    }
+    return '<span class="kp-online" title="Trenutno na sajtu"><span class="kp-online-dot" aria-hidden="true"></span>Online</span>';
+}
+
+function touchUserPresence(): void
+{
+    if (!isLoggedIn()) {
+        return;
+    }
+    $userId = (int)(currentUser()['id'] ?? 0);
+    if ($userId <= 0) {
+        return;
+    }
+    $now = time();
+    $last = (int)($_SESSION['last_presence_touch'] ?? 0);
+    if ($last > 0 && ($now - $last) < 60) {
+        return;
+    }
+    $_SESSION['last_presence_touch'] = $now;
+    if (function_exists('patchUser')) {
+        patchUser($userId, ['last_seen_at' => date('Y-m-d H:i:s')]);
+    }
+}
+
 function rememberCookieName(): string
 {
     return 'kt_remember';
@@ -1576,6 +1626,7 @@ requireNotBlocked();
 processAdExpirations();
 refreshNbsEurRsdRateIfStale(12);
 processTopExpirations();
+touchUserPresence();
 
 // Pozadinska obrada ne sme da obori zahtev korisnika.
 try {

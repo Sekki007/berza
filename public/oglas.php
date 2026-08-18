@@ -174,82 +174,99 @@ $sellerBlock = static function () use (
     $memberSince,
     $sellerLocation,
     $sellerSummary,
-    $sellerAdsCount
-): void {
-    if ($sellerShopUrl !== ''): ?>
-        <div class="kp-card kp-seller-card">
-            <div class="kp-seller-top">
-                <?= renderShopAvatarHtml($seller, $sellerInitials, 'kp-seller-avatar') ?>
-                <div>
-                    <div class="kp-seller-name">
-                        <a class="kp-seller-name-link" href="<?= h($sellerShopUrl) ?>"><?= h($sellerName) ?></a>
-                        <?= renderSellerBadges($seller) ?>
-                    </div>
-                </div>
-                <a class="kp-seller-chevron" href="<?= h($sellerShopUrl) ?>" aria-label="Otvori izlog prodavca">›</a>
-            </div>
-            <div class="kp-seller-meta">
-                <?php if ($memberSince !== ''): ?>Član od: <?= h($memberSince) ?><?php endif; ?>
-                <?php if ($sellerLocation !== ''): ?><?= $memberSince !== '' ? ' · ' : '' ?><?= h($sellerLocation) ?><?php endif; ?>
-            </div>
-            <div class="kp-seller-rating">
-                <?= renderReputation($sellerSummary, $sellerShopUrl) ?>
-                <a class="kp-seller-all-link" href="<?= h($sellerShopUrl) ?>">Svi oglasi (<?= $sellerAdsCount ?>)</a>
-            </div>
-        </div>
-    <?php else: ?>
-        <div class="kp-card">
-            <div class="kp-seller-top">
-                <?= renderShopAvatarHtml($seller, $sellerInitials, 'kp-seller-avatar') ?>
-                <div class="kp-seller-name"><?= h($sellerName) ?></div>
-            </div>
-            <div class="kp-seller-rating">
-                <?= renderReputation($sellerSummary) ?>
-            </div>
-        </div>
-    <?php endif;
-};
-
-$contactBlock = static function (string $formId = 'poruka') use (
+    $sellerAdsCount,
     $site,
     $msgHref,
     $isOwnAd,
     $phone,
     $id,
     $waMsg
-): void { ?>
-    <div class="kp-card kp-contact-card">
-        <div class="kp-contact-btns">
+): void {
+    $online = isUserOnline(is_array($seller) ? $seller : null);
+    $allAdsHref = $sellerShopUrl !== '' ? $sellerShopUrl : '';
+    ?>
+        <div class="kp-card kp-seller-profile">
             <?php if (!empty($site['enable_messages'])): ?>
-                <a class="kp-btn-msg" href="<?= h($msgHref) ?>">
-                    💬 <?= $isOwnAd ? 'Otvori poruke' : 'Pošaljite poruku' ?>
+                <a class="kp-seller-msg-btn" href="<?= h($msgHref) ?>">
+                    <span class="kp-seller-msg-ico" aria-hidden="true">💬</span>
+                    <?= $isOwnAd ? 'Otvori poruke' : 'Pošaljite poruku' ?>
                 </a>
             <?php endif; ?>
-            <?php if ($phone !== ''): ?>
-                <button type="button" class="kp-btn-tel" data-reveal-phone="<?= h($phone) ?>" data-ad-id="<?= (int)$id ?>">📞 Telefon</button>
-            <?php endif; ?>
-        </div>
-        <p class="kp-reply-hint">
-            <?= $isOwnAd
-                ? 'Ovo je tvoj oglas — odgovori kupcima iz inboxa.'
-                : 'Odgovara na poruke, uglavnom u roku od nekoliko sati.' ?>
-        </p>
+            <p class="kp-seller-reply">
+                <?php if ($isOwnAd): ?>
+                    Ovo je tvoj oglas — odgovori kupcima iz inboxa.
+                <?php elseif ($online): ?>
+                    Trenutno je online i obično brzo odgovara na poruke.
+                <?php else: ?>
+                    Odgovara na poruke, uglavnom u roku od nekoliko sati.
+                <?php endif; ?>
+            </p>
 
-        <?php if (!empty($site['enable_messages']) && isLoggedIn() && !$isOwnAd): ?>
-            <form method="POST" id="<?= h($formId) ?>" class="kp-msg-form" style="margin-top:12px;">
-                <div class="form-group">
-                    <label>Poruka prodavcu</label>
-                    <textarea name="message" rows="3" placeholder="Zdravo, da li je oglas još aktivan?" required></textarea>
+            <div class="kp-seller-identity">
+                <?= renderShopAvatarHtml($seller, $sellerInitials, 'kp-seller-avatar') ?>
+                <div class="kp-seller-id-text">
+                    <div class="kp-seller-name-row">
+                        <?php if ($sellerShopUrl !== ''): ?>
+                            <a class="kp-seller-name-link" href="<?= h($sellerShopUrl) ?>"><?= h($sellerName) ?></a>
+                        <?php else: ?>
+                            <span class="kp-seller-name-plain"><?= h($sellerName) ?></span>
+                        <?php endif; ?>
+                        <?= renderSellerBadges($seller) ?>
+                    </div>
+                    <?= renderOnlineBadge(is_array($seller) ? $seller : null) ?>
+                    <?php if ($sellerLocation !== ''): ?>
+                        <div class="kp-seller-line"><?= h($sellerLocation) ?></div>
+                    <?php endif; ?>
+                    <?php if ($memberSince !== ''): ?>
+                        <div class="kp-seller-line">Član od <?= h($memberSince) ?></div>
+                    <?php endif; ?>
                 </div>
-                <button class="kp-btn-msg" type="submit" style="width:100%;">Pošalji</button>
-            </form>
-        <?php endif; ?>
+            </div>
 
-        <?php if ($phone !== '' && !empty($site['enable_whatsapp'])): ?>
-            <a class="kp-action-link" style="margin-top:10px;display:inline-flex;" href="<?= h(whatsappLink($phone, $waMsg)) ?>" target="_blank" rel="noopener">WhatsApp</a>
-        <?php endif; ?>
+            <div class="kp-seller-rating">
+                <?= renderReputation($sellerSummary, $sellerShopUrl !== '' ? $sellerShopUrl : null) ?>
+            </div>
+
+            <div class="kp-seller-links">
+                <?php if ($allAdsHref !== ''): ?>
+                    <a class="kp-seller-link" href="<?= h($allAdsHref) ?>">
+                        <span aria-hidden="true">📋</span> Svi oglasi<?= $sellerAdsCount > 0 ? ' (' . (int)$sellerAdsCount . ')' : '' ?>
+                    </a>
+                <?php endif; ?>
+                <?php if ($phone !== ''): ?>
+                    <button type="button" class="kp-seller-link kp-seller-link-btn" data-reveal-phone="<?= h($phone) ?>" data-ad-id="<?= (int)$id ?>">
+                        <span aria-hidden="true">📞</span> Klik za broj telefona
+                    </button>
+                <?php endif; ?>
+                <?php if ($phone !== '' && !empty($site['enable_whatsapp'])): ?>
+                    <a class="kp-seller-link" href="<?= h(whatsappLink($phone, $waMsg)) ?>" target="_blank" rel="noopener">
+                        <span aria-hidden="true">💬</span> WhatsApp
+                    </a>
+                <?php endif; ?>
+            </div>
+        </div>
+    <?php
+};
+
+$contactBlock = static function (string $formId = 'poruka') use (
+    $site,
+    $isOwnAd
+): void {
+    if (empty($site['enable_messages']) || !isLoggedIn() || $isOwnAd) {
+        return;
+    }
+    ?>
+    <div class="kp-card kp-contact-card">
+        <form method="POST" id="<?= h($formId) ?>" class="kp-msg-form">
+            <div class="form-group">
+                <label>Poruka prodavcu</label>
+                <textarea name="message" rows="3" placeholder="Zdravo, da li je oglas još aktivan?" required></textarea>
+            </div>
+            <button class="kp-btn-msg" type="submit" style="width:100%;">Pošalji</button>
+        </form>
     </div>
-<?php };
+    <?php
+};
 ?>
 
 <div class="main-wrap kp-detail-wrap" data-ad-id="<?= (int)$id ?>">
@@ -445,8 +462,8 @@ $contactBlock = static function (string $formId = 'poruka') use (
         </div>
 
         <div class="kp-mobile-only">
-            <?php $contactBlock('poruka'); ?>
             <?php $sellerBlock(); ?>
+            <?php $contactBlock('poruka'); ?>
         </div>
 
         <div class="kp-card kp-desc-card">
@@ -479,9 +496,6 @@ $contactBlock = static function (string $formId = 'poruka') use (
 
     <aside class="kp-detail-seller-col" aria-label="Prodavac">
         <div class="kp-detail-seller-sticky">
-            <div class="kp-card kp-seller-heading">
-                <strong>Ko je okačio oglas</strong>
-            </div>
             <?php $sellerBlock(); ?>
             <?php $contactBlock('poruka-desktop'); ?>
             <div class="kp-card kp-detail-browse">

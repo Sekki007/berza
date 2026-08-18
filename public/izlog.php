@@ -226,7 +226,7 @@ require __DIR__ . '/partials/layout-start.php';
             <div class="shop-header-main">
                 <?= renderShopAvatarHtml($seller, $initials, 'shop-avatar') ?>
                 <div class="shop-header-info">
-                    <h1 class="shop-title"><?= h($shopName) ?> <?= renderSellerBadges($seller) ?></h1>
+                    <h1 class="shop-title"><?= h($shopName) ?> <?= renderSellerBadges($seller) ?> <?= renderOnlineBadge($seller) ?></h1>
                     <p class="shop-meta">
                         <?= (int)$typeCounts['all'] ?> <?= (int)$typeCounts['all'] === 1 ? 'oglas' : 'oglasa' ?>
                     </p>

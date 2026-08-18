@@ -28,6 +28,7 @@ $userId = (int)$user['id'];
 $action = trim((string)($_GET['action'] ?? $_POST['action'] ?? 'thread'));
 
 if ($action === 'unread') {
+    touchUserPresence();
     jsonOut([
         'ok' => true,
         'unread' => getUnreadMessageCount($userId),
