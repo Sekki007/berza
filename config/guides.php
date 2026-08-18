@@ -346,6 +346,16 @@ function guideUrl(array $guide): string
     return '/vodic/' . rawurlencode($slug);
 }
 
+function guidePublishedLabel(array $guide): string
+{
+    $raw = trim((string)($guide['published_at'] ?? $guide['updated_at'] ?? ''));
+    if ($raw === '') {
+        return '';
+    }
+    $ts = strtotime($raw);
+    return $ts ? date('d.m.Y.', $ts) : $raw;
+}
+
 function getGuideById(int $id): ?array
 {
     foreach (getAllGuides() as $guide) {
