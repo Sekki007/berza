@@ -109,7 +109,15 @@ $waMsg = $isBuy
 $isFav = isFavorite($id);
 $isOwnAd = isLoggedIn() && (int)currentUser()['id'] === (int)($ad['created_by'] ?? 0);
 $phone = (string)($ad['contact_phone'] ?? '');
-$msgHref = $isOwnAd ? '/poruke.php' : (isLoggedIn() ? '#poruka' : '/login.php');
+$sellerUserId = (int)($ad['created_by'] ?? 0);
+$composeUrl = '/poruke.php?ad=' . $id . '&with=' . $sellerUserId;
+if ($isOwnAd) {
+    $msgHref = '/poruke.php';
+} elseif (isLoggedIn()) {
+    $msgHref = $composeUrl;
+} else {
+    $msgHref = '/prijava?next=' . rawurlencode($composeUrl);
+}
 $price = (float)($ad['price'] ?? 0);
 $priceOpen = isAdPriceOpen($ad);
 

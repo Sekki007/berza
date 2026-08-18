@@ -40,9 +40,26 @@ function isLoggedIn(): bool
 function requireLogin(): void
 {
     if (!isLoggedIn()) {
-        header('Location: /login.php');
+        $uri = (string)($_SERVER['REQUEST_URI'] ?? '/');
+        $path = parse_url($uri, PHP_URL_PATH) ?: '/';
+        $query = (string)(parse_url($uri, PHP_URL_QUERY) ?? '');
+        $next = $path . ($query !== '' ? '?' . $query : '');
+        header('Location: /prijava?next=' . rawurlencode($next));
         exit;
     }
+}
+
+/** Interni redirect (sprečava open-redirect). */
+function safeAppRedirectPath(?string $raw, string $fallback = '/nalog.php'): string
+{
+    $raw = trim((string)$raw);
+    if ($raw === '' || !str_starts_with($raw, '/') || str_starts_with($raw, '//')) {
+        return $fallback;
+    }
+    if (preg_match('/[\x00-\x1f]/', $raw) === 1) {
+        return $fallback;
+    }
+    return $raw;
 }
 
 function currentUser(): ?array

@@ -13,9 +13,12 @@ if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET' && $requestPath === '/login.
 }
 
 if (isLoggedIn()) {
-    header('Location: ' . (isAdmin() ? '/dashboard.php' : '/nalog.php'));
+    $next = safeAppRedirectPath($_GET['next'] ?? '', isAdmin() ? '/dashboard.php' : '/nalog.php');
+    header('Location: ' . $next);
     exit;
 }
+
+$loginNext = safeAppRedirectPath($_GET['next'] ?? $_POST['next'] ?? '', '');
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     requireCsrf('/login.php');
@@ -23,17 +26,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $password = (string)($_POST['password'] ?? '');
     $rememberMe = !empty($_POST['remember_me']);
     $user = findUserByUsername($username);
+    $failUrl = '/prijava' . ($loginNext !== '' ? ('?next=' . rawurlencode($loginNext)) : '');
 
     if ($user && password_verify($password, $user['password_hash'])) {
         if (!empty($user['is_blocked'])) {
             setFlash('danger', 'Ovaj nalog je blokiran' . (!empty($user['blocked_reason']) ? ': ' . $user['blocked_reason'] : '.'));
-            header('Location: /login.php');
+            header('Location: ' . $failUrl);
             exit;
         }
 
         $isAdminUser = !empty($user['is_admin']) || $user['username'] === 'admin';
         if (!$isAdminUser && !isPhoneVerified($user)) {
             $_SESSION['pending_phone_verify_user_id'] = (int)$user['id'];
+            if ($loginNext !== '') {
+                $_SESSION['after_verify_next'] = $loginNext;
+            }
             setFlash('danger', 'Prvo potvrdi broj telefona SMS kodom.');
             header('Location: /verify-phone.php');
             exit;
@@ -43,12 +50,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         setSessionUserFromProfile($user);
         issueRememberLogin($user, $rememberMe);
         setFlash('success', 'Upešno ste prijavljeni.');
-        header('Location: ' . ($isAdminUser ? '/dashboard.php' : '/nalog.php'));
+        $okFallback = $isAdminUser ? '/dashboard.php' : '/nalog.php';
+        header('Location: ' . ($loginNext !== '' ? $loginNext : $okFallback));
         exit;
     }
 
     setFlash('danger', 'Pogrešno korisničko ime ili lozinka.');
-    header('Location: /login.php');
+    header('Location: ' . $failUrl);
     exit;
 }
 
@@ -68,6 +76,9 @@ require __DIR__ . '/partials/layout-start.php';
             <h2>Prijava</h2>
             <form method="POST">
                 <?= csrfField() ?>
+                <?php if ($loginNext !== ''): ?>
+                    <input type="hidden" name="next" value="<?= h($loginNext) ?>">
+                <?php endif; ?>
                 <div class="form-group">
                     <label>Korisničko ime</label>
                     <input type="text" name="username" required>
