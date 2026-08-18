@@ -88,6 +88,9 @@ function seoAdMeta(array $ad): array
     $priceLabel = function_exists('adCardPriceMainLabel') ? adCardPriceMainLabel($ad) : formatAdPrice($ad);
     $bits = array_filter([$brand, $location, $priceLabel !== '' ? $priceLabel : null]);
     $descSource = trim((string)($ad['description'] ?? ''));
+    if (function_exists('sanitizeAdPublicText')) {
+        $descSource = sanitizeAdPublicText($descSource);
+    }
     if ($descSource === '') {
         $descSource = $title . ($bits ? ' — ' . implode(', ', $bits) : '');
     } elseif ($priceLabel !== '') {

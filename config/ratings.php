@@ -8,7 +8,7 @@ function reservedShopSlugs(): array
         'admin', 'api', 'assets', 'izlog', 'usluge', 'servisi', 'oglas', 'oglasi', 'login', 'register',
         'nalog', 'poruke', 'favorites', 'dashboard', 'report', 'sitemap', 'robots', 'uploads',
         'forgot-password', 'reset-password', 'verify-phone', 'verify-email', 'uporedi',
-        'kako-radi', 'privatnost', 'index', 'www', 'mail', 'podrska', 'support', 'kupitelefon',
+        'kako-radi', 'privatnost', 'uslovi', 'index', 'www', 'mail', 'podrska', 'support', 'kupitelefon',
         'prodavnice', 'grad', 'vodic', 'vodici', 'blog',
     ];
 }

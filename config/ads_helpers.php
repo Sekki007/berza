@@ -403,9 +403,152 @@ function invalidateAdOgImage(int $adId): void
     }
 }
 
+/**
+ * Hostovi tuđih oglasnika — ne prikazujemo ih u javnom tekstu oglasa.
+ *
+ * @return list<string>
+ */
+function competitorMarketplaceHosts(): array
+{
+    return [
+        'kupujemprodajem.com',
+        'kupujemprodajem.rs',
+        'limundo.com',
+        'halooglasi.com',
+        'njuskalo.hr',
+        'oglasnik.hr',
+        'olx.rs',
+        'olx.ba',
+        'olx.hr',
+        'facebook.com/marketplace',
+        'fb.com/marketplace',
+    ];
+}
+
+function competitorMarketplaceRegex(): string
+{
+    $parts = [];
+    foreach (competitorMarketplaceHosts() as $host) {
+        $parts[] = preg_quote($host, '~');
+    }
+    return '(?:www\.)?(?:' . implode('|', $parts) . ')';
+}
+
+/** Ukloni linkove i reklamu konkurencije iz opisa oglasa. */
+function sanitizeAdPublicText(string $text): string
+{
+    $text = str_replace(["\r\n", "\r"], "\n", $text);
+    $host = competitorMarketplaceRegex();
+
+    $text = preg_replace('~https?://' . $host . '[^\s<>"\']*~iu', '', $text) ?? $text;
+    $text = preg_replace('~\b' . $host . '[^\s<>"\']*~iu', '', $text) ?? $text;
+
+    $lines = explode("\n", $text);
+    $kept = [];
+    foreach ($lines as $line) {
+        $trim = trim($line);
+        if ($trim === '') {
+            $kept[] = '';
+            continue;
+        }
+        if (preg_match('~(moj nalog na kupujemprodajem|nalog na kupujemprodajem|link za moj nalog|kupujem.?prodajem)~iu', $trim) === 1) {
+            continue;
+        }
+        $kept[] = $line;
+    }
+    $text = implode("\n", $kept);
+    $text = preg_replace("/\n{3,}/u", "\n\n", $text) ?? $text;
+    $text = preg_replace('/[ \t]{2,}/u', ' ', $text) ?? $text;
+
+    return trim($text);
+}
+
+function adListingExcerpt(array $ad, int $maxChars = 140): string
+{
+    $raw = sanitizeAdPublicText((string)($ad['description'] ?? ''));
+    $raw = preg_replace('/\s+/u', ' ', $raw) ?? $raw;
+    $raw = trim($raw);
+    if ($raw === '') {
+        return '';
+    }
+    if (mb_strlen($raw) <= $maxChars) {
+        return $raw;
+    }
+    $cut = mb_substr($raw, 0, $maxChars);
+    $space = mb_strrpos($cut, ' ');
+    if ($space !== false && $space > 40) {
+        $cut = mb_substr($cut, 0, $space);
+    }
+
+    return rtrim($cut, " \t.,;:!?") . '…';
+}
+
+function isAutomatedViewer(): bool
+{
+    $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+    if ($method !== '' && $method !== 'GET') {
+        return true;
+    }
+
+    $ua = strtolower(trim((string)($_SERVER['HTTP_USER_AGENT'] ?? '')));
+    if ($ua === '') {
+        return true;
+    }
+
+    $needles = [
+        'facebookexternalhit',
+        'facebot',
+        'facebookcatalog',
+        'meta-externalagent',
+        'meta-externalfetcher',
+        'twitterbot',
+        'linkedinbot',
+        'slackbot',
+        'telegrambot',
+        'googlebot',
+        'bingbot',
+        'yandexbot',
+        'baiduspider',
+        'duckduckbot',
+        'applebot',
+        'semrushbot',
+        'ahrefsbot',
+        'dotbot',
+        'mj12bot',
+        'petalbot',
+        'bytespider',
+        'gptbot',
+        'claudebot',
+        'ia_archiver',
+        'embedly',
+        'pinterestbot',
+        'discordbot',
+        'vkshare',
+    ];
+    foreach ($needles as $needle) {
+        if (str_contains($ua, $needle)) {
+            return true;
+        }
+    }
+    // WhatsApp/Telegram OG crawler nema Mozilla; in-app pregled korisnika ima.
+    if ((str_contains($ua, 'whatsapp') || str_contains($ua, 'telegram')) && !str_contains($ua, 'mozilla')) {
+        return true;
+    }
+
+    $purpose = strtolower((string)($_SERVER['HTTP_PURPOSE'] ?? $_SERVER['HTTP_X_PURPOSE'] ?? ''));
+    if (str_contains($purpose, 'preview')) {
+        return true;
+    }
+
+    return false;
+}
+
 function incrementAdViews(int $adId): void
 {
     if ($adId <= 0) {
+        return;
+    }
+    if (isAutomatedViewer()) {
         return;
     }
     if (!isset($_SESSION['ad_view_hits']) || !is_array($_SESSION['ad_view_hits'])) {
@@ -690,6 +833,7 @@ function normalizeAdDefaults(array $payload): array
     $payload['shop_category_id'] = trim((string)($payload['shop_category_id'] ?? ''));
     $payload['country'] = trim((string)($payload['country'] ?? 'Srbija'));
     $payload['category_group'] = trim((string)($payload['category_group'] ?? ''));
+    $payload['description'] = sanitizeAdPublicText((string)($payload['description'] ?? ''));
     $payload['currency'] = normalizeAdCurrency((string)($payload['currency'] ?? 'eur'));
     $payload['price_type'] = normalizeAdPriceType((string)($payload['price_type'] ?? 'fixed'));
     if ($payload['price_type'] !== 'fixed') {

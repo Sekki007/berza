@@ -84,6 +84,11 @@ if ($uri === '/privatnost' || $uri === '/privatnost/') {
     exit;
 }
 
+if ($uri === '/uslovi' || $uri === '/uslovi/') {
+    require __DIR__ . '/public/uslovi.php';
+    exit;
+}
+
 if (preg_match('#^/(vodic|blog)/([^/]+)/?$#', $uri, $m)) {
     $_GET['slug'] = rawurldecode($m[2]);
     require __DIR__ . '/public/vodic.php';

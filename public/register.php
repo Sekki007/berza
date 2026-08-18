@@ -31,6 +31,7 @@ $form = [
     'email' => '',
 ];
 $formError = '';
+$acceptedTerms = false;
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     requireCsrf('/register.php');
@@ -39,6 +40,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $fullName = trim((string)($_POST['full_name'] ?? ''));
     $phone = trim((string)($_POST['phone'] ?? ''));
     $email = trim((string)($_POST['email'] ?? ''));
+    $acceptedTerms = !empty($_POST['accept_terms']);
 
     $form = [
         'full_name' => $fullName,
@@ -54,6 +56,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $formError = 'Lozinka mora imati najmanje 6 karaktera.';
     } elseif (mb_strlen($username) < 3) {
         $formError = 'Korisničko ime mora imati najmanje 3 karaktera.';
+    } elseif (!$acceptedTerms) {
+        $formError = 'Potvrdi da prihvataš Uslove korišćenja i Politiku privatnosti.';
     } elseif (findUserByUsername($username)) {
         $formError = 'Korisničko ime je zauzeto. Izaberi drugo.';
     } elseif (findUserByPhone($normalized)) {
@@ -144,6 +148,17 @@ require __DIR__ . '/partials/layout-start.php';
                 <div class="form-group">
                     <label>Lozinka</label>
                     <input type="password" name="password" required minlength="6" autocomplete="new-password">
+                </div>
+                <div class="form-group register-terms">
+                    <label class="register-terms-label">
+                        <input type="checkbox" name="accept_terms" value="1" <?= $acceptedTerms ? 'checked' : '' ?> required>
+                        <span>
+                            Prihvatam
+                            <a href="/uslovi" target="_blank" rel="noopener">Uslove korišćenja</a>
+                            i
+                            <a href="/privatnost" target="_blank" rel="noopener">Politiku privatnosti</a>.
+                        </span>
+                    </label>
                 </div>
                 <button class="btn-call" type="submit" id="register-submit">Kreiraj nalog</button>
             </form>

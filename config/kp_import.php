@@ -337,8 +337,9 @@ function kpGuessEquipmentType(string $text, string $categoryGroup): string
  */
 function kpBuildDefaultMapping(array $kpAd, ?array $targetUser, ?array $seller = null): array
 {
+    require_once __DIR__ . '/ads_helpers.php';
     $title = trim((string)($kpAd['title'] ?? ''));
-    $desc = trim((string)($kpAd['description'] ?? $kpAd['description_short'] ?? ''));
+    $desc = sanitizeAdPublicText(trim((string)($kpAd['description'] ?? $kpAd['description_short'] ?? '')));
     $blob = $title . ' ' . $desc;
 
     $guess = kpGuessCategoryGroup($blob, $title);
@@ -636,7 +637,7 @@ function kpImportSingleAd(array $row, int $targetUserId, ?array $targetUser, ?ar
 
     $payload = array_merge([
         'title' => $title,
-        'description' => trim((string)($row['description'] ?? '')),
+        'description' => sanitizeAdPublicText(trim((string)($row['description'] ?? ''))),
         'ad_type' => $adType,
         'category_group' => $categoryGroup,
         'brand' => $brand,

@@ -122,7 +122,10 @@ $hasOrderBar = $shopCatalogMode && $messagesOn && !$isSold && !$shopCatalogOwn;
                     </div>
 
                     <div class="listing-desktop-extra">
-                        <p class="listing-desc"><?= h((string)($ad['description'] ?? '')) ?></p>
+                        <?php $cardExcerpt = adListingExcerpt($ad); ?>
+                        <?php if ($cardExcerpt !== ''): ?>
+                            <p class="listing-desc"><?= h($cardExcerpt) ?></p>
+                        <?php endif; ?>
                         <div class="listing-tags">
                             <?php if (!empty($ad['badge'])): ?>
                                 <span class="tag tag-green"><?= h((string)$ad['badge']) ?></span>

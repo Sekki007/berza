@@ -54,6 +54,10 @@ if (preg_match('#^/privatnost/?$#', $requestPath) === 1) {
     require __DIR__ . '/privatnost.php';
     exit;
 }
+if (preg_match('#^/uslovi/?$#', $requestPath) === 1) {
+    require __DIR__ . '/uslovi.php';
+    exit;
+}
 
 $cfg = categoriesConfig();
 $settings = siteSettings();
