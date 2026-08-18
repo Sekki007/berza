@@ -477,19 +477,9 @@ $contactBlock = static function (string $formId = 'poruka') use (
         <div class="kp-card kp-desc-card">
             <h3 class="kp-section-title">Opis oglasa</h3>
             <div class="kp-desc-body"><?= nl2br(h(sanitizeAdPublicText((string)($ad['description'] ?? '')))) ?></div>
-        </div>
-
-        <div class="kp-card kp-trust-card">
-            <h3 class="kp-section-title kp-section-title--compact">Pre kupovine</h3>
-            <ul class="kp-trust-list">
-                <li>Kupovina i plaćanje su dogovor između tebe i prodavca. KupiTelefon nije posrednik i ne drži novac.</li>
-                <li>Preferiraj lično preuzimanje i proveru uređaja (IMEI, baterija, funkcije) pre uplate.</li>
-                <li>Ne šalji avans nepoznatim osobama, posebno preko nepovratnih metoda.</li>
-            </ul>
-            <p class="kp-trust-links">
-                <a href="/vodici">Saveti u vodičima</a>
-                · <a href="/uslovi">Uslovi korišćenja</a>
-                · <a href="/report.php?ad=<?= (int)$ad['id'] ?>">Prijavi ovaj oglas</a>
+            <p class="kp-ad-disclaimer">
+                KupiTelefon je oglasnik — kupovina i plaćanje su dogovor sa prodavcem.
+                <a href="/uslovi">Uslovi</a>
             </p>
         </div>
 

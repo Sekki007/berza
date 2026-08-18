@@ -2950,21 +2950,16 @@ body.kp-lightbox-open {
   color: #333;
   overflow-wrap: anywhere;
 }
-.kp-trust-card .kp-section-title { margin-bottom: 8px; }
-.kp-trust-list {
-  margin: 0;
-  padding-left: 18px;
-  font-size: 13px;
-  line-height: 1.5;
-  color: #444;
+.kp-ad-disclaimer {
+  margin: 14px 0 0;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-light, #edf0f4);
+  font-size: 12px;
+  line-height: 1.45;
+  color: #8a93a3;
 }
-.kp-trust-list li { margin: 0 0 6px; }
-.kp-trust-links {
-  margin: 10px 0 0;
-  font-size: 13px;
-  color: #667084;
-}
-.kp-trust-links a { color: var(--link); }
+.kp-ad-disclaimer a { color: #6b7380; text-decoration: underline; text-underline-offset: 2px; }
+.kp-ad-disclaimer a:hover { color: var(--link); }
 .form-group.register-terms { margin-top: 2px; margin-bottom: 16px; }
 .form-group.register-terms .register-terms-label {
   display: flex;
