@@ -11,6 +11,7 @@ $urls[] = ['loc' => rtrim(absoluteUrl('/'), '/') . '/', 'priority' => '1.0', 'ch
 
 $staticPages = [
     ['/kako-radi', '0.5', 'monthly'],
+    ['/privatnost', '0.4', 'yearly'],
     ['/prijava', '0.5', 'monthly'],
     ['/registracija', '0.6', 'monthly'],
     ['/postavi-oglas', '0.6', 'weekly'],

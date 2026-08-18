@@ -79,6 +79,11 @@ if ($uri === '/kako-radi' || $uri === '/kako-radi/') {
     exit;
 }
 
+if ($uri === '/privatnost' || $uri === '/privatnost/') {
+    require __DIR__ . '/public/privatnost.php';
+    exit;
+}
+
 if (preg_match('#^/(vodic|blog)/([^/]+)/?$#', $uri, $m)) {
     $_GET['slug'] = rawurldecode($m[2]);
     require __DIR__ . '/public/vodic.php';

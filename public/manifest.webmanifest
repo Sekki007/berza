@@ -35,13 +35,13 @@
     {
       "name": "Pretraga",
       "short_name": "Pretraga",
-      "url": "/index.php#search",
+      "url": "/#search",
       "icons": [{ "src": "/assets/img/pwa-192.png", "sizes": "192x192" }]
     },
     {
       "name": "Postavi oglas",
       "short_name": "Dodaj",
-      "url": "/ad_form.php",
+      "url": "/postavi-oglas",
       "icons": [{ "src": "/assets/img/pwa-192.png", "sizes": "192x192" }]
     },
     {

@@ -1,24 +1,32 @@
-# KupiTelefon Android (APK)
+# KupiTelefon Android (APK / AAB)
 
 Android wrapper oko [https://kupitelefon.rs](https://kupitelefon.rs) (Capacitor WebView).
 
 - **Package:** `rs.kupitelefon.app`
 - **App name:** KupiTelefon
+- **Verzija:** vidi `android/app/build.gradle` (`versionCode`, `versionName`)
 
-## Gotov APK
+## Brzo
 
-Instaliraj ovaj fajl na telefon:
+| Cilj | Komanda | Rezultat |
+|------|---------|----------|
+| Sideload APK (debug potpis) | vidi „Ponovni build“ ispod | `dist/KupiTelefon.apk` |
+| **Google Play AAB** | `.\scripts\build-play-bundle.ps1` | `dist/KupiTelefon.aab` |
+| Release keystore (1×) | `.\scripts\create-release-keystore.ps1` | `android/keystore/` |
+| SHA za App Links | `.\scripts\print-cert-fingerprint.ps1` | → `assetlinks.json` |
 
-**`C:\Projekti\berza\mobile\dist\KupiTelefon.apk`** (~2.9 MB)
+## Google Play Store
 
-### Instalacija
+**Kompletan vodič:** [PLAY_STORE.md](./PLAY_STORE.md)
 
-1. Prebaci APK na telefon (USB, Drive, Telegram…).
-2. **Podešavanja → Bezbednost** → dozvoli instalaciju iz nepoznatih izvora.
-3. Otvori APK i instaliraj.
-4. App otvara `https://kupitelefon.rs`.
+Obavezno pre submit-a:
+1. `create-release-keystore.ps1` + `keystore.properties`
+2. Firebase `google-services.json` + FCM u `.env`
+3. Ažuriraj `public/.well-known/assetlinks.json` (release fingerprint)
+4. Privacy URL: https://kupitelefon.rs/privatnost
+5. `build-play-bundle.ps1` → upload `dist/KupiTelefon.aab`
 
-## Ponovni build
+## Ponovni build (sideload / test)
 
 Na ovom PC-u Gradle mora da koristi home **bez** `!` u putanji (Windows korisnik `daki!`):
 
@@ -33,10 +41,12 @@ cd android
 Copy-Item app\build\outputs\apk\release\app-release.apk ..\dist\KupiTelefon.apk -Force
 ```
 
+Bez `keystore.properties` APK je potpisan debug ključem (OK za test, ne za Play).
+
 ## Push notifikacije
 
-Vidi [PUSH_SETUP.md](./PUSH_SETUP.md) — treba Firebase (`google-services.json` + service account u `.env`).
+Vidi [PUSH_SETUP.md](./PUSH_SETUP.md) — Firebase (`google-services.json` + service account u `.env`).
 
-## Napomena
+## App Links
 
-Ovo nije Play Store build (potpisan debug keystore-om radi sideload-a). Za Google Play treba zaseban release keystore i Play Console.
+Vidi [ASSETLINKS.md](./ASSETLINKS.md).

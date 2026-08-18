@@ -1474,6 +1474,7 @@ body.page-chat .footer,body.page-chat .site-footer{display:none;}
 .pwa-install-steps[hidden]{display:none !important;}
 .pwa-install-actions{display:flex;gap:6px;flex-shrink:0;}
 .pwa-install-actions .btn-sm.is-pwa-hidden{display:none !important;}
+.kt-native-app [data-pwa-install]{display:none !important;}
 @media (min-width:900px){
   .pwa-install{left:auto;right:20px;bottom:20px;max-width:380px;}
 }

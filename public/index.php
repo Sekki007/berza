@@ -50,6 +50,10 @@ if (preg_match('#^/kako-radi/?$#', $requestPath) === 1) {
     require __DIR__ . '/kako-radi.php';
     exit;
 }
+if (preg_match('#^/privatnost/?$#', $requestPath) === 1) {
+    require __DIR__ . '/privatnost.php';
+    exit;
+}
 
 $cfg = categoriesConfig();
 $settings = siteSettings();

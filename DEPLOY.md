@@ -38,6 +38,7 @@ server {
     rewrite ^/(registracija|registracij|register)/?$ /register.php?$args last;
     rewrite ^/(postavi-oglas|dodaj-oglas)/?$ /ad_form.php?$args last;
     rewrite ^/kako-radi/?$ /kako-radi.php?$args last;
+    rewrite ^/privatnost/?$ /privatnost.php?$args last;
     rewrite ^/oglasi/?$ /index.php last;
     rewrite ^/oglasi/(.*)$ /index.php?$args last;
     rewrite ^/vodici/?$ /vodici.php last;

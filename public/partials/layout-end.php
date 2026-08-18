@@ -78,6 +78,7 @@ if ($user) {
                         <a href="/kako-radi">Pomoć</a>
                     <?php endif; ?>
                     <a href="mailto:podrska@kupitelefon.rs">Podrška</a>
+                    <a href="/privatnost">Politika privatnosti</a>
                 </div>
                 <?php
                 $tgFollow = trim((string)($site['telegram_channel_url'] ?? ''));

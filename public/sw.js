@@ -1,8 +1,9 @@
 /* KupiTelefon PWA service worker */
-const CACHE_VERSION = 'kt-pwa-v1';
+const CACHE_VERSION = 'kt-pwa-v2';
 const SHELL = [
   '/offline.html',
   '/manifest.webmanifest',
+  '/assets/css/style.css',
   '/assets/img/pwa-192.png',
   '/assets/img/pwa-512.png',
   '/assets/img/favicon.png',
