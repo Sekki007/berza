@@ -1120,6 +1120,9 @@ function saveAd(array $payload, ?int $adId = null): int
     }
     $payload['created_at'] = date('Y-m-d H:i:s');
     $payload['updated_at'] = date('Y-m-d H:i:s');
+    if (!isset($payload['views']) || (int)$payload['views'] <= 0) {
+        $payload['views'] = function_exists('randomAdStartingViews') ? randomAdStartingViews() : random_int(28, 72);
+    }
     if (!empty($payload['_images_final'])) {
         $payload['images'] = array_values(array_slice($payload['images'] ?? [], 0, 10));
         unset($payload['_images_final']);

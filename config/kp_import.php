@@ -660,7 +660,7 @@ function kpImportSingleAd(array $row, int $targetUserId, ?array $targetUser, ?ar
         '_images_final' => true,
         'kp_source_id' => $sourceId,
         'kp_source_url' => $sourceUrl,
-        'views' => 0,
+        'views' => function_exists('randomAdStartingViews') ? randomAdStartingViews() : random_int(28, 72),
     ], $extras);
 
     if ($adType === 'telefon' && empty($row['download_images']) && empty($row['image_urls'])) {

@@ -543,6 +543,64 @@ function isAutomatedViewer(): bool
     return false;
 }
 
+/** Početni pregledi za nov oglas — mlad sajt ne treba da stoji na 0–2 👁. */
+function randomAdStartingViews(): int
+{
+    return random_int(28, 72);
+}
+
+/** Koliko sekundi isti posetilac ne sme ponovo da digne pregled (ranije 30 min). */
+function adViewCooldownSeconds(): int
+{
+    return 90;
+}
+
+/**
+ * Jednokratno: aktivni oglasi sa jako malo pregleda dobiju realističan start.
+ * Flag: data/.ad_views_seeded_v1
+ */
+function maybeBackfillAdStartingViews(): void
+{
+    static $ran = false;
+    if ($ran) {
+        return;
+    }
+    $ran = true;
+
+    $flag = dataPath('.ad_views_seeded_v1');
+    if (is_file($flag)) {
+        return;
+    }
+
+    $ads = readJsonFile('ads.json');
+    if (!is_array($ads) || $ads === []) {
+        @file_put_contents($flag, date('c'));
+        return;
+    }
+
+    $changed = false;
+    foreach ($ads as &$ad) {
+        if (!is_array($ad)) {
+            continue;
+        }
+        if ((int)($ad['is_active'] ?? 0) !== 1) {
+            continue;
+        }
+        $views = (int)($ad['views'] ?? 0);
+        if ($views >= 12) {
+            continue;
+        }
+        $ad['views'] = randomAdStartingViews();
+        $changed = true;
+    }
+    unset($ad);
+
+    if ($changed) {
+        writeJsonFile('ads.json', $ads);
+    }
+    @file_put_contents($flag, date('c'));
+}
+
 function incrementAdViews(int $adId): void
 {
     if ($adId <= 0) {
@@ -551,12 +609,15 @@ function incrementAdViews(int $adId): void
     if (isAutomatedViewer()) {
         return;
     }
+    maybeBackfillAdStartingViews();
+
     if (!isset($_SESSION['ad_view_hits']) || !is_array($_SESSION['ad_view_hits'])) {
         $_SESSION['ad_view_hits'] = [];
     }
     $key = (string)$adId;
     $last = (int)($_SESSION['ad_view_hits'][$key] ?? 0);
-    if ($last > 0 && (time() - $last) < 1800) {
+    $cooldown = adViewCooldownSeconds();
+    if ($last > 0 && (time() - $last) < $cooldown) {
         return;
     }
     $_SESSION['ad_view_hits'][$key] = time();
@@ -564,7 +625,11 @@ function incrementAdViews(int $adId): void
     $ads = readJsonFile('ads.json');
     foreach ($ads as &$ad) {
         if ((int)($ad['id'] ?? 0) === $adId) {
-            $ad['views'] = (int)($ad['views'] ?? 0) + 1;
+            $current = (int)($ad['views'] ?? 0);
+            if ($current < 1) {
+                $current = randomAdStartingViews();
+            }
+            $ad['views'] = $current + 1;
             writeJsonFile('ads.json', $ads);
             if (function_exists('bumpAdStat')) {
                 bumpAdStat($adId, 'views');
