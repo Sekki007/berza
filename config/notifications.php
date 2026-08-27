@@ -249,11 +249,18 @@ function adExpiryEnabled(): bool
 
 function computeAdExpiresAt(?string $fromDate = null): string
 {
+    return computeAdExpiresAtDays(adMaxActiveDays(), $fromDate);
+}
+
+/** Istek oglasa za tačno N dana od $fromDate (podrazumevano sada). */
+function computeAdExpiresAtDays(int $days, ?string $fromDate = null): string
+{
+    $days = max(1, min(365, $days));
     $base = $fromDate ? strtotime($fromDate) : time();
     if ($base === false) {
         $base = time();
     }
-    return date('Y-m-d H:i:s', $base + adMaxActiveDays() * 86400);
+    return date('Y-m-d H:i:s', $base + $days * 86400);
 }
 
 function adDaysRemaining(array $ad): ?int
@@ -288,6 +295,119 @@ function renewAd(int $adId, int $userId): bool
         return true;
     }
     return false;
+}
+
+/**
+ * Admin obnova: produži rok za N dana (bez kredita), opciono bump na vrh liste.
+ */
+function adminRenewAd(int $adId, int $days = 30, bool $bumpToTop = true): bool
+{
+    if ($adId <= 0) {
+        return false;
+    }
+    $days = max(1, min(365, $days));
+    $ads = readJsonFile('ads.json');
+    foreach ($ads as &$row) {
+        if ((int)($row['id'] ?? 0) !== $adId) {
+            continue;
+        }
+        $now = date('Y-m-d H:i:s');
+        $row['is_active'] = 1;
+        $row['is_sold'] = (int)($row['is_sold'] ?? 0);
+        $row['expires_at'] = computeAdExpiresAtDays($days);
+        $row['expiry_warned_at'] = null;
+        $row['updated_at'] = $now;
+        if ($bumpToTop) {
+            $row['bumped_at'] = $now;
+        }
+        writeJsonFile('ads.json', $ads);
+        return true;
+    }
+    return false;
+}
+
+/**
+ * Oglasi koji uskoro ističu (ili su već istekli).
+ *
+ * @return list<array<string,mixed>>
+ */
+function getAdsExpiringSoon(int $withinDays = 7, bool $includeExpired = true): array
+{
+    $withinDays = max(0, min(90, $withinDays));
+    $now = time();
+    $horizon = $now + ($withinDays * 86400);
+    $out = [];
+
+    foreach (readJsonFile('ads.json') as $ad) {
+        if (!is_array($ad)) {
+            continue;
+        }
+        if (!empty($ad['is_sold'])) {
+            continue;
+        }
+
+        $expiresRaw = (string)($ad['expires_at'] ?? '');
+        if ($expiresRaw === '') {
+            if ((int)($ad['is_active'] ?? 0) !== 1) {
+                continue;
+            }
+            // Aktivni bez datuma — tretiraj kao da treba da dobije rok
+            $ad['_days_left'] = null;
+            $ad['_expiry_status'] = 'no_date';
+            $out[] = $ad;
+            continue;
+        }
+
+        $expiresTs = strtotime($expiresRaw);
+        if ($expiresTs === false) {
+            continue;
+        }
+
+        $daysLeft = (int)ceil(($expiresTs - $now) / 86400);
+        $isActive = (int)($ad['is_active'] ?? 0) === 1;
+
+        if ($expiresTs <= $now) {
+            if (!$includeExpired) {
+                continue;
+            }
+            // Samo relativno skoro istekli (do 30 dana unazad) da lista ne bude beskrajna
+            if (($now - $expiresTs) > 30 * 86400) {
+                continue;
+            }
+            $ad['_days_left'] = $daysLeft;
+            $ad['_expiry_status'] = 'expired';
+            $out[] = $ad;
+            continue;
+        }
+
+        if (!$isActive) {
+            continue;
+        }
+
+        if ($expiresTs > $horizon) {
+            continue;
+        }
+
+        $ad['_days_left'] = $daysLeft;
+        $ad['_expiry_status'] = $daysLeft <= 3 ? 'urgent' : 'soon';
+        $out[] = $ad;
+    }
+
+    usort($out, static function (array $a, array $b): int {
+        $ae = strtotime((string)($a['expires_at'] ?? '')) ?: PHP_INT_MAX;
+        $be = strtotime((string)($b['expires_at'] ?? '')) ?: PHP_INT_MAX;
+        if ($ae === $be) {
+            return ((int)($a['id'] ?? 0)) <=> ((int)($b['id'] ?? 0));
+        }
+        return $ae <=> $be;
+    });
+
+    return $out;
+}
+
+function getAdsExpiringSoonCount(int $withinDays = 7): int
+{
+    return count(getAdsExpiringSoon($withinDays, true));
 }
 
 /**

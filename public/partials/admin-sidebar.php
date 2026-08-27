@@ -4,12 +4,14 @@ $adminPage = $adminPage ?? 'dashboard';
 $openReports = function_exists('getOpenReportsCount') ? getOpenReportsCount() : 0;
 $pendingTop = function_exists('getPendingTopOrdersCount') ? getPendingTopOrdersCount() : 0;
 $pendingCredits = function_exists('getPendingCreditDepositsCount') ? getPendingCreditDepositsCount() : 0;
+$expiringSoon = function_exists('getAdsExpiringSoonCount') ? getAdsExpiringSoonCount(7) : 0;
 
 $adminLinks = [
     ['id' => 'dashboard', 'href' => '/dashboard.php', 'label' => 'Dashboard'],
     ['id' => 'reports', 'href' => '/admin_reports.php', 'label' => 'Prijave' . ($openReports > 0 ? " ($openReports)" : '')],
     ['id' => 'users', 'href' => '/admin_users.php', 'label' => 'Korisnici'],
     ['id' => 'ads', 'href' => '/ads.php', 'label' => 'Oglasi'],
+    ['id' => 'expiry', 'href' => '/admin_expiry.php', 'label' => 'Istek' . ($expiringSoon > 0 ? " ($expiringSoon)" : '')],
     ['id' => 'import', 'href' => '/admin_import.php', 'label' => 'KP uvoz'],
     ['id' => 'cleanup', 'href' => '/admin_cleanup.php', 'label' => 'Čišćenje'],
     ['id' => 'top', 'href' => '/admin_top.php', 'label' => 'TOP' . ($pendingTop > 0 ? " ($pendingTop)" : '')],
