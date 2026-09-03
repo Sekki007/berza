@@ -17,7 +17,10 @@ import android.webkit.CookieManager;
 import android.webkit.JavascriptInterface;
 import android.webkit.WebView;
 import androidx.activity.OnBackPressedCallback;
+import androidx.core.graphics.Insets;
+import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import androidx.swiperefreshlayout.widget.SwipeRefreshLayout;
 import com.getcapacitor.BridgeActivity;
@@ -33,11 +36,13 @@ public class MainActivity extends BridgeActivity {
     private SwipeRefreshLayout swipeRefresh;
     private boolean swipeAttached = false;
     private boolean edgeBackAttached = false;
+    private boolean edgeToEdgeSetup = false;
 
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         applyOrientationPolicy();
+        setupEdgeToEdge();
         applySystemBars();
         CookieManager.getInstance().setAcceptCookie(true);
         registerBackHandler();
@@ -77,9 +82,31 @@ public class MainActivity extends BridgeActivity {
         }
     }
 
+    /**
+     * Edge-to-edge (Android 16) + tastatura: bottom padding mora da uključi IME,
+     * inače WebView ne smanjuje viewport i chat polje ostaje ispod tastature.
+     */
+    private void setupEdgeToEdge() {
+        if (edgeToEdgeSetup) {
+            return;
+        }
+        edgeToEdgeSetup = true;
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        View content = findViewById(android.R.id.content);
+        if (content != null) {
+            ViewCompat.setOnApplyWindowInsetsListener(content, (v, windowInsets) -> {
+                Insets bars = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
+                Insets ime = windowInsets.getInsets(WindowInsetsCompat.Type.ime());
+                int bottom = Math.max(bars.bottom, ime.bottom);
+                v.setPadding(bars.left, bars.top, bars.right, bottom);
+                return WindowInsetsCompat.CONSUMED;
+            });
+            ViewCompat.requestApplyInsets(content);
+        }
+    }
+
     /** Sistemska navigacija telefona (nazad/home) na sivoj traci — bez immersive/fullscreen. */
     private void applySystemBars() {
-        WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
         getWindow().setStatusBarColor(Color.WHITE);
         getWindow().setNavigationBarColor(NAV_BAR_GRAY);
         View decor = getWindow().getDecorView();

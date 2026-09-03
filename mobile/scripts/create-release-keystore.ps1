@@ -1,4 +1,4 @@
-# Generiše release keystore za Google Play (JEDNOM — čuvaj lozinke!).
+# Generise release keystore za Google Play (JEDNOM - cuvaj lozinke!).
 # Pokreni: .\mobile\scripts\create-release-keystore.ps1
 
 $ErrorActionPreference = 'Stop'
@@ -13,7 +13,7 @@ if (-not (Test-Path $keystoreDir)) {
 }
 
 if (Test-Path $keystoreFile) {
-    Write-Host "Keystore već postoji: $keystoreFile"
+    Write-Host "Keystore vec postoji: $keystoreFile"
     exit 0
 }
 
@@ -23,12 +23,14 @@ if (-not $javaHome) {
 }
 $keytool = Join-Path $javaHome 'bin\keytool.exe'
 if (-not (Test-Path $keytool)) {
-    throw "keytool nije pronađen. Postavi JAVA_HOME ili instaliraj Android Studio JBR."
+    throw 'keytool nije pronadjen. Postavi JAVA_HOME ili instaliraj Android Studio JBR.'
 }
 
-Write-Host "Unesi lozinku za keystore (minimum 6 karaktera). Sačuvaj je — bez nje nema Play update-a!"
-$storePass = Read-Host "Store password" -AsSecureString
-$storePassPlain = [Runtime.InteropServices.Marshal]::PtrToStringAuto([Runtime.InteropServices.Marshal]::SecureStringToBSTR($storePass))
+Write-Host 'Unesi lozinku za keystore (minimum 6 karaktera). Sacuvaj je - bez nje nema Play update-a!'
+$storePass = Read-Host 'Store password' -AsSecureString
+$storePassPlain = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
+    [Runtime.InteropServices.Marshal]::SecureStringToBSTR($storePass)
+)
 $keyPassPlain = $storePassPlain
 
 $dname = 'CN=KupiTelefon, OU=Mobile, O=KupiTelefon.rs, L=Beograd, ST=Serbia, C=RS'
@@ -39,14 +41,16 @@ $dname = 'CN=KupiTelefon, OU=Mobile, O=KupiTelefon.rs, L=Beograd, ST=Serbia, C=R
     -storepass $storePassPlain -keypass $keyPassPlain `
     -dname $dname
 
-Write-Host "`nKeystore kreiran: $keystoreFile"
+Write-Host ''
+Write-Host "Keystore kreiran: $keystoreFile"
 
 if (-not (Test-Path $propsFile)) {
     Copy-Item $propsExample $propsFile
-    (Get-Content $propsFile -Raw) `
-        -replace 'PROMENI_LOZINKU', $storePassPlain |
-        Set-Content $propsFile -NoNewline
-    Write-Host "Kreiran keystore.properties — proveri putanju storeFile."
+    $content = Get-Content $propsFile -Raw
+    $content = $content -replace 'PROMENI_LOZINKU', $storePassPlain
+    Set-Content -Path $propsFile -Value $content -NoNewline
+    Write-Host 'Kreiran keystore.properties - proveri putanju storeFile.'
 }
 
-Write-Host "`nSledeće: pokreni print-cert-fingerprint.ps1 i ažuriraj public/.well-known/assetlinks.json"
+Write-Host ''
+Write-Host 'Sledece: pokreni print-cert-fingerprint.ps1 (azurira assetlinks.json) i deploy na produkciju.'

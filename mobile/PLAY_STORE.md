@@ -1,7 +1,8 @@
 # Google Play Store — KupiTelefon Android
 
 Package: `rs.kupitelefon.app`  
-Projekat: `mobile/android/` (Capacitor WebView → https://kupitelefon.rs)
+Projekat: `mobile/android/` (Capacitor WebView → https://kupitelefon.rs)  
+**Target SDK:** Android 16 (API 36) — obavezno od 31.08.2026.
 
 ---
 
@@ -10,8 +11,10 @@ Projekat: `mobile/android/` (Capacitor WebView → https://kupitelefon.rs)
 - Capacitor Android shell, splash, ikone, deep links
 - FCM push plugin + server API (`config/push.php`, `public/api/push_token.php`)
 - Politika privatnosti: https://kupitelefon.rs/privatnost
+- Uslovi korišćenja: https://kupitelefon.rs/uslovi
 - Release signing preko `keystore.properties` (vidi skripte ispod)
 - App Links: `public/.well-known/assetlinks.json`
+- targetSdk / compileSdk **36** (Play Store zahtev 2026)
 
 ---
 
@@ -58,7 +61,13 @@ Detalji: [PUSH_SETUP.md](./PUSH_SETUP.md)
 ```
 
 Kopiraj **release SHA256** u `public/.well-known/assetlinks.json`  
-(Možeš imati više fingerprint-a — debug + release.)
+Ili automatski:
+
+```powershell
+.\mobile\scripts\print-cert-fingerprint.ps1
+```
+
+Skripta dodaje release + debug fingerprint u `assetlinks.json` ako već nisu tu.
 
 Deploy `assetlinks.json` na produkciju pre testa App Links.
 

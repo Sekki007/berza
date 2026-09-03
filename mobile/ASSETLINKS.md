@@ -8,7 +8,7 @@ Fajl `public/.well-known/assetlinks.json` mora biti dostupan na:
 
 Trenutno u fajlu je **debug** SHA-256 (sideload test).
 
-Za **Google Play / release** dodaj fingerprint release keystore-a:
+Za **Google Play / release** pokreni (automatski ažurira `assetlinks.json`):
 
 ```powershell
 .\mobile\scripts\print-cert-fingerprint.ps1

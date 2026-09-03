@@ -1931,6 +1931,67 @@
     if (thread) thread.scrollTop = thread.scrollHeight;
   }
 
+  /**
+   * Android/iOS WebView: tastatura često overlay-uje sticky chat polje.
+   * Merimo visualViewport i dižemo compose iznad tastature.
+   */
+  function initKeyboardInset() {
+    var root = document.documentElement;
+    var lastInset = -1;
+    var timer = null;
+
+    function keepChatVisible() {
+      if (!document.body || !document.body.classList.contains('page-chat')) return;
+      var input = one('[data-chat-input]');
+      if (!input || document.activeElement !== input) return;
+      try {
+        input.scrollIntoView({ block: 'nearest', behavior: 'auto' });
+      } catch (e) {}
+      var thread = one('[data-chat-thread]');
+      if (thread) thread.scrollTop = thread.scrollHeight;
+    }
+
+    function apply() {
+      var inset = 0;
+      if (window.visualViewport) {
+        inset = Math.max(
+          0,
+          Math.round(window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop)
+        );
+      }
+      // Male oscilacije (npr. 1–8px) ignoriši
+      if (inset < 40) inset = 0;
+      if (inset === lastInset) return;
+      lastInset = inset;
+      root.style.setProperty('--keyboard-inset', inset + 'px');
+      root.classList.toggle('kb-open', inset > 0);
+      if (inset > 0) keepChatVisible();
+    }
+
+    function schedule() {
+      if (timer) cancelAnimationFrame(timer);
+      timer = requestAnimationFrame(apply);
+    }
+
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener('resize', schedule);
+      window.visualViewport.addEventListener('scroll', schedule);
+    }
+    window.addEventListener('resize', schedule);
+    document.addEventListener('focusin', function (e) {
+      var t = e.target;
+      if (!t || !t.matches) return;
+      if (t.matches('input, textarea, [contenteditable="true"]')) {
+        setTimeout(schedule, 80);
+        setTimeout(schedule, 320);
+      }
+    });
+    document.addEventListener('focusout', function () {
+      setTimeout(schedule, 80);
+    });
+    apply();
+  }
+
   function initRatingsTabs() {
     const tabs = all('[data-ratings-tab]');
     if (!tabs.length) return;
@@ -2293,6 +2354,7 @@
     initPhoneReveal();
     initMsgToast();
     initChatScroll();
+    initKeyboardInset();
     initRatingsTabs();
     initLiveChat();
     initLiveInbox();

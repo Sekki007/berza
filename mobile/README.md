@@ -22,7 +22,7 @@ Android wrapper oko [https://kupitelefon.rs](https://kupitelefon.rs) (Capacitor 
 Obavezno pre submit-a:
 1. `create-release-keystore.ps1` + `keystore.properties`
 2. Firebase `google-services.json` + FCM u `.env`
-3. Ažuriraj `public/.well-known/assetlinks.json` (release fingerprint)
+3. `print-cert-fingerprint.ps1` → ažurira `public/.well-known/assetlinks.json` (release fingerprint)
 4. Privacy URL: https://kupitelefon.rs/privatnost
 5. `build-play-bundle.ps1` → upload `dist/KupiTelefon.aab`
 

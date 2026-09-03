@@ -1317,13 +1317,13 @@ body.page-chat .footer,body.page-chat .site-footer{display:none;}
   body.page-chat .site-footer { display: none; }
   body.page-chat .main-wrap {
     padding-bottom: 0;
-    min-height: calc(100dvh - 70px);
+    min-height: calc(100dvh - 70px - var(--keyboard-inset, 0px));
   }
   body.page-chat .chat-shell {
     display: flex;
     flex-direction: column;
-    height: calc(100dvh - 72px);
-    max-height: calc(100dvh - 72px);
+    height: calc(100dvh - 72px - var(--keyboard-inset, 0px));
+    max-height: calc(100dvh - 72px - var(--keyboard-inset, 0px));
     margin-bottom: 0;
     border-radius: 0;
     border-left: none;
@@ -1336,14 +1336,33 @@ body.page-chat .footer,body.page-chat .site-footer{display:none;}
   }
   body.page-chat .chat-compose {
     position: sticky;
-    bottom: 0;
+    bottom: var(--keyboard-inset, 0px);
     z-index: 5;
     padding-bottom: calc(10px + var(--safe-bottom));
+    background: #fff;
+  }
+  body.page-chat .chat-live-hint {
+    position: sticky;
+    bottom: 0;
+    background: #fff;
+    z-index: 4;
+  }
+  html.kb-open body.page-chat .chat-live-hint {
+    display: none;
   }
   body.page-chat .chat-compose textarea { font-size: 16px; }
   body.page-chat .chat-compose .btn-kp-message {
     min-height: var(--touch-min);
     min-width: 88px;
+  }
+
+  /* Native Android app: dodatni lift compose polja iznad tastature */
+  body.kt-native-app.page-chat .chat-shell {
+    height: calc(100dvh - 64px - var(--keyboard-inset, 0px));
+    max-height: calc(100dvh - 64px - var(--keyboard-inset, 0px));
+  }
+  body.kt-native-app.page-chat .chat-compose {
+    bottom: var(--keyboard-inset, 0px);
   }
 
   .filter-drawer {

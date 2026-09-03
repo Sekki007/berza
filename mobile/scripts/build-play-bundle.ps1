@@ -8,7 +8,8 @@ $android = Join-Path $mobile 'android'
 $dist = Join-Path $mobile 'dist'
 
 if (-not (Test-Path (Join-Path $android 'keystore.properties'))) {
-    Write-Warning "Nema keystore.properties — bundle će biti potpisan debug ključem (samo test, ne Play Store)."
+    Write-Error 'Nema keystore.properties - prvo pokreni .\mobile\scripts\create-release-keystore.ps1'
+    exit 1
 }
 
 $env:JAVA_HOME = if ($env:JAVA_HOME) { $env:JAVA_HOME } else { 'C:\Program Files\Android\Android Studio\jbr' }
@@ -29,7 +30,9 @@ try {
     Pop-Location
 }
 
-if (-not (Test-Path $dist)) { New-Item -ItemType Directory -Path $dist | Out-Null }
+if (-not (Test-Path $dist)) {
+    New-Item -ItemType Directory -Path $dist | Out-Null
+}
 
 $bundle = Join-Path $android 'app\build\outputs\bundle\release\app-release.aab'
 $apk = Join-Path $android 'app\build\outputs\apk\release\app-release.apk'
@@ -43,4 +46,4 @@ if (Test-Path $apk) {
     Write-Host "Test APK: $dist\KupiTelefon-release.apk"
 }
 
-Write-Host "Gotovo. Upload KupiTelefon.aab u Google Play Console → Production / Internal testing."
+Write-Host 'Gotovo. Upload KupiTelefon.aab u Google Play Console - Internal testing ili Production.'
