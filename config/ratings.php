@@ -145,16 +145,20 @@ function shopUrlForUser(array $user): string
     return '/izlog/' . rawurlencode($slug);
 }
 
-/** Stranica sa ocenama: /izlog/{slug}/ocene[?filter=positive|negative] */
+/**
+ * Stranica sa ocenama.
+ * Koristi /izlog_ocene.php?u=slug jer pretty /izlog/slug/ocene zahteva poseban Nginx rewrite
+ * koji često „proguta“ kategorija-pravilo.
+ */
 function shopReviewsUrl(array $user, string $filter = ''): string
 {
-    $base = shopUrlForUser($user);
-    if ($base === '/izlog.php' || $base === '') {
-        return '/izlog.php';
+    $slug = userShopSlug($user);
+    if ($slug === '') {
+        return '/izlog_ocene.php';
     }
-    $url = rtrim($base, '/') . '/ocene';
+    $url = '/izlog_ocene.php?u=' . rawurlencode($slug);
     if ($filter === 'positive' || $filter === 'negative') {
-        return $url . '?filter=' . $filter;
+        $url .= '&filter=' . $filter;
     }
     return $url;
 }
@@ -719,18 +723,34 @@ function renderReputation(array $summary, ?string $reviewsBaseUrl = null): strin
     $neg = (int)($summary['negative'] ?? 0);
     $count = $pos + $neg;
 
-    $reviewsRoot = null;
+    $allUrl = null;
+    $posUrl = null;
+    $negUrl = null;
+
     if ($reviewsBaseUrl !== null && $reviewsBaseUrl !== '') {
-        $reviewsRoot = preg_replace('#\?.*$#', '', $reviewsBaseUrl) ?? $reviewsBaseUrl;
-        $reviewsRoot = rtrim($reviewsRoot, '/');
-        if (!str_ends_with($reviewsRoot, '/ocene')) {
-            $reviewsRoot .= '/ocene';
+        if (str_contains($reviewsBaseUrl, 'izlog_ocene.php')) {
+            $allUrl = preg_replace('/([?&])filter=[^&]*/', '$1', $reviewsBaseUrl) ?? $reviewsBaseUrl;
+            $allUrl = preg_replace('/\?&/', '?', $allUrl) ?? $allUrl;
+            $allUrl = rtrim($allUrl, '?&');
+            $sep = str_contains($allUrl, '?') ? '&' : '?';
+            $posUrl = $allUrl . $sep . 'filter=positive';
+            $negUrl = $allUrl . $sep . 'filter=negative';
+        } elseif (preg_match('#/izlog/([^/?#]+)#', $reviewsBaseUrl, $m)) {
+            $slug = rawurldecode($m[1]);
+            $allUrl = '/izlog_ocene.php?u=' . rawurlencode($slug);
+            $posUrl = $allUrl . '&filter=positive';
+            $negUrl = $allUrl . '&filter=negative';
+        } else {
+            $allUrl = $reviewsBaseUrl;
+            $sep = str_contains($allUrl, '?') ? '&' : '?';
+            $posUrl = $allUrl . $sep . 'filter=positive';
+            $negUrl = $allUrl . $sep . 'filter=negative';
         }
     }
 
     if ($count === 0) {
-        if ($reviewsRoot) {
-            return '<a class="rep-thumbs rep-thumbs-link" href="' . h($reviewsRoot) . '"><span class="rating-meta">Još nema ocena</span></a>';
+        if ($allUrl) {
+            return '<a class="rep-thumbs rep-thumbs-link" href="' . h($allUrl) . '"><span class="rating-meta">Još nema ocena</span></a>';
         }
         return '<span class="rep-thumbs"><span class="rating-meta">Još nema ocena</span></span>';
     }
@@ -738,9 +758,9 @@ function renderReputation(array $summary, ?string $reviewsBaseUrl = null): strin
     $upInner = '<span class="rep-thumb-icon">👍</span> ' . $pos;
     $downInner = '<span class="rep-thumb-icon">👎</span> ' . $neg;
 
-    if ($reviewsRoot) {
-        $up = '<a class="rep-thumb rep-thumb-up" href="' . h($reviewsRoot . '?filter=positive') . '" title="Pozitivne ocene">' . $upInner . '</a>';
-        $down = '<a class="rep-thumb rep-thumb-down" href="' . h($reviewsRoot . '?filter=negative') . '" title="Negativne ocene">' . $downInner . '</a>';
+    if ($posUrl && $negUrl) {
+        $up = '<a class="rep-thumb rep-thumb-up" href="' . h($posUrl) . '" title="Pozitivne ocene">' . $upInner . '</a>';
+        $down = '<a class="rep-thumb rep-thumb-down" href="' . h($negUrl) . '" title="Negativne ocene">' . $downInner . '</a>';
     } else {
         $up = '<span class="rep-thumb rep-thumb-up">' . $upInner . '</span>';
         $down = '<span class="rep-thumb rep-thumb-down">' . $downInner . '</span>';
