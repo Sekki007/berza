@@ -9,7 +9,7 @@ function reservedShopSlugs(): array
         'nalog', 'poruke', 'favorites', 'dashboard', 'report', 'sitemap', 'robots', 'uploads',
         'forgot-password', 'reset-password', 'verify-phone', 'verify-email', 'uporedi',
         'kako-radi', 'privatnost', 'uslovi', 'index', 'www', 'mail', 'podrska', 'support', 'kupitelefon',
-        'prodavnice', 'grad', 'vodic', 'vodici', 'blog',
+        'prodavnice', 'grad', 'vodic', 'vodici', 'blog', 'ocene',
     ];
 }
 
@@ -143,6 +143,20 @@ function shopUrlForUser(array $user): string
         return '/izlog.php';
     }
     return '/izlog/' . rawurlencode($slug);
+}
+
+/** Stranica sa ocenama: /izlog/{slug}/ocene[?filter=positive|negative] */
+function shopReviewsUrl(array $user, string $filter = ''): string
+{
+    $base = shopUrlForUser($user);
+    if ($base === '/izlog.php' || $base === '') {
+        return '/izlog.php';
+    }
+    $url = rtrim($base, '/') . '/ocene';
+    if ($filter === 'positive' || $filter === 'negative') {
+        return $url . '?filter=' . $filter;
+    }
+    return $url;
 }
 
 /** @deprecated Prefer shopUrlForUser(); accepts slug or legacy username. */
@@ -698,16 +712,25 @@ function saveSellerRating(int $sellerId, int $fromUserId, string $vote, string $
     return true;
 }
 
-/** KP-style: 👍 347   👎 0 — optional $reviewsBaseUrl opens komentare (npr. /izlog.php?u=x) */
+/** KP-style: 👍 347   👎 0 — $reviewsBaseUrl = shopReviewsUrl() ili /izlog/slug */
 function renderReputation(array $summary, ?string $reviewsBaseUrl = null): string
 {
     $pos = (int)($summary['positive'] ?? 0);
     $neg = (int)($summary['negative'] ?? 0);
     $count = $pos + $neg;
 
+    $reviewsRoot = null;
+    if ($reviewsBaseUrl !== null && $reviewsBaseUrl !== '') {
+        $reviewsRoot = preg_replace('#\?.*$#', '', $reviewsBaseUrl) ?? $reviewsBaseUrl;
+        $reviewsRoot = rtrim($reviewsRoot, '/');
+        if (!str_ends_with($reviewsRoot, '/ocene')) {
+            $reviewsRoot .= '/ocene';
+        }
+    }
+
     if ($count === 0) {
-        if ($reviewsBaseUrl) {
-            return '<a class="rep-thumbs rep-thumbs-link" href="' . h($reviewsBaseUrl . '#ocene') . '"><span class="rating-meta">Još nema ocena</span></a>';
+        if ($reviewsRoot) {
+            return '<a class="rep-thumbs rep-thumbs-link" href="' . h($reviewsRoot) . '"><span class="rating-meta">Još nema ocena</span></a>';
         }
         return '<span class="rep-thumbs"><span class="rating-meta">Još nema ocena</span></span>';
     }
@@ -715,9 +738,9 @@ function renderReputation(array $summary, ?string $reviewsBaseUrl = null): strin
     $upInner = '<span class="rep-thumb-icon">👍</span> ' . $pos;
     $downInner = '<span class="rep-thumb-icon">👎</span> ' . $neg;
 
-    if ($reviewsBaseUrl) {
-        $up = '<a class="rep-thumb rep-thumb-up" href="' . h($reviewsBaseUrl . '#ocene-positive') . '" title="Pogledaj pozitivne ocene">' . $upInner . '</a>';
-        $down = '<a class="rep-thumb rep-thumb-down" href="' . h($reviewsBaseUrl . '#ocene-negative') . '" title="Pogledaj negativne ocene">' . $downInner . '</a>';
+    if ($reviewsRoot) {
+        $up = '<a class="rep-thumb rep-thumb-up" href="' . h($reviewsRoot . '?filter=positive') . '" title="Pozitivne ocene">' . $upInner . '</a>';
+        $down = '<a class="rep-thumb rep-thumb-down" href="' . h($reviewsRoot . '?filter=negative') . '" title="Negativne ocene">' . $downInner . '</a>';
     } else {
         $up = '<span class="rep-thumb rep-thumb-up">' . $upInner . '</span>';
         $down = '<span class="rep-thumb rep-thumb-down">' . $downInner . '</span>';

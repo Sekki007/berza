@@ -27,6 +27,7 @@ server {
 
     # Pretty URL: /oglas/123-slug, /izlog/slug, /izlog/slug/kategorija, /usluge/..., /servisi/...
     rewrite ^/oglas/(\d+)(?:-.*)?/?$ /oglas.php?id=$1 last;
+    rewrite ^/izlog/([^/]+)/ocene/?$ /izlog_ocene.php?$args&u=$1 last;
     rewrite ^/izlog/([^/]+)/([^/]+)/?$ /izlog.php?$args&u=$1&cat=$2&cat_from_path=1 last;
     rewrite ^/izlog/([^/]+)/?$ /izlog.php?$args&u=$1 last;
     rewrite ^/usluge/([^/]+)/?$ /usluge.php?u=$1 last;

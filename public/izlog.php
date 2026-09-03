@@ -91,7 +91,6 @@ $queryBase = array_filter([
 
 $shopName = getSellerShopName($seller, $allAds);
 $summary = getSellerRatingSummary($sellerId);
-$ratings = getSellerRatings($sellerId);
 $categoryLabel = $activeCategory ? (string)$activeCategory['name'] : null;
 $shopSeo = seoShopMeta($seller, $shopName, $categoryLabel);
 $pageDescription = $shopSeo['description'];
@@ -177,19 +176,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'shop_
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'rate') {
     requireCsrf($shopLink);
     requireLogin();
-    $vote = trim((string)($_POST['vote'] ?? ''));
-    $comment = (string)($_POST['comment'] ?? '');
-    $conversationKey = trim((string)($_POST['conversation_key'] ?? ''));
-    $adId = isset($_POST['ad_id']) && $_POST['ad_id'] !== '' ? (int)$_POST['ad_id'] : null;
-
-    if (saveSellerRating($sellerId, (int)currentUser()['id'], $vote, $comment, $adId, $conversationKey !== '' ? $conversationKey : null)) {
-        setFlash('success', 'Ocena je sačuvana. Hvala!');
-    } else {
-        $fail = getRatingEligibility((int)currentUser()['id'], $sellerId);
-        $msg = $fail['reasons'][0] ?? 'Ocena nije sačuvana. Proveri pravila ocenjivanja.';
-        setFlash('danger', $msg);
-    }
-    header('Location: ' . $shopLink . '#ocene');
+    // Ocene se šalju na posebnu stranicu
+    header('Location: ' . shopReviewsUrl($seller));
     exit;
 }
 
@@ -230,7 +218,7 @@ require __DIR__ . '/partials/layout-start.php';
                     <p class="shop-meta">
                         <?= (int)$typeCounts['all'] ?> <?= (int)$typeCounts['all'] === 1 ? 'oglas' : 'oglasa' ?>
                     </p>
-                    <div class="shop-rating"><?= renderReputation($summary, $shopLink) ?></div>
+                    <div class="shop-rating"><?= renderReputation($summary, shopReviewsUrl($seller)) ?></div>
                     <?php if (!empty($seller['shop_bio'])): ?>
                         <p class="shop-bio"><?= nl2br(h((string)$seller['shop_bio'])) ?></p>
                     <?php endif; ?>
@@ -340,113 +328,27 @@ require __DIR__ . '/partials/layout-start.php';
         </div>
 
         <div class="form-card" style="margin-top:12px;" id="ocene">
-            <h2>Ocene oglašivača</h2>
-
-            <div class="rating-rules">
-                <strong>Korisnika ne možete oceniti:</strong>
-                <ul>
-                    <li>ako ste se registrovali pre manje od 1 dana,</li>
-                    <li>ako nemate obostranu konverzaciju porukama vezanu za oglas,</li>
-                    <li>ako ste ga već ocenili pre manje od 3 dana,</li>
-                    <li>ako je konverzacija starija od 60 dana,</li>
-                    <li>ako ste korisnika već ocenili iz iste konverzacije.</li>
-                </ul>
-            </div>
-
-            <?php if ($isOwnShop): ?>
-                <p class="form-hint">Ovo je tvoj izlog — ne možeš oceniti sebe.</p>
-            <?php elseif (!isLoggedIn()): ?>
-                <p class="form-hint"><a href="/login.php">Prijavi se</a> da bi ocenio/la ovog oglašivača (uz ispunjene uslove).</p>
-            <?php elseif ($canRate): ?>
-                <form method="POST" class="rating-form">
-                    <input type="hidden" name="action" value="rate">
-                    <?php if (count($eligibility['eligible']) === 1): ?>
-                        <input type="hidden" name="conversation_key" value="<?= h((string)$eligibility['eligible'][0]['key']) ?>">
-                        <input type="hidden" name="ad_id" value="<?= (int)$eligibility['eligible'][0]['ad_id'] ?>">
-                        <p class="form-hint">Ocena se vezuje za konverzaciju: <strong><?= h((string)$eligibility['eligible'][0]['title']) ?></strong></p>
-                    <?php else: ?>
-                        <div class="form-group">
-                            <label>Konverzacija / oglas</label>
-                            <select name="conversation_key" required>
-                                <?php foreach ($eligibility['eligible'] as $thread): ?>
-                                    <option value="<?= h((string)$thread['key']) ?>"><?= h((string)$thread['title']) ?> (<?= (int)$thread['message_count'] ?> poruka)</option>
-                                <?php endforeach; ?>
-                            </select>
-                        </div>
+            <div class="reviews-teaser">
+                <div>
+                    <h2>Ocene oglašivača</h2>
+                    <div class="shop-rating" style="margin-top:8px;"><?= renderReputation($summary) ?></div>
+                    <p class="form-hint" style="margin-top:8px;">
+                        Pregledaj ko je dao pozitivne i negativne ocene na posebnoj stranici.
+                    </p>
+                </div>
+                <div class="reviews-teaser-actions">
+                    <a class="btn-call" href="<?= h(shopReviewsUrl($seller)) ?>">Pogledaj ocene</a>
+                    <?php if ((int)($summary['positive'] ?? 0) > 0): ?>
+                        <a class="btn-sm" href="<?= h(shopReviewsUrl($seller, 'positive')) ?>">👍 Pozitivne</a>
                     <?php endif; ?>
-                    <div class="form-group">
-                        <label>Tvoja ocena</label>
-                        <div class="vote-options">
-                            <label class="vote-option vote-positive">
-                                <input type="radio" name="vote" value="positive" required>
-                                <span class="vote-icon">👍</span>
-                                <span>Pozitivna</span>
-                            </label>
-                            <label class="vote-option vote-negative">
-                                <input type="radio" name="vote" value="negative" required>
-                                <span class="vote-icon">👎</span>
-                                <span>Negativna</span>
-                            </label>
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Komentar (nije obavezno)</label>
-                        <textarea name="comment" rows="3" maxlength="500" placeholder="Kako je prošao kontakt / kupovina?"></textarea>
-                    </div>
-                    <button class="btn-call" type="submit">Pošalji ocenu</button>
-                </form>
-            <?php else: ?>
-                <div class="rating-blocked">
-                    <strong>Trenutno ne možeš oceniti ovog korisnika:</strong>
-                    <ul>
-                        <?php foreach ($eligibility['reasons'] as $reason): ?>
-                            <li><?= h($reason) ?></li>
-                        <?php endforeach; ?>
-                    </ul>
-                    <p class="form-hint" style="margin-top:8px;">Pošalji poruku preko oglasa — kada razmenite barem par poruka sa obe strane, ocena će biti dostupna.</p>
+                    <?php if ((int)($summary['negative'] ?? 0) > 0): ?>
+                        <a class="btn-sm" href="<?= h(shopReviewsUrl($seller, 'negative')) ?>">👎 Negativne</a>
+                    <?php endif; ?>
+                    <?php if ($canRate): ?>
+                        <a class="btn-sm btn-sm-primary" href="<?= h(shopReviewsUrl($seller)) ?>#ostavi-ocenu">Ostavi ocenu</a>
+                    <?php endif; ?>
                 </div>
-            <?php endif; ?>
-
-            <?php if ($ratings): ?>
-                <?php
-                $positiveCount = count(array_filter($ratings, static fn($r) => normalizeRatingVote($r['vote'] ?? $r['score'] ?? '') === 'positive'));
-                $negativeCount = count($ratings) - $positiveCount;
-                ?>
-                <div class="ratings-filter-tabs">
-                    <a href="#ocene" class="ratings-tab active" data-ratings-tab="all">Sve (<?= count($ratings) ?>)</a>
-                    <a href="#ocene-positive" class="ratings-tab" data-ratings-tab="positive">👍 Pozitivne (<?= $positiveCount ?>)</a>
-                    <a href="#ocene-negative" class="ratings-tab" data-ratings-tab="negative">👎 Negativne (<?= $negativeCount ?>)</a>
-                </div>
-
-                <div class="ratings-list" id="ocene-all" data-ratings-list>
-                    <?php foreach ($ratings as $rating): ?>
-                        <?php
-                        $from = findUserById((int)($rating['from_user_id'] ?? 0));
-                        $fromName = (string)($from['full_name'] ?? 'Korisnik');
-                        $vote = normalizeRatingVote($rating['vote'] ?? $rating['score'] ?? '');
-                        ?>
-                        <div class="rating-item" data-vote="<?= h($vote !== '' ? $vote : 'positive') ?>">
-                            <div class="rating-item-head">
-                                <strong><?= h($fromName) ?></strong>
-                                <?php if ($vote === 'negative'): ?>
-                                    <span class="vote-tag vote-tag-neg">− Negativna</span>
-                                <?php else: ?>
-                                    <span class="vote-tag vote-tag-pos">+ Pozitivna</span>
-                                <?php endif; ?>
-                                <span class="rating-date"><?= h(formatRelativeTime((string)($rating['updated_at'] ?? $rating['created_at'] ?? ''))) ?></span>
-                            </div>
-                            <?php if (!empty($rating['comment'])): ?>
-                                <p class="rating-comment"><?= nl2br(h((string)$rating['comment'])) ?></p>
-                            <?php else: ?>
-                                <p class="rating-comment rating-comment-empty">Bez komentara</p>
-                            <?php endif; ?>
-                        </div>
-                    <?php endforeach; ?>
-                </div>
-                <p class="form-hint ratings-empty-filter" data-ratings-empty hidden>Nema ocena u ovom filteru.</p>
-            <?php else: ?>
-                <p style="color:var(--text-muted);margin-top:12px;">Još nema ocena za ovog oglašivača.</p>
-            <?php endif; ?>
+            </div>
         </div>
     </main>
 </div>

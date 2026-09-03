@@ -11,6 +11,12 @@ if (preg_match('#^/oglas/(\d+)(?:-.*)?/?$#', $uri, $m)) {
     exit;
 }
 
+if (preg_match('#^/izlog/([^/]+)/ocene/?$#', $uri, $m)) {
+    $_GET['u'] = rawurldecode($m[1]);
+    require __DIR__ . '/public/izlog_ocene.php';
+    exit;
+}
+
 if (preg_match('#^/izlog/([^/]+)/([^/]+)/?$#', $uri, $m)) {
     $_GET['u'] = rawurldecode($m[1]);
     $_GET['cat'] = rawurldecode($m[2]);
