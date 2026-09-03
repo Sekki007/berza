@@ -345,10 +345,10 @@ require __DIR__ . '/partials/layout-start.php';
             <div class="rating-rules">
                 <strong>Korisnika ne možete oceniti:</strong>
                 <ul>
-                    <li>ako ste se nedavno registrovali,</li>
-                    <li>ako se iz Vaše konverzacije porukama ne može utvrditi da je do kupoprodaje došlo,</li>
-                    <li>ako ste ga već ocenili pre manje od 7 dana,</li>
-                    <li>ako je konverzacija starija od 30 dana,</li>
+                    <li>ako ste se registrovali pre manje od 1 dana,</li>
+                    <li>ako nemate obostranu konverzaciju porukama vezanu za oglas,</li>
+                    <li>ako ste ga već ocenili pre manje od 3 dana,</li>
+                    <li>ako je konverzacija starija od 60 dana,</li>
                     <li>ako ste korisnika već ocenili iz iste konverzacije.</li>
                 </ul>
             </div>
@@ -403,7 +403,7 @@ require __DIR__ . '/partials/layout-start.php';
                             <li><?= h($reason) ?></li>
                         <?php endforeach; ?>
                     </ul>
-                    <p class="form-hint" style="margin-top:8px;">Pošalji poruku preko oglasa — kada iz razgovora bude jasno da je došlo do kupoprodaje, ocena će biti dostupna.</p>
+                    <p class="form-hint" style="margin-top:8px;">Pošalji poruku preko oglasa — kada razmenite barem par poruka sa obe strane, ocena će biti dostupna.</p>
                 </div>
             <?php endif; ?>
 

@@ -348,15 +348,58 @@ function ratingConversationKey(int $userA, int $userB, int $adId): string
     return $min . '-' . $max . '-ad' . $adId;
 }
 
+function ratingAccountMinAgeDays(): int
+{
+    return 1;
+}
+
+function ratingCooldownDays(): int
+{
+    return 3;
+}
+
+function ratingConversationMaxAgeDays(): int
+{
+    return 60;
+}
+
+function ratingMinMessageCount(): int
+{
+    return 2;
+}
+
+/** Bez ključnih reči — dovoljno obostrane poruke za ocenu. */
+function ratingMinMessagesWithoutSaleHint(): int
+{
+    return 4;
+}
+
 function saleIntentKeywords(): array
 {
     return [
-        'dogovoreno', 'dogovorili', 'dogovor', 'kupio', 'kupila', 'kupili',
-        'prodao', 'prodala', 'prodali', 'preuzeo', 'preuzela', 'preuzeto',
-        'stiglo', 'stigla', 'isporučeno', 'isporuceno', 'dostavljeno', 'dostavljena',
-        'plaćeno', 'placeno', 'platila', 'platio', 'uplaćeno', 'uplaceno',
-        'hvala na', 'sve ok', 'sve u redu', 'uspešno', 'uspesno', 'primio', 'primila',
-        'završeno', 'zavrseno', 'dogovorili smo', 'vidimo se', 'javim se kad',
+        // dogovor / kupovina
+        'dogovoreno', 'dogovorili', 'dogovor', 'dogovaramo', 'dogovorimo',
+        'kupio', 'kupila', 'kupili', 'kupujem', 'kupovina', 'kupovinu',
+        'prodao', 'prodala', 'prodali', 'prodajem', 'prodaja',
+        'uzeo', 'uzela', 'uzeli', 'uzeto', 'uzeti', 'uzimam',
+        'rezervišem', 'rezervisem', 'rezervisano', 'rezervacija',
+        // preuzimanje / dostava
+        'preuzeo', 'preuzela', 'preuzeto', 'preuzeti', 'preuzimam', 'preuzimanje',
+        'stiglo', 'stigla', 'stigao', 'isporučeno', 'isporuceno',
+        'dostavljeno', 'dostavljena', 'dostava', 'šaljem', 'saljem', 'pošaljem', 'posaljem',
+        'dolazim', 'dođem', 'dodjem', 'vidimo se', 'vidimo', 'sastanak',
+        'lično', 'licno', 'kod mene', 'kod tebe', 'adresa', 'lokacija',
+        // plaćanje
+        'plaćeno', 'placeno', 'platila', 'platio', 'plaćam', 'placam',
+        'uplaćeno', 'uplaceno', 'uplatio', 'uplatila', 'uplatim',
+        'keš', 'kes', 'novac', 'dinara', 'din ', ' eur', 'euro', 'rsd',
+        // potvrda da je sve prošlo
+        'hvala na', 'hvala', 'sve ok', 'sve okej', 'sve u redu', 'sve super',
+        'uspešno', 'uspesno', 'primio', 'primila', 'završeno', 'zavrseno',
+        'gotovo', 'urađeno', 'uradjeno', 'zadovoljan', 'zadovoljna',
+        'super', 'odlično', 'odlicno', 'preporuka', 'preporučujem', 'preporucujem',
+        'javim se kad', 'javljaću', 'javljacu', 'čekam te', 'cekam te',
+        'može dogovor', 'moze dogovor', 'ok je', 'sve okej',
     ];
 }
 
@@ -372,6 +415,22 @@ function conversationSuggestsSale(array $messages): bool
         }
     }
     return false;
+}
+
+function conversationEligibleForRating(array $thread): bool
+{
+    if (empty($thread['both_sides'])) {
+        return false;
+    }
+    $count = (int)($thread['message_count'] ?? 0);
+    if ($count < ratingMinMessageCount()) {
+        return false;
+    }
+    if (!empty($thread['suggests_sale'])) {
+        return true;
+    }
+    // Mlad sajt: dovoljno obostrane komunikacije i bez eksplicitnog "kupio/prodao"
+    return $count >= ratingMinMessagesWithoutSaleHint();
 }
 
 /**
@@ -451,16 +510,22 @@ function hasRatedConversation(int $sellerId, int $fromUserId, string $conversati
 }
 
 /**
- * KP-style pravila za ocenu.
+ * Pravila za ocenu (ublaženo za mlad marketplace).
  * @return array{allowed:bool,reasons:list<string>,eligible:list<array>,rules:list<string>}
  */
 function getRatingEligibility(int $fromUserId, int $sellerId): array
 {
+    $minAge = ratingAccountMinAgeDays();
+    $cooldown = ratingCooldownDays();
+    $maxAge = ratingConversationMaxAgeDays();
+    $minMsgs = ratingMinMessageCount();
+    $minMsgsNoHint = ratingMinMessagesWithoutSaleHint();
+
     $rules = [
-        'ako ste se nedavno registrovali (manje od 3 dana),',
-        'ako se iz Vaše konverzacije porukama ne može utvrditi da je do kupoprodaje došlo,',
-        'ako ste ga već ocenili pre manje od 7 dana,',
-        'ako je konverzacija starija od 30 dana,',
+        "ako ste se nedavno registrovali (manje od {$minAge} " . ($minAge === 1 ? 'dan' : 'dana') . '),',
+        'ako nemate obostranu konverzaciju porukama vezanu za oglas,',
+        "ako ste ga već ocenili pre manje od {$cooldown} dana,",
+        "ako je konverzacija starija od {$maxAge} dana,",
         'ako ste korisnika već ocenili iz iste konverzacije.',
     ];
 
@@ -478,16 +543,18 @@ function getRatingEligibility(int $fromUserId, int $sellerId): array
     }
 
     $createdAt = strtotime((string)($fromUser['created_at'] ?? ''));
-    if ($createdAt === false || (time() - $createdAt) < 3 * 86400) {
-        $reasons[] = 'Nedavno ste se registrovali — ocena je moguća nakon 3 dana od registracije.';
+    if ($createdAt === false || (time() - $createdAt) < $minAge * 86400) {
+        $reasons[] = $minAge === 1
+            ? 'Nedavno ste se registrovali — ocena je moguća nakon 1 dana od registracije.'
+            : "Nedavno ste se registrovali — ocena je moguća nakon {$minAge} dana od registracije.";
     }
 
     $lastRating = getUserRatingForSeller($sellerId, $fromUserId);
     if ($lastRating) {
         $ratedAt = strtotime((string)($lastRating['updated_at'] ?? $lastRating['created_at'] ?? ''));
-        if ($ratedAt !== false && (time() - $ratedAt) < 7 * 86400) {
-            $daysLeft = (int)ceil((7 * 86400 - (time() - $ratedAt)) / 86400);
-            $reasons[] = 'Već ste ocenili ovog korisnika pre manje od 7 dana' . ($daysLeft > 0 ? " (ponovo za ~{$daysLeft} dana)" : '') . '.';
+        if ($ratedAt !== false && (time() - $ratedAt) < $cooldown * 86400) {
+            $daysLeft = (int)ceil(($cooldown * 86400 - (time() - $ratedAt)) / 86400);
+            $reasons[] = "Već ste ocenili ovog korisnika pre manje od {$cooldown} dana" . ($daysLeft > 0 ? " (ponovo za ~{$daysLeft} dana)" : '') . '.';
         }
     }
 
@@ -495,23 +562,22 @@ function getRatingEligibility(int $fromUserId, int $sellerId): array
     $eligible = [];
     $hadAnyThread = false;
     $hadTooOld = false;
-    $hadNoSale = false;
+    $hadTooShort = false;
     $hadAlreadyRated = false;
-    $hadOneSided = false;
 
     foreach ($conversations as $thread) {
         $hadAnyThread = true;
         $lastTs = strtotime((string)$thread['last_at']);
-        if ($lastTs === false || (time() - $lastTs) > 30 * 86400) {
+        if ($lastTs === false || (time() - $lastTs) > $maxAge * 86400) {
             $hadTooOld = true;
             continue;
         }
-        if (!$thread['both_sides'] || $thread['message_count'] < 3) {
-            $hadOneSided = true;
+        if (!$thread['both_sides'] || (int)$thread['message_count'] < $minMsgs) {
+            $hadTooShort = true;
             continue;
         }
-        if (!$thread['suggests_sale']) {
-            $hadNoSale = true;
+        if (!conversationEligibleForRating($thread)) {
+            $hadTooShort = true;
             continue;
         }
         if (hasRatedConversation($sellerId, $fromUserId, $thread['key'])) {
@@ -535,20 +601,17 @@ function getRatingEligibility(int $fromUserId, int $sellerId): array
             $reasons[] = 'Već ste ocenili korisnika iz iste konverzacije.';
         }
         if ($eligible === [] && $hadTooOld && !$hadAlreadyRated) {
-            $reasons[] = 'Konverzacija je starija od 30 dana.';
+            $reasons[] = "Konverzacija je starija od {$maxAge} dana.";
         }
-        if ($eligible === [] && $hadNoSale) {
-            $reasons[] = 'Iz konverzacije se ne može utvrditi da je do kupoprodaje došlo (npr. dogovor, preuzimanje, plaćanje).';
-        }
-        if ($eligible === [] && $hadOneSided && !$hadNoSale && !$hadTooOld) {
-            $reasons[] = 'Konverzacija mora imati poruke sa obe strane (najmanje 3 poruke ukupno).';
+        if ($eligible === [] && $hadTooShort && !$hadAlreadyRated) {
+            $reasons[] = "Treba obostrana konverzacija (najmanje {$minMsgs} poruke). Sa {$minMsgsNoHint}+ poruka ocena je dostupna i bez eksplicitnog dogovora u tekstu.";
         }
     }
 
-    // Hard block if account too new or 7-day cooldown, even if eligible conversations exist
+    // Hard block if account too new or cooldown, even if eligible conversations exist
     $hardBlock = false;
     foreach ($reasons as $r) {
-        if (str_contains($r, 'Nedavno ste se registrovali') || str_contains($r, 'manje od 7 dana')) {
+        if (str_contains($r, 'Nedavno ste se registrovali') || str_contains($r, 'manje od ' . $cooldown . ' dana')) {
             $hardBlock = true;
             break;
         }
@@ -556,7 +619,6 @@ function getRatingEligibility(int $fromUserId, int $sellerId): array
 
     $allowed = !$hardBlock && $eligible !== [];
 
-    // Clean duplicate-ish reasons when allowed
     if ($allowed) {
         $reasons = [];
     } else {
