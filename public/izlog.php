@@ -101,10 +101,6 @@ if ($shopCover !== '') {
 }
 $currentUser = currentUser();
 $isOwnShop = isLoggedIn() && (int)$currentUser['id'] === $sellerId;
-$eligibility = isLoggedIn() && !$isOwnShop
-    ? getRatingEligibility((int)$currentUser['id'], $sellerId)
-    : ['allowed' => false, 'reasons' => [], 'eligible' => [], 'rules' => []];
-$canRate = !empty($eligibility['allowed']);
 $initials = mb_strtoupper(mb_substr($shopName, 0, 1) . mb_substr(trim(strrchr($shopName, ' ') ?: ''), 0, 1));
 if (mb_strlen($initials) < 1) {
     $initials = '?';
@@ -218,7 +214,10 @@ require __DIR__ . '/partials/layout-start.php';
                     <p class="shop-meta">
                         <?= (int)$typeCounts['all'] ?> <?= (int)$typeCounts['all'] === 1 ? 'oglas' : 'oglasa' ?>
                     </p>
-                    <div class="shop-rating"><?= renderReputation($summary, shopReviewsUrl($seller)) ?></div>
+                    <div class="shop-rating shop-rating-row">
+                        <?= renderReputation($summary, shopReviewsUrl($seller)) ?>
+                        <a class="shop-reviews-link" href="<?= h(shopReviewsUrl($seller)) ?>">Pogledaj ocene →</a>
+                    </div>
                     <?php if (!empty($seller['shop_bio'])): ?>
                         <p class="shop-bio"><?= nl2br(h((string)$seller['shop_bio'])) ?></p>
                     <?php endif; ?>
@@ -325,30 +324,6 @@ require __DIR__ . '/partials/layout-start.php';
                     <?php endif; ?>
                 <?php endif; ?>
             <?php endif; ?>
-        </div>
-
-        <div class="form-card" style="margin-top:12px;" id="ocene">
-            <div class="reviews-teaser">
-                <div>
-                    <h2>Ocene oglašivača</h2>
-                    <div class="shop-rating" style="margin-top:8px;"><?= renderReputation($summary) ?></div>
-                    <p class="form-hint" style="margin-top:8px;">
-                        Pregledaj ko je dao pozitivne i negativne ocene na posebnoj stranici.
-                    </p>
-                </div>
-                <div class="reviews-teaser-actions">
-                    <a class="btn-call" href="<?= h(shopReviewsUrl($seller)) ?>">Pogledaj ocene</a>
-                    <?php if ((int)($summary['positive'] ?? 0) > 0): ?>
-                        <a class="btn-sm" href="<?= h(shopReviewsUrl($seller, 'positive')) ?>">👍 Pozitivne</a>
-                    <?php endif; ?>
-                    <?php if ((int)($summary['negative'] ?? 0) > 0): ?>
-                        <a class="btn-sm" href="<?= h(shopReviewsUrl($seller, 'negative')) ?>">👎 Negativne</a>
-                    <?php endif; ?>
-                    <?php if ($canRate): ?>
-                        <a class="btn-sm btn-sm-primary" href="<?= h(shopReviewsUrl($seller)) ?>#ostavi-ocenu">Ostavi ocenu</a>
-                    <?php endif; ?>
-                </div>
-            </div>
         </div>
     </main>
 </div>

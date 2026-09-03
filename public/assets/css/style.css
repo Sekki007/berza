@@ -1644,6 +1644,20 @@ a.rep-thumb:hover { opacity: 0.85; text-decoration: underline; }
   gap: 8px;
   align-items: center;
 }
+.shop-rating-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 6px;
+}
+.shop-reviews-link {
+  font-size: 13px;
+  font-weight: bold;
+  color: var(--kp-green-dark);
+  text-decoration: none;
+}
+.shop-reviews-link:hover { text-decoration: underline; }
 .reviews-hero h1 { margin: 4px 0 10px; font-size: 26px; }
 .reviews-kicker {
   margin: 0;
