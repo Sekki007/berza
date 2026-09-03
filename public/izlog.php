@@ -35,6 +35,13 @@ $searchQ = trim((string)($_GET['q'] ?? ''));
 $filterType = trim((string)($_GET['type'] ?? ''));
 $filterCat = trim((string)($_GET['cat'] ?? ''));
 $catFromPath = !empty($_GET['cat_from_path']);
+
+// Ako Nginx uhvati /izlog/slug/ocene kao "kategoriju", ipak otvori stranicu ocena
+if ($filterCat === 'ocene') {
+    require __DIR__ . '/izlog_ocene.php';
+    exit;
+}
+
 $sort = trim((string)($_GET['sort'] ?? 'newest'));
 $page = max(1, (int)($_GET['page'] ?? 1));
 $perPage = max(12, (int)(siteSettings()['items_per_page'] ?? 20));
