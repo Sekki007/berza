@@ -409,29 +409,29 @@ require __DIR__ . '/partials/layout-start.php';
 
             <?php if ($ratings): ?>
                 <?php
-                $positiveRatings = array_values(array_filter($ratings, static fn($r) => normalizeRatingVote($r['vote'] ?? $r['score'] ?? '') === 'positive'));
-                $negativeRatings = array_values(array_filter($ratings, static fn($r) => normalizeRatingVote($r['vote'] ?? $r['score'] ?? '') === 'negative'));
+                $positiveCount = count(array_filter($ratings, static fn($r) => normalizeRatingVote($r['vote'] ?? $r['score'] ?? '') === 'positive'));
+                $negativeCount = count($ratings) - $positiveCount;
                 ?>
                 <div class="ratings-filter-tabs">
-                    <a href="#ocene" class="ratings-tab" data-ratings-tab="all">Sve (<?= count($ratings) ?>)</a>
-                    <a href="#ocene-positive" class="ratings-tab" data-ratings-tab="positive">👍 Pozitivne (<?= count($positiveRatings) ?>)</a>
-                    <a href="#ocene-negative" class="ratings-tab" data-ratings-tab="negative">👎 Negativne (<?= count($negativeRatings) ?>)</a>
+                    <a href="#ocene" class="ratings-tab active" data-ratings-tab="all">Sve (<?= count($ratings) ?>)</a>
+                    <a href="#ocene-positive" class="ratings-tab" data-ratings-tab="positive">👍 Pozitivne (<?= $positiveCount ?>)</a>
+                    <a href="#ocene-negative" class="ratings-tab" data-ratings-tab="negative">👎 Negativne (<?= $negativeCount ?>)</a>
                 </div>
 
-                <div class="ratings-list" id="ocene-all" data-ratings-panel="all">
+                <div class="ratings-list" id="ocene-all" data-ratings-list>
                     <?php foreach ($ratings as $rating): ?>
                         <?php
                         $from = findUserById((int)($rating['from_user_id'] ?? 0));
                         $fromName = (string)($from['full_name'] ?? 'Korisnik');
                         $vote = normalizeRatingVote($rating['vote'] ?? $rating['score'] ?? '');
                         ?>
-                        <div class="rating-item" data-vote="<?= h($vote) ?>">
+                        <div class="rating-item" data-vote="<?= h($vote !== '' ? $vote : 'positive') ?>">
                             <div class="rating-item-head">
                                 <strong><?= h($fromName) ?></strong>
-                                <?php if ($vote === 'positive'): ?>
-                                    <span class="vote-tag vote-tag-pos">+ Pozitivna</span>
-                                <?php else: ?>
+                                <?php if ($vote === 'negative'): ?>
                                     <span class="vote-tag vote-tag-neg">− Negativna</span>
+                                <?php else: ?>
+                                    <span class="vote-tag vote-tag-pos">+ Pozitivna</span>
                                 <?php endif; ?>
                                 <span class="rating-date"><?= h(formatRelativeTime((string)($rating['updated_at'] ?? $rating['created_at'] ?? ''))) ?></span>
                             </div>
@@ -443,62 +443,7 @@ require __DIR__ . '/partials/layout-start.php';
                         </div>
                     <?php endforeach; ?>
                 </div>
-
-                <div class="ratings-section" id="ocene-positive">
-                    <h3 class="ratings-section-title">👍 Pozitivne ocene</h3>
-                    <?php if (!$positiveRatings): ?>
-                        <p class="form-hint">Nema pozitivnih ocena.</p>
-                    <?php else: ?>
-                        <div class="ratings-list">
-                            <?php foreach ($positiveRatings as $rating): ?>
-                                <?php
-                                $from = findUserById((int)($rating['from_user_id'] ?? 0));
-                                $fromName = (string)($from['full_name'] ?? 'Korisnik');
-                                ?>
-                                <div class="rating-item">
-                                    <div class="rating-item-head">
-                                        <strong><?= h($fromName) ?></strong>
-                                        <span class="vote-tag vote-tag-pos">+ Pozitivna</span>
-                                        <span class="rating-date"><?= h(formatRelativeTime((string)($rating['updated_at'] ?? $rating['created_at'] ?? ''))) ?></span>
-                                    </div>
-                                    <?php if (!empty($rating['comment'])): ?>
-                                        <p class="rating-comment"><?= nl2br(h((string)$rating['comment'])) ?></p>
-                                    <?php else: ?>
-                                        <p class="rating-comment rating-comment-empty">Bez komentara</p>
-                                    <?php endif; ?>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php endif; ?>
-                </div>
-
-                <div class="ratings-section" id="ocene-negative">
-                    <h3 class="ratings-section-title">👎 Negativne ocene</h3>
-                    <?php if (!$negativeRatings): ?>
-                        <p class="form-hint">Nema negativnih ocena.</p>
-                    <?php else: ?>
-                        <div class="ratings-list">
-                            <?php foreach ($negativeRatings as $rating): ?>
-                                <?php
-                                $from = findUserById((int)($rating['from_user_id'] ?? 0));
-                                $fromName = (string)($from['full_name'] ?? 'Korisnik');
-                                ?>
-                                <div class="rating-item">
-                                    <div class="rating-item-head">
-                                        <strong><?= h($fromName) ?></strong>
-                                        <span class="vote-tag vote-tag-neg">− Negativna</span>
-                                        <span class="rating-date"><?= h(formatRelativeTime((string)($rating['updated_at'] ?? $rating['created_at'] ?? ''))) ?></span>
-                                    </div>
-                                    <?php if (!empty($rating['comment'])): ?>
-                                        <p class="rating-comment"><?= nl2br(h((string)$rating['comment'])) ?></p>
-                                    <?php else: ?>
-                                        <p class="rating-comment rating-comment-empty">Bez komentara</p>
-                                    <?php endif; ?>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php endif; ?>
-                </div>
+                <p class="form-hint ratings-empty-filter" data-ratings-empty hidden>Nema ocena u ovom filteru.</p>
             <?php else: ?>
                 <p style="color:var(--text-muted);margin-top:12px;">Još nema ocena za ovog oglašivača.</p>
             <?php endif; ?>

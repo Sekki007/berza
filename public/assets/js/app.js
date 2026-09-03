@@ -1994,24 +1994,46 @@
 
   function initRatingsTabs() {
     const tabs = all('[data-ratings-tab]');
-    if (!tabs.length) return;
+    const list = one('[data-ratings-list]');
+    if (!tabs.length || !list) return;
+
+    const items = all('.rating-item[data-vote]', list);
+    const emptyHint = one('[data-ratings-empty]');
 
     function activate(whichTab) {
+      const filter = whichTab === 'positive' || whichTab === 'negative' ? whichTab : 'all';
       tabs.forEach(function (tab) {
-        tab.classList.toggle('active', tab.getAttribute('data-ratings-tab') === whichTab);
+        tab.classList.toggle('active', tab.getAttribute('data-ratings-tab') === filter);
       });
+      var visible = 0;
+      items.forEach(function (item) {
+        var vote = item.getAttribute('data-vote') || '';
+        var show = filter === 'all' || vote === filter;
+        item.hidden = !show;
+        if (show) visible += 1;
+      });
+      if (emptyHint) emptyHint.hidden = visible > 0;
     }
 
     function fromHash() {
       const hash = (window.location.hash || '').replace('#', '');
       if (hash === 'ocene-positive') activate('positive');
       else if (hash === 'ocene-negative') activate('negative');
-      else if (hash === 'ocene' || hash === 'ocene-all') activate('all');
+      else activate('all');
     }
 
     tabs.forEach(function (tab) {
-      tab.addEventListener('click', function () {
-        activate(tab.getAttribute('data-ratings-tab') || 'all');
+      tab.addEventListener('click', function (e) {
+        e.preventDefault();
+        var which = tab.getAttribute('data-ratings-tab') || 'all';
+        activate(which);
+        var targetHash = which === 'positive' ? '#ocene-positive'
+          : (which === 'negative' ? '#ocene-negative' : '#ocene');
+        if (history.replaceState) {
+          history.replaceState(null, '', targetHash);
+        } else {
+          window.location.hash = targetHash;
+        }
       });
     });
 
