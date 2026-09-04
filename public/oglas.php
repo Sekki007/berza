@@ -232,7 +232,7 @@ $sellerBlock = static function () use (
             </div>
 
             <div class="kp-seller-rating">
-                <?= renderReputation($sellerSummary, $sellerShopUrl !== '' ? $sellerShopUrl : null) ?>
+                <?= renderReputation($sellerSummary, is_array($seller) ? shopReviewsUrl($seller) : null) ?>
             </div>
 
             <div class="kp-seller-links">

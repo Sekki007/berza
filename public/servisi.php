@@ -77,7 +77,7 @@ if ($cityParam !== '' && $slugParam !== '') {
                     <div class="dir-service-info">
                         <h1 class="dir-service-title"><?= h($shopName) ?> <?= renderSellerBadges($user) ?></h1>
                         <p class="dir-service-meta"><?= h($kind) ?> · <?= h($cityName) ?></p>
-                        <div class="shop-rating"><?= renderReputation($summary, $shopLink) ?></div>
+                        <div class="shop-rating"><?= renderReputation($summary, shopReviewsUrl($user)) ?></div>
                         <?php if ($bio !== ''): ?>
                             <p class="shop-bio"><?= nl2br(h($bio)) ?></p>
                         <?php endif; ?>

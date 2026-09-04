@@ -80,7 +80,7 @@ $compareCount = count(compareIds());
         ?>
     <?php endif; ?>
 </head>
-<body class="<?= h($bodyClass) ?>" data-page="<?= h($activePage) ?>" data-compare-count="<?= (int)$compareCount ?>"<?= $user ? ' data-logged-in="1" data-user-id="' . (int)$user['id'] . '" data-unread-messages="' . (int)$unreadMessages . '"' : '' ?>>
+<body class="<?= h($bodyClass) ?>" data-page="<?= h($activePage) ?>" data-compare-count="<?= (int)$compareCount ?>"<?= $user ? ' data-logged-in="1" data-user-id="' . (int)$user['id'] . '" data-unread-messages="' . (int)$unreadMessages . '" data-unread-notifications="' . (int)$unreadNotifications . '"' : '' ?>>
 <?php if (!$minimalHeader): ?>
     <div class="topbar">
         <div class="topbar-inner">

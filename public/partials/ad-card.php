@@ -94,7 +94,7 @@ $hasOrderBar = $shopCatalogMode && $messagesOn && !$isSold && !$shopCatalogOwn;
                             <?= $cardSeller ? renderVerifiedBadge($cardSeller) : '' ?>
                             <span class="listing-shop-biz"><?= $cardSeller ? renderBusinessBadge($cardSeller) : '' ?></span>
                             <?php if ((int)($cardRatingSummary['count'] ?? 0) > 0): ?>
-                                <span class="shop-rating-sm"><?= renderReputation($cardRatingSummary) ?></span>
+                                <span class="shop-rating-sm"><?= renderReputation($cardRatingSummary, $cardSeller ? shopReviewsUrl($cardSeller) : null) ?></span>
                             <?php endif; ?>
                         </div>
                     <?php endif; ?>

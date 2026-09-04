@@ -1683,24 +1683,48 @@
     } catch (e) {}
   }
 
-  function updateUnreadBadges(count) {
+  function setBadgeOnEl(el, n, labelSuffix) {
+    if (!el) return;
+    let badge = one('.notif-badge', el);
+    if (n <= 0) {
+      if (badge) badge.remove();
+      return;
+    }
+    const label = n > 99 ? '99+' : String(n);
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.className = 'notif-badge';
+      el.appendChild(badge);
+    }
+    badge.textContent = label;
+    badge.setAttribute('aria-label', label + ' ' + (labelSuffix || 'nepročitanih'));
+  }
+
+  function refreshMenuCombinedBadge() {
+    const msgs = parseInt(document.body.getAttribute('data-unread-messages') || '0', 10) || 0;
+    const notifs = parseInt(document.body.getAttribute('data-unread-notifications') || '0', 10) || 0;
+    setBadgeOnEl(one('[data-open-account-menu]'), msgs + notifs, 'nepročitanih');
+  }
+
+  function updateNotificationBadges(count) {
+    const n = Math.max(0, parseInt(count, 10) || 0);
+    document.body.setAttribute('data-unread-notifications', String(n));
+    all('.nav-with-badge').forEach(function (link) {
+      const href = link.getAttribute('href') || '';
+      if (link.hasAttribute('data-open-account-menu')) return;
+      if (/poruke/i.test(href)) return;
+      if (!/nalog\.php/i.test(href) && !/obavestenja/i.test(href)) return;
+      setBadgeOnEl(link, n, 'nepročitanih obaveštenja');
+    });
+    refreshMenuCombinedBadge();
+  }
+
+  function updateUnreadBadges(count, notifCount) {
     const n = Math.max(0, parseInt(count, 10) || 0);
     document.body.setAttribute('data-unread-messages', String(n));
     all('.nav-with-badge').forEach(function (link) {
       if (!/poruke/i.test(link.getAttribute('href') || '')) return;
-      let badge = one('.notif-badge', link);
-      if (n <= 0) {
-        if (badge) badge.remove();
-        return;
-      }
-      const label = n > 99 ? '99+' : String(n);
-      if (!badge) {
-        badge = document.createElement('span');
-        badge.className = 'notif-badge';
-        link.appendChild(badge);
-      }
-      badge.textContent = label;
-      badge.setAttribute('aria-label', label + ' nepročitanih');
+      setBadgeOnEl(link, n, 'nepročitanih poruka');
     });
     const inboxLabel = one('.inbox-unread-label');
     if (inboxLabel) {
@@ -1711,7 +1735,18 @@
         inboxLabel.style.display = 'none';
       }
     }
+    if (typeof notifCount === 'number') {
+      updateNotificationBadges(notifCount);
+    } else {
+      refreshMenuCombinedBadge();
+    }
     syncAppIconBadge(n);
+  }
+
+  function applyUnreadFromApi(data) {
+    if (!data || typeof data.unread !== 'number') return;
+    var notifs = typeof data.unread_notifications === 'number' ? data.unread_notifications : undefined;
+    updateUnreadBadges(data.unread, notifs);
   }
 
   function appendChatBubble(thread, msg) {
@@ -1767,7 +1802,7 @@
             if (msg.id > lastId) lastId = msg.id;
           });
           form.setAttribute('data-last-id', String(lastId));
-          if (typeof data.unread === 'number') updateUnreadBadges(data.unread);
+          applyUnreadFromApi(data);
           setStatus('Uživo · nove poruke stižu automatski', false);
         })
         .catch(function () {
@@ -1804,7 +1839,7 @@
           appendChatBubble(thread, data.message);
           if (data.message && data.message.id > lastId) lastId = data.message.id;
           form.setAttribute('data-last-id', String(lastId));
-          if (typeof data.unread === 'number') updateUnreadBadges(data.unread);
+          applyUnreadFromApi(data);
           setStatus('Poslato · uživo', false);
         })
         .catch(function () {
@@ -1854,7 +1889,7 @@
           if (!data) return;
           if (data && data.ok && typeof data.unread === 'number') {
             const prev = parseInt(document.body.getAttribute('data-unread-messages') || '0', 10) || 0;
-            updateUnreadBadges(data.unread);
+            applyUnreadFromApi(data);
             if (data.unread > prev && !one('[data-msg-toast]') && data.unread > 0) {
               showLiveToast(data.unread);
             }
@@ -1916,7 +1951,7 @@
         .then(function (data) {
           if (!data || !data.ok) return;
           renderThreads(data.threads || []);
-          if (typeof data.unread === 'number') updateUnreadBadges(data.unread);
+          applyUnreadFromApi(data);
         })
         .catch(function () {});
     }

@@ -32,6 +32,7 @@ if ($action === 'unread') {
     jsonOut([
         'ok' => true,
         'unread' => getUnreadMessageCount($userId),
+        'unread_notifications' => getUnreadNotificationCount($userId),
     ]);
 }
 
@@ -91,6 +92,7 @@ if ($action === 'threads') {
     jsonOut([
         'ok' => true,
         'unread' => getUnreadMessageCount($userId),
+        'unread_notifications' => getUnreadNotificationCount($userId),
         'threads' => array_map(static function ($t) {
             return [
                 'key' => (string)$t['key'],
@@ -109,7 +111,7 @@ if ($action === 'threads') {
 }
 
 if ($action === 'thread') {
-    $adId = (int)($_GET['ad'] ?? 0);
+    $adId = (int)($_GET['ad'] ?? $_GET['ad_id'] ?? 0);
     $withId = (int)($_GET['with'] ?? 0);
     $afterId = (int)($_GET['after_id'] ?? 0);
 
@@ -127,6 +129,7 @@ if ($action === 'thread') {
         'ok' => true,
         'messages' => array_map(static fn($m) => formatMessageForApi($m, $userId), $messages),
         'unread' => getUnreadMessageCount($userId),
+        'unread_notifications' => getUnreadNotificationCount($userId),
         'last_id' => $messages ? (int)($messages[count($messages) - 1]['id'] ?? $afterId) : $afterId,
     ]);
 }

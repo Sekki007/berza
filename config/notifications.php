@@ -122,6 +122,131 @@ function markAllNotificationsRead(int $userId): void
     }
 }
 
+/**
+ * Kad se otvori chat, označi i in-app „Nova poruka” obaveštenja za taj thread.
+ */
+function markMessageNotificationsRead(int $userId, int $adId, int $partnerId): int
+{
+    if ($userId <= 0 || $adId <= 0 || $partnerId <= 0) {
+        return 0;
+    }
+    ensureNotificationsFile();
+    $items = readJsonFile('notifications.json');
+    $changed = 0;
+    foreach ($items as &$item) {
+        if ((int)($item['user_id'] ?? 0) !== $userId) {
+            continue;
+        }
+        if (!empty($item['is_read'])) {
+            continue;
+        }
+        if ((string)($item['type'] ?? '') !== 'new_message') {
+            continue;
+        }
+        $parsed = parseMessageNotificationLink((string)($item['link'] ?? ''));
+        if ($parsed === null) {
+            continue;
+        }
+        if ($parsed['ad_id'] === $adId && $parsed['with'] === $partnerId) {
+            $item['is_read'] = true;
+            $changed++;
+        }
+    }
+    unset($item);
+    if ($changed > 0) {
+        writeJsonFile('notifications.json', $items);
+    }
+    return $changed;
+}
+
+/** @return array{ad_id:int,with:int}|null */
+function parseMessageNotificationLink(string $link): ?array
+{
+    $link = trim($link);
+    if ($link === '') {
+        return null;
+    }
+    $query = parse_url($link, PHP_URL_QUERY);
+    if (!is_string($query) || $query === '') {
+        return null;
+    }
+    $params = [];
+    parse_str($query, $params);
+    $adId = (int)($params['ad'] ?? $params['ad_id'] ?? 0);
+    $with = (int)($params['with'] ?? 0);
+    if ($adId <= 0 || $with <= 0) {
+        return null;
+    }
+    return ['ad_id' => $adId, 'with' => $with];
+}
+
+/**
+ * Obaveštenja „Nova poruka” čiji je chat već pročitan — označi pročitanim.
+ */
+function syncStaleMessageNotifications(int $userId): int
+{
+    if ($userId <= 0) {
+        return 0;
+    }
+    ensureNotificationsFile();
+    $items = readJsonFile('notifications.json');
+    $hasUnreadMessageNotifs = false;
+    foreach ($items as $item) {
+        if ((int)($item['user_id'] ?? 0) === $userId
+            && empty($item['is_read'])
+            && (string)($item['type'] ?? '') === 'new_message'
+        ) {
+            $hasUnreadMessageNotifs = true;
+            break;
+        }
+    }
+    if (!$hasUnreadMessageNotifs) {
+        return 0;
+    }
+
+    $unreadKeys = [];
+    foreach (readJsonFile('messages.json') as $msg) {
+        if ((int)($msg['to_user_id'] ?? 0) !== $userId) {
+            continue;
+        }
+        if (!empty($msg['is_read'])) {
+            continue;
+        }
+        $adId = (int)($msg['ad_id'] ?? 0);
+        $from = (int)($msg['from_user_id'] ?? 0);
+        if ($adId > 0 && $from > 0) {
+            $unreadKeys[$adId . ':' . $from] = true;
+        }
+    }
+
+    $changed = 0;
+    foreach ($items as &$item) {
+        if ((int)($item['user_id'] ?? 0) !== $userId) {
+            continue;
+        }
+        if (!empty($item['is_read'])) {
+            continue;
+        }
+        if ((string)($item['type'] ?? '') !== 'new_message') {
+            continue;
+        }
+        $parsed = parseMessageNotificationLink((string)($item['link'] ?? ''));
+        if ($parsed === null) {
+            continue;
+        }
+        $key = $parsed['ad_id'] . ':' . $parsed['with'];
+        if (!isset($unreadKeys[$key])) {
+            $item['is_read'] = true;
+            $changed++;
+        }
+    }
+    unset($item);
+    if ($changed > 0) {
+        writeJsonFile('notifications.json', $items);
+    }
+    return $changed;
+}
+
 function sendRawEmail(string $toEmail, string $subject, string $body, ?string $toName = null): bool
 {
     require_once __DIR__ . '/mail.php';

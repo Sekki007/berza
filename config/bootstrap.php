@@ -1493,6 +1493,10 @@ function markThreadRead(int $userId, int $adId, int $partnerId): void
     if ($changed) {
         writeJsonFile('messages.json', $messages);
     }
+    // Uskladi badge na Nalogu/Meniju: „Nova poruka” obaveštenja za ovaj chat
+    if (function_exists('markMessageNotificationsRead')) {
+        markMessageNotificationsRead($userId, $adId, $partnerId);
+    }
 }
 
 function deleteThread(int $userId, int $adId, int $partnerId): int
@@ -1561,7 +1565,7 @@ function saveMessage(array $payload): ?int
         'new_message',
         'Nova poruka',
         "{$fromName} ti je poslao poruku za „{$adTitle}”:\n{$preview}",
-        '/poruke.php?ad_id=' . $adId . '&with=' . $from
+        '/poruke.php?ad=' . $adId . '&with=' . $from
     );
 
     // First message in thread counts as contact

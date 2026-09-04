@@ -432,6 +432,7 @@ $activeAds = array_values(array_filter($myAds, static fn($a) => (int)($a['is_act
 $soldAds = array_values(array_filter($myAds, static fn($a) => !empty($a['is_sold'])));
 $inactiveAds = array_values(array_filter($myAds, static fn($a) => (int)($a['is_active'] ?? 0) !== 1));
 $unread = !empty($site['enable_messages']) ? getUnreadMessageCount($userId) : 0;
+syncStaleMessageNotifications($userId);
 $notifications = getNotificationsForUser($userId);
 $unreadNotifs = getUnreadNotificationCount($userId);
 $savedSearches = getSavedSearchesForUser($userId);
@@ -509,7 +510,7 @@ require __DIR__ . '/partials/layout-start.php';
                         <h1 class="account-name"><?= h($displayName) ?></h1>
                         <div class="account-name-badges"><?= renderSellerBadges($profile) ?></div>
                     </div>
-                    <div class="account-rep"><?= renderReputation($summary, $shopLink) ?></div>
+                    <div class="account-rep"><?= renderReputation($summary, shopReviewsUrl($profile)) ?></div>
                     <a class="account-izlog-link" href="<?= h($shopLink) ?>">Otvori izlog →</a>
                 </div>
             </div>

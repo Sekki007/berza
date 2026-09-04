@@ -14,9 +14,14 @@ if (empty($site['enable_messages'])) {
 
 $user = currentUser();
 $userId = (int)$user['id'];
-$adId = isset($_GET['ad']) ? (int)$_GET['ad'] : 0;
+// Prihvati i ad i ad_id (push/notifikacije ranije su slale ad_id)
+$adId = isset($_GET['ad']) ? (int)$_GET['ad'] : (isset($_GET['ad_id']) ? (int)$_GET['ad_id'] : 0);
 $withId = isset($_GET['with']) ? (int)$_GET['with'] : 0;
 $viewThread = $adId > 0 && $withId > 0;
+
+if (!$viewThread) {
+    syncStaleMessageNotifications($userId);
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     requireCsrf('/poruke.php');

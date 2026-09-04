@@ -31,7 +31,7 @@ $shopName = getSellerShopName($seller);
 $shopLink = shopUrlForUser($seller);
 $ads = getPublicAdsByUserId((int)$seller['id'], true);
 $firstAdId = (int)($ads[0]['id'] ?? 0);
-$messageThreadUrl = '/poruke.php?with=' . (int)$seller['id'] . '&ad_id=' . ($firstAdId > 0 ? $firstAdId : 0);
+$messageThreadUrl = '/poruke.php?ad=' . ($firstAdId > 0 ? $firstAdId : 0) . '&with=' . (int)$seller['id'];
 $loginNext = '/login.php?next=' . rawurlencode($_SERVER['REQUEST_URI'] ?? storefrontUrlForUser($seller));
 $canQuickMessage = isLoggedIn() && !$isOwner && $firstAdId > 0;
 
@@ -263,7 +263,7 @@ require __DIR__ . '/partials/layout-start.php';
                 <div class="storefront-rows">
                     <div class="storefront-row"><span>PIB verifikacija:</span><strong><?= !empty($seller['pib_verified']) ? 'Verifikovano' : 'Nije verifikovano' ?></strong></div>
                     <div class="storefront-row"><span>Broj oglasa:</span><strong><?= count($ads) ?></strong></div>
-                    <div class="storefront-row"><span>Ocene kupaca:</span><strong><?= renderReputation($ratingSummary, $shopLink) ?></strong></div>
+                    <div class="storefront-row"><span>Ocene kupaca:</span><strong><?= renderReputation($ratingSummary, shopReviewsUrl($seller)) ?></strong></div>
                 </div>
             </article>
             <?php if ($mapEmbed !== ''): ?>
