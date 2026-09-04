@@ -141,8 +141,12 @@ if ($viewThread) {
                 <form method="POST" class="chat-compose" data-live-chat data-ad-id="<?= $adId ?>" data-with-id="<?= $withId ?>" data-last-id="<?= $lastMsgId ?>">
                     <input type="hidden" name="ad_id" value="<?= $adId ?>">
                     <input type="hidden" name="to_user_id" value="<?= $withId ?>">
-                    <textarea name="message" rows="2" placeholder="Napiši poruku..." required data-chat-input></textarea>
-                    <button class="btn-kp-message" type="submit" data-chat-send>Pošalji</button>
+                    <textarea name="message" rows="1" placeholder="Napiši poruku…" required data-chat-input enterkeyhint="send" aria-label="Poruka"></textarea>
+                    <button class="chat-send-btn" type="submit" data-chat-send aria-label="Pošalji" title="Pošalji (Enter)">
+                        <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+                            <path fill="currentColor" d="M3.4 20.6 21 12 3.4 3.4l-.1 6.8L15 12 3.3 13.8l.1 6.8Z"/>
+                        </svg>
+                    </button>
                 </form>
                 <div class="chat-live-hint" data-chat-status>Uživo · nove poruke stižu automatski</div>
             </div>

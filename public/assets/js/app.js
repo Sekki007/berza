@@ -1851,6 +1851,20 @@
         });
     });
 
+    // Enter = pošalji, Shift+Enter = novi red
+    if (input) {
+      input.addEventListener('keydown', function (e) {
+        if (e.key !== 'Enter' || e.shiftKey) return;
+        if (e.isComposing || e.keyCode === 229) return;
+        e.preventDefault();
+        if (typeof form.requestSubmit === 'function') {
+          form.requestSubmit();
+        } else {
+          form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+        }
+      });
+    }
+
     poll();
     timer = setInterval(poll, 2000);
     document.addEventListener('visibilitychange', function () {

@@ -844,7 +844,14 @@ body.page-ad-form {
 .chat-bubble.theirs{align-self:flex-start;background:#fff;border:1px solid var(--border-light);border-bottom-left-radius:4px;}
 .chat-bubble-meta{font-size:11px;color:var(--text-light);margin-top:4px;text-align:right;}
 .chat-compose{display:flex;gap:10px;padding:12px;border-top:1px solid var(--border-light);background:#fff;align-items:flex-end;}
-.chat-compose textarea{flex:1;min-height:44px;resize:vertical;border:1px solid var(--border);border-radius:4px;padding:10px;font:inherit;}
+.chat-compose textarea{flex:1;min-height:44px;max-height:120px;resize:none;border:1px solid var(--border);border-radius:22px;padding:10px 14px;font:inherit;line-height:1.35;}
+.chat-compose .chat-send-btn{
+  flex-shrink:0;width:44px;height:44px;border:none;border-radius:50%;
+  background:#2f6fed;color:#fff;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;
+  padding:0;
+}
+.chat-compose .chat-send-btn:hover{background:#2459c4;}
+.chat-compose .chat-send-btn:disabled{opacity:.55;cursor:default;}
 .chat-compose .btn-kp-message{width:auto;padding:12px 18px;flex-shrink:0;}
 .chat-live-hint{font-size:11px;color:var(--text-light);padding:0 12px 10px;background:#fff;}
 .chat-live-hint.is-error{color:#b42318;}
@@ -1351,9 +1358,9 @@ body.page-chat .footer,body.page-chat .site-footer{display:none;}
     display: none;
   }
   body.page-chat .chat-compose textarea { font-size: 16px; }
-  body.page-chat .chat-compose .btn-kp-message {
+  body.page-chat .chat-compose .chat-send-btn {
     min-height: var(--touch-min);
-    min-width: 88px;
+    min-width: var(--touch-min);
   }
 
   /* Native Android app: dodatni lift compose polja iznad tastature */
