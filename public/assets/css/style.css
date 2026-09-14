@@ -1116,6 +1116,30 @@ body.page-ad-form {
   }
   .account-share-compact .account-share-row { flex: 1; max-width: 520px; }
   .account-ad-row { flex-wrap: nowrap; }
+  .account-ad-row-full {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 10px 16px;
+    padding: 12px 14px;
+    border-radius: 12px;
+    background: #fff;
+  }
+  .account-ad-row-full .account-ad-head {
+    width: auto;
+    min-width: 0;
+    align-items: center;
+  }
+  .account-ad-row-full .account-ad-actions,
+  .account-ad-row-full .kp-ad-actions {
+    margin-top: 0;
+    flex-wrap: nowrap;
+    justify-content: flex-end;
+    white-space: nowrap;
+  }
+  .account-ad-row-full .promo-panel {
+    grid-column: 1 / -1;
+  }
   .account-tabs {
     flex-wrap: wrap;
     overflow: visible;
