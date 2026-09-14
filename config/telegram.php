@@ -329,6 +329,143 @@ function telegramSendPhoto(string $chatId, string $photoUrl, string $caption = '
     ];
 }
 
+/**
+ * Pošalji lokalni JPEG kao fotografiju (pouzdanije od URL-a).
+ *
+ * @return array{ok:bool,message_id?:int,description?:string}
+ */
+function telegramSendPhotoFile(string $chatId, string $filePath, string $caption = ''): array
+{
+    if (!telegramEnabled() || trim($chatId) === '' || !is_file($filePath) || !function_exists('curl_init')) {
+        return ['ok' => false, 'description' => 'invalid'];
+    }
+    $ch = curl_init(telegramApiUrl('sendPhoto'));
+    if ($ch === false) {
+        return ['ok' => false, 'description' => 'curl_init failed'];
+    }
+    $post = [
+        'chat_id' => $chatId,
+        'photo' => new CURLFile($filePath, 'image/jpeg', basename($filePath)),
+        'disable_notification' => 'false',
+    ];
+    $caption = mb_substr(trim($caption), 0, 1024);
+    if ($caption !== '') {
+        $post['caption'] = $caption;
+    }
+    curl_setopt_array($ch, [
+        CURLOPT_POST => true,
+        CURLOPT_RETURNTRANSFER => true,
+        CURLOPT_TIMEOUT => 40,
+        CURLOPT_POSTFIELDS => $post,
+    ]);
+    $raw = curl_exec($ch);
+    $curlErr = curl_error($ch);
+    curl_close($ch);
+    $decoded = is_string($raw) ? json_decode($raw, true) : null;
+    if (!is_array($decoded) || empty($decoded['ok'])) {
+        return ['ok' => false, 'description' => (string)($decoded['description'] ?? ($curlErr !== '' ? $curlErr : 'sendPhoto file failed'))];
+    }
+    return [
+        'ok' => true,
+        'message_id' => (int)($decoded['result']['message_id'] ?? 0),
+    ];
+}
+
+function telegramFbShareEnabled(): bool
+{
+    $flag = strtolower(trim((string)envValue('TELEGRAM_FB_SHARE_ENABLED', 'true')));
+    return in_array($flag, ['1', 'true', 'yes', 'on'], true);
+}
+
+/** @return list<string> */
+function telegramFbShareChatIds(): array
+{
+    $ids = [];
+    $raw = trim((string)envValue('TELEGRAM_FB_SHARE_CHAT_ID', ''));
+    if ($raw !== '') {
+        foreach (preg_split('/[\s,;]+/', $raw) ?: [] as $part) {
+            $part = trim((string)$part);
+            if ($part !== '') {
+                $ids[$part] = $part;
+            }
+        }
+    }
+    if ($ids === [] && function_exists('getUsers')) {
+        foreach (getUsers() as $user) {
+            $isAdmin = !empty($user['is_admin']) || (($user['username'] ?? '') === 'admin');
+            $chat = trim((string)($user['telegram_chat_id'] ?? ''));
+            if ($isAdmin && $chat !== '') {
+                $ids[$chat] = $chat;
+            }
+        }
+    }
+    return array_values($ids);
+}
+
+/**
+ * Pošalji adminu FB karticu oglasa (za share u Facebook grupu).
+ *
+ * @return array{ok:bool,sent:int,error?:string}
+ */
+function telegramNotifyFbShareInbox(array $ad): array
+{
+    if (!telegramEnabled() || !telegramFbShareEnabled()) {
+        return ['ok' => false, 'sent' => 0, 'error' => 'isključeno'];
+    }
+    if ((int)($ad['is_active'] ?? 0) !== 1) {
+        return ['ok' => false, 'sent' => 0, 'error' => 'nije aktivan'];
+    }
+    $chats = telegramFbShareChatIds();
+    if ($chats === []) {
+        return ['ok' => false, 'sent' => 0, 'error' => 'Nema TELEGRAM_FB_SHARE_CHAT_ID ni admin Telegram naloga.'];
+    }
+
+    $cardRel = function_exists('ensureAdShareCard') ? ensureAdShareCard($ad, true) : '';
+    $cardFs = function_exists('adShareCardFilesystemPath')
+        ? adShareCardFilesystemPath((int)($ad['id'] ?? 0))
+        : '';
+    $caption = "FB grupa — sačuvaj sliku i objavi.\nLink stavi u prvi komentar.\n\n";
+    if (function_exists('adShareCardCaption')) {
+        $caption .= adShareCardCaption($ad);
+    } else {
+        $caption .= trim((string)($ad['title'] ?? '')) . "\n" . absoluteUrl(adUrl($ad));
+    }
+
+    $sent = 0;
+    $lastError = '';
+    foreach ($chats as $chatId) {
+        $ok = false;
+        if ($cardFs !== '' && is_file($cardFs)) {
+            $res = telegramSendPhotoFile($chatId, $cardFs, $caption);
+            $ok = !empty($res['ok']);
+            if (!$ok) {
+                $lastError = (string)($res['description'] ?? '');
+            }
+        }
+        if (!$ok && $cardRel !== '') {
+            $res = telegramSendPhoto($chatId, absoluteUrl($cardRel), $caption);
+            $ok = !empty($res['ok']);
+            if (!$ok) {
+                $lastError = (string)($res['description'] ?? $lastError);
+            }
+        }
+        if (!$ok) {
+            $res = telegramSendMessageDetailed($chatId, $caption, ['disable_web_page_preview' => false]);
+            $ok = !empty($res['ok']);
+            if (!$ok) {
+                $lastError = (string)($res['description'] ?? $lastError);
+            }
+        }
+        if ($ok) {
+            $sent++;
+        }
+    }
+
+    return $sent > 0
+        ? ['ok' => true, 'sent' => $sent]
+        : ['ok' => false, 'sent' => 0, 'error' => $lastError !== '' ? $lastError : 'nije poslato'];
+}
+
 function telegramFormatAdChannelPost(array $ad): string
 {
     $intent = function_exists('adIntentBadgeLabel') ? adIntentBadgeLabel($ad) : '';

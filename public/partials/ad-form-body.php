@@ -47,6 +47,9 @@ $contactExtraOpen = $contactSorted !== $dc
 
         <form method="POST" enctype="multipart/form-data" class="form-card ad-form-card" data-ad-form>
             <?= csrfField() ?>
+            <?php if (!$isEdit && $adSubmitToken !== ''): ?>
+                <input type="hidden" name="ad_submit_token" value="<?= h($adSubmitToken) ?>">
+            <?php endif; ?>
             <div class="ad-form-head">
                 <h2><?= $isEdit ? 'Izmeni oglas' : 'Novi oglas' ?></h2>
                 <p class="ad-form-sub">Popuni osnovno — ostalo nije obavezno.</p>

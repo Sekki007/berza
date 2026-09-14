@@ -532,6 +532,21 @@
     setTitleHint();
     if (!titleManual) fillSuggestedTitle(false);
 
+    form.addEventListener('submit', function (e) {
+      if (form.getAttribute('data-submitting') === '1') {
+        e.preventDefault();
+        return;
+      }
+      form.setAttribute('data-submitting', '1');
+      form.classList.add('is-publishing');
+      form.querySelectorAll('[type="submit"]').forEach(function (btn) {
+        if (!btn.getAttribute('data-label')) {
+          btn.setAttribute('data-label', (btn.textContent || '').trim());
+        }
+        btn.textContent = 'Objavljivanje…';
+      });
+    });
+
     // Stepper: skrol do sekcije
     form.querySelectorAll('[data-goto-step]').forEach(function (btn) {
       btn.addEventListener('click', function () {
@@ -1140,6 +1155,21 @@
             setTimeout(function () { btn.textContent = prev; }, 1500);
           });
         }
+      });
+    });
+    all('[data-fb-card]').forEach(function (link) {
+      link.addEventListener('click', function () {
+        const caption = link.getAttribute('data-fb-caption') || '';
+        if (!caption) return;
+        try {
+          if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(caption).then(function () {
+              const prev = link.textContent;
+              link.textContent = 'Slika + tekst kopiran';
+              setTimeout(function () { link.textContent = prev; }, 1800);
+            }).catch(function () {});
+          }
+        } catch (e) {}
       });
     });
   }

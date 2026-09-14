@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 require_once __DIR__ . '/image_watermark.php';
+require_once __DIR__ . '/share_card.php';
 
 function categoriesConfig(): array
 {
@@ -400,6 +401,10 @@ function invalidateAdOgImage(int $adId): void
     $path = adOgImageFilesystemPath($adId);
     if (is_file($path)) {
         @unlink($path);
+    }
+    $fb = adShareCardFilesystemPath($adId);
+    if (is_file($fb)) {
+        @unlink($fb);
     }
 }
 
@@ -907,4 +912,68 @@ function normalizeAdDefaults(array $payload): array
         $payload['price'] = max(0, (float)($payload['price'] ?? 0));
     }
     return $payload;
+}
+
+function pruneAdSubmitTokens(): void
+{
+    if (!isset($_SESSION['kt_ad_submit']) || !is_array($_SESSION['kt_ad_submit'])) {
+        $_SESSION['kt_ad_submit'] = ['open' => [], 'used' => []];
+        return;
+    }
+    $now = time();
+    foreach (['open', 'used'] as $bucket) {
+        $list = $_SESSION['kt_ad_submit'][$bucket] ?? [];
+        if (!is_array($list)) {
+            $list = [];
+        }
+        foreach ($list as $tok => $meta) {
+            $ts = is_array($meta) ? (int)($meta['at'] ?? 0) : (int)$meta;
+            if ($now - $ts > 7200) {
+                unset($list[$tok]);
+            }
+        }
+        $_SESSION['kt_ad_submit'][$bucket] = $list;
+    }
+}
+
+function issueAdSubmitToken(): string
+{
+    pruneAdSubmitTokens();
+    $token = bin2hex(random_bytes(16));
+    $_SESSION['kt_ad_submit']['open'][$token] = ['at' => time()];
+    return $token;
+}
+
+/** @return 'ok'|'replay'|'unknown' */
+function consumeAdSubmitToken(string $token): string
+{
+    pruneAdSubmitTokens();
+    if ($token === '') {
+        return 'unknown';
+    }
+    if (isset($_SESSION['kt_ad_submit']['used'][$token])) {
+        return 'replay';
+    }
+    if (!isset($_SESSION['kt_ad_submit']['open'][$token])) {
+        return 'unknown';
+    }
+    unset($_SESSION['kt_ad_submit']['open'][$token]);
+    $_SESSION['kt_ad_submit']['used'][$token] = ['at' => time(), 'ad_id' => 0];
+    return 'ok';
+}
+
+function bindAdSubmitToken(string $token, int $adId): void
+{
+    pruneAdSubmitTokens();
+    if ($token === '') {
+        return;
+    }
+    $_SESSION['kt_ad_submit']['used'][$token] = ['at' => time(), 'ad_id' => $adId];
+    unset($_SESSION['kt_ad_submit']['open'][$token]);
+}
+
+function usedAdSubmitAdId(string $token): int
+{
+    pruneAdSubmitTokens();
+    return (int)($_SESSION['kt_ad_submit']['used'][$token]['ad_id'] ?? 0);
 }

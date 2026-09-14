@@ -1087,6 +1087,9 @@ function saveAd(array $payload, ?int $adId = null): int
                 if (!$wasActive && $isActiveNow && function_exists('telegramNotifyChannelNewAd')) {
                     telegramNotifyChannelNewAd($payload);
                 }
+                if (!$wasActive && $isActiveNow && function_exists('telegramNotifyFbShareInbox')) {
+                    telegramNotifyFbShareInbox($payload);
+                }
                 return $adId;
             }
         }
@@ -1142,6 +1145,9 @@ function saveAd(array $payload, ?int $adId = null): int
     }
     if ((int)($payload['is_active'] ?? 0) === 1 && function_exists('telegramNotifyChannelNewAd')) {
         telegramNotifyChannelNewAd($payload);
+    }
+    if ((int)($payload['is_active'] ?? 0) === 1 && function_exists('telegramNotifyFbShareInbox')) {
+        telegramNotifyFbShareInbox($payload);
     }
     return $newId;
 }

@@ -254,7 +254,38 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             exit;
         }
 
+        $submitToken = trim((string)($_POST['ad_submit_token'] ?? ''));
+        $reuseId = 0;
+        if (consumeAdSubmitToken($submitToken) === 'replay') {
+            $reuseId = usedAdSubmitAdId($submitToken);
+        }
+
+        if ($reuseId > 0) {
+            bindAdSubmitToken($submitToken, $reuseId);
+            $newId = $reuseId;
+            setFlash('success', 'Oglas je uspešno objavljen.');
+            $addAnother = isset($_POST['save_and_add_another']);
+            if ($addAnother) {
+                $_SESSION['kt_quick_prefill'] = [
+                    'active' => 1,
+                    'ad_type' => (string)($payload['ad_type'] ?? 'telefon'),
+                    'location' => (string)($payload['location'] ?? ''),
+                    'contact_phone' => (string)($payload['contact_phone'] ?? ''),
+                    'shop_category_id' => (string)($payload['shop_category_id'] ?? ''),
+                    'currency' => (string)($payload['currency'] ?? 'eur'),
+                    'condition_state' => (string)($payload['condition_state'] ?? ''),
+                    'brand' => (string)($payload['brand'] ?? ''),
+                ];
+                header('Location: /ad_form.php?more=1');
+                exit;
+            }
+            unset($_SESSION['kt_quick_prefill']);
+            header('Location: /nalog.php?tab=oglasi');
+            exit;
+        }
+
         $newId = saveAd($payload);
+        bindAdSubmitToken($submitToken, $newId);
 
         $profilePatch = [];
         if (trim((string)($profile['phone'] ?? '')) === '' && $payload['contact_phone'] !== '') {
@@ -364,6 +395,14 @@ $pickupSel = is_array($ad['pickup_methods'] ?? null) ? $ad['pickup_methods'] : [
 $bizStatus = userBusinessStatus($profile);
 $shopCategoriesForForm = canManageShopCategories($profile) ? getShopCategories($profile) : [];
 $currentShopCategoryId = trim((string)($ad['shop_category_id'] ?? ''));
+
+$adSubmitToken = '';
+if (!$isEdit) {
+    $adSubmitToken = trim((string)($_POST['ad_submit_token'] ?? ''));
+    if ($adSubmitToken === '') {
+        $adSubmitToken = issueAdSubmitToken();
+    }
+}
 
 $pageTitle = ($isEdit ? 'Izmena oglasa' : 'Postavi oglas') . ' — KupiTelefon';
 $activePage = 'dodaj';

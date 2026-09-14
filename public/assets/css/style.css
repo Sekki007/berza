@@ -706,6 +706,10 @@ body.page-ad-form {
 .ad-form-submit .btn-call,.ad-form-submit .btn-message{
   width:100%;margin:0;padding:13px 10px;font-size:15px;border-radius:10px;min-height:48px;
 }
+.ad-form-card.is-publishing .ad-form-submit{
+  pointer-events:none;
+  opacity:.72;
+}
 .ad-form-error{color:#b91c1c;margin-bottom:14px;padding:10px 12px;background:#fef2f2;border:1px solid #fecaca;border-radius:8px;}
 .ad-form-promo-edit{margin:0 0 12px;}
 .ad-form-service-note{
@@ -2943,6 +2947,7 @@ body.kp-lightbox-open {
 }
 .kp-action-link:hover { background: #eef4ff; border-color: #cfe0ff; color: #1a6bb5; }
 .kp-action-link-report { color: #9a3412; }
+.kp-action-link-fb { color: #1d4ed8; }
 .kp-action-link-report:hover { background: #fff7ed; border-color: #fed7aa; color: #9a3412; }
 .kp-info-cond { font-size: 19px; margin-bottom: 0; line-height: 1.25; }
 .kp-card {
