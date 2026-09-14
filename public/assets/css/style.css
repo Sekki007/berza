@@ -1003,7 +1003,33 @@ body.page-ad-form {
 .account-quick { display: none; }
 .account-overview { display: none; }
 .account-ad-row { display: flex; gap: 12px; align-items: center; justify-content: space-between; padding: 12px; border: 1px solid var(--border-light); border-radius: 4px; background: #fafafa; flex-wrap: wrap; }
-.account-ad-row-full { align-items: flex-start; }
+.account-ad-head {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  width: 100%;
+  min-width: 0;
+}
+.account-ad-title {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: #1760a8;
+  text-decoration: none;
+  line-height: 1.3;
+  margin: 0 0 4px;
+}
+.account-ad-title:hover { text-decoration: underline; }
+.account-ads-hint { margin: 0 0 10px; }
+.bulk-import-box--compact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  margin: 0 0 14px;
+  padding: 10px 12px;
+}
+.bulk-import-box--compact .form-hint { margin: 0; flex: 1 1 160px; }
 .account-ad-thumb { width: 72px; height: 72px; border-radius: 6px; overflow: hidden; background: #eee; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-weight: bold; color: var(--text-muted); }
 .account-ad-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .account-ad-thumb-img { width: 72px !important; height: 72px !important; max-width: 72px !important; max-height: 72px !important; object-fit: cover !important; display: block !important; }
@@ -1249,22 +1275,30 @@ body.page-chat .footer,body.page-chat .site-footer{display:none;}
     width: auto;
     min-width: 140px;
   }
+  body.page-account .btn-post { display: none; }
   .account-ad-row:not(.account-ad-row--compact), .account-ad-row-full {
     flex-direction: column;
     align-items: stretch !important;
+    gap: 10px;
+    padding: 12px;
+    border-radius: 12px;
+    background: #fff;
   }
+  .account-ad-head { width: 100%; }
   .account-ad-row--compact {
     flex-direction: row;
     align-items: center;
   }
   .account-listing-thumb { width: 100%; height: 160px; }
-  .account-ad-main { min-width: 0; width: 100%; }
+  .account-ad-main { min-width: 0; width: auto; flex: 1; }
   .account-ad-row--compact .account-ad-main { width: auto; }
-  .account-ad-actions, .kp-ad-actions {
-    display: grid !important;
-    grid-template-columns: 1fr 1fr;
+  .account-ad-row-full .account-ad-actions,
+  .account-ad-row-full .kp-ad-actions {
+    display: flex !important;
+    flex-wrap: wrap;
     width: 100%;
-    gap: 8px;
+    gap: 6px;
+    grid-template-columns: none;
   }
   .account-ad-row--compact .account-ad-actions {
     display: block !important;
@@ -1274,12 +1308,25 @@ body.page-chat .footer,body.page-chat .site-footer{display:none;}
   .account-ad-row--compact .account-ad-actions .btn-sm {
     width: auto;
   }
-  .account-ad-actions > *, .kp-ad-actions > *, .account-ad-actions .inline-form, .kp-ad-actions .inline-form {
-    width: 100%;
+  .account-ad-row-full .account-ad-actions > *,
+  .account-ad-row-full .kp-ad-actions > *,
+  .account-ad-row-full .account-ad-actions .inline-form,
+  .account-ad-row-full .kp-ad-actions .inline-form {
+    width: auto;
+    flex: 0 0 auto;
   }
-  .account-ad-actions .btn-sm, .kp-ad-actions .btn-sm,
-  .account-ad-actions button, .kp-ad-actions button {
-    width: 100%;
+  .account-ad-row-full .account-ad-actions .btn-sm,
+  .account-ad-row-full .kp-ad-actions .btn-sm,
+  .account-ad-row-full .account-ad-actions button,
+  .account-ad-row-full .kp-ad-actions button {
+    width: auto;
+    min-width: 0;
+    min-height: 36px;
+    padding: 7px 10px;
+    font-size: 12px;
+  }
+  .account-ad-row-full .btn-sm-danger {
+    margin-left: auto;
   }
   .promo-panel-form {
     flex-direction: column;

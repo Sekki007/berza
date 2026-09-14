@@ -488,6 +488,7 @@ if ($tab === 'mini_sajt' && !$storefrontOn) {
 $pageTitle = 'Moj nalog — KupiTelefon';
 $activePage = 'nalog';
 $showSearch = false;
+$bodyClass = 'page-account';
 
 require __DIR__ . '/partials/layout-start.php';
 ?>
@@ -703,21 +704,12 @@ require __DIR__ . '/partials/layout-start.php';
                     <?php endif; ?>
                 <?php endif; ?>
                 <?php if ($expiryOn): ?>
-                    <p class="form-hint">Oglas traje maksimalno <?= adMaxActiveDays() ?> dana. <strong>Obnova</strong> produžava rok i vraća oglas među novije (kao na KP).</p>
-                <?php endif; ?>
-                <?php if ($topOn): ?>
-                    <p class="form-hint">Ispod oglasa klikni <strong>Promocije</strong> da aktiviraš TOP ili plavo isticanje. Kredit: <a href="?tab=krediti"><?= formatCredits($userCredits) ?></a></p>
+                    <p class="form-hint account-ads-hint">Oglas traje <?= adMaxActiveDays() ?> dana. Obnova produžava rok i vraća ga među novije.</p>
                 <?php endif; ?>
 
-                <div class="bulk-import-box" id="bulk-import">
-                    <h3 class="profile-section-title">Brzi unos (jedan po jedan)</h3>
-                    <p class="form-hint" style="margin-top:0;">
-                        Dodaj oglas, pa odmah sledeći — tip, grad, telefon i kategorija izloga se pamte.
-                        Na formi klikni <strong>Objavi i dodaj još</strong>.
-                    </p>
-                    <div class="bulk-import-actions">
-                        <a class="btn-sm btn-sm-primary" href="/ad_form.php?more=1">+ Brzi unos oglasa</a>
-                    </div>
+                <div class="bulk-import-box bulk-import-box--compact" id="bulk-import">
+                    <a class="btn-sm btn-sm-primary" href="/ad_form.php?more=1">+ Brzi unos</a>
+                    <span class="form-hint">Tip, grad i telefon se pamte za sledeći oglas.</span>
                 </div>
 
                 <?php if (!$myAds): ?>
@@ -747,42 +739,42 @@ require __DIR__ . '/partials/layout-start.php';
                             $hiCost = highlightCredits();
                             ?>
                             <div class="account-ad-row account-ad-row-full <?= $hiActive ? 'is-highlighted-row' : '' ?>">
-                                <div class="account-ad-thumb">
-                                    <?php if ($img): ?>
-                                        <img class="account-ad-thumb-img" src="<?= h($img) ?>" alt="" width="72" height="72" loading="lazy">
-                                    <?php else: ?>
-                                        <span><?= h(mb_strtoupper(mb_substr(adCategoryLabel($ad), 0, 1))) ?></span>
-                                    <?php endif; ?>
+                                <div class="account-ad-head">
+                                    <a href="/oglas.php?id=<?= (int)$ad['id'] ?>" class="account-ad-thumb" aria-hidden="true" tabindex="-1">
+                                        <?php if ($img): ?>
+                                            <img class="account-ad-thumb-img" src="<?= h($img) ?>" alt="" width="72" height="72" loading="lazy">
+                                        <?php else: ?>
+                                            <span><?= h(mb_strtoupper(mb_substr(adCategoryLabel($ad), 0, 1))) ?></span>
+                                        <?php endif; ?>
+                                    </a>
+                                    <div class="account-ad-main">
+                                        <a href="/oglas.php?id=<?= (int)$ad['id'] ?>" class="account-ad-title"><?= h((string)$ad['title']) ?></a>
+                                        <div class="account-ad-meta">
+                                            <span><?= h(formatAdPrice($ad)) ?></span>
+                                            <span class="account-ad-status <?= $statusClass ?>"><?= h($statusLabel) ?></span>
+                                            <?php if ($topActive): ?>
+                                                <span class="account-ad-status is-top">TOP</span>
+                                            <?php endif; ?>
+                                            <?php if ($hiActive): ?>
+                                                <span class="account-ad-status is-hi">Istaknut</span>
+                                            <?php endif; ?>
+                                        </div>
+                                        <div class="account-ad-meta">
+                                            <span><?= h(adCategoryLabel($ad)) ?></span>
+                                            <?php if (trim((string)($ad['location'] ?? '')) !== ''): ?>
+                                                <span><?= h((string)$ad['location']) ?></span>
+                                            <?php endif; ?>
+                                            <span>👁 <?= (int)($ad['views'] ?? 0) ?></span>
+                                            <?php if (!empty($ad['expires_at']) && $expiryOn && $daysLeft !== null && (int)($ad['is_active'] ?? 0) === 1 && empty($ad['is_sold'])): ?>
+                                                <span class="account-expiry <?= $daysLeft <= $warningDays ? 'is-warn' : '' ?>">
+                                                    <?= $daysLeft > 0 ? 'još ' . $daysLeft . ' d.' : 'ističe danas' ?>
+                                                </span>
+                                            <?php endif; ?>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="account-ad-main">
-                                    <a href="/oglas.php?id=<?= (int)$ad['id'] ?>" class="account-ad-title"><?= h((string)$ad['title']) ?></a>
-                                    <div class="account-ad-meta">
-                                        <span><?= h(adCategoryLabel($ad)) ?></span>
-                                        <span><?= h(formatAdPrice($ad)) ?></span>
-                                        <span><?= h((string)$ad['location']) ?></span>
-                                        <span class="account-ad-status <?= $statusClass ?>"><?= h($statusLabel) ?></span>
-                                        <?php if ($topActive): ?>
-                                            <span class="account-ad-status is-top">TOP</span>
-                                        <?php endif; ?>
-                                        <?php if ($hiActive): ?>
-                                            <span class="account-ad-status is-hi">Istaknut</span>
-                                        <?php endif; ?>
-                                    </div>
-                                    <div class="account-ad-meta">
-                                        <span>👁 <?= (int)($ad['views'] ?? 0) ?></span>
-                                        <span><?= h(formatRelativeTime((string)$ad['created_at'])) ?></span>
-                                        <?php if (!empty($ad['expires_at']) && $expiryOn): ?>
-                                            <span class="account-expiry <?= ($daysLeft !== null && $daysLeft <= $warningDays) ? 'is-warn' : '' ?>">
-                                                Ističe: <?= h(date('d.m.Y.', strtotime((string)$ad['expires_at']) ?: time())) ?>
-                                                <?php if ($daysLeft !== null && (int)($ad['is_active'] ?? 0) === 1): ?>
-                                                    (<?= $daysLeft > 0 ? 'još ' . $daysLeft . ' d.' : 'danas' ?>)
-                                                <?php endif; ?>
-                                            </span>
-                                        <?php endif; ?>
-                                    </div>
 
                                     <div class="account-ad-actions kp-ad-actions">
-                                        <a class="btn-sm" href="/oglas.php?id=<?= (int)$ad['id'] ?>">Pogledaj</a>
                                         <a class="btn-sm btn-sm-primary" href="/ad_form.php?id=<?= (int)$ad['id'] ?>">Izmeni</a>
                                         <?php if ($canPromote): ?>
                                             <button type="button" class="btn-sm btn-promo" data-promo-toggle aria-expanded="false">Promocije</button>
@@ -835,7 +827,6 @@ require __DIR__ . '/partials/layout-start.php';
                                             <?php endif; ?>
                                         </div>
                                     <?php endif; ?>
-                                </div>
                             </div>
                         <?php endforeach; ?>
                     </div>
