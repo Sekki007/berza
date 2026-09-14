@@ -369,7 +369,7 @@ $contactBlock = static function (string $formId = 'poruka') use (
                     </div>
                 </div>
             <?php endif; ?>
-            <?php if (!empty($ad['is_sold'])): ?><span class="listing-badge-sold detail-sold"><?= $isBuy ? 'Pronađeno' : 'Prodato' ?></span><?php endif; ?>
+            <?php if (!empty($ad['is_sold'])): ?><span class="listing-sold-stamp listing-sold-stamp--detail" aria-label="<?= $isBuy ? 'Pronađeno' : 'Prodato' ?>"><?= $isBuy ? 'Pronađeno' : 'Prodato' ?></span><?php endif; ?>
             <?php if (!empty($ad['is_promoted'])): ?><span class="listing-badge-promo detail-promo">TOP</span><?php endif; ?>
         </div>
 

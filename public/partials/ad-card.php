@@ -72,7 +72,7 @@ $hasOrderBar = $shopCatalogMode && $messagesOn && !$isSold && !$shopCatalogOwn;
                     </span>
                     <?php if ($isPromoted): ?><span class="listing-badge-promo">TOP</span><?php endif; ?>
                     <?php if ($isHighlighted && !$isPromoted): ?><span class="listing-badge-hi">Istaknut</span><?php endif; ?>
-                    <?php if ($isSold): ?><span class="listing-badge-sold kp-list-badge kp-list-badge-sold"><?= h($soldLabel) ?></span><?php endif; ?>
+                    <?php if ($isSold): ?><span class="listing-sold-stamp" aria-label="<?= h($soldLabel) ?>"><?= h($soldLabel) ?></span><?php endif; ?>
                 </div>
                 <?php if ($location !== '' && !$hasOrderBar): ?>
                     <div class="kp-list-thumb-meta">

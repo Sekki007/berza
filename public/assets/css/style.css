@@ -935,7 +935,34 @@ body.page-ad-form {
 }
 .account-tabs a.active{background:var(--kp-green);color:#fff;border-color:var(--kp-green-dark);font-weight:bold;}
 
-.account-section-head h2 { margin-bottom: 0; padding-bottom: 0; border-bottom: none; font-size: 16px; }
+.account-ads-search {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: stretch;
+  margin: 0 0 12px;
+}
+.account-ads-search-q {
+  flex: 1 1 180px;
+  min-width: 0;
+  height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 14px;
+}
+.account-ads-search-status {
+  flex: 0 0 auto;
+  height: 40px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font: inherit;
+  font-size: 13px;
+  background: #fff;
+}
+.account-ads-search .btn-sm { height: 40px; display: inline-flex; align-items: center; }
 .account-section-head { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; padding-bottom: 0; border-bottom: none; }
 .account-section-head a { font-size: 13px; color: var(--link); text-decoration: none; font-weight: bold; }
 
@@ -1445,7 +1472,26 @@ body.page-chat .footer,body.page-chat .site-footer{display:none;}
 .listing-badge-promo, .listing-badge-sold { position: absolute; top: 8px; left: 8px; font-size: 11px; font-weight: bold; padding: 4px 8px; border-radius: 3px; z-index: 2; }
 .listing-badge-promo { background: var(--kp-yellow); color: var(--text); }
 .listing-badge-sold { background: #333; color: #fff; left: auto; right: 8px; }
-.listing-sold { opacity: 0.75; }
+.listing-sold { opacity: 1; }
+.listing-sold-stamp {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  background: rgba(255, 255, 255, .22);
+  font-size: 18px;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+  color: #d32f2f;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  text-shadow: 0 1px 0 #fff, 0 0 6px rgba(255,255,255,.85);
+  line-height: 1;
+}
 .listing-shop { font-size: 12px; color: var(--text-muted); margin: 2px 0 4px; font-weight: bold; display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
 .kp-list-shop {
   font-size: 12px;
@@ -1800,8 +1846,8 @@ a.rep-thumb:hover { opacity: 0.85; text-decoration: underline; }
   position: relative;
 }
 .kp-list-card:hover { border-color: #cfd8e3; }
-.kp-list-card.is-sold,
-.kp-list-card.listing-sold { opacity: .72; }
+.kp-list-card.is-sold .kp-list-thumb img,
+.kp-list-card.listing-sold .listing-thumb-img { filter: grayscale(.35) brightness(.92); }
 .kp-list-card .kp-list-inner,
 .kp-list-card .listing-inner {
   display: flex;
@@ -2070,7 +2116,7 @@ a.rep-thumb:hover { opacity: 0.85; text-decoration: underline; }
   background: #fff3cd;
   color: #856404;
 }
-.kp-list-badge-sold { background: #eceff1; color: #546e7a; }
+.kp-list-badge-sold { background: transparent; color: #d32f2f; }
 .kp-list-card .kp-list-fav,
 .kp-list-card .listing-fav-btn {
   position: absolute;
@@ -2500,6 +2546,11 @@ body.page-detail { background: #f0f0f0; }
   border-radius: 0;
   overflow: hidden;
   box-sizing: border-box;
+}
+.listing-sold-stamp--detail {
+  font-size: 42px;
+  letter-spacing: .18em;
+  background: rgba(255,255,255,.12);
 }
 .kp-gallery-track {
   display: flex;
@@ -3154,6 +3205,7 @@ body.kp-lightbox-open {
     height: 156px;
     min-height: 156px;
   }
+  .listings:not(.view-grid) .listing-sold-stamp { font-size: 24px; }
   .listings:not(.view-grid) .kp-list-card .kp-list-thumb-meta {
     left: 16px;
     bottom: 10px;
@@ -3482,6 +3534,7 @@ body.kp-lightbox-open {
     aspect-ratio: 1 / 1;
     border-radius: 0;
   }
+  .listings.view-grid .listing-sold-stamp { font-size: 28px; }
   .listings.view-grid .kp-list-thumb-meta {
     left: 9px;
     bottom: 10px;

@@ -637,11 +637,71 @@ require __DIR__ . '/partials/layout-start.php';
             <?php endif; ?>
 
         <?php elseif ($tab === 'oglasi'): ?>
+            <?php
+            $adSearchQ = trim((string)($_GET['q'] ?? ''));
+            $adSearchStatus = trim((string)($_GET['status'] ?? ''));
+            if (!in_array($adSearchStatus, ['active', 'sold', 'inactive', ''], true)) {
+                $adSearchStatus = '';
+            }
+            $oglasiAds = $myAds;
+            if ($adSearchStatus === 'active') {
+                $oglasiAds = array_values(array_filter($oglasiAds, static fn($a) => (int)($a['is_active'] ?? 0) === 1 && empty($a['is_sold'])));
+            } elseif ($adSearchStatus === 'sold') {
+                $oglasiAds = array_values(array_filter($oglasiAds, static fn($a) => !empty($a['is_sold'])));
+            } elseif ($adSearchStatus === 'inactive') {
+                $oglasiAds = array_values(array_filter($oglasiAds, static fn($a) => (int)($a['is_active'] ?? 0) !== 1 && empty($a['is_sold'])));
+            }
+            if ($adSearchQ !== '' && function_exists('searchTokens')) {
+                $tokens = searchTokens($adSearchQ);
+                $idExact = ctype_digit($adSearchQ) ? (int)$adSearchQ : 0;
+                $matched = [];
+                foreach ($oglasiAds as $ad) {
+                    if ($idExact > 0 && (int)($ad['id'] ?? 0) === $idExact) {
+                        $matched[] = $ad;
+                        continue;
+                    }
+                    if ($tokens === []) {
+                        continue;
+                    }
+                    $score = scoreAdAgainstTokens($ad, $tokens);
+                    if ($score >= 0) {
+                        $matched[] = $ad;
+                    }
+                }
+                $oglasiAds = $matched;
+            }
+            ?>
             <section class="form-card">
                 <div class="account-section-head">
                     <h2>Moji oglasi (<?= count($myAds) ?>)</h2>
                     <a class="btn-sm btn-sm-primary" href="/ad_form.php">+ Novi</a>
                 </div>
+                <?php if ($myAds): ?>
+                    <form class="account-ads-search" method="GET" action="/nalog.php">
+                        <input type="hidden" name="tab" value="oglasi">
+                        <input
+                            class="account-ads-search-q"
+                            type="search"
+                            name="q"
+                            value="<?= h($adSearchQ) ?>"
+                            placeholder="Pretraži svoje oglase (naslov, model, ID…)"
+                            aria-label="Pretraga mojih oglasa"
+                        >
+                        <select name="status" class="account-ads-search-status" aria-label="Status oglasa">
+                            <option value="" <?= $adSearchStatus === '' ? 'selected' : '' ?>>Svi</option>
+                            <option value="active" <?= $adSearchStatus === 'active' ? 'selected' : '' ?>>Aktivni</option>
+                            <option value="sold" <?= $adSearchStatus === 'sold' ? 'selected' : '' ?>>Prodato</option>
+                            <option value="inactive" <?= $adSearchStatus === 'inactive' ? 'selected' : '' ?>>Neaktivni</option>
+                        </select>
+                        <button class="btn-sm btn-sm-primary" type="submit">Traži</button>
+                        <?php if ($adSearchQ !== '' || $adSearchStatus !== ''): ?>
+                            <a class="btn-sm" href="/nalog.php?tab=oglasi">Poništi</a>
+                        <?php endif; ?>
+                    </form>
+                    <?php if ($adSearchQ !== '' || $adSearchStatus !== ''): ?>
+                        <p class="form-hint" style="margin-top:0;">Prikazano <?= count($oglasiAds) ?> od <?= count($myAds) ?> oglasa.</p>
+                    <?php endif; ?>
+                <?php endif; ?>
                 <?php if ($expiryOn): ?>
                     <p class="form-hint">Oglas traje maksimalno <?= adMaxActiveDays() ?> dana. <strong>Obnova</strong> produžava rok i vraća oglas među novije (kao na KP).</p>
                 <?php endif; ?>
@@ -665,9 +725,14 @@ require __DIR__ . '/partials/layout-start.php';
                         <p>Nemaš objavljenih oglasa.</p>
                         <a class="btn-call" href="/ad_form.php" style="display:inline-block;width:auto;margin-top:10px;">Postavi oglas</a>
                     </div>
+                <?php elseif (!$oglasiAds): ?>
+                    <div class="account-empty">
+                        <p>Nema oglasa za ovu pretragu.</p>
+                        <a class="btn-sm" href="/nalog.php?tab=oglasi">Prikaži sve</a>
+                    </div>
                 <?php else: ?>
                     <div class="account-ad-list">
-                        <?php foreach ($myAds as $ad): ?>
+                        <?php foreach ($oglasiAds as $ad): ?>
                             <?php
                             $type = getAdType($ad);
                             $statusLabel = !empty($ad['is_sold']) ? 'Prodato' : ((int)($ad['is_active'] ?? 0) === 1 ? 'Aktivan' : 'Neaktivan');
