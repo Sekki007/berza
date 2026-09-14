@@ -305,6 +305,7 @@ require __DIR__ . '/partials/layout-start.php';
                         <td>
                             <div class="admin-actions">
                                 <a class="btn-sm" href="/oglas.php?id=<?= $id ?>">Pogledaj</a>
+                                <a class="btn-sm" href="/oglas_share.php?id=<?= $id ?>&download=1" data-fb-card data-fb-caption="<?= h(adShareCardCaption($ad)) ?>" title="Preuzmi sliku za Facebook grupu">FB slika</a>
                                 <a class="btn-sm btn-sm-primary" href="/ad_form.php?id=<?= $id ?>">Izmeni</a>
                                 <a class="btn-sm" href="<?= h($toggleBase) ?>&action=sold"><?= $isSold ? 'Vrati' : 'Prodato' ?></a>
                                 <a class="btn-sm" href="<?= h($toggleBase) ?>&action=promote"><?= $isTop ? 'Un-TOP' : 'TOP' ?></a>
