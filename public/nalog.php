@@ -776,7 +776,9 @@ require __DIR__ . '/partials/layout-start.php';
 
                                     <div class="account-ad-actions kp-ad-actions">
                                         <a class="btn-sm btn-sm-primary" href="/ad_form.php?id=<?= (int)$ad['id'] ?>">Izmeni</a>
+                                        <?php if (isAdmin()): ?>
                                         <a class="btn-sm" href="/oglas_share.php?id=<?= (int)$ad['id'] ?>&download=1" data-fb-card data-fb-caption="<?= h(adShareCardCaption($ad)) ?>" title="Preuzmi sliku za Facebook">FB slika</a>
+                                        <?php endif; ?>
                                         <?php if ($canPromote): ?>
                                             <button type="button" class="btn-sm btn-promo" data-promo-toggle aria-expanded="false">Promocije</button>
                                         <?php endif; ?>

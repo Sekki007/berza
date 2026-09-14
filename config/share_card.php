@@ -19,15 +19,17 @@ function adShareCardCaption(array $ad): string
     $price = formatAdPrice($ad);
     $loc = trim((string)($ad['location'] ?? ''));
     $url = function_exists('absoluteUrl') ? absoluteUrl(adUrl($ad)) : adUrl($ad);
-    $lines = [$title];
     $meta = $price;
     if ($loc !== '') {
         $meta .= ' · ' . $loc;
     }
-    $lines[] = $meta;
-    $lines[] = '';
-    $lines[] = $url;
-    return implode("\n", $lines);
+    return implode("\n", [
+        'Oglas je na KupiTelefon.rs',
+        $title,
+        $meta,
+        '',
+        $url,
+    ]);
 }
 
 function shareCardFontPath(bool $bold = true): ?string
@@ -130,6 +132,124 @@ function shareCardWrapLines(string $text, int $size, int $maxWidth, int $maxLine
     return $lines;
 }
 
+/** @return list<string> */
+function shareCardAdImageFiles(array $ad): array
+{
+    $out = [];
+    $images = $ad['images'] ?? [];
+    if (!is_array($images)) {
+        $images = [];
+    }
+    $root = dirname(__DIR__) . '/public';
+    foreach ($images as $img) {
+        $rel = str_replace('\\', '/', trim((string)$img));
+        if ($rel === '' || !str_starts_with($rel, '/uploads/ads/')) {
+            continue;
+        }
+        $fs = $root . $rel;
+        if (is_file($fs)) {
+            $out[] = $fs;
+        }
+    }
+    return array_values(array_unique($out));
+}
+
+function shareCardPasteCover(\GdImage $canvas, \GdImage $src, int $dx, int $dy, int $dw, int $dh): void
+{
+    $sw = imagesx($src);
+    $sh = imagesy($src);
+    if ($sw < 1 || $sh < 1 || $dw < 1 || $dh < 1) {
+        return;
+    }
+    $srcAspect = $sw / $sh;
+    $dstAspect = $dw / $dh;
+    if ($srcAspect > $dstAspect) {
+        $cropW = max(1, (int)round($sh * $dstAspect));
+        $cropH = $sh;
+        $cropX = (int)round(($sw - $cropW) / 2);
+        $cropY = 0;
+    } else {
+        $cropW = $sw;
+        $cropH = max(1, (int)round($sw / $dstAspect));
+        $cropX = 0;
+        $cropY = (int)round(($sh - $cropH) / 2);
+    }
+    imagecopyresampled($canvas, $src, $dx, $dy, $cropX, $cropY, $dw, $dh, $cropW, $cropH);
+}
+
+/**
+ * @return list<array{x:int,y:int,w:int,h:int}>
+ */
+function shareCardCollageLayout(int $n, int $x, int $y, int $w, int $h, int $gap): array
+{
+    $n = max(1, min(6, $n));
+    if ($n === 1) {
+        return [['x' => $x, 'y' => $y, 'w' => $w, 'h' => $h]];
+    }
+    if ($n === 2) {
+        $cw = (int)floor(($w - $gap) / 2);
+        return [
+            ['x' => $x, 'y' => $y, 'w' => $cw, 'h' => $h],
+            ['x' => $x + $cw + $gap, 'y' => $y, 'w' => $w - $cw - $gap, 'h' => $h],
+        ];
+    }
+    if ($n === 3) {
+        $left = (int)floor($w * 0.58);
+        $right = $w - $left - $gap;
+        $rh = (int)floor(($h - $gap) / 2);
+        return [
+            ['x' => $x, 'y' => $y, 'w' => $left, 'h' => $h],
+            ['x' => $x + $left + $gap, 'y' => $y, 'w' => $right, 'h' => $rh],
+            ['x' => $x + $left + $gap, 'y' => $y + $rh + $gap, 'w' => $right, 'h' => $h - $rh - $gap],
+        ];
+    }
+    if ($n === 4) {
+        $cw = (int)floor(($w - $gap) / 2);
+        $ch = (int)floor(($h - $gap) / 2);
+        $cells = [];
+        for ($r = 0; $r < 2; $r++) {
+            for ($c = 0; $c < 2; $c++) {
+                $cx = $x + $c * ($cw + $gap);
+                $cy = $y + $r * ($ch + $gap);
+                $cells[] = [
+                    'x' => $cx,
+                    'y' => $cy,
+                    'w' => $c === 1 ? $w - $cw - $gap : $cw,
+                    'h' => $r === 1 ? $h - $ch - $gap : $ch,
+                ];
+            }
+        }
+        return $cells;
+    }
+    if ($n === 5) {
+        $topH = (int)floor(($h - $gap) * 0.56);
+        $botH = $h - $topH - $gap;
+        $tw = (int)floor(($w - $gap) / 2);
+        $bw = (int)floor(($w - 2 * $gap) / 3);
+        return [
+            ['x' => $x, 'y' => $y, 'w' => $tw, 'h' => $topH],
+            ['x' => $x + $tw + $gap, 'y' => $y, 'w' => $w - $tw - $gap, 'h' => $topH],
+            ['x' => $x, 'y' => $y + $topH + $gap, 'w' => $bw, 'h' => $botH],
+            ['x' => $x + $bw + $gap, 'y' => $y + $topH + $gap, 'w' => $bw, 'h' => $botH],
+            ['x' => $x + 2 * ($bw + $gap), 'y' => $y + $topH + $gap, 'w' => $w - 2 * ($bw + $gap), 'h' => $botH],
+        ];
+    }
+    $cw = (int)floor(($w - 2 * $gap) / 3);
+    $ch = (int)floor(($h - $gap) / 2);
+    $cells = [];
+    for ($r = 0; $r < 2; $r++) {
+        for ($c = 0; $c < 3; $c++) {
+            $cells[] = [
+                'x' => $x + $c * ($cw + $gap),
+                'y' => $y + $r * ($ch + $gap),
+                'w' => $c === 2 ? $w - 2 * ($cw + $gap) : $cw,
+                'h' => $r === 1 ? $h - $ch - $gap : $ch,
+            ];
+        }
+    }
+    return $cells;
+}
+
 /**
  * Napravi/keširaj 1080×1080 JPEG. Vraća relativni URL ili prazan string.
  */
@@ -140,30 +260,28 @@ function ensureAdShareCard(array $ad, bool $force = false): string
         return '';
     }
 
-    $primary = adPrimaryImage($ad);
+    $files = shareCardAdImageFiles($ad);
     $publicPath = adShareCardPath($adId);
     $dest = adShareCardFilesystemPath($adId);
 
-    $srcFs = '';
-    if (is_string($primary) && $primary !== '' && str_starts_with(str_replace('\\', '/', $primary), '/uploads/ads/')) {
-        $srcFs = dirname(__DIR__) . '/public' . str_replace('\\', '/', $primary);
-        if (!is_file($srcFs)) {
-            $srcFs = '';
-        }
+    $imgStamp = 0;
+    foreach ($files as $fs) {
+        $imgStamp = max($imgStamp, (int)filemtime($fs));
     }
-
     $stamp = max(
-        $srcFs !== '' ? (int)filemtime($srcFs) : 0,
-        strtotime((string)($ad['updated_at'] ?? $ad['created_at'] ?? '')) ?: 0
+        $imgStamp,
+        strtotime((string)($ad['updated_at'] ?? $ad['created_at'] ?? '')) ?: 0,
+        (int)@filemtime(__FILE__)
     );
     if (!$force && is_file($dest) && filemtime($dest) >= $stamp && filesize($dest) > 4000) {
         return $publicPath;
     }
 
     $size = 1080;
-    $headerH = 96;
-    $footerH = 250;
-    $photoH = $size - $headerH - $footerH;
+    $headerH = 88;
+    $ctaH = 78;
+    $infoH = 168;
+    $photoH = $size - $headerH - $infoH - $ctaH;
 
     $canvas = imagecreatetruecolor($size, $size);
     if ($canvas === false) {
@@ -174,17 +292,18 @@ function ensureAdShareCard(array $ad, bool $force = false): string
     $green = imagecolorallocate($canvas, 45, 122, 62);
     $greenDark = imagecolorallocate($canvas, 28, 90, 44);
     $yellow = imagecolorallocate($canvas, 245, 197, 24);
-    $text = imagecolorallocate($canvas, 26, 26, 26);
+    $text = imagecolorallocate($canvas, 22, 22, 22);
     $muted = imagecolorallocate($canvas, 90, 98, 110);
     $priceC = imagecolorallocate($canvas, 26, 107, 48);
-    $photoBg = imagecolorallocate($canvas, 236, 238, 237);
+    $photoBg = imagecolorallocate($canvas, 18, 22, 20);
+    $ctaWhite = imagecolorallocate($canvas, 255, 255, 255);
 
     imagefilledrectangle($canvas, 0, 0, $size, $headerH, $green);
-    imagefilledrectangle($canvas, 0, $headerH - 8, $size, $headerH, $yellow);
+    imagefilledrectangle($canvas, 0, $headerH - 7, $size, $headerH, $yellow);
 
-    $logoSize = 64;
-    $logoX = 36;
-    $logoY = (int)(($headerH - 8 - $logoSize) / 2);
+    $logoSize = 56;
+    $logoX = 32;
+    $logoY = (int)(($headerH - 7 - $logoSize) / 2);
     $logoFile = dirname(__DIR__) . '/public/assets/img/pwa-512.png';
     if (!is_file($logoFile)) {
         $logoFile = dirname(__DIR__) . '/public/assets/watermark-logo.png';
@@ -196,48 +315,79 @@ function ensureAdShareCard(array $ad, bool $force = false): string
             imagedestroy($logo);
         }
     }
-    shareCardDrawText($canvas, 'KupiTelefon.rs', $logoX + $logoSize + 18, 62, 36, $white, true);
+    shareCardDrawText($canvas, 'KupiTelefon.rs', $logoX + $logoSize + 16, 42, 32, $white, true);
+    shareCardDrawText($canvas, 'Berza telefona u Srbiji', $logoX + $logoSize + 16, 70, 16, $yellow, false);
 
     imagefilledrectangle($canvas, 0, $headerH, $size, $headerH + $photoH, $photoBg);
 
-    if ($srcFs !== '') {
-        $src = loadImageResourceFromPath($srcFs);
-        if ($src !== false) {
-            $sw = imagesx($src);
-            $sh = imagesy($src);
-            if ($sw > 0 && $sh > 0) {
-                $scale = max($size / $sw, $photoH / $sh);
-                $nw = (int)round($sw * $scale);
-                $nh = (int)round($sh * $scale);
-                $dx = (int)round(($size - $nw) / 2);
-                $dy = $headerH + (int)round(($photoH - $nh) / 2);
-                imagecopyresampled($canvas, $src, $dx, $dy, 0, 0, $nw, $nh, $sw, $sh);
+    $totalPhotos = count($files);
+    $shown = min(6, $totalPhotos);
+    $gap = 6;
+    if ($shown > 0) {
+        $cells = shareCardCollageLayout($shown, 0, $headerH, $size, $photoH, $gap);
+        foreach ($cells as $i => $cell) {
+            $src = loadImageResourceFromPath($files[$i]);
+            if ($src === false) {
+                continue;
             }
+            shareCardPasteCover($canvas, $src, $cell['x'], $cell['y'], $cell['w'], $cell['h']);
             imagedestroy($src);
         }
+        $extra = $totalPhotos - $shown;
+        if ($extra > 0 && $cells !== []) {
+            $last = $cells[count($cells) - 1];
+            $overlay = imagecolorallocatealpha($canvas, 0, 0, 0, 70);
+            imagefilledrectangle(
+                $canvas,
+                $last['x'],
+                $last['y'],
+                $last['x'] + $last['w'] - 1,
+                $last['y'] + $last['h'] - 1,
+                $overlay
+            );
+            $more = '+' . $extra;
+            $mw = shareCardTextWidth($more, 48, true);
+            shareCardDrawText(
+                $canvas,
+                $more,
+                $last['x'] + (int)(($last['w'] - $mw) / 2),
+                $last['y'] + (int)($last['h'] / 2) + 16,
+                48,
+                $ctaWhite,
+                true
+            );
+        }
     } else {
-        shareCardDrawText($canvas, 'KupiTelefon', 360, $headerH + (int)($photoH / 2), 42, $muted, true);
+        shareCardDrawText($canvas, 'KupiTelefon.rs', 340, $headerH + (int)($photoH / 2), 36, $muted, true);
     }
 
-    imagefilledrectangle($canvas, 0, $headerH + $photoH, $size, $size, $white);
-    imagefilledrectangle($canvas, 0, $size - 14, $size, $size, $yellow);
+    $infoTop = $headerH + $photoH;
+    imagefilledrectangle($canvas, 0, $infoTop, $size, $infoTop + $infoH, $white);
 
-    $pad = 40;
-    $y = $headerH + $photoH + 58;
+    $pad = 36;
     $price = formatAdPrice($ad);
-    shareCardDrawText($canvas, $price, $pad, $y, 52, $priceC, true);
-
-    $title = adDisplayTitle($ad);
-    $titleLines = shareCardWrapLines($title, 28, $size - ($pad * 2), 2, true);
-    $ty = $y + 48;
-    foreach ($titleLines as $line) {
-        shareCardDrawText($canvas, $line, $pad, $ty, 28, $text, true);
-        $ty += 38;
-    }
+    shareCardDrawText($canvas, $price, $pad, $infoTop + 58, 48, $priceC, true);
 
     $loc = trim((string)($ad['location'] ?? ''));
-    $foot = $loc !== '' ? $loc . '  ·  kupitelefon.rs' : 'kupitelefon.rs';
-    shareCardDrawText($canvas, $foot, $pad, $size - 36, 22, $muted, false);
+    if ($loc !== '') {
+        $pw = shareCardTextWidth($price, 48, true);
+        shareCardDrawText($canvas, '·  ' . $loc, $pad + $pw + 18, $infoTop + 54, 22, $muted, false);
+    }
+
+    $title = adDisplayTitle($ad);
+    $titleLines = shareCardWrapLines($title, 26, $size - ($pad * 2), 2, true);
+    $ty = $infoTop + 102;
+    foreach ($titleLines as $line) {
+        shareCardDrawText($canvas, $line, $pad, $ty, 26, $text, true);
+        $ty += 36;
+    }
+
+    $ctaTop = $size - $ctaH;
+    imagefilledrectangle($canvas, 0, $ctaTop, $size, $size, $greenDark);
+    imagefilledrectangle($canvas, 0, $ctaTop, $size, $ctaTop + 6, $yellow);
+    $cta = 'Oglas se nalazi na kupitelefon.rs';
+    $cw = shareCardTextWidth($cta, 26, true);
+    shareCardDrawText($canvas, $cta, (int)(($size - $cw) / 2), $ctaTop + 50, 26, $ctaWhite, true);
 
     if (!empty($ad['is_sold'])) {
         $overlay = imagecolorallocatealpha($canvas, 255, 255, 255, 55);
@@ -252,7 +402,7 @@ function ensureAdShareCard(array $ad, bool $force = false): string
     if (!is_dir($dir)) {
         mkdir($dir, 0777, true);
     }
-    $ok = imagejpeg($canvas, $dest, 86);
+    $ok = imagejpeg($canvas, $dest, 88);
     imagedestroy($canvas);
     return $ok ? $publicPath : '';
 }

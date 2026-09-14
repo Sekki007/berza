@@ -400,6 +400,7 @@ $contactBlock = static function (string $formId = 'poruka') use (
             </div>
             <div class="kp-action-links">
                 <button type="button" class="kp-action-link" data-share-ad data-share-url="<?= h($canonicalUrl) ?>" data-share-title="<?= h((string)$ad['title']) ?>">↗ Podeli</button>
+                <?php if (isAdmin()): ?>
                 <a
                     class="kp-action-link kp-action-link-fb"
                     href="/oglas_share.php?id=<?= (int)$ad['id'] ?>&download=1"
@@ -407,6 +408,7 @@ $contactBlock = static function (string $formId = 'poruka') use (
                     data-fb-caption="<?= h(adShareCardCaption($ad)) ?>"
                     title="Preuzmi sliku za Facebook grupu (tekst se kopira)"
                 >Slika za FB</a>
+                <?php endif; ?>
                 <button type="button" class="kp-action-link" data-compare-toggle="<?= (int)$ad['id'] ?>" aria-pressed="<?= $inCompare ? 'true' : 'false' ?>">
                     <?= $inCompare ? '✓ U poređenju' : '⇄ Uporedi' ?>
                 </button>
