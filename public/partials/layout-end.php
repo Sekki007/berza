@@ -279,12 +279,37 @@ if ($user) {
     </aside>
 
     <?php if (!$hideMobileBar): ?>
-        <nav class="mobile-bar">
-            <a href="/" data-nav="oglasi" class="<?= $activePage === 'oglasi' ? 'active' : '' ?>"><span class="mobile-bar-icon">🏠</span><span>Oglasi</span></a>
-            <a href="/#search" data-nav="pretraga" data-focus-search class="<?= $activePage === 'pretraga' ? 'active' : '' ?>"><span class="mobile-bar-icon">🔎</span><span>Pretraga</span></a>
-            <a href="<?= $user ? '/postavi-oglas' : '/prijava' ?>" data-nav="dodaj" class="mobile-bar-add <?= $activePage === 'dodaj' ? 'active' : '' ?>"><span class="mobile-bar-icon">＋</span><span>Dodaj</span></a>
-            <a href="<?= $user ? '/poruke.php' : '/prijava' ?>" data-nav="poruke" class="nav-with-badge <?= $activePage === 'poruke' ? 'active' : '' ?>"><span class="mobile-bar-icon">💬</span><span>Poruke</span><?= $user ? renderUnreadBadge($unreadMessages) : '' ?></a>
-            <a href="<?= $user ? '/nalog.php' : '/prijava' ?>" data-nav="nalog" class="nav-with-badge <?= $activePage === 'nalog' ? 'active' : '' ?>"><span class="mobile-bar-icon">👤</span><span>Nalog</span><?= $user ? renderUnreadBadge($unreadNotifications) : '' ?></a>
+        <nav class="mobile-bar" aria-label="Glavni meni">
+            <a href="/" data-nav="oglasi" class="<?= $activePage === 'oglasi' ? 'active' : '' ?>">
+                <span class="mobile-bar-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 12 4l8 6.5V20a1 1 0 0 1-1 1h-5v-6H10v6H5a1 1 0 0 1-1-1v-9.5z"/></svg>
+                </span>
+                <span>Oglasi</span>
+            </a>
+            <a href="/#search" data-nav="pretraga" data-focus-search class="<?= $activePage === 'pretraga' ? 'active' : '' ?>">
+                <span class="mobile-bar-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="6.5"/><path d="m16.5 16.5 4 4"/></svg>
+                </span>
+                <span>Pretraga</span>
+            </a>
+            <a href="<?= $user ? '/postavi-oglas' : '/prijava' ?>" data-nav="dodaj" class="mobile-bar-add <?= $activePage === 'dodaj' ? 'active' : '' ?>">
+                <span class="mobile-bar-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+                </span>
+                <span>Dodaj</span>
+            </a>
+            <a href="<?= $user ? '/poruke.php' : '/prijava' ?>" data-nav="poruke" class="nav-with-badge <?= $activePage === 'poruke' ? 'active' : '' ?>">
+                <span class="mobile-bar-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><path d="M7 19.5 4 21V7a3 3 0 0 1 3-3h10a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H7.8z"/><path d="M8.5 10h7M8.5 13.5h4.5"/></svg>
+                </span>
+                <span>Poruke</span><?= $user ? renderUnreadBadge($unreadMessages) : '' ?>
+            </a>
+            <a href="<?= $user ? '/nalog.php' : '/prijava' ?>" data-nav="nalog" class="nav-with-badge <?= $activePage === 'nalog' ? 'active' : '' ?>">
+                <span class="mobile-bar-icon" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.85" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.25"/><path d="M5.5 19.2a6.5 6.5 0 0 1 13 0"/></svg>
+                </span>
+                <span>Nalog</span><?= $user ? renderUnreadBadge($unreadNotifications) : '' ?>
+            </a>
         </nav>
     <?php endif; ?>
 
