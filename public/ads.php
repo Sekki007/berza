@@ -245,6 +245,7 @@ require __DIR__ . '/partials/layout-start.php';
                     <th>Tip</th>
                     <th>Cena</th>
                     <th>Lokacija</th>
+                    <th>Objavljeno</th>
                     <th>Status</th>
                     <th>Akcije</th>
                 </tr>
@@ -252,7 +253,7 @@ require __DIR__ . '/partials/layout-start.php';
                 <tbody>
                 <?php if ($ads === []): ?>
                     <tr>
-                        <td colspan="8" style="padding:18px;color:var(--text-muted);">Nema oglasa za ovaj filter.</td>
+                        <td colspan="9" style="padding:18px;color:var(--text-muted);">Nema oglasa za ovaj filter.</td>
                     </tr>
                 <?php endif; ?>
                 <?php foreach ($ads as $ad): ?>
@@ -274,6 +275,9 @@ require __DIR__ . '/partials/layout-start.php';
                     $isTop = function_exists('isAdTopActive') && isAdTopActive($ad);
                     $toggleBase = '/ad_toggle.php?id=' . $id . '&return=' . rawurlencode($returnUrl);
                     $deleteHref = '/ad_delete.php?id=' . $id . '&return=' . rawurlencode($returnUrl);
+                    $createdRaw = trim((string)($ad['created_at'] ?? ''));
+                    $createdTs = $createdRaw !== '' ? strtotime($createdRaw) : false;
+                    $createdLabel = $createdTs ? date('d.m.Y. H:i', $createdTs) : '—';
                     ?>
                     <tr>
                         <td>#<?= $id ?></td>
@@ -293,6 +297,9 @@ require __DIR__ . '/partials/layout-start.php';
                         <td><?= h(adCategoryLabel($ad)) ?></td>
                         <td><?= h(formatAdPrice($ad)) ?></td>
                         <td><?= h((string)($ad['location'] ?? '')) ?></td>
+                        <td style="font-size:12px;white-space:nowrap;" title="<?= h($createdRaw) ?>">
+                            <?= h($createdLabel) ?>
+                        </td>
                         <td style="font-size:12px;">
                             <?php if ($isSold): ?>
                                 <span class="vote-tag vote-tag-neg">Prodato</span>
