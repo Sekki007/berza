@@ -24,6 +24,12 @@ function uploadsDir(): string
     return dirname(__DIR__) . '/public/uploads/ads';
 }
 
+/** Maksimalan broj fotografija po oglasu (nova + postojeće). */
+function adMaxImages(): int
+{
+    return 20;
+}
+
 function ensureUploadsDir(): void
 {
     $dir = uploadsDir();
@@ -203,7 +209,7 @@ function handleAdImageUploads(int $adId, array $existing = []): array
     }
 
     if (!isset($_FILES['images']) || !is_array($_FILES['images']['name'])) {
-        return array_values(array_slice($images, 0, 10));
+        return array_values(array_slice($images, 0, adMaxImages()));
     }
 
     $targetDir = uploadsDir() . '/' . $adId;
@@ -213,8 +219,9 @@ function handleAdImageUploads(int $adId, array $existing = []): array
 
     $allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
     $count = count($_FILES['images']['name']);
+    $maxImages = adMaxImages();
 
-    for ($i = 0; $i < $count && count($images) < 10; $i++) {
+    for ($i = 0; $i < $count && count($images) < $maxImages; $i++) {
         if ((($_FILES['images']['error'][$i] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK)) {
             continue;
         }
@@ -236,7 +243,7 @@ function handleAdImageUploads(int $adId, array $existing = []): array
         }
     }
 
-    return array_values(array_slice($images, 0, 10));
+    return array_values(array_slice($images, 0, $maxImages));
 }
 
 /**

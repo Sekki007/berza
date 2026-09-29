@@ -1180,7 +1180,7 @@
     const drop = one('[data-photo-drop]');
     if (!input || !preview) return;
 
-    const MAX_TOTAL = 10;
+    const MAX_TOTAL = 20;
     const MAX_EDGE = 1600;
     const JPEG_QUALITY = 0.82;
     const WARN_RAW_MB = 20;

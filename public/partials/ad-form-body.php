@@ -415,7 +415,7 @@ $contactExtraOpen = $contactSorted !== $dc
                 <h3 class="ad-form-section-title">Fotografije <span data-photo-required <?= $currentType !== 'telefon' ? 'hidden' : '' ?>>*</span></h3>
                 <p class="form-hint" style="margin-top:0;">
                     <span data-phone-photo-hint <?= $currentType !== 'telefon' ? 'hidden' : '' ?>>Za telefon je obavezna najmanje jedna fotografija uređaja. </span>
-                    Do 10 slika — prva je naslovna. Možeš dodavati jednu po jednu; ↑↓ menja redosled, × briše.
+                    Do 20 slika — prva je naslovna. Možeš dodavati jednu po jednu; ↑↓ menja redosled, × briše.
                 </p>
                 <?php if ($existingImages): ?>
                     <div class="photo-existing" data-photo-existing>

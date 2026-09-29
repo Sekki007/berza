@@ -492,7 +492,7 @@ function kpDownloadRemoteAdImages(int $adId, array $urls): array
     ]);
 
     foreach ($urls as $i => $url) {
-        if (count($images) >= 10) {
+        if (count($images) >= adMaxImages()) {
             break;
         }
         $url = trim((string)$url);
@@ -539,7 +539,7 @@ function kpUpdateAdImages(int $adId, array $images): void
         if ((int)($ad['id'] ?? 0) !== $adId) {
             continue;
         }
-        $ad['images'] = array_values(array_slice($images, 0, 10));
+        $ad['images'] = array_values(array_slice($images, 0, adMaxImages()));
         $ad['updated_at'] = date('Y-m-d H:i:s');
         invalidateAdOgImage($adId);
         ensureAdOgImage($ad, true);
