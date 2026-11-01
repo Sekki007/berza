@@ -55,7 +55,7 @@ if ($user) {
                 </div>
                 <div class="site-footer-col">
                     <h4>Prodaja</h4>
-                    <a href="/postavi-oglas">Besplatno postavljanje oglasa</a>
+                    <a href="/postavi-oglas">Postavi oglas</a>
                     <a href="/kako-radi">Kako radi</a>
                     <?php if (empty($user)): ?>
                         <a href="/registracija">Registracija</a>
@@ -234,8 +234,8 @@ if ($user) {
                 <a href="/postavi-oglas" class="mobile-account-menu-item">
                     <span class="mobile-account-menu-icon">📋</span>
                     <span class="mobile-account-menu-text">
-                        <strong>Besplatno postavljanje oglasa</strong>
-                        <small>Bez provizije</small>
+                        <strong>Postavi oglas</strong>
+                        <small>Potrebna je prijava</small>
                     </span>
                 </a>
                 <a href="/servisi" class="mobile-account-menu-item">
@@ -292,11 +292,11 @@ if ($user) {
                 </span>
                 <span>Pretraga</span>
             </a>
-            <a href="<?= $user ? '/postavi-oglas' : '/prijava' ?>" data-nav="dodaj" class="mobile-bar-add <?= $activePage === 'dodaj' ? 'active' : '' ?>" title="Besplatno postavljanje oglasa">
+            <a href="<?= $user ? '/postavi-oglas' : '/prijava' ?>" data-nav="dodaj" class="mobile-bar-add <?= $activePage === 'dodaj' ? 'active' : '' ?>">
                 <span class="mobile-bar-icon" aria-hidden="true">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
                 </span>
-                <span>Besplatno</span>
+                <span>Dodaj</span>
             </a>
             <a href="<?= $user ? '/poruke.php' : '/prijava' ?>" data-nav="poruke" class="nav-with-badge <?= $activePage === 'poruke' ? 'active' : '' ?>">
                 <span class="mobile-bar-icon" aria-hidden="true">

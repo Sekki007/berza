@@ -302,7 +302,6 @@ if (is_array($landing)) {
     }
 }
 $showHomeIntro = $queryBase === [] && !is_array($landing);
-$postAdHref = isLoggedIn() ? '/postavi-oglas' : '/prijava';
 $listBasePath = '/oglasi';
 if (is_array($landing) && !empty($landing['path'])) {
     $listBasePath = (string)$landing['path'];
@@ -488,7 +487,7 @@ $homeCats = [
     <?php if ($showHomeIntro): ?>
         <header class="home-intro">
             <h1>Polovni telefoni, tableti i servis u Srbiji</h1>
-            <p class="home-intro-free"><strong>Besplatno postavljanje oglasa</strong> — bez provizije. <a href="<?= h($postAdHref) ?>">Postavi oglas</a></p>
+            <p class="home-intro-free">Postavljanje oglasa je besplatno — bez provizije.</p>
         </header>
     <?php endif; ?>
     <nav class="home-cat-tiles" aria-label="Kategorije">
