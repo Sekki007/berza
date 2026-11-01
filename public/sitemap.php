@@ -7,7 +7,25 @@ require_once dirname(__DIR__) . '/config/bootstrap.php';
 header('Content-Type: application/xml; charset=utf-8');
 
 $urls = [];
-$urls[] = ['loc' => rtrim(absoluteUrl('/'), '/') . '/', 'priority' => '1.0', 'changefreq' => 'daily'];
+$seenLocs = [];
+$addUrl = static function (array $entry) use (&$urls, &$seenLocs): void {
+    $loc = (string)($entry['loc'] ?? '');
+    if ($loc === '' || isset($seenLocs[$loc])) {
+        return;
+    }
+    $seenLocs[$loc] = true;
+    if (array_key_exists('lastmod', $entry)) {
+        $lastmod = seoLastmodDate((string)$entry['lastmod']);
+        if ($lastmod === '') {
+            unset($entry['lastmod']);
+        } else {
+            $entry['lastmod'] = $lastmod;
+        }
+    }
+    $urls[] = $entry;
+};
+
+$addUrl(['loc' => rtrim(absoluteUrl('/'), '/') . '/', 'priority' => '1.0', 'changefreq' => 'daily']);
 
 $staticPages = [
     ['/kako-radi', '0.5', 'monthly'],
@@ -28,53 +46,80 @@ $staticPages = [
     ['/oglasi?device_type=watch', '0.7', 'daily'],
 ];
 foreach ($staticPages as [$path, $priority, $changefreq]) {
-    $urls[] = [
+    $addUrl([
         'loc' => absoluteUrl($path),
         'priority' => $priority,
         'changefreq' => $changefreq,
-    ];
+    ]);
 }
 
-foreach (listingLandingCandidatesForSitemap() as $landingPath) {
-    $urls[] = [
+$publicAds = getPublicAds(['sort' => 'newest']);
+foreach (listingLandingCandidatesForSitemap($publicAds) as $landingPath) {
+    $addUrl([
         'loc' => absoluteUrl($landingPath),
         'priority' => '0.75',
         'changefreq' => 'daily',
-    ];
+    ]);
 }
 
 foreach (getPublishedGuides() as $guide) {
-    $urls[] = [
+    $guideUpdated = trim((string)($guide['updated_at'] ?? ''));
+    if ($guideUpdated === '') {
+        $guideUpdated = trim((string)($guide['published_at'] ?? $guide['created_at'] ?? ''));
+    }
+    $addUrl([
         'loc' => absoluteUrl(guideUrl($guide)),
         'priority' => '0.6',
         'changefreq' => 'monthly',
-        'lastmod' => !empty($guide['updated_at']) ? date('c', strtotime((string)$guide['updated_at'])) : null,
-    ];
+        'lastmod' => $guideUpdated,
+    ]);
 }
 
 foreach (directoryCityStats() as $cityRow) {
-    $urls[] = [
+    $addUrl([
         'loc' => absoluteUrl($cityRow['url']),
         'priority' => '0.8',
         'changefreq' => 'weekly',
-    ];
+    ]);
 }
 foreach (listDirectoryServices(null) as $svcUser) {
-    $urls[] = [
+    $svcUpdated = trim((string)($svcUser['verified_seller_at'] ?? ''));
+    if ($svcUpdated === '') {
+        $svcUpdated = trim((string)($svcUser['business_verified_at'] ?? ''));
+    }
+    if ($svcUpdated === '') {
+        $svcUpdated = trim((string)($svcUser['created_at'] ?? ''));
+    }
+    $addUrl([
         'loc' => absoluteUrl(directoryServiceUrl($svcUser)),
         'priority' => '0.75',
         'changefreq' => 'weekly',
-        'lastmod' => substr((string)($svcUser['verified_seller_at'] ?? $svcUser['business_verified_at'] ?? $svcUser['created_at'] ?? ''), 0, 10),
-    ];
+        'lastmod' => $svcUpdated,
+    ]);
 }
 
-foreach (getPublicAds(['sort' => 'newest']) as $ad) {
-    $urls[] = [
+foreach ($publicAds as $ad) {
+    $adUpdated = trim((string)($ad['updated_at'] ?? ''));
+    if ($adUpdated === '') {
+        $adUpdated = trim((string)($ad['created_at'] ?? ''));
+    }
+    $addUrl([
         'loc' => absoluteUrl(adUrl($ad)),
-        'lastmod' => substr((string)($ad['updated_at'] ?? $ad['created_at'] ?? ''), 0, 10),
+        'lastmod' => $adUpdated,
         'priority' => '0.8',
         'changefreq' => 'weekly',
-    ];
+    ]);
+}
+
+$sellersWithPublicAds = [];
+foreach (getAllAds() as $anyAd) {
+    if (!is_array($anyAd) || (int)($anyAd['is_active'] ?? 0) !== 1) {
+        continue;
+    }
+    $sellerId = (int)($anyAd['created_by'] ?? 0);
+    if ($sellerId > 0) {
+        $sellersWithPublicAds[$sellerId] = true;
+    }
 }
 
 $seenUsers = [];
@@ -88,29 +133,29 @@ foreach (getUsers() as $user) {
     }
     $seenUsers[$uid] = true;
 
-    $hasAds = getPublicAdsByUserId($uid, true) !== [];
+    $hasAds = isset($sellersWithPublicAds[$uid]);
     if ($hasAds) {
-        $urls[] = [
+        $addUrl([
             'loc' => absoluteUrl(shopUrlForUser($user)),
             'priority' => '0.6',
             'changefreq' => 'weekly',
-        ];
+        ]);
         foreach (getShopCategories($user) as $shopCat) {
-            $urls[] = [
+            $addUrl([
                 'loc' => absoluteUrl(shopCatalogUrl($user, ['cat' => $shopCat['id']])),
                 'priority' => '0.55',
                 'changefreq' => 'weekly',
-            ];
+            ]);
         }
     }
 
     if (function_exists('storefrontIsActive') && storefrontIsActive($user)) {
-        $urls[] = [
+        $addUrl([
             'loc' => absoluteUrl(storefrontUrlForUser($user)),
             'priority' => '0.7',
             'changefreq' => 'weekly',
-            'lastmod' => substr((string)($user['shop_page_updated_at'] ?? ''), 0, 10),
-        ];
+            'lastmod' => (string)($user['shop_page_updated_at'] ?? ''),
+        ]);
     }
 }
 

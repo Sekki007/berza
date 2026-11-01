@@ -211,6 +211,20 @@ function resolveListingLandingFromPath(string $path): ?array
 
 function listingLandingIndexable(array $filters, array $ads): bool
 {
+    $brand = trim((string)($filters['brand'] ?? ''));
+    $model = trim((string)($filters['model'] ?? ''));
+    $location = trim((string)($filters['location'] ?? ''));
+    $hasNarrowType = trim((string)($filters['type'] ?? '')) !== ''
+        || trim((string)($filters['equipment_group'] ?? '')) !== '';
+
+    // Bazni grad i brend (bez modela, kombinacije i sort upita) ostaju indeksabilni.
+    if ($location !== '' && $brand === '' && $model === '' && !$hasNarrowType) {
+        return true;
+    }
+    if ($brand !== '' && $model === '' && $location === '' && !$hasNarrowType) {
+        return true;
+    }
+
     $count = count($ads);
     if ($count < 3) {
         return false;
@@ -233,35 +247,68 @@ function listingLandingIndexable(array $filters, array $ads): bool
     return $count >= 3;
 }
 
-function listingLandingCandidatesForSitemap(): array
+/**
+ * @param list<array>|null $ads već učitani javni oglasi (jedan prolaz, bez ponovnog čitanja)
+ * @return list<string>
+ */
+function listingLandingCandidatesForSitemap(?array $ads = null): array
 {
-    $out = [];
+    if ($ads === null) {
+        $ads = getPublicAds(['sort' => 'newest']);
+    }
 
-    foreach (['telefon', 'servis'] as $type) {
-        $ads = getPublicAds(['types' => [$type], 'sort' => 'newest']);
-        if (listingLandingIndexable(['type' => $type], $ads)) {
-            $out[] = listingLandingPath(['type' => $type]);
+    $groups = [
+        'telefon' => [],
+        'servis' => [],
+        'parts' => [],
+        'oprema' => [],
+    ];
+    foreach ($ads as $ad) {
+        if (!is_array($ad)) {
+            continue;
+        }
+        $type = getAdType($ad);
+        if ($type === 'telefon' || $type === 'servis') {
+            $groups[$type][] = $ad;
+            continue;
+        }
+        if ($type === 'delovi') {
+            $group = function_exists('adEquipmentGroup') ? adEquipmentGroup($ad) : '';
+            if ($group === 'oprema') {
+                $groups['oprema'][] = $ad;
+            } else {
+                $groups['parts'][] = $ad;
+            }
         }
     }
-    $partsAds = getPublicAds(['types' => ['delovi'], 'equipment_group' => 'parts', 'sort' => 'newest']);
-    if (listingLandingIndexable(['type' => 'delovi', 'equipment_group' => 'parts'], $partsAds)) {
+
+    $out = [];
+    if (listingLandingIndexable(['type' => 'telefon'], $groups['telefon'])) {
+        $out[] = listingLandingPath(['type' => 'telefon']);
+    }
+    if (listingLandingIndexable(['type' => 'servis'], $groups['servis'])) {
+        $out[] = listingLandingPath(['type' => 'servis']);
+    }
+    if (listingLandingIndexable(['type' => 'delovi', 'equipment_group' => 'parts'], $groups['parts'])) {
         $out[] = listingLandingPath(['type' => 'delovi', 'equipment_group' => 'parts']);
     }
-    $opremaAds = getPublicAds(['types' => ['delovi'], 'equipment_group' => 'oprema', 'sort' => 'newest']);
-    if (listingLandingIndexable(['type' => 'delovi', 'equipment_group' => 'oprema'], $opremaAds)) {
+    if (listingLandingIndexable(['type' => 'delovi', 'equipment_group' => 'oprema'], $groups['oprema'])) {
         $out[] = listingLandingPath(['type' => 'delovi', 'equipment_group' => 'oprema']);
     }
 
-    $brands = (array)(categoriesConfig()['brands'] ?? []);
-    foreach ($brands as $brand) {
+    foreach ((array)(categoriesConfig()['brands'] ?? []) as $brand) {
         $brand = trim((string)$brand);
         if ($brand === '') {
             continue;
         }
-        $brandAds = getPublicAds(['brand' => $brand, 'sort' => 'newest']);
-        if (listingLandingIndexable(['brand' => $brand], $brandAds)) {
-            $out[] = listingLandingPath(['brand' => $brand]);
+        $out[] = listingLandingPath(['brand' => $brand]);
+    }
+    foreach ((array)(categoriesConfig()['cities'] ?? []) as $city) {
+        $city = trim((string)$city);
+        if ($city === '') {
+            continue;
         }
+        $out[] = listingLandingPath(['location' => $city]);
     }
 
     return array_values(array_unique($out));

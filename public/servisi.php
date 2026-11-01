@@ -38,6 +38,7 @@ if ($cityParam !== '' && $slugParam !== '') {
         header('Location: ' . $canonicalPath, true, 301);
         exit;
     }
+    directoryEnforceCanonicalUrl($canonicalPath);
 
     $shopName = directoryServiceName($user);
     $seo = seoDirectoryServiceMeta($user, $cityName);
@@ -176,10 +177,7 @@ if ($cityParam !== '') {
         exit;
     }
 
-    if (citySlug($cityParam) !== citySlug($cityName)) {
-        header('Location: ' . directoryCityUrl($cityName, $kindFilter), true, 301);
-        exit;
-    }
+    directoryEnforceCanonicalUrl(directoryCityUrl($cityName, $kindFilter));
 
     $services = listDirectoryServices($cityName, $kindFilter);
     $seo = seoDirectoryCityMeta($cityName, count($services), $kindFilter);
@@ -187,9 +185,14 @@ if ($cityParam !== '') {
     $pageDescription = $seo['description'];
     $canonicalUrl = absoluteUrl(directoryCityUrl($cityName, $kindFilter));
     $cityHeading = match ($kindFilter) {
-        'shop' => 'Prodavnice mobilnih telefona u ' . $cityName,
-        'service' => 'Mobilni servisi u ' . $cityName,
-        default => 'Servisi i prodavnice u ' . $cityName,
+        'shop' => 'Prodavnice mobilnih telefona ' . $cityName,
+        'service' => 'Servis mobilnih telefona ' . $cityName,
+        default => 'Servisi i prodavnice telefona ' . $cityName,
+    };
+    $cityIntro = match ($kindFilter) {
+        'shop' => 'Prodavnice mobilnih telefona u gradu ' . $cityName . ': adrese, telefoni i kontakt.',
+        'service' => 'Servis mobilnih telefona u gradu ' . $cityName . ': adrese, telefoni i radno vreme.',
+        default => 'Servisi i prodavnice telefona u gradu ' . $cityName . ': adrese, telefoni i kontakt.',
     };
     $jsonLd = [
         '@context' => 'https://schema.org',
@@ -211,7 +214,7 @@ if ($cityParam !== '') {
 
             <header class="dir-hub-head form-card">
                 <h1><?= h($cityHeading) ?></h1>
-                <p>Verifikovane firme za prodaju i/ili popravku mobilnih telefona<?= count($services) > 0 ? ' — ' . count($services) . ' ' . (count($services) === 1 ? 'firma' : 'firmi') : '' ?>.</p>
+                <p><?= h($cityIntro) ?><?= count($services) > 0 ? ' ' . count($services) . ' ' . (count($services) === 1 ? 'firma' : 'firmi') . '.' : '' ?></p>
                 <nav class="dir-kind-tabs" aria-label="Tip firme">
                     <?php foreach ($dirKindTabs as $tipKey => $tipLabel): ?>
                         <a class="dir-kind-tab <?= $kindFilter === $tipKey ? 'is-active' : '' ?>" href="<?= h(directoryCityUrl($cityName, $tipKey)) ?>"><?= h($tipLabel) ?></a>
@@ -232,6 +235,8 @@ if ($cityParam !== '') {
                         $svcInit = mb_strtoupper(mb_substr($svcName, 0, 1));
                         $svcPhone = trim((string)($svc['phone'] ?? ''));
                         $svcBio = trim((string)($svc['shop_bio'] ?? ''));
+                        $svcAddress = trim((string)($svc['shop_page_address'] ?? ''));
+                        $svcHours = trim((string)($svc['shop_page_work_hours'] ?? ''));
                         ?>
                         <a class="dir-card dir-card-lg" href="<?= h(directoryServiceUrl($svc, $cityName)) ?>">
                             <?= renderShopAvatarHtml($svc, $svcInit, 'dir-card-avatar') ?>
@@ -241,8 +246,14 @@ if ($cityParam !== '') {
                                 <?php if ($svcBio !== ''): ?>
                                     <span class="dir-card-bio"><?= h(seoTruncate($svcBio, 110)) ?></span>
                                 <?php endif; ?>
+                                <?php if ($svcAddress !== ''): ?>
+                                    <span class="dir-card-phone"><?= h($svcAddress) ?></span>
+                                <?php endif; ?>
                                 <?php if ($svcPhone !== ''): ?>
                                     <span class="dir-card-phone"><?= h($svcPhone) ?></span>
+                                <?php endif; ?>
+                                <?php if ($svcHours !== ''): ?>
+                                    <span class="dir-card-phone"><?= h(seoTruncate($svcHours, 80)) ?></span>
                                 <?php endif; ?>
                             </div>
                         </a>
@@ -288,6 +299,8 @@ if ($hubQ !== '') {
         }
     }
 }
+
+directoryEnforceCanonicalUrl(directoryHubUrl($kindFilter));
 
 require __DIR__ . '/partials/layout-start.php';
 ?>

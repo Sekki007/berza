@@ -19,14 +19,57 @@ function seoTruncate(string $text, int $max = 160): string
     return rtrim(mb_substr($text, 0, $max - 1)) . '…';
 }
 
+function seoStripRepeatedSiteName(string $text, string $siteName): string
+{
+    $text = trim(preg_replace('/\s+/u', ' ', $text) ?? $text);
+    $siteName = trim($siteName);
+    if ($text === '' || $siteName === '') {
+        return $text;
+    }
+    $quoted = preg_quote($siteName, '/');
+    $previous = null;
+    while ($previous !== $text) {
+        $previous = $text;
+        $text = trim((string)preg_replace('/^(?:' . $quoted . ')\s*[|\-–—:]+\s*/iu', '', $text));
+        $text = trim((string)preg_replace('/\s*[|\-–—:]+\s*(?:' . $quoted . ')\s*$/iu', '', $text));
+    }
+    if (mb_strtolower($text) === mb_strtolower($siteName)) {
+        return '';
+    }
+    return $text;
+}
+
 function seoHomeMeta(): array
 {
     $name = seoSiteName();
-    $tag = siteTagline();
+    $tag = seoStripRepeatedSiteName(siteTagline(), $name);
     return [
         'title' => $name . ($tag !== '' ? ' — ' . $tag : ''),
         'description' => 'Kupi i prodaj telefone, tablete i pametne satove, ili pronađi servis u Srbiji. Oglasi, provereni prodavci i mini sajtovi radnji na ' . $name . '.',
+        'h1' => 'Polovni telefoni, tableti i servis u Srbiji',
     ];
+}
+
+/** Datum za sitemap lastmod (YYYY-MM-DD) iz stvarnog zapisa, nikad "danas" kao zamena. */
+function seoLastmodDate(string $raw): string
+{
+    $raw = trim($raw);
+    if ($raw === '') {
+        return '';
+    }
+    if (preg_match('/^(\d{4})-(\d{2})-(\d{2})/', $raw, $m) === 1) {
+        $year = (int)$m[1];
+        $month = (int)$m[2];
+        $day = (int)$m[3];
+        if ($year >= 2000 && $year <= 2100 && checkdate($month, $day, $year)) {
+            return sprintf('%04d-%02d-%02d', $year, $month, $day);
+        }
+    }
+    $ts = strtotime($raw);
+    if ($ts === false || $ts < strtotime('2000-01-01')) {
+        return '';
+    }
+    return date('Y-m-d', $ts);
 }
 
 function seoListingMeta(array $filters = []): array
@@ -40,6 +83,19 @@ function seoListingMeta(array $filters = []): array
     $location = trim((string)($filters['location'] ?? ''));
     $deviceType = trim((string)($filters['device_type'] ?? ''));
     $q = trim((string)($filters['q'] ?? ''));
+
+    if ($location !== '' && $brand === '' && $model === '' && $q === '' && $type === '' && $deviceType === '' && $equipmentGroup === '') {
+        return [
+            'title' => 'Polovni telefoni ' . $location . ' | ' . $name,
+            'description' => seoTruncate('Polovni telefoni ' . $location . ': aktuelni oglasi, cene i prodavci. Kupovina i prodaja telefona na ' . $name . '.'),
+        ];
+    }
+    if ($brand !== '' && $model === '' && $location === '' && $q === '' && $type === '' && $deviceType === '' && $equipmentGroup === '') {
+        return [
+            'title' => 'Polovni telefoni ' . $brand . ' | ' . $name,
+            'description' => seoTruncate('Polovni telefoni ' . $brand . ': modeli, memorija, cene i oglasi po gradovima Srbije na ' . $name . '.'),
+        ];
+    }
 
     if ($type === 'telefon' || $type === '') {
         // keep broad
@@ -79,26 +135,71 @@ function seoListingMeta(array $filters = []): array
     ];
 }
 
+function seoAdHeadline(array $ad): string
+{
+    $type = function_exists('getAdType') ? getAdType($ad) : '';
+    $brand = trim((string)($ad['brand'] ?? ''));
+    $model = trim((string)($ad['model'] ?? ''));
+    $storage = trim((string)($ad['storage'] ?? ''));
+    if (($type === 'telefon' || $type === '') && $model !== '') {
+        $bits = [];
+        if ($brand !== '' && $brand !== 'Ostalo' && mb_stripos($model, $brand) !== 0) {
+            $bits[] = $brand;
+        }
+        $bits[] = $model;
+        $compactModel = mb_strtolower((string)preg_replace('/\s+/u', '', $model));
+        $compactStorage = mb_strtolower((string)preg_replace('/\s+/u', '', $storage));
+        if ($storage !== '' && ($compactStorage === '' || !str_contains($compactModel, $compactStorage))) {
+            $bits[] = $storage;
+        }
+        $head = trim(implode(' ', $bits));
+        if ($head !== '') {
+            return $head;
+        }
+    }
+    $title = function_exists('adDisplayTitle') ? adDisplayTitle($ad) : trim((string)($ad['title'] ?? ''));
+    return $title !== '' ? $title : 'Oglas';
+}
+
+function seoAdImageAlt(array $ad, int $photoNumber): string
+{
+    $brand = trim((string)($ad['brand'] ?? ''));
+    $model = trim((string)($ad['model'] ?? ''));
+    if ($model !== '') {
+        $name = ($brand !== '' && $brand !== 'Ostalo' && mb_stripos($model, $brand) !== 0)
+            ? $brand . ' ' . $model
+            : $model;
+    } else {
+        $name = seoAdHeadline($ad);
+    }
+    return $name . ' — slika ' . max(1, $photoNumber);
+}
+
 function seoAdMeta(array $ad): array
 {
     $name = seoSiteName();
-    $title = function_exists('adDisplayTitle') ? adDisplayTitle($ad) : trim((string)($ad['title'] ?? 'Oglas'));
+    $headline = seoAdHeadline($ad);
     $location = trim((string)($ad['location'] ?? ''));
     $brand = trim((string)($ad['brand'] ?? ''));
     $priceLabel = function_exists('adCardPriceMainLabel') ? adCardPriceMainLabel($ad) : formatAdPrice($ad);
+    $titleParts = array_values(array_filter(
+        [$headline, $priceLabel !== '' ? $priceLabel : null, $location !== '' ? $location : null],
+        static fn($part) => $part !== null && $part !== ''
+    ));
+    $title = implode(' · ', $titleParts) . ' | ' . $name;
     $bits = array_filter([$brand, $location, $priceLabel !== '' ? $priceLabel : null]);
     $descSource = trim((string)($ad['description'] ?? ''));
     if (function_exists('sanitizeAdPublicText')) {
         $descSource = sanitizeAdPublicText($descSource);
     }
     if ($descSource === '') {
-        $descSource = $title . ($bits ? ' — ' . implode(', ', $bits) : '');
+        $descSource = $headline . ($bits ? ' — ' . implode(', ', $bits) : '');
     } elseif ($priceLabel !== '') {
         // Cena / namera na početku — bolji preview u Viber/FB
         $descSource = $priceLabel . ' · ' . $descSource;
     }
     return [
-        'title' => $title . ($priceLabel !== '' ? ' · ' . $priceLabel : '') . ($location !== '' ? ' · ' . $location : '') . ' — ' . $name,
+        'title' => $title,
         'description' => seoTruncate($descSource),
     ];
 }
@@ -110,6 +211,13 @@ function seoListingHeading(array $filters = []): string
     $brand = trim((string)($filters['brand'] ?? ''));
     $model = trim((string)($filters['model'] ?? ''));
     $location = trim((string)($filters['location'] ?? ''));
+
+    if ($location !== '' && $brand === '' && $model === '' && $type === '' && $equipmentGroup === '') {
+        return 'Polovni telefoni ' . $location;
+    }
+    if ($brand !== '' && $model === '' && $location === '' && $type === '' && $equipmentGroup === '') {
+        return 'Polovni telefoni ' . $brand;
+    }
 
     $subject = match ($type) {
         'delovi' => $equipmentGroup === 'oprema' ? 'Oprema' : ($equipmentGroup === 'parts' ? 'Delovi' : 'Delovi i oprema'),
@@ -372,6 +480,33 @@ function seoGuideJsonLd(array $guide): array
         ],
         'image' => $image !== '' ? absoluteUrl($image) : null,
     ], static fn($v) => $v !== null && $v !== '');
+}
+
+/**
+ * @param list<array{href:string,label:string}> $links
+ * @param list<array> $similarAds
+ */
+function renderPublicStatusPage(
+    int $status,
+    string $heading,
+    string $message,
+    array $links = [],
+    array $similarAds = [],
+    string $similarHeading = 'Slični oglasi'
+): void {
+    http_response_code($status);
+    $pageTitle = $heading . ' — ' . seoSiteName();
+    $pageDescription = seoTruncate($message);
+    $robotsMeta = 'noindex,follow';
+    $activePage = 'oglasi';
+    $showSearch = true;
+    $bodyClass = 'page-status';
+    $path = parse_url((string)($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?: '/';
+    $canonicalUrl = absoluteUrl($path === '' ? '/' : $path);
+    $statusSimilarAds = $similarAds;
+    require dirname(__DIR__) . '/public/partials/layout-start.php';
+    require dirname(__DIR__) . '/public/partials/status-page.php';
+    require dirname(__DIR__) . '/public/partials/layout-end.php';
 }
 
 function seoJsonLdScript(array $payload): string

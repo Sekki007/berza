@@ -142,7 +142,7 @@ $compareCount = count(compareIds());
                 </form>
             <?php endif; ?>
 
-            <a class="btn-post" href="<?= $user ? '/postavi-oglas' : '/prijava' ?>">Postavite oglas</a>
+            <a class="btn-post" href="<?= $user ? '/postavi-oglas' : '/prijava' ?>">Besplatno postavljanje oglasa</a>
             <div class="header-user">
                 <?php if ($user): ?>
                     <span class="header-user-name" title="<?= h((string)$user['full_name']) ?>"><?= h((string)$user['full_name']) ?></span>

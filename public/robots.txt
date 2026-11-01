@@ -76,29 +76,10 @@ Allow: /
 User-agent: BitlyBot
 Allow: /
 
-User-agent: Applebot
-Allow: /
-
-User-agent: BingPreview
-Allow: /
-
-User-agent: Googlebot
-Allow: /
-
-User-agent: Googlebot-Image
-Allow: /
-
-User-agent: bingbot
-Allow: /
-
-User-agent: DuckDuckBot
-Allow: /
-
-User-agent: Yandex
-Allow: /
-
 # =============================================================================
-# Svi ostali botovi
+# Svi ostali botovi (uključujući Google, Bing, DuckDuckGo, Yandex, Apple)
+# Ne dodavati poseban User-agent za te pretraživače sa samo "Allow: /".
+# Najspecifičnija grupa važi sama — Disallow iz "*" se tada ignoriše.
 # =============================================================================
 
 User-agent: *
