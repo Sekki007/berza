@@ -487,7 +487,6 @@ $homeCats = [
     <?php if ($showHomeIntro): ?>
         <header class="home-intro">
             <h1>Polovni telefoni, tableti i servis u Srbiji</h1>
-            <p class="home-intro-free">Postavljanje oglasa je besplatno — bez provizije.</p>
         </header>
     <?php endif; ?>
     <nav class="home-cat-tiles" aria-label="Kategorije">
