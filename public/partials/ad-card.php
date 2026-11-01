@@ -45,7 +45,7 @@ $hasOrderBar = $shopCatalogMode && $messagesOn && !$isSold && !$shopCatalogOwn;
                     <?php if ($img): ?>
                         <img
                             src="<?= h($img) ?>"
-                            alt=""
+                            alt="<?= h(seoAdImageAlt($ad, 1)) ?>"
                             width="400"
                             height="400"
                             loading="<?= $cardImgPriority ? 'eager' : 'lazy' ?>"

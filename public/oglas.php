@@ -6,10 +6,73 @@ require_once dirname(__DIR__) . '/config/bootstrap.php';
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $ad = $id > 0 ? getAdById($id) : null;
+$adIsPublic = is_array($ad)
+    && (int)($ad['is_active'] ?? 0) === 1
+    && empty($ad['is_sold']);
 
-if (!$ad || (int)($ad['is_active'] ?? 0) !== 1) {
-    http_response_code(404);
-    echo 'Oglas nije pronađen.';
+if (!$adIsPublic) {
+    $goneTitle = is_array($ad) ? trim((string)($ad['title'] ?? '')) : '';
+    if ($goneTitle !== '') {
+        $goneMessage = 'Oglas „' . $goneTitle . '” više nije aktivan. Pogledaj slične oglase istog modela ili postavi svoj oglas besplatno.';
+    } else {
+        $goneMessage = 'Oglas više nije aktivan. Pogledaj slične oglase ili postavi svoj besplatno.';
+    }
+    $similar = [];
+    if (is_array($ad)) {
+        $similar = getSimilarAds($ad, 6);
+    } else {
+        $requestPath = (string)(parse_url((string)($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH) ?? '');
+        if (preg_match('#/oglas/\d+-([a-z0-9-]{2,})#i', rawurldecode($requestPath), $slugMatch) === 1) {
+            $guess = trim(str_replace('-', ' ', (string)$slugMatch[1]));
+            if ($guess !== '') {
+                $similar = array_slice(getPublicAds(['q' => $guess, 'sort' => 'newest']), 0, 6);
+            }
+        }
+    }
+    $goneLinks = [
+        ['href' => '/oglasi', 'label' => 'Svi oglasi'],
+    ];
+    if (is_array($ad)) {
+        $goneBrand = trim((string)($ad['brand'] ?? ''));
+        $goneModel = trim((string)($ad['model'] ?? ''));
+        $goneLocation = trim((string)($ad['location'] ?? ''));
+        if ($goneModel !== '') {
+            $goneLinks[] = [
+                'href' => '/oglasi?' . http_build_query(array_filter([
+                    'brand' => $goneBrand,
+                    'model' => $goneModel,
+                ])),
+                'label' => 'Isti model: ' . trim($goneBrand . ' ' . $goneModel),
+            ];
+        } elseif ($goneBrand !== '') {
+            $goneLinks[] = [
+                'href' => listingLandingPath(['brand' => $goneBrand]),
+                'label' => 'Polovni telefoni ' . $goneBrand,
+            ];
+        }
+        if ($goneLocation !== '') {
+            $goneLinks[] = [
+                'href' => listingLandingPath(['location' => $goneLocation]),
+                'label' => 'Polovni telefoni ' . $goneLocation,
+            ];
+        }
+    }
+    $goneLinks[] = ['href' => isLoggedIn() ? '/postavi-oglas' : '/prijava', 'label' => 'Besplatno postavljanje oglasa'];
+    $goneLinks[] = ['href' => '/', 'label' => 'Početna'];
+    if (is_array($ad) && isLoggedIn() && (int)(currentUser()['id'] ?? 0) === (int)($ad['created_by'] ?? 0)) {
+        $goneLinks[] = ['href' => '/nalog.php?tab=oglasi', 'label' => 'Moji oglasi'];
+    }
+    $similarHeading = (is_array($ad) && trim((string)($ad['model'] ?? '')) !== '')
+        ? 'Slični oglasi istog modela'
+        : 'Slični oglasi';
+    renderPublicStatusPage(
+        is_array($ad) ? 410 : 404,
+        'Oglas više nije aktivan',
+        $goneMessage,
+        $goneLinks,
+        $similar,
+        $similarHeading
+    );
     exit;
 }
 
@@ -330,7 +393,7 @@ $contactBlock = static function (string $formId = 'poruka') use (
                             <button type="button" class="kp-gallery-zoom" data-lightbox-open="<?= $i ?>" aria-label="Uvećaj sliku" style="display:flex;width:100%;height:100%;padding:0;border:none;background:transparent;">
                                 <img
                                     src="<?= h($displaySrc) ?>"
-                                    alt="<?= h((string)$ad['title']) ?>"
+                                    alt="<?= h(seoAdImageAlt($ad, $i + 1)) ?>"
                                     width="800"
                                     height="800"
                                     decoding="async"
@@ -357,7 +420,7 @@ $contactBlock = static function (string $formId = 'poruka') use (
                                 onclick="return window.ktGalleryGo ? window.ktGalleryGo(<?= $i ?>) : false;"
                                 style="flex:0 0 auto;width:64px;height:64px;padding:0;border:2px solid <?= $i === 0 ? '#1a73e8' : 'transparent' ?>;border-radius:10px;overflow:hidden;background:#f4f6f8;line-height:0;<?= $i === 0 ? 'box-shadow:0 0 0 2px rgba(26,115,232,.16);' : '' ?>"
                             >
-                                <img src="<?= h($thumbSrc) ?>" alt="<?= h((string)$ad['title']) ?> — slika <?= $i + 1 ?>" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover;display:block;">
+                                <img src="<?= h($thumbSrc) ?>" alt="<?= h(seoAdImageAlt($ad, $i + 1)) ?>" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover;display:block;">
                             </button>
                         <?php endforeach; ?>
                     </div>

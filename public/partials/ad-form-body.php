@@ -52,7 +52,7 @@ $contactExtraOpen = $contactSorted !== $dc
             <?php endif; ?>
             <div class="ad-form-head">
                 <h2><?= $isEdit ? 'Izmeni oglas' : 'Novi oglas' ?></h2>
-                <p class="ad-form-sub">Popuni osnovno — ostalo nije obavezno.</p>
+                <p class="ad-form-sub"><?= $isEdit ? 'Popuni osnovno — ostalo nije obavezno.' : 'Besplatno postavljanje oglasa. Popuni osnovno — ostalo nije obavezno.' ?></p>
             </div>
 
             <?php if ($formError !== ''): ?>

@@ -159,6 +159,65 @@ function directoryHubUrl(string $kindFilter = ''): string
 }
 
 /**
+ * 301 na tačno jedan kanonski URL (path + očekivani query, bez dodatnih parametara).
+ */
+function directoryEnforceCanonicalUrl(string $canonicalPath): void
+{
+    $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+    if ($method !== 'GET' && $method !== 'HEAD') {
+        return;
+    }
+    $requestUri = (string)($_SERVER['REQUEST_URI'] ?? '/');
+    $currentPath = parse_url($requestUri, PHP_URL_PATH) ?: '/';
+    if ($currentPath === '') {
+        $currentPath = '/';
+    }
+    $currentQuery = [];
+    parse_str((string)(parse_url($requestUri, PHP_URL_QUERY) ?? ''), $currentQuery);
+    $currentFlat = [];
+    foreach ($currentQuery as $key => $value) {
+        if (!is_scalar($value)) {
+            continue;
+        }
+        $value = trim((string)$value);
+        if ($value === '') {
+            continue;
+        }
+        $currentFlat[(string)$key] = $value;
+    }
+    ksort($currentFlat);
+
+    $targetPath = parse_url($canonicalPath, PHP_URL_PATH) ?: $canonicalPath;
+    if ($targetPath === '') {
+        $targetPath = '/';
+    }
+    $targetQuery = [];
+    parse_str((string)(parse_url($canonicalPath, PHP_URL_QUERY) ?? ''), $targetQuery);
+    $targetFlat = [];
+    foreach ($targetQuery as $key => $value) {
+        if (!is_scalar($value)) {
+            continue;
+        }
+        $value = trim((string)$value);
+        if ($value === '') {
+            continue;
+        }
+        $targetFlat[(string)$key] = $value;
+    }
+    ksort($targetFlat);
+
+    if ($currentPath === $targetPath && $currentFlat === $targetFlat) {
+        return;
+    }
+    $location = $targetPath;
+    if ($targetFlat !== []) {
+        $location .= '?' . http_build_query($targetFlat);
+    }
+    header('Location: ' . $location, true, 301);
+    exit;
+}
+
+/**
  * @param ''|'service'|'shop' $kindFilter
  * @return list<array>
  */
@@ -304,27 +363,24 @@ function seoDirectoryCityMeta(string $city, int $count, string $kindFilter = '')
     $name = seoSiteName();
     if ($kindFilter === 'shop') {
         return [
-            'title' => 'Prodavnica mobilnih telefona ' . $city . ' — firme | ' . $name,
+            'title' => 'Prodavnice mobilnih telefona ' . $city . ' – adrese, telefoni | ' . $name,
             'description' => seoTruncate(
-                ($count > 0 ? "{$count} verifikovan" . ($count === 1 ? 'a prodavnica' : 'ih prodavnica') : 'Verifikovane prodavnice') .
-                " mobilnih telefona u gradu {$city} na {$name}."
+                'Prodavnice mobilnih telefona u gradu ' . $city . ': adrese, telefoni i kontakt verifikovanih firmi na ' . $name . '.'
             ),
         ];
     }
     if ($kindFilter === 'service') {
         return [
-            'title' => 'Mobilni servis ' . $city . ' — spisak firmi | ' . $name,
+            'title' => 'Servis mobilnih telefona ' . $city . ' – adrese, telefoni, radno vreme | ' . $name,
             'description' => seoTruncate(
-                ($count > 0 ? "{$count} verifikovan" . ($count === 1 ? 'i servis' : 'ih servisa') : 'Verifikovani mobilni servisi') .
-                " u gradu {$city}. Kontakt, izlog i usluge na {$name}."
+                'Servis mobilnih telefona u gradu ' . $city . ': adrese, telefoni i radno vreme. Pronađi proveren servis za popravku na ' . $name . '.'
             ),
         ];
     }
     return [
-        'title' => 'Servisi i prodavnice telefona — ' . $city . ' | ' . $name,
+        'title' => 'Servisi i prodavnice telefona ' . $city . ' – adrese, telefoni | ' . $name,
         'description' => seoTruncate(
-            ($count > 0 ? "{$count} verifikovan" . ($count === 1 ? 'a firma' : 'ih firmi') : 'Verifikovane firme') .
-            " za prodaju i popravku mobilnih telefona u gradu {$city} na {$name}."
+            'Servisi i prodavnice mobilnih telefona u gradu ' . $city . ': adrese, telefoni i kontakt verifikovanih firmi na ' . $name . '.'
         ),
     ];
 }

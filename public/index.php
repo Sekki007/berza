@@ -62,9 +62,33 @@ if (preg_match('#^/uslovi/?$#', $requestPath) === 1) {
 $cfg = categoriesConfig();
 $settings = siteSettings();
 $landing = resolveListingLandingFromPath($requestPath);
+$statusLinks = [
+    ['href' => '/', 'label' => 'Početna'],
+    ['href' => '/oglasi', 'label' => 'Svi oglasi'],
+    ['href' => '/servisi', 'label' => 'Servisi po gradu'],
+    ['href' => isLoggedIn() ? '/postavi-oglas' : '/prijava', 'label' => 'Besplatno postavljanje oglasa'],
+];
 if (is_array($landing) && !empty($landing['invalid'])) {
-    http_response_code(404);
-    echo 'Stranica nije pronađena.';
+    renderPublicStatusPage(
+        404,
+        'Stranica nije pronađena',
+        'Tražena adresa ne postoji. Pogledaj oglase, servise po gradu ili se vrati na početnu.',
+        $statusLinks
+    );
+    exit;
+}
+$frontPath = rtrim($requestPath, '/') ?: '/';
+$isPublicFront = $frontPath === '/'
+    || $frontPath === '/index.php'
+    || $frontPath === '/oglasi'
+    || str_starts_with($requestPath, '/oglasi/');
+if (!$isPublicFront) {
+    renderPublicStatusPage(
+        404,
+        'Stranica nije pronađena',
+        'Tražena adresa ne postoji. Pogledaj oglase, servise po gradu ili se vrati na početnu.',
+        $statusLinks
+    );
     exit;
 }
 $search = trim((string)($_GET['q'] ?? ''));
@@ -202,7 +226,7 @@ $queryBase = array_filter([
     'min_battery' => $minBattery,
     'listing_type' => $listingType,
     'type' => $type,
-    'sort' => $sort,
+    'sort' => $sort !== 'newest' ? $sort : '',
 ], static fn($v) => $v !== '');
 
 if (is_array($landing) && !empty($landing['filters'])) {
@@ -263,6 +287,22 @@ if ($queryBase === [] && !is_array($landing)) {
     $canonicalUrl = absoluteUrl('/');
     $jsonLd = [seoOrganizationJsonLd(), seoWebsiteJsonLd()];
 }
+if (is_array($landing)) {
+    $listingQueryVariant = $sort !== 'newest' || $page > 1;
+    if (!$listingQueryVariant) {
+        foreach (['q', 'min_price', 'max_price', 'condition', 'category_group', 'device_type', 'equipment_type', 'equipment_group', 'min_battery', 'listing_type', 'browse_cat', 'type', 'brand', 'model', 'location'] as $variantKey) {
+            if (trim((string)($_GET[$variantKey] ?? '')) !== '') {
+                $listingQueryVariant = true;
+                break;
+            }
+        }
+    }
+    if ($listingQueryVariant) {
+        $robotsMeta = 'noindex,follow';
+    }
+}
+$showHomeIntro = $queryBase === [] && !is_array($landing);
+$postAdHref = isLoggedIn() ? '/postavi-oglas' : '/prijava';
 $listBasePath = '/oglasi';
 if (is_array($landing) && !empty($landing['path'])) {
     $listBasePath = (string)$landing['path'];
@@ -445,6 +485,12 @@ $homeCats = [
 ?>
 
 <div class="home-cat-wrap">
+    <?php if ($showHomeIntro): ?>
+        <header class="home-intro">
+            <h1>Polovni telefoni, tableti i servis u Srbiji</h1>
+            <p class="home-intro-free"><strong>Besplatno postavljanje oglasa</strong> — bez provizije. <a href="<?= h($postAdHref) ?>">Postavi oglas</a></p>
+        </header>
+    <?php endif; ?>
     <nav class="home-cat-tiles" aria-label="Kategorije">
         <?php foreach ($homeCats as $cat):
             $catHref = listingLandingPath([
