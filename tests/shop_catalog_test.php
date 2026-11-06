@@ -354,11 +354,16 @@ function renderShop(array $query): string
 
 $html = renderShop(['u' => 'demo-izlog']);
 check($html !== '' && !str_contains($html, 'Fatal error'), 'izlog se renderuje');
-check(str_contains($html, 'class="shop-call"') && str_contains($html, 'href="tel:0601112233"'), 'Pozovi koristi stvarni broj');
-check(str_contains($html, '0601112233') && !str_contains($html, 'shop-extra-contact'), 'nema Viber/WhatsApp bez podataka izloga');
+check(preg_match('/class="shop-call" href="([^"]+)"/', $html, $callMatch) === 1 && str_contains($callMatch[1], 'pozovi=1') && !preg_match('/\d{6}/', $callMatch[1]) && str_contains($html, 'Pozovi'), 'Pozovi vodi na zahtjev bez broja u linku');
+check(!str_contains($html, 'tel:') && !str_contains($html, '0601112233'), 'stranica izloga ne ispisuje broj ni tel href');
+check(!str_contains($html, 'shop-phone-note') && !str_contains($html, 'shop-link-input'), 'nema vidljivog broja ni velikog URL polja');
+check(str_contains($html, 'Više:') && str_contains($html, 'Kopiraj link') && str_contains($html, 'Prijavi korisnika'), 'sporedne akcije su u liniji Više');
+check(!str_contains($html, 'shop-extra-contact'), 'nema Viber/WhatsApp bez podataka izloga');
 check(!str_contains($html, 'class="shop-bio"'), 'prazan opis se ne prikazuje');
-check(!str_contains($html, 'business-badge') && !str_contains($html, 'verified-badge'), 'bedž se ne prikazuje ako prodavac nije verifikovan');
-check(!str_contains($html, 'kp-online'), 'online status se ne izmišlja');
+check(!str_contains($html, 'business-badge') && !str_contains($html, 'Verifikovan izlog'), 'bedž se ne prikazuje ako prodavac nije verifikovan');
+check(shopHeaderVerifiedBadgeHtml(['verified_seller' => true]) !== '' && str_contains(shopHeaderVerifiedBadgeHtml(['verified_seller' => true]), 'Verifikovan izlog'), 'verifikovan izlog dobija plavi tekstualni bedž');
+check(shopHeaderVerifiedBadgeHtml(['verified_seller' => false, 'shop_name' => 'Demo']) === '', 'neverifikovan izlog nema bedž');
+check(!str_contains($html, 'kp-online') && !str_contains($html, '>Online<'), 'online status se ne izmišlja');
 check(str_contains($html, 'shop-filter-bh') && str_contains($html, 'name="min_battery"'), 'BH filter postoji u formi');
 check(str_contains($html, 'name="brand"') && str_contains($html, 'name="model"') && str_contains($html, 'name="min_price"') && str_contains($html, 'name="condition"'), 'filteri brend, model, cijena i stanje postoje');
 check(str_contains($html, '>Detalji<') && str_contains($html, '>Kontakt<') && str_contains($html, '#kontakt'), 'kartice vode na detalj i kontakt');
@@ -385,6 +390,14 @@ $filteredHtml = renderShop([
 check(str_contains($filteredHtml, 'noindex,follow'), 'kombinovani filter je noindex');
 check(!str_contains($filteredHtml, '<script>alert') && !str_contains($filteredHtml, "OR '1'"), 'unos filtera je očišćen u HTML-u');
 check(preg_match('/<link rel="canonical" href="[^"]*\/izlog\/demo-izlog">/', $filteredHtml) === 1, 'kanonski link ne nosi brand ni BH');
+
+$bridge = renderShop(['u' => 'demo-izlog', 'pozovi' => '1']);
+check(str_contains($bridge, 'href="tel:0601112233"') && str_contains($bridge, 'noindex, nofollow'), 'eksplicitni Pozovi vraća tel i noindex');
+check(!str_contains($bridge, 'shop-card') && !str_contains($bridge, 'Demo Radnja'), 'poziv ne renderuje katalog');
+ob_start();
+shopEmitCallBridge('javascript:alert(1)');
+$blockedBridge = (string)ob_get_clean();
+check(str_contains($blockedBridge, 'nije dostupan') && !str_contains($blockedBridge, 'javascript:'), 'poziv odbija nebezbjednu šemu');
 
 if ($failed > 0) {
     echo "\n{$failed} provera nije prošlo.\n";

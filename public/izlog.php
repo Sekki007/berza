@@ -20,6 +20,12 @@ if (!$seller) {
 
 $sellerId = (int)$seller['id'];
 $shopLink = shopUrlForUser($seller);
+if (trim((string)($_GET['pozovi'] ?? '')) === '1') {
+    $bridgePhone = shopSellerCallPhone($seller, getPublicAdsByUserId($sellerId, false));
+    $bridgeTel = $bridgePhone !== '' ? adTelHref($bridgePhone) : '';
+    shopEmitCallBridge($bridgeTel);
+    return;
+}
 // Stari /izlog/{username} → kanonski slug
 if ($param !== '' && rawurldecode($param) !== userShopSlug($seller)) {
     $qs = $_GET;
@@ -192,8 +198,12 @@ $activePage = 'oglasi';
 $showSearch = true;
 $bodyClass = 'page-shop';
 $callPhone = shopSellerCallPhone($seller, $allAds);
-$callHref = $callPhone !== '' ? adTelHref($callPhone) : '';
+$canCall = $callPhone !== '' && adTelHref($callPhone) !== '';
+$callIntentUrl = $canCall ? shopCallIntentUrl($seller) : '';
 $extraContacts = shopSellerExtraContactLinks($seller);
+$verifiedBadgeHtml = shopHeaderVerifiedBadgeHtml($seller);
+$businessBadgeHtml = renderBusinessBadge($seller);
+$onlineBadgeHtml = renderOnlineBadge($seller);
 $shopBio = trim((string)($seller['shop_bio'] ?? ''));
 $jsonLd = [
     '@context' => 'https://schema.org',
@@ -222,47 +232,45 @@ require __DIR__ . '/partials/layout-start.php';
         </div>
 
         <div class="shop-header form-card">
-            <div class="shop-header-main">
+            <div class="shop-identity">
                 <?= renderShopAvatarHtml($seller, $initials, 'shop-avatar') ?>
-                <div class="shop-header-info">
-                    <h1 class="shop-title"><?= h($shopName) ?> <?= renderSellerBadges($seller) ?> <?= renderOnlineBadge($seller) ?></h1>
-                    <p class="shop-meta">
-                        <?= (int)$typeCounts['all'] ?> <?= (int)$typeCounts['all'] === 1 ? 'oglas' : 'oglasa' ?>
-                    </p>
-                    <div class="shop-rating shop-rating-row">
+                <div class="shop-identity-copy">
+                    <h1 class="shop-title"><?= h($shopName) ?> <?= $businessBadgeHtml ?></h1>
+                    <?= $verifiedBadgeHtml ?>
+                    <p class="shop-meta-line">
+                        <?= $onlineBadgeHtml ?>
+                        <span><?= (int)$typeCounts['all'] ?> <?= (int)$typeCounts['all'] === 1 ? 'oglas' : 'oglasa' ?></span>
                         <?= renderReputation($summary, shopReviewsUrl($seller)) ?>
-                        <a class="shop-reviews-link" href="<?= h(shopReviewsUrl($seller)) ?>">Pogledaj ocene →</a>
-                    </div>
+                    </p>
                     <?php if ($shopBio !== ''): ?>
                         <p class="shop-bio"><?= nl2br(h($shopBio)) ?></p>
                     <?php endif; ?>
-                    <?php if ($callHref !== '' || $extraContacts !== []): ?>
-                        <div class="shop-cta">
-                            <?php if ($callHref !== ''): ?>
-                                <a class="shop-call" href="<?= h($callHref) ?>">
-                                    <span aria-hidden="true">📞</span> Pozovi
-                                </a>
-                                <span class="shop-phone-note"><?= h($callPhone) ?></span>
-                            <?php endif; ?>
-                            <?php foreach ($extraContacts as $extra): ?>
-                                <a class="shop-extra-contact" href="<?= h((string)$extra['href']) ?>"<?php if (!empty($extra['external'])): ?> target="_blank" rel="noopener noreferrer"<?php endif; ?>><?= h((string)$extra['label']) ?></a>
-                            <?php endforeach; ?>
-                        </div>
-                    <?php endif; ?>
                 </div>
+                <?php if ($canCall): ?>
+                    <a class="shop-call" href="<?= h($callIntentUrl) ?>">
+                        <span aria-hidden="true">📞</span> Pozovi
+                    </a>
+                <?php endif; ?>
             </div>
-            <div class="shop-actions">
-                <button type="button" class="btn-message" data-copy-link data-copy-url="<?= h($shopLink) ?>">Kopiraj link izloga</button>
+            <div class="shop-more">
+                <span class="shop-more-label">Više:</span>
+                <button type="button" class="shop-more-link" data-copy-link data-copy-url="<?= h($shopLink) ?>">Kopiraj link</button>
                 <?php if (isDirectoryServiceFirm($seller) && trim((string)($seller['location'] ?? '')) !== ''): ?>
-                    <a class="btn-message" href="<?= h(directoryServiceUrl($seller)) ?>" style="text-align:center;">Direktorijum firmi</a>
+                    <span class="shop-more-sep" aria-hidden="true">·</span>
+                    <a class="shop-more-link" href="<?= h(directoryServiceUrl($seller)) ?>">Direktorijum firmi</a>
                 <?php endif; ?>
                 <?php if (storefrontIsActive($seller)): ?>
-                    <a class="btn-message" href="<?= h(storefrontUrlForUser($seller)) ?>" style="text-align:center;">Mini sajt radnje</a>
+                    <span class="shop-more-sep" aria-hidden="true">·</span>
+                    <a class="shop-more-link" href="<?= h(storefrontUrlForUser($seller)) ?>">Mini sajt</a>
                 <?php endif; ?>
+                <?php foreach ($extraContacts as $extra): ?>
+                    <span class="shop-more-sep" aria-hidden="true">·</span>
+                    <a class="shop-more-link" href="<?= h((string)$extra['href']) ?>"<?php if (!empty($extra['external'])): ?> target="_blank" rel="noopener noreferrer"<?php endif; ?>><?= h((string)$extra['label']) ?></a>
+                <?php endforeach; ?>
                 <?php if (!$isOwnShop): ?>
-                    <a class="btn-message" href="/report.php?user=<?= (int)$sellerId ?>" style="text-align:center;">Prijavi korisnika</a>
+                    <span class="shop-more-sep" aria-hidden="true">·</span>
+                    <a class="shop-more-link" href="/report.php?user=<?= (int)$sellerId ?>">Prijavi korisnika</a>
                 <?php endif; ?>
-                <input type="text" class="shop-link-input" readonly value="<?= h((isset($_SERVER['HTTP_HOST']) ? ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off' ? 'https' : 'http') . '://' . $_SERVER['HTTP_HOST']) : '') . $shopLink) ?>" data-copy-full aria-label="Link izloga">
             </div>
         </div>
 

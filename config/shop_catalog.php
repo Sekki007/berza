@@ -981,6 +981,49 @@ function shopSellerExtraContactLinks(array $seller): array
     return $links;
 }
 
+/** Javni link koji ne sadrži broj. Broj stiže tek na taj zahtjev. */
+function shopCallIntentUrl(array $user): string
+{
+    return shopUrlForUser($user) . '?pozovi=1';
+}
+
+/**
+ * Odgovor samo za eksplicitni Pozovi.
+ * Broj je u tom odgovoru (href / skripta), ne na stranici izloga.
+ * Ovo nije potpuna zaštita od botova: klijent i dalje može da zatraži isti URL.
+ */
+function shopEmitCallBridge(string $telHref): void
+{
+    $ready = $telHref !== '' && str_starts_with($telHref, 'tel:');
+    if (!headers_sent()) {
+        header('X-Robots-Tag: noindex, nofollow');
+        header('Cache-Control: private, no-store');
+        header('Referrer-Policy: no-referrer');
+        http_response_code($ready ? 200 : 404);
+    }
+    echo '<!DOCTYPE html><html lang="sr"><head><meta charset="utf-8">';
+    echo '<meta name="robots" content="noindex, nofollow"><title>Pozovi</title></head><body>';
+    if (!$ready) {
+        echo '<p>Poziv trenutno nije dostupan.</p>';
+    } else {
+        $json = json_encode(
+            $telHref,
+            JSON_UNESCAPED_SLASHES | JSON_HEX_TAG | JSON_HEX_AMP | JSON_HEX_APOS | JSON_HEX_QUOT
+        );
+        echo '<p><a href="' . h($telHref) . '">Nastavi poziv</a></p>';
+        echo '<script>location.replace(' . $json . ');</script>';
+    }
+    echo '</body></html>';
+}
+
+function shopHeaderVerifiedBadgeHtml(?array $user): string
+{
+    if (!function_exists('isVerifiedSeller') || !isVerifiedSeller($user)) {
+        return '';
+    }
+    return '<p class="shop-verified-row"><span class="shop-verified-badge">Verifikovan izlog</span></p>';
+}
+
 /**
  * @return array{
  *   title:string,brand:string,condition:string,storage:string,battery:?int,
