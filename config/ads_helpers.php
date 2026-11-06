@@ -839,13 +839,324 @@ function getFavoriteAds(): array
     return array_values(array_filter(getAllAds(), static fn($ad) => in_array((int)($ad['id'] ?? 0), $ids, true)));
 }
 
-function whatsappLink(string $phone, string $message): string
+/**
+ * Samo cifre, 8–15. Kraći ili duži niz nije broj za tel/Viber/WhatsApp.
+ */
+function adContactPhoneDigits(string $phone): string
 {
     $digits = preg_replace('/\D+/', '', $phone) ?? '';
+    $len = strlen($digits);
+    if ($len < 8 || $len > 15) {
+        return '';
+    }
+    return $digits;
+}
+
+/** Lokalni 06… pretvara u 381…. Već međunarodni broj ostaje. */
+function adInternationalPhoneDigits(string $phone): string
+{
+    $digits = adContactPhoneDigits($phone);
+    if ($digits === '') {
+        return '';
+    }
     if (str_starts_with($digits, '0')) {
-        $digits = '381' . substr($digits, 1);
+        return '381' . substr($digits, 1);
+    }
+    return $digits;
+}
+
+/** tel: samo sa ciframa (i vodećim + ako ga je prodavac uneo). */
+function adTelHref(string $phone): string
+{
+    $digits = adContactPhoneDigits($phone);
+    if ($digits === '') {
+        return '';
+    }
+    if (str_starts_with(trim($phone), '+')) {
+        return 'tel:+' . $digits;
+    }
+    return 'tel:' . $digits;
+}
+
+/** Zvanična Viber šema za chat na broj. Prazno ako broj nije upotrebljiv. */
+function viberChatLink(string $phone): string
+{
+    $digits = adInternationalPhoneDigits($phone);
+    if ($digits === '') {
+        return '';
+    }
+    return 'viber://chat?number=' . rawurlencode('+' . $digits);
+}
+
+function whatsappLink(string $phone, string $message): string
+{
+    $digits = adInternationalPhoneDigits($phone);
+    if ($digits === '') {
+        return '';
     }
     return 'https://wa.me/' . $digits . '?text=' . rawurlencode($message);
+}
+
+/**
+ * null = stari oglas bez liste kanala (dozvoljeni su svi koji imaju broj).
+ * Prazna ili popunjena lista = samo ono što je prodavac sačuvao.
+ *
+ * @return list<string>|null
+ */
+function adExplicitContactMethods(array $ad): ?array
+{
+    if (!array_key_exists('contact_methods', $ad) || !is_array($ad['contact_methods'])) {
+        return null;
+    }
+    $allowed = array_keys(adFormSchema()['contact_methods']);
+    $out = [];
+    foreach ($ad['contact_methods'] as $method) {
+        $method = strtolower(trim((string)$method));
+        if ($method === '' || !in_array($method, $allowed, true) || in_array($method, $out, true)) {
+            continue;
+        }
+        $out[] = $method;
+    }
+    return $out;
+}
+
+function adAllowsContactChannel(array $ad, string $channel): bool
+{
+    $methods = adExplicitContactMethods($ad);
+    if ($methods === null) {
+        return true;
+    }
+    return in_array($channel, $methods, true);
+}
+
+/**
+ * Aktivna kontakt dugmad. Kanal se preskače ako nema bezbedan URL
+ * ili ga prodavac nije ostavio uključenog.
+ *
+ * @return list<array{key:string,href:string,label:string,external:bool}>
+ */
+function adContactActionLinks(array $ad, bool $whatsappEnabled, string $whatsappMessage): array
+{
+    $phone = trim((string)($ad['contact_phone'] ?? ''));
+    if ($phone === '') {
+        return [];
+    }
+
+    $links = [];
+    if (adAllowsContactChannel($ad, 'call')) {
+        $href = adTelHref($phone);
+        if ($href !== '') {
+            $links[] = ['key' => 'call', 'href' => $href, 'label' => 'Pozovi', 'external' => false];
+        }
+    }
+    if (adAllowsContactChannel($ad, 'viber')) {
+        $href = viberChatLink($phone);
+        if ($href !== '') {
+            $links[] = ['key' => 'viber', 'href' => $href, 'label' => 'Viber', 'external' => true];
+        }
+    }
+    if ($whatsappEnabled && adAllowsContactChannel($ad, 'whatsapp')) {
+        $href = whatsappLink($phone, $whatsappMessage);
+        if ($href !== '') {
+            $links[] = ['key' => 'whatsapp', 'href' => $href, 'label' => 'WhatsApp', 'external' => true];
+        }
+    }
+
+    return $links;
+}
+
+/**
+ * Načini preuzimanja samo ako su sačuvani na oglasu.
+ *
+ * @return list<string>
+ */
+function adStoredPickupMethods(array $ad): array
+{
+    if (!isset($ad['pickup_methods']) || !is_array($ad['pickup_methods'])) {
+        return [];
+    }
+    $allowed = array_keys(adFormSchema()['pickup_methods']);
+    $out = [];
+    foreach ($ad['pickup_methods'] as $key) {
+        $key = (string)$key;
+        if (in_array($key, $allowed, true) && !in_array($key, $out, true)) {
+            $out[] = $key;
+        }
+    }
+    return $out;
+}
+
+/**
+ * @return list<string>
+ */
+function adPickupLabels(array $ad): array
+{
+    $schema = adFormSchema()['pickup_methods'];
+    $labels = [];
+    foreach (adStoredPickupMethods($ad) as $key) {
+        $label = trim((string)($schema[$key] ?? ''));
+        if ($label !== '') {
+            $labels[] = $label;
+        }
+    }
+    return $labels;
+}
+
+/**
+ * Istaknute oznake (čipovi). Prazna polja se ne ubacuju.
+ *
+ * @return list<string>
+ */
+function adHighlightChips(array $ad): array
+{
+    $chips = [];
+    $push = static function (string $text) use (&$chips): void {
+        $text = trim($text);
+        if ($text === '' || in_array($text, $chips, true)) {
+            return;
+        }
+        $chips[] = $text;
+    };
+
+    $push(adIntentBadgeLabel($ad));
+    $push((string)($ad['condition_state'] ?? ''));
+    $type = getAdType($ad);
+    if ($type === 'telefon') {
+        $push((string)($ad['storage'] ?? ''));
+        $bh = $ad['battery_health'] ?? null;
+        if ($bh !== null && $bh !== '' && is_numeric((string)$bh)) {
+            $push('BH ' . max(0, min(100, (int)$bh)) . '%');
+        }
+        $push((string)($ad['sim_status'] ?? ''));
+    } elseif ($type === 'delovi') {
+        $equipment = trim((string)($ad['equipment_type'] ?? ''));
+        if ($equipment !== '' && $equipment !== 'Ostalo') {
+            $push($equipment);
+        }
+        $push((string)($ad['originality'] ?? ''));
+    }
+
+    return array_slice($chips, 0, 6);
+}
+
+/**
+ * Kartice „Ključne informacije“. Nema praznih ili izmišljenih vrednosti.
+ *
+ * @return list<array{label:string,value:string,note?:string,meter?:int}>
+ */
+function adKeyFactCards(array $ad): array
+{
+    $type = getAdType($ad);
+    $cards = [];
+    $add = static function (string $label, string $value, array $extra = []) use (&$cards): void {
+        $value = trim($value);
+        if ($label === '' || $value === '') {
+            return;
+        }
+        $cards[] = array_merge(['label' => $label, 'value' => $value], $extra);
+    };
+
+    if ($type === 'telefon') {
+        $add('Stanje', (string)($ad['condition_state'] ?? ''));
+        $bh = $ad['battery_health'] ?? null;
+        if ($bh !== null && $bh !== '' && is_numeric((string)$bh)) {
+            $pct = max(0, min(100, (int)$bh));
+            $add('Battery Health', $pct . '%', ['meter' => $pct]);
+        }
+        $storage = trim((string)($ad['storage'] ?? ''));
+        $ram = trim((string)($ad['ram'] ?? ''));
+        if ($storage !== '' && $ram !== '') {
+            $add('Memorija / RAM', $storage . ' / ' . $ram);
+        } elseif ($storage !== '') {
+            $add('Memorija', $storage);
+        } elseif ($ram !== '') {
+            $add('RAM', $ram);
+        }
+        $add('Boja', (string)($ad['color'] ?? ''));
+        $add('SIM', (string)($ad['sim_status'] ?? ''));
+        if (!empty($ad['has_warranty'])) {
+            $months = (int)($ad['warranty_months'] ?? 0);
+            $add('Garancija', $months > 0 ? $months . ' mes.' : 'Da');
+        }
+    } elseif ($type === 'delovi') {
+        $add('Stanje', (string)($ad['condition_state'] ?? ''));
+        $equipment = trim((string)($ad['equipment_type'] ?? ''));
+        if ($equipment !== '') {
+            $add('Tip', $equipment);
+        }
+        $add('Kompatibilno', (string)($ad['compatible_models'] ?? ''));
+        $add('Originalnost', (string)($ad['originality'] ?? ''));
+        $brand = trim((string)($ad['brand'] ?? ''));
+        if ($brand !== '' && $brand !== 'Ostalo') {
+            $add('Brend', $brand);
+        }
+    } else {
+        $schema = adFormSchema();
+        $serviceLabels = [];
+        foreach (is_array($ad['service_types'] ?? null) ? $ad['service_types'] : [] as $key) {
+            $label = trim((string)($schema['service_types'][(string)$key] ?? ''));
+            if ($label !== '') {
+                $serviceLabels[] = $label;
+            }
+        }
+        if ($serviceLabels !== []) {
+            $add('Usluge', implode(', ', $serviceLabels));
+        }
+        $brands = [];
+        foreach (is_array($ad['supported_brands'] ?? null) ? $ad['supported_brands'] : [] as $brand) {
+            $brand = trim((string)$brand);
+            if ($brand !== '' && !in_array($brand, $brands, true)) {
+                $brands[] = $brand;
+            }
+        }
+        if ($brands !== []) {
+            $add('Brendovi', implode(', ', $brands));
+        }
+        if (!empty($ad['has_work_warranty'])) {
+            $months = (int)($ad['work_warranty_months'] ?? 0);
+            $add('Garancija na rad', $months > 0 ? $months . ' mes.' : 'Da');
+        }
+    }
+
+    $location = trim((string)($ad['location'] ?? ''));
+    $pickup = adPickupLabels($ad);
+    if ($location !== '') {
+        $add('Lokacija', $location, ['note' => implode(' · ', $pickup)]);
+    } elseif ($pickup !== []) {
+        $add('Preuzimanje', implode(' · ', $pickup));
+    }
+
+    return $cards;
+}
+
+/**
+ * Prateća oprema samo za poznate ključeve iz šeme.
+ *
+ * @return list<string>
+ */
+function adAccessoryLabels(array $ad): array
+{
+    if (getAdType($ad) !== 'telefon') {
+        return [];
+    }
+    $schema = adFormSchema()['phone_accessories'];
+    $labels = [];
+    foreach (is_array($ad['accessories'] ?? null) ? $ad['accessories'] : [] as $key) {
+        $key = (string)$key;
+        if (!isset($schema[$key])) {
+            continue;
+        }
+        $label = trim((string)$schema[$key]);
+        if ($label !== '' && !in_array($label, $labels, true)) {
+            $labels[] = $label;
+        }
+    }
+    return $labels;
+}
+
+function adDescriptionIsLong(string $text, int $limit = 420): bool
+{
+    return mb_strlen(trim($text)) > $limit;
 }
 
 /**
