@@ -27,6 +27,14 @@ php -S localhost:8080 router.php
 
 Env primer: `.env.example`
 
+Katalog telefona (`/katalog`): podaci, uvoz, povezivanje oglasa i testovi su u [docs/phone-catalog.md](./docs/phone-catalog.md).
+
+```bash
+php tests/phone_catalog_test.php
+php tests/shop_catalog_test.php
+php tests/listing_detail_test.php
+```
+
 ## Pravno
 
 Politika privatnosti (produkcija): `/privatnost`

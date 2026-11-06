@@ -185,6 +185,50 @@ $contactExtraOpen = $contactSorted !== $dc
                         <input name="model" id="ad-model" data-title-source value="<?= h((string)$ad['model']) ?>" placeholder="npr. iPhone 13 Pro Max" autocomplete="off">
                     </div>
                 </div>
+                <?php
+                $catalogModels = function_exists('phoneCatalogModels') ? phoneCatalogModels() : [];
+                $selectedCatalogId = trim((string)($ad['phone_model_id'] ?? ''));
+                $selectedCatalog = ($selectedCatalogId !== '' && function_exists('phoneCatalogModel')) ? phoneCatalogModel($selectedCatalogId) : null;
+                $catalogByBrand = [];
+                foreach ($catalogModels as $catalogModel) {
+                    $catalogByBrand[$catalogModel['brand']][] = $catalogModel;
+                }
+                ?>
+                <div class="form-group" data-phone-catalog-picker>
+                    <label for="phone-model-id">Model iz kataloga <span class="ad-form-optional">(nije obavezno)</span></label>
+                    <select name="phone_model_id" id="phone-model-id" data-phone-model>
+                        <option value="">Ručni unos — model nije u katalogu</option>
+                        <?php foreach ($catalogByBrand as $catalogBrand => $brandModels): ?>
+                            <optgroup label="<?= h($catalogBrand) ?>">
+                                <?php foreach ($brandModels as $catalogModel): ?>
+                                    <?php
+                                    $variantPayload = [];
+                                    foreach ($catalogModel['variants'] as $variant) {
+                                        $variantPayload[] = ['id' => $variant['id'], 'storage' => $variant['storage']];
+                                    }
+                                    ?>
+                                    <option
+                                        value="<?= h($catalogModel['id']) ?>"
+                                        data-brand="<?= h($catalogModel['brand']) ?>"
+                                        data-name="<?= h($catalogModel['name']) ?>"
+                                        data-variants="<?= h(json_encode($variantPayload, JSON_UNESCAPED_UNICODE)) ?>"
+                                        <?= $selectedCatalogId === $catalogModel['id'] ? 'selected' : '' ?>
+                                    ><?= h($catalogModel['name']) ?></option>
+                                <?php endforeach; ?>
+                            </optgroup>
+                        <?php endforeach; ?>
+                    </select>
+                    <label for="phone-variant-id">Memorija iz kataloga</label>
+                    <select name="phone_variant_id" id="phone-variant-id" data-phone-variant <?= $selectedCatalog && $selectedCatalog['variants'] !== [] ? '' : 'disabled' ?>>
+                        <option value=""><?= $selectedCatalog && $selectedCatalog['variants'] !== [] ? 'Nije izabrano' : 'Nema službene varijante' ?></option>
+                        <?php if ($selectedCatalog): ?>
+                            <?php foreach ($selectedCatalog['variants'] as $variant): ?>
+                                <option value="<?= h($variant['id']) ?>" data-storage="<?= h($variant['storage']) ?>" <?= (string)($ad['phone_variant_id'] ?? '') === $variant['id'] ? 'selected' : '' ?>><?= h($variant['storage']) ?></option>
+                            <?php endforeach; ?>
+                        <?php endif; ?>
+                    </select>
+                    <p class="form-hint">Izbor popunjava brend i naziv modela. Opis, stanje, cena, grad i fotografije ostaju tvoji i specifikacije se ne upisuju u opis. Ako modela nema, ostavi ručni unos.</p>
+                </div>
                 <p class="form-hint">Brend i model pomažu filterima — naslov se predlaže ispod.</p>
                 <div class="form-row">
                     <div class="form-group">

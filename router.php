@@ -106,6 +106,18 @@ if ($uri === '/sitemap.xml' || $uri === '/sitemap.php') {
     exit;
 }
 
+if ($uri === '/katalog' || $uri === '/katalog/' || $uri === '/katalog.php') {
+    require __DIR__ . '/public/katalog.php';
+    exit;
+}
+
+if (preg_match('#^/katalog/([^/]+)/([^/]+)/?$#', $uri, $m)) {
+    $_GET['brand_slug'] = rawurldecode($m[1]);
+    $_GET['model_slug'] = rawurldecode($m[2]);
+    require __DIR__ . '/public/katalog.php';
+    exit;
+}
+
 if ($uri === '/oglasi' || $uri === '/oglasi/' || preg_match('#^/oglasi/.+#', $uri)) {
     require __DIR__ . '/public/index.php';
     exit;

@@ -46,6 +46,16 @@ if (preg_match('#^/(postavi-oglas|dodaj-oglas)/?$#', $requestPath) === 1) {
     require __DIR__ . '/ad_form.php';
     exit;
 }
+if (preg_match('#^/katalog/?$#', $requestPath) === 1 || $requestPath === '/katalog.php') {
+    require __DIR__ . '/katalog.php';
+    exit;
+}
+if (preg_match('#^/katalog/([^/]+)/([^/]+)/?$#', $requestPath, $catalogMatch) === 1) {
+    $_GET['brand_slug'] = rawurldecode((string)$catalogMatch[1]);
+    $_GET['model_slug'] = rawurldecode((string)$catalogMatch[2]);
+    require __DIR__ . '/katalog.php';
+    exit;
+}
 if (preg_match('#^/kako-radi/?$#', $requestPath) === 1) {
     require __DIR__ . '/kako-radi.php';
     exit;

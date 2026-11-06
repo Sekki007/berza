@@ -1638,6 +1638,7 @@ require_once __DIR__ . '/compare.php';
 require_once __DIR__ . '/ad_stats.php';
 require_once __DIR__ . '/storefront.php';
 require_once __DIR__ . '/shop_catalog.php';
+require_once __DIR__ . '/phone_catalog.php';
 require_once __DIR__ . '/kp_import.php';
 require_once __DIR__ . '/ads_cleanup.php';
 require_once __DIR__ . '/services_directory.php';
@@ -1653,14 +1654,16 @@ ensureUploadsDir();
 ensureCreditFiles();
 checkMaintenanceMode();
 requireNotBlocked();
-processAdExpirations();
-refreshNbsEurRsdRateIfStale(12);
-processTopExpirations();
-touchUserPresence();
+if (!defined('KT_SKIP_BACKGROUND')) {
+    processAdExpirations();
+    refreshNbsEurRsdRateIfStale(12);
+    processTopExpirations();
+    touchUserPresence();
 
-// Pozadinska obrada ne sme da obori zahtev korisnika.
-try {
-    processSavedSearchAlerts();
-} catch (Throwable $e) {
-    error_log('processSavedSearchAlerts failed: ' . $e->getMessage());
+    // Pozadinska obrada ne sme da obori zahtev korisnika.
+    try {
+        processSavedSearchAlerts();
+    } catch (Throwable $e) {
+        error_log('processSavedSearchAlerts failed: ' . $e->getMessage());
+    }
 }
