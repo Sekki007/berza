@@ -4362,8 +4362,9 @@ body.page-detail.has-contact-dock .pwa-install {
     position: sticky;
     top: 84px;
     order: 0;
-    max-height: calc(100vh - 100px);
-    overflow: auto;
+    /* Visina prati sadržaj. Unutrašnji overflow bi odsjekao poruku i akcije. */
+    max-height: none;
+    overflow: visible;
   }
   .kp-detail-rail .kp-card { margin: 0; }
   .kp-slot-seller { order: 1; }
