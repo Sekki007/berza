@@ -271,9 +271,7 @@ foreach ([
         $subtitleParts[] = $subtitlePart;
     }
 }
-$stickyPrice = adCardPriceMainLabel($ad);
-$showContactDock = $contactLinks !== [];
-$bodyClass = 'page-detail' . ($showContactDock ? ' has-contact-dock' : '');
+$bodyClass = 'page-detail';
 
 require __DIR__ . '/partials/layout-start.php';
 
