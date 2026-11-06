@@ -219,8 +219,10 @@ $renderPlatformMessage = static function () use ($site, $isOwnAd, $msgHref): voi
                     </ul>
                 <?php endif; ?>
 
-                <?php $renderContactActions(); ?>
-                <?php $renderPlatformMessage(); ?>
+                <div id="kontakt">
+                    <?php $renderContactActions(); ?>
+                    <?php $renderPlatformMessage(); ?>
+                </div>
 
                 <div class="kp-action-links">
                     <button type="button" class="kp-action-link" data-share-ad data-share-url="<?= h($canonicalUrl) ?>" data-share-title="<?= h((string)$ad['title']) ?>">Podeli</button>
