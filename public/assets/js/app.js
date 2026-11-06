@@ -904,8 +904,8 @@
       thumbs.forEach(function (thumb) {
         const isOn = parseInt(thumb.getAttribute('data-gallery-thumb-index') || '-1', 10) === index;
         thumb.classList.toggle('is-active', isOn);
-        thumb.style.borderColor = isOn ? '#1a73e8' : 'transparent';
-        thumb.style.boxShadow = isOn ? '0 0 0 2px rgba(26,115,232,.16)' : 'none';
+        thumb.style.borderColor = isOn ? '#3d9a50' : 'transparent';
+        thumb.style.boxShadow = isOn ? '0 0 0 2px rgba(61,154,80,.18)' : 'none';
       });
       window.__ktGalleryNavTs = Date.now();
     }
@@ -1032,6 +1032,25 @@
   }
 
   function initPhoneReveal() {
+    document.addEventListener('click', function (e) {
+      var link = e.target && e.target.closest ? e.target.closest('a[data-track-phone]') : null;
+      if (!link) return;
+      var adId = link.getAttribute('data-ad-id') || '';
+      if (!adId) return;
+      try {
+        var body = new FormData();
+        body.append('ad_id', adId);
+        appendCsrf(body);
+        fetch('/api/track.php', {
+          method: 'POST',
+          body: body,
+          credentials: 'same-origin',
+          headers: csrfHeaders(),
+          keepalive: true
+        });
+      } catch (err) {}
+    });
+
     all('[data-reveal-phone]').forEach(function (btn) {
       btn.addEventListener('click', function () {
         const phone = btn.getAttribute('data-reveal-phone') || '';
