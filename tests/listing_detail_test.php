@@ -217,6 +217,16 @@ check(!str_contains($partsHtml, 'Battery Health'), 'oglas dela ne prikazuje batt
 check(str_contains($partsHtml, 'data-contact-channel="call"'), 'deo sa brojem i dalje ima poziv');
 check(!str_contains($partsHtml, 'besplatnu IMEI proveru'), 'IMEI napomena je samo za telefone');
 
+$detailCss = (string)file_get_contents(dirname(__DIR__) . '/public/assets/css/style.css');
+$railRule = '';
+if (preg_match('/\.kp-detail-rail\s*\{[^}]*position:\s*sticky;[^}]*\}/s', $detailCss, $railMatch) === 1) {
+    $railRule = $railMatch[0];
+}
+check($railRule !== '' && str_contains($railRule, 'position: sticky'), 'desktop kolona i dalje može da bude sticky');
+check($railRule !== '' && !preg_match('/overflow\s*:\s*(auto|scroll)/', $railRule), 'desna kolona nema unutrašnji scrollbar');
+check($railRule !== '' && !preg_match('/max-height\s*:\s*calc\(\s*100vh/', $railRule), 'desna kolona nije odsječena na visinu ekrana');
+check($railRule !== '' && str_contains($railRule, 'overflow: visible'), 'sadržaj desne kolone ostaje u skrolu stranice');
+
 if ($failed > 0) {
     echo "\n{$failed} provera nije prošlo.\n";
     exit(1);
