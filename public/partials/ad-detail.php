@@ -6,13 +6,12 @@ declare(strict_types=1);
  * Prikaz jednog oglasa. Očekuje promenljive iz oglas.php.
  */
 
-$renderContactActions = static function (string $context) use ($contactLinks, $id): void {
+$renderContactActions = static function () use ($contactLinks, $id): void {
     if ($contactLinks === []) {
         return;
     }
-    $wrapClass = $context === 'dock' ? 'kp-contact-dock-actions' : 'kp-cta';
     ?>
-    <div class="<?= h($wrapClass) ?>">
+    <div class="kp-cta">
         <?php foreach ($contactLinks as $link): ?>
             <?php
             $channel = (string)$link['key'];
@@ -220,7 +219,7 @@ $renderPlatformMessage = static function () use ($site, $isOwnAd, $msgHref): voi
                     </ul>
                 <?php endif; ?>
 
-                <?php $renderContactActions('offer'); ?>
+                <?php $renderContactActions(); ?>
                 <?php $renderPlatformMessage(); ?>
 
                 <div class="kp-action-links">
@@ -396,13 +395,6 @@ $renderPlatformMessage = static function () use ($site, $isOwnAd, $msgHref): voi
         </div>
     </div>
 </div>
-
-<?php if ($showContactDock): ?>
-    <nav class="kp-contact-dock" aria-label="Brzi kontakt">
-        <div class="kp-contact-dock-price"><?= h($stickyPrice) ?></div>
-        <?php $renderContactActions('dock'); ?>
-    </nav>
-<?php endif; ?>
 
 <?php if ($images): ?>
 <div class="kp-lightbox" data-lightbox hidden>
