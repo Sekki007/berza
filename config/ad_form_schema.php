@@ -85,7 +85,15 @@ function adFormSchema(): array
             'other' => 'Ostalo',
         ],
         'parts_conditions' => ['Novo', 'Polovno'],
-        'originality_options' => ['Original', 'Kopija/A klasa', 'Univerzalno'],
+        'originality_options' => ['Original', 'Kopija/A klasa', 'Univerzalno', 'Ne znam'],
+        'parts_kind_chips' => [
+            'maska' => ['label' => 'Maska', 'category_group' => 'cases_protection', 'equipment_type' => 'Maska/Futrola'],
+            'charger' => ['label' => 'Punjač/kabl', 'category_group' => 'chargers_cables', 'equipment_type' => 'Punjač/Kabl'],
+            'audio' => ['label' => 'Slušalice', 'category_group' => 'audio_accessories', 'equipment_type' => 'Slušalice'],
+            'screen' => ['label' => 'Ekran/LCD', 'category_group' => 'other_parts', 'equipment_type' => 'Displej/LCD'],
+            'battery' => ['label' => 'Baterija', 'category_group' => 'other_parts', 'equipment_type' => 'Baterija'],
+            'other' => ['label' => 'Ostalo', 'category_group' => 'other_parts', 'equipment_type' => 'Ostalo'],
+        ],
         'service_types' => [
             'screen' => 'Zamena ekrana',
             'battery' => 'Zamena baterije',
@@ -454,81 +462,80 @@ function adAttributeRows(array $ad): array
 function suggestAdTitle(array $ad): string
 {
     $type = getAdType($ad);
-    $parts = [];
 
     if ($type === 'delovi') {
         $eq = trim((string)($ad['equipment_type'] ?? ''));
-        $brand = trim((string)($ad['brand'] ?? ''));
         $compat = trim((string)($ad['compatible_models'] ?? ''));
         $model = trim((string)($ad['model'] ?? ''));
-        if ($eq !== '' && $eq !== 'Ostalo' && $eq !== 'Rezervni delovi') {
-            $parts[] = $eq;
-        } elseif ($eq === 'Rezervni delovi') {
-            $parts[] = 'Delovi';
-        }
-        if ($brand !== '' && $brand !== 'Ostalo') {
-            $parts[] = $brand;
-        }
-        if ($compat !== '') {
-            $parts[] = $compat;
-        } elseif ($model !== '') {
-            $parts[] = $model;
-        }
         $orig = trim((string)($ad['originality'] ?? ''));
-        if ($orig !== '') {
-            $parts[] = $orig;
+        if ($orig === 'Ne znam') {
+            $orig = '';
         }
-    } elseif ($type === 'servis') {
-        $parts[] = 'Servis';
-        $brand = trim((string)($ad['brand'] ?? ''));
-        if ($brand !== '') {
-            $parts[] = $brand;
-        }
-        $title = trim((string)($ad['title'] ?? ''));
-        if ($title !== '' && $parts === ['Servis']) {
-            return mb_strimwidth($title, 0, 120, '');
-        }
-    } else {
-        $brand = trim((string)($ad['brand'] ?? ''));
-        $model = trim((string)($ad['model'] ?? ''));
-        $storage = trim((string)($ad['storage'] ?? ''));
-        $color = trim((string)($ad['color'] ?? ''));
-        $condition = trim((string)($ad['condition_state'] ?? ''));
-        if ($brand !== '' && $brand !== 'Ostalo') {
-            $parts[] = $brand;
-        }
-        if ($model !== '') {
-            // Avoid "Apple iPhone" duplication if model already has brand
-            if ($brand !== '' && $brand !== 'Ostalo' && str_starts_with(mb_strtolower($model), mb_strtolower($brand))) {
-                $parts = [$model];
-            } else {
-                $parts[] = $model;
+        // Prikazni naziv chipa (npr. Ekran/LCD) umesto internog equipment_type.
+        $head = $eq;
+        foreach ((adFormSchema()['parts_kind_chips'] ?? []) as $chip) {
+            if (($chip['equipment_type'] ?? '') === $eq && ($chip['label'] ?? '') !== '') {
+                $head = (string)$chip['label'];
+                break;
             }
         }
-        if ($storage !== '') {
-            $parts[] = $storage;
+        if ($eq === 'Rezervni delovi') {
+            $head = 'Delovi';
+        } elseif ($eq === '' || $eq === 'Ostalo') {
+            $head = 'Oprema';
         }
-        if ($color !== '') {
-            $parts[] = $color;
+        $for = $compat !== '' ? $compat : $model;
+        $title = $head;
+        if ($for !== '') {
+            $title .= ' za ' . $for;
         }
-        $bits = [];
-        if ($condition !== '' && $condition !== 'Polovno') {
-            $bits[] = $condition;
+        if ($orig !== '') {
+            $title .= ' – ' . $orig;
         }
-        if (!empty($ad['has_warranty'])) {
-            $bits[] = 'Garancija';
+        return mb_strimwidth(trim($title), 0, 120, '');
+    }
+
+    if ($type === 'servis') {
+        $parts = ['Servis'];
+        $types = is_array($ad['service_types'] ?? null) ? $ad['service_types'] : [];
+        $schema = adFormSchema();
+        foreach ($types as $key) {
+            $label = (string)($schema['service_types'][$key] ?? '');
+            if ($label !== '') {
+                $parts[] = $label;
+                break;
+            }
         }
-        $bh = $ad['battery_health'] ?? null;
-        if ($bh !== null && $bh !== '' && (int)$bh > 0) {
-            $bits[] = 'BH ' . (int)$bh . '%';
-        }
-        $title = trim(implode(' ', array_filter($parts, static fn($p) => trim((string)$p) !== '')));
-        if ($bits !== []) {
-            $title = trim($title . ' - ' . implode(' / ', $bits));
+        $title = trim(implode(' — ', array_unique($parts)));
+        $existing = trim((string)($ad['title'] ?? ''));
+        if ($title === 'Servis' && $existing !== '') {
+            return mb_strimwidth($existing, 0, 120, '');
         }
         return mb_strimwidth($title, 0, 120, '');
     }
 
-    $title = trim(implode(' ', array_filter($parts, static fn($p) => trim((string)$p) !== '')));
+    $brand = trim((string)($ad['brand'] ?? ''));
+    $model = trim((string)($ad['model'] ?? ''));
+    $storage = trim((string)($ad['storage'] ?? ''));
+    $condition = trim((string)($ad['condition_state'] ?? ''));
+    $parts = [];
+    $modelHasBrandCue = $model !== '' && preg_match('/^(iphone|galaxy|pixel|redmi|poco|xiaomi|huawei|honor|nothing)\b/iu', $model) === 1;
+    if ($brand !== '' && $brand !== 'Ostalo' && $model !== '' && (str_starts_with(mb_strtolower($model), mb_strtolower($brand)) || $modelHasBrandCue)) {
+        $parts[] = $model;
+    } else {
+        if ($brand !== '' && $brand !== 'Ostalo') {
+            $parts[] = $brand;
+        }
+        if ($model !== '') {
+            $parts[] = $model;
+        }
+    }
+    if ($storage !== '') {
+        $parts[] = $storage;
+    }
+    $title = trim(implode(' ', $parts));
+    if ($condition !== '') {
+        $title = trim($title . ($title !== '' ? ' – ' : '') . $condition);
+    }
     return mb_strimwidth($title, 0, 120, '');
 }

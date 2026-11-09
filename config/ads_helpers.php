@@ -38,6 +38,122 @@ function ensureUploadsDir(): void
     }
 }
 
+function stagedAdUploadsDir(int $userId): string
+{
+    return uploadsDir() . '/staged/' . max(1, $userId);
+}
+
+/** @return list<string> URL-ovi sačuvanih privremenih slika */
+function stageAdFormUploads(int $userId): array
+{
+    ensureUploadsDir();
+    if (!isset($_FILES['images']) || !is_array($_FILES['images']['name'] ?? null)) {
+        return [];
+    }
+    $dir = stagedAdUploadsDir($userId);
+    if (!is_dir($dir)) {
+        mkdir($dir, 0777, true);
+    }
+    $allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif'];
+    $out = [];
+    $count = count($_FILES['images']['name']);
+    $max = adMaxImages();
+    for ($i = 0; $i < $count && count($out) < $max; $i++) {
+        if ((int)($_FILES['images']['error'][$i] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            continue;
+        }
+        $tmp = (string)($_FILES['images']['tmp_name'][$i] ?? '');
+        if ($tmp === '' || !is_file($tmp)) {
+            continue;
+        }
+        $type = mime_content_type($tmp) ?: '';
+        $nameHint = mb_strtolower((string)($_FILES['images']['name'][$i] ?? ''));
+        if ($type === '' || $type === 'application/octet-stream') {
+            if (str_ends_with($nameHint, '.heic') || str_ends_with($nameHint, '.heif')) {
+                $type = 'image/heic';
+            }
+        }
+        if (!in_array($type, $allowed, true)) {
+            continue;
+        }
+        // HEIC na serveru: pokušaj Imagick, inače preskoči (klijent treba da konvertuje).
+        if (in_array($type, ['image/heic', 'image/heif'], true)) {
+            if (!class_exists('Imagick')) {
+                continue;
+            }
+            try {
+                $im = new Imagick($tmp);
+                $im->setImageFormat('jpeg');
+                $stamp = time() . '_' . $i . '_' . bin2hex(random_bytes(3));
+                $dest = $dir . '/img_' . $stamp . '.jpg';
+                $im->writeImage($dest);
+                $im->clear();
+                $im->destroy();
+                $out[] = '/uploads/ads/staged/' . max(1, $userId) . '/img_' . $stamp . '.jpg';
+            } catch (Throwable $e) {
+                continue;
+            }
+            continue;
+        }
+        $stamp = time() . '_' . $i . '_' . bin2hex(random_bytes(3));
+        $dest = $dir . '/img_' . $stamp . '.jpg';
+        if (compressAndSaveImage($tmp, $dest, $type)) {
+            $out[] = '/uploads/ads/staged/' . max(1, $userId) . '/img_' . $stamp . '.jpg';
+        }
+    }
+    return $out;
+}
+
+/** @param list<string> $images
+ *  @return list<string>
+ */
+function promoteStagedAdImages(int $adId, array $images): array
+{
+    ensureUploadsDir();
+    $targetDir = uploadsDir() . '/' . $adId;
+    if (!is_dir($targetDir)) {
+        mkdir($targetDir, 0777, true);
+    }
+    $out = [];
+    foreach ($images as $url) {
+        $url = (string)$url;
+        if (!preg_match('#^/uploads/ads/staged/(\d+)/([^/]+)$#', $url, $m)) {
+            $out[] = $url;
+            continue;
+        }
+        $src = uploadsDir() . '/staged/' . $m[1] . '/' . $m[2];
+        if (!is_file($src)) {
+            continue;
+        }
+        $name = 'img_' . time() . '_' . bin2hex(random_bytes(3)) . '.jpg';
+        $dest = $targetDir . '/' . $name;
+        if (@rename($src, $dest) || @copy($src, $dest)) {
+            if (is_file($src)) {
+                @unlink($src);
+            }
+            $out[] = '/uploads/ads/' . $adId . '/' . $name;
+            $ext = function_exists('imagewebp') ? 'webp' : 'jpg';
+            $stamp = pathinfo($name, PATHINFO_FILENAME);
+            createImageDerivative($dest, $targetDir . '/' . $stamp . '_t.' . $ext, 400, 78);
+            createImageDerivative($dest, $targetDir . '/' . $stamp . '_d.' . $ext, 800, 80);
+        }
+    }
+    return array_values($out);
+}
+
+function clearStagedAdFormUploads(int $userId): void
+{
+    $dir = stagedAdUploadsDir($userId);
+    if (!is_dir($dir)) {
+        return;
+    }
+    foreach (glob($dir . '/*') ?: [] as $file) {
+        if (is_file($file)) {
+            @unlink($file);
+        }
+    }
+}
+
 function adPrimaryImage(array $ad): ?string
 {
     $images = $ad['images'] ?? [];
@@ -208,6 +324,9 @@ function handleAdImageUploads(int $adId, array $existing = []): array
         array_unshift($images, $cover);
     }
 
+    // Uvek promovisi staged (npr. posle greške validacije bez novog izbora fajlova).
+    $images = promoteStagedAdImages($adId, $images);
+
     if (!isset($_FILES['images']) || !is_array($_FILES['images']['name'])) {
         return array_values(array_slice($images, 0, adMaxImages()));
     }
@@ -217,7 +336,7 @@ function handleAdImageUploads(int $adId, array $existing = []): array
         mkdir($targetDir, 0777, true);
     }
 
-    $allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+    $allowed = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif'];
     $count = count($_FILES['images']['name']);
     $maxImages = adMaxImages();
 
@@ -227,7 +346,37 @@ function handleAdImageUploads(int $adId, array $existing = []): array
         }
         $tmp = $_FILES['images']['tmp_name'][$i];
         $type = mime_content_type($tmp) ?: '';
-        if (!in_array($type, $allowed, true)) {
+        $nameHint = mb_strtolower((string)($_FILES['images']['name'][$i] ?? ''));
+        if (($type === '' || $type === 'application/octet-stream') && (str_ends_with($nameHint, '.heic') || str_ends_with($nameHint, '.heif'))) {
+            $type = 'image/heic';
+        }
+        if (in_array($type, ['image/heic', 'image/heif'], true)) {
+            if (!class_exists('Imagick')) {
+                continue;
+            }
+            try {
+                $im = new Imagick($tmp);
+                $im->setImageFormat('jpeg');
+                $stamp = time() . '_' . $i;
+                $name = 'img_' . $stamp . '.jpg';
+                $dest = $targetDir . '/' . $name;
+                $im->writeImage($dest);
+                $im->clear();
+                $im->destroy();
+                if (function_exists('applyAdImageWatermark') && adImagePathShouldWatermark($dest)) {
+                    applyAdImageWatermark($dest);
+                }
+                $url = '/uploads/ads/' . $adId . '/' . $name;
+                $ext = function_exists('imagewebp') ? 'webp' : 'jpg';
+                createImageDerivative($dest, $targetDir . '/img_' . $stamp . '_t.' . $ext, 400, 78);
+                createImageDerivative($dest, $targetDir . '/img_' . $stamp . '_d.' . $ext, 800, 80);
+                $images[] = $url;
+            } catch (Throwable $e) {
+                continue;
+            }
+            continue;
+        }
+        if (!in_array($type, ['image/jpeg', 'image/png', 'image/webp', 'image/gif'], true)) {
             continue;
         }
 
@@ -251,8 +400,15 @@ function handleAdImageUploads(int $adId, array $existing = []): array
  */
 function compressAndSaveImage(string $tmpPath, string $destPath, string $mime): bool
 {
+    $moveOrCopy = static function (string $from, string $to): bool {
+        if (@move_uploaded_file($from, $to)) {
+            return true;
+        }
+        return @rename($from, $to) || @copy($from, $to);
+    };
+
     if (!function_exists('imagecreatetruecolor')) {
-        return move_uploaded_file($tmpPath, $destPath);
+        return $moveOrCopy($tmpPath, $destPath);
     }
 
     $src = match ($mime) {
@@ -262,7 +418,7 @@ function compressAndSaveImage(string $tmpPath, string $destPath, string $mime): 
         default => @imagecreatefromjpeg($tmpPath),
     };
     if ($src === false) {
-        return move_uploaded_file($tmpPath, $destPath);
+        return $moveOrCopy($tmpPath, $destPath);
     }
 
     $w = imagesx($src);

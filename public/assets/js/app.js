@@ -200,13 +200,23 @@
         all('.form-type-option').forEach(function (opt) {
           opt.classList.remove('selected', 'selected-parts', 'selected-service');
         });
+        all('.ad-type-tile').forEach(function (tile) {
+          tile.classList.remove('is-on', 'is-parts', 'is-service');
+        });
         const selected = one('[data-form-type]:checked');
         if (!selected) return;
         const opt = selected.closest('.form-type-option');
-        if (!opt) return;
-        if (selected.value === 'telefon') opt.classList.add('selected');
-        if (selected.value === 'delovi') opt.classList.add('selected-parts');
-        if (selected.value === 'servis') opt.classList.add('selected-service');
+        if (opt) {
+          if (selected.value === 'telefon') opt.classList.add('selected');
+          if (selected.value === 'delovi') opt.classList.add('selected-parts');
+          if (selected.value === 'servis') opt.classList.add('selected-service');
+        }
+        const tile = selected.closest('.ad-type-tile');
+        if (tile) {
+          tile.classList.add('is-on');
+          if (selected.value === 'delovi') tile.classList.add('is-parts');
+          if (selected.value === 'servis') tile.classList.add('is-service');
+        }
         syncAdFormByType(selected.value);
         const form = one('[data-ad-form]');
         if (form) {
@@ -230,12 +240,23 @@
     const input = one('[data-photo-input]', form);
     if (!input) return;
     const hasExisting = all('[data-photo-existing] [data-photo-item]', form).length > 0;
+    const listing = one('[data-listing-type]:checked', form);
+    const isBuy = listing && listing.value === 'buy';
     const isPhone = type === 'telefon';
-    input.required = isPhone && !hasExisting;
+    const required = isPhone && !isBuy && !hasExisting;
+    input.required = required;
     const requiredMark = one('[data-photo-required]', form);
     const hint = one('[data-phone-photo-hint]', form);
-    if (requiredMark) requiredMark.hidden = !isPhone;
-    if (hint) hint.hidden = !isPhone;
+    const buyHint = one('[data-buy-photo-hint]', form);
+    if (requiredMark) requiredMark.hidden = !(isPhone && !isBuy);
+    if (hint) hint.hidden = !(isPhone && !isBuy);
+    if (buyHint) buyHint.hidden = !isBuy;
+    const priceLabel = one('[data-price-label]', form);
+    if (priceLabel) {
+      if (isBuy) priceLabel.textContent = 'Budžet do';
+      else if (type === 'servis') priceLabel.textContent = 'Cena od';
+      else priceLabel.textContent = 'Cena';
+    }
   }
 
   function syncAdFormByType(type) {
@@ -316,11 +337,29 @@
       batt.hidden = type !== 'telefon';
       const bh = batt.querySelector('input');
       if (bh) {
-        var panel = batt.closest('[data-panel]');
-        var panelHidden = panel && panel.hasAttribute('hidden');
-        bh.disabled = type !== 'telefon' || !!panelHidden;
+        var moreWrap = batt.closest('[data-panel-more]') || batt.closest('[data-panel]');
+        var moreHidden = moreWrap && moreWrap.hasAttribute('hidden');
+        bh.disabled = type !== 'telefon' || !!moreHidden;
       }
     }
+
+    const phoneCond = one('[data-phone-condition-block]', form);
+    if (phoneCond) {
+      phoneCond.hidden = type !== 'telefon';
+      phoneCond.querySelectorAll('input, select, textarea').forEach(function (el) {
+        el.disabled = type !== 'telefon';
+      });
+    }
+
+    form.querySelectorAll('[data-panel-more]').forEach(function (wrap) {
+      const match = wrap.getAttribute('data-panel-more') === type;
+      wrap.hidden = !match;
+      wrap.querySelectorAll('input, select, textarea').forEach(function (el) {
+        if (el.getAttribute('data-keep-enabled') === '1') return;
+        el.disabled = !match;
+      });
+    });
+
     syncPhonePhotoRequirement(form, type);
   }
 
@@ -424,23 +463,24 @@
   function buildSuggestedAdTitle(form) {
     const typeEl = one('[data-form-type]:checked', form);
     const type = typeEl ? typeEl.value : 'telefon';
-    const parts = [];
 
     if (type === 'delovi') {
-      const eq = one('[data-equipment-type]', form);
-      const brand = one('[data-parts-brand]', form);
-      const compat = one('input[name="compatible_models"]', form);
-      const eqVal = eq ? (eq.value || '').trim() : '';
-      const brandVal = brand ? (brand.value || '').trim() : '';
+      const eq = one('[data-equipment-type]', form) || one('[name="equipment_type"]', form);
+      const compat = one('[data-compat-value]', form) || one('input[name="compatible_models"]', form);
+      const orig = one('input[name="originality"]:checked', form) || one('select[name="originality"]', form);
+      let eqVal = eq ? (eq.value || '').trim() : '';
+      if (!eqVal) {
+        const kind = one('[data-parts-kind]:checked', form);
+        if (kind) eqVal = (kind.getAttribute('data-equipment-value') || '').trim();
+      }
+      if (eqVal === 'Rezervni delovi') eqVal = 'Delovi';
+      if (!eqVal || eqVal === 'Ostalo') eqVal = 'Oprema';
       const compatVal = compat ? (compat.value || '').trim() : '';
-      if (eqVal && eqVal !== 'Ostalo' && eqVal !== 'Rezervni delovi') parts.push(eqVal);
-      else if (eqVal === 'Rezervni delovi') parts.push('Delovi');
-      if (brandVal && brandVal !== 'Ostalo') parts.push(brandVal);
-      if (compatVal) parts.push(compatVal);
-      const orig = one('select[name="originality"]', form);
+      let title = eqVal;
+      if (compatVal) title += ' za ' + compatVal;
       const origVal = orig ? (orig.value || '').trim() : '';
-      if (origVal) parts.push(origVal);
-      return parts.join(' ').trim().slice(0, 120);
+      if (origVal && origVal !== 'Ne znam') title += ' – ' + origVal;
+      return title.trim().slice(0, 120);
     }
 
     if (type === 'servis') {
@@ -450,13 +490,12 @@
     const brand = one('[data-phone-brand]', form);
     const model = one('#ad-model', form);
     const storage = one('select[name="storage"]', form);
-    const color = one('input[name="color"]', form);
-    const condition = one('[data-cond-phone]', form);
-    const warranty = one('[data-warranty-toggle]', form);
-    const bh = one('[data-battery-field] input', form);
+    const condition = one('[data-cond-phone]:checked', form) || one('[data-cond-phone]', form);
     const b = brand ? (brand.value || '').trim() : '';
     const m = model ? (model.value || '').trim() : '';
-    if (b && b !== 'Ostalo' && m && m.toLowerCase().indexOf(b.toLowerCase()) === 0) {
+    const parts = [];
+    const cue = /^(iphone|galaxy|pixel|redmi|poco|xiaomi|huawei|honor|nothing)\b/i;
+    if (b && b !== 'Ostalo' && m && (m.toLowerCase().indexOf(b.toLowerCase()) === 0 || cue.test(m))) {
       parts.push(m);
     } else {
       if (b && b !== 'Ostalo') parts.push(b);
@@ -464,16 +503,9 @@
     }
     const st = storage ? (storage.value || '').trim() : '';
     if (st) parts.push(st);
-    const col = color ? (color.value || '').trim() : '';
-    if (col) parts.push(col);
-    const bits = [];
-    const cond = condition ? (condition.value || '').trim() : '';
-    if (cond && cond !== 'Polovno') bits.push(cond);
-    if (warranty && warranty.checked) bits.push('Garancija');
-    const bhVal = bh && bh.value !== '' ? parseInt(bh.value, 10) : 0;
-    if (bhVal > 0) bits.push('BH ' + bhVal + '%');
     let title = parts.join(' ').trim();
-    if (bits.length) title = (title + ' - ' + bits.join(' / ')).trim();
+    const cond = condition ? (condition.value || '').trim() : '';
+    if (cond) title = (title + (title ? ' – ' : '') + cond).trim();
     return title.slice(0, 120);
   }
 
@@ -1364,8 +1396,51 @@
       });
     }
 
+    function isHeicFile(file) {
+      if (!file) return false;
+      const t = (file.type || '').toLowerCase();
+      const n = (file.name || '').toLowerCase();
+      return t === 'image/heic' || t === 'image/heif' || /\.heic$|\.heif$/.test(n);
+    }
+
+    function loadHeic2Any() {
+      return new Promise(function (resolve, reject) {
+        if (window.heic2any) {
+          resolve(window.heic2any);
+          return;
+        }
+        const s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/heic2any@0.0.4/dist/heic2any.min.js';
+        s.onload = function () {
+          if (window.heic2any) resolve(window.heic2any);
+          else reject(new Error('heic'));
+        };
+        s.onerror = function () { reject(new Error('heic')); };
+        document.head.appendChild(s);
+      });
+    }
+
+    async function maybeConvertHeic(file) {
+      if (!isHeicFile(file)) return file;
+      try {
+        const heic2any = await loadHeic2Any();
+        const blob = await heic2any({ blob: file, toType: 'image/jpeg', quality: 0.82 });
+        const outBlob = Array.isArray(blob) ? blob[0] : blob;
+        const base = (file.name || 'photo').replace(/\.[^.]+$/, '');
+        return new File([outBlob], base + '.jpg', { type: 'image/jpeg', lastModified: Date.now() });
+      } catch (e) {
+        return null;
+      }
+    }
+
     async function compressFile(file) {
-      if (!file || !file.type || file.type.indexOf('image/') !== 0) {
+      if (!file) return { file: file, compressed: false, error: null };
+      if (isHeicFile(file)) {
+        const converted = await maybeConvertHeic(file);
+        if (!converted) return { file: file, compressed: false, error: 'unsupported' };
+        file = converted;
+      }
+      if (!file.type || file.type.indexOf('image/') !== 0) {
         return { file: file, compressed: false, error: null };
       }
       if (file.size < 900 * 1024 && file.type === 'image/jpeg') {
@@ -2439,6 +2514,313 @@
     }
   }
 
+  function initAdFormV2() {
+    const form = one('[data-ad-form]');
+    if (!form || !form.classList.contains('ad-form-card')) return;
+    if (!one('[data-phone-search]', form) && !one('[data-parts-kind]', form)) return;
+
+    const catalogEl = one('#phone-catalog-data');
+    let catalog = [];
+    try {
+      catalog = catalogEl ? JSON.parse(catalogEl.textContent || '[]') : [];
+    } catch (e) {
+      catalog = [];
+    }
+
+    function refreshTitlePreview() {
+      const preview = one('[data-title-preview]', form);
+      const titleInput = one('[data-ad-title]', form);
+      const suggested = buildSuggestedAdTitle(form);
+      const manual = titleInput && (titleInput.value || '').trim();
+      const text = manual || suggested || 'Naslov će se napraviti automatski';
+      if (preview) preview.textContent = text;
+    }
+
+    // Title edit toggle
+    const titleEdit = one('[data-title-edit]', form);
+    const titleToggle = one('[data-title-edit-toggle]', form);
+    if (titleToggle && titleEdit) {
+      titleToggle.addEventListener('click', function () {
+        titleEdit.hidden = !titleEdit.hidden;
+        if (!titleEdit.hidden) {
+          const t = one('[data-ad-title]', form);
+          if (t) t.focus();
+        }
+      });
+    }
+
+    // Manual phone fields
+    const manualToggle = one('[data-manual-phone-toggle]', form);
+    const manualBox = one('[data-manual-phone]', form);
+    if (manualToggle && manualBox) {
+      manualToggle.addEventListener('click', function () {
+        manualBox.hidden = !manualBox.hidden;
+      });
+    }
+
+    // Device type sync
+    const deviceSelect = one('[data-device-type-select]', form);
+    const deviceHidden = one('[data-device-type-hidden]', form);
+    if (deviceSelect && deviceHidden) {
+      deviceSelect.addEventListener('change', function () {
+        deviceHidden.value = deviceSelect.value;
+      });
+    }
+
+    // Parts kind → category_group + equipment_type
+    form.querySelectorAll('[data-parts-kind]').forEach(function (inp) {
+      inp.addEventListener('change', function () {
+        const cat = one('#ad-category', form);
+        const eq = one('[data-equipment-type]', form);
+        if (cat) cat.value = inp.getAttribute('data-category-group') || 'other_parts';
+        if (eq) eq.value = inp.getAttribute('data-equipment-value') || '';
+        form.querySelectorAll('[data-parts-kind]').forEach(function (x) {
+          const lab = x.closest('.chip-option');
+          if (lab) lab.classList.toggle('is-on', x.checked);
+        });
+        refreshTitlePreview();
+      });
+    });
+
+    // Phone typeahead
+    const search = one('[data-phone-search]', form);
+    const suggestBox = one('[data-phone-suggestions]', form);
+    const modelIdInput = one('[data-phone-model-id]', form);
+    const variantIdInput = one('[data-phone-variant-id]', form);
+    const brandSel = one('[data-phone-brand]', form);
+    const modelInput = one('#ad-model', form);
+    const storageSel = one('[data-storage-select]', form);
+    const variantChips = one('[data-phone-variant-chips]', form);
+
+    function pickModel(item, storage) {
+      if (!item) return;
+      if (modelIdInput) modelIdInput.value = item.id;
+      if (brandSel) {
+        Array.prototype.forEach.call(brandSel.options, function (o) {
+          o.selected = o.value === item.brand;
+        });
+      }
+      if (modelInput) {
+        modelInput.value = item.name;
+        modelInput.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      if (search) search.value = item.label;
+      if (suggestBox) suggestBox.hidden = true;
+      if (variantChips) {
+        variantChips.innerHTML = '';
+        const vars = item.variants || [];
+        variantChips.hidden = vars.length === 0;
+        vars.forEach(function (v) {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'chip-option' + ((storage && storage === v.storage) ? ' is-on' : '');
+          btn.setAttribute('data-variant-chip', '1');
+          btn.setAttribute('data-variant-id', v.id);
+          btn.setAttribute('data-storage', v.storage);
+          btn.textContent = v.storage;
+          variantChips.appendChild(btn);
+        });
+      }
+      if (storage && storageSel) {
+        Array.prototype.forEach.call(storageSel.options, function (o) {
+          o.selected = o.value === storage;
+        });
+      }
+      refreshTitlePreview();
+    }
+
+    if (variantChips) {
+      variantChips.addEventListener('click', function (e) {
+        const btn = e.target.closest('[data-variant-chip]');
+        if (!btn) return;
+        if (variantIdInput) variantIdInput.value = btn.getAttribute('data-variant-id') || '';
+        const st = btn.getAttribute('data-storage') || '';
+        if (storageSel && st) {
+          Array.prototype.forEach.call(storageSel.options, function (o) {
+            o.selected = o.value === st;
+          });
+          storageSel.dispatchEvent(new Event('change', { bubbles: true }));
+        }
+        variantChips.querySelectorAll('[data-variant-chip]').forEach(function (b) {
+          b.classList.toggle('is-on', b === btn);
+        });
+        refreshTitlePreview();
+      });
+    }
+
+    if (search && suggestBox) {
+      search.addEventListener('input', function () {
+        const q = (search.value || '').trim().toLowerCase();
+        if (q.length < 2) {
+          suggestBox.hidden = true;
+          suggestBox.innerHTML = '';
+          return;
+        }
+        const hits = catalog.filter(function (m) {
+          return (m.label || '').toLowerCase().indexOf(q) !== -1;
+        }).slice(0, 8);
+        suggestBox.innerHTML = '';
+        hits.forEach(function (m) {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'ad-typeahead-item';
+          btn.textContent = m.label;
+          btn.addEventListener('click', function () { pickModel(m); });
+          suggestBox.appendChild(btn);
+        });
+        suggestBox.hidden = hits.length === 0;
+      });
+    }
+
+    // Compat multi typeahead for parts
+    const compatSearch = one('[data-compat-search]', form);
+    const compatSuggest = one('[data-compat-suggestions]', form);
+    const compatChips = one('[data-compat-chips]', form);
+    const compatValue = one('[data-compat-value]', form);
+    let compatSelected = [];
+    if (compatValue && (compatValue.value || '').trim()) {
+      compatSelected = (compatValue.value || '').split(/[,/]+/).map(function (s) { return s.trim(); }).filter(Boolean);
+    }
+    function renderCompat() {
+      if (!compatChips || !compatValue) return;
+      compatChips.innerHTML = '';
+      compatSelected.forEach(function (label, idx) {
+        const chip = document.createElement('button');
+        chip.type = 'button';
+        chip.className = 'chip-option is-on';
+        chip.textContent = label + ' ×';
+        chip.addEventListener('click', function () {
+          compatSelected.splice(idx, 1);
+          renderCompat();
+        });
+        compatChips.appendChild(chip);
+      });
+      compatValue.value = compatSelected.join(' / ');
+      refreshTitlePreview();
+    }
+    renderCompat();
+    if (compatSearch && compatSuggest) {
+      compatSearch.addEventListener('input', function () {
+        const q = (compatSearch.value || '').trim().toLowerCase();
+        if (q.length < 2) {
+          compatSuggest.hidden = true;
+          return;
+        }
+        const hits = catalog.filter(function (m) {
+          return (m.label || '').toLowerCase().indexOf(q) !== -1;
+        }).slice(0, 8);
+        compatSuggest.innerHTML = '';
+        hits.forEach(function (m) {
+          const btn = document.createElement('button');
+          btn.type = 'button';
+          btn.className = 'ad-typeahead-item';
+          btn.textContent = m.label;
+          btn.addEventListener('click', function () {
+            if (compatSelected.indexOf(m.label) === -1) compatSelected.push(m.label);
+            compatSearch.value = '';
+            compatSuggest.hidden = true;
+            renderCompat();
+          });
+          compatSuggest.appendChild(btn);
+        });
+        compatSuggest.hidden = hits.length === 0;
+      });
+    }
+
+    // Draft autosave (text fields only)
+    const draftKey = form.getAttribute('data-draft-key') || 'kt-ad-draft-v1';
+    const draftStatus = one('[data-draft-status]', form);
+    const draftFields = 'input[type="text"],input[type="search"],input[type="tel"],input[type="number"],textarea,select';
+    function saveDraft() {
+      if (form.getAttribute('data-is-edit') === '1') return;
+      const data = {};
+      form.querySelectorAll(draftFields).forEach(function (el) {
+        if (!el.name || el.disabled || el.type === 'file' || el.type === 'password') return;
+        if (el.type === 'radio' || el.type === 'checkbox') {
+          if (el.checked) data[el.name] = el.value;
+          return;
+        }
+        data[el.name] = el.value;
+      });
+      try {
+        localStorage.setItem(draftKey, JSON.stringify({ at: Date.now(), data: data }));
+        if (draftStatus) {
+          draftStatus.hidden = false;
+          draftStatus.textContent = 'Nacrt sačuvan';
+        }
+      } catch (e) {}
+    }
+    function restoreDraft() {
+      if (form.getAttribute('data-is-edit') === '1') return;
+      if (one('[data-form-error]', form)) return; // keep server redisplay
+      try {
+        const raw = localStorage.getItem(draftKey);
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        const data = parsed && parsed.data ? parsed.data : null;
+        if (!data) return;
+        Object.keys(data).forEach(function (name) {
+          const els = form.querySelectorAll('[name="' + name + '"]');
+          els.forEach(function (el) {
+            if (el.type === 'radio' || el.type === 'checkbox') {
+              el.checked = el.value === data[name];
+            } else if (el.type !== 'file') {
+              el.value = data[name];
+            }
+          });
+        });
+        if (draftStatus) {
+          draftStatus.hidden = false;
+          draftStatus.textContent = 'Nacrt sačuvan';
+        }
+        const typeEl = one('[data-form-type]:checked', form);
+        if (typeEl) syncAdFormByType(typeEl.value);
+        refreshTitlePreview();
+      } catch (e) {}
+    }
+    let draftTimer = null;
+    form.addEventListener('input', function () {
+      clearTimeout(draftTimer);
+      draftTimer = setTimeout(saveDraft, 400);
+      refreshTitlePreview();
+    });
+    form.addEventListener('change', function () {
+      clearTimeout(draftTimer);
+      draftTimer = setTimeout(saveDraft, 200);
+      refreshTitlePreview();
+      const typeEl = one('[data-form-type]:checked', form);
+      if (typeEl) syncPhonePhotoRequirement(form, typeEl.value);
+    });
+    form.addEventListener('submit', function () {
+      try { localStorage.removeItem(draftKey); } catch (e) {}
+    });
+    restoreDraft();
+
+    // Focus first field error
+    const firstErr = one('.field-error', form);
+    if (firstErr) {
+      const wrap = firstErr.closest('.form-group') || firstErr.parentElement;
+      const focusEl = wrap ? wrap.querySelector('input, select, textarea') : null;
+      if (focusEl) {
+        try { focusEl.focus(); } catch (e) {}
+      }
+    }
+
+    // Listing change → photo requirement / intent chips
+    form.querySelectorAll('[data-listing-type]').forEach(function (inp) {
+      inp.addEventListener('change', function () {
+        form.querySelectorAll('[data-listing-opt]').forEach(function (lab) {
+          const i = lab.querySelector('[data-listing-type]');
+          lab.classList.toggle('is-on', !!(i && i.checked));
+        });
+        const typeEl = one('[data-form-type]:checked', form);
+        syncPhonePhotoRequirement(form, typeEl ? typeEl.value : 'telefon');
+      });
+    });
+
+    refreshTitlePreview();
+  }
+
   function isStandalonePwa() {
     return window.matchMedia('(display-mode: standalone)').matches
       || window.navigator.standalone === true;
@@ -2556,6 +2938,7 @@
     initCategoryGroupSync();
     initAdFormExtras();
     initPhoneCatalogPicker();
+    initAdFormV2();
     initActiveNav();
     initAccountMenu();
     initAccountTabs();
