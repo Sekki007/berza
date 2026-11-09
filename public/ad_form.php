@@ -112,6 +112,7 @@ if (!$isEdit && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET' && function_exis
 }
 
 $formError = '';
+$formErrors = [];
 $canPostService = canPostServiceAds($profile);
 $editingOwnService = $isEdit && getAdType($ad) === 'servis';
 $allowServiceType = $canPostService || $editingOwnService;
@@ -125,6 +126,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($adType === 'servis' && !$allowServiceType) {
         $adType = 'telefon';
         $formError = 'Servisne usluge mogu da objavljuju samo registrovane firme sa potvrđenim PIB-om. Pošalji zahtev u Nalog → Firma.';
+        $formErrors['ad_type'] = $formError;
     }
 
     $priceType = normalizeAdPriceType((string)($_POST['price_type'] ?? 'fixed'));
@@ -163,14 +165,46 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($adType === 'servis') {
         $categoryGroup = 'service';
     } else {
+        // Chip vrste opreme → category_group
+        $partsKind = trim((string)($_POST['parts_kind'] ?? ''));
+        $kindMap = adFormSchema()['parts_kind_chips'] ?? [];
+        if ($partsKind !== '' && isset($kindMap[$partsKind])) {
+            $categoryGroup = (string)$kindMap[$partsKind]['category_group'];
+            if (trim((string)($extras['equipment_type'] ?? '')) === '') {
+                $extras['equipment_type'] = (string)$kindMap[$partsKind]['equipment_type'];
+            }
+        }
         $groupCfg = $cfg['groups'][$categoryGroup] ?? null;
         if (!$groupCfg || (string)($groupCfg['ad_type'] ?? '') !== 'delovi') {
-            $categoryGroup = 'iphone_parts';
+            $categoryGroup = 'other_parts';
+        }
+    }
+
+    $postedTitle = trim((string)($_POST['title'] ?? ''));
+    $keptFromPost = [];
+    if (is_array($_POST['keep_images'] ?? null)) {
+        foreach ($_POST['keep_images'] as $keptUrl) {
+            $keptUrl = trim((string)$keptUrl);
+            if ($keptUrl !== '') {
+                $keptFromPost[] = $keptUrl;
+            }
+        }
+    }
+    $baseImages = $isEdit ? (is_array($ad['images'] ?? null) ? $ad['images'] : []) : [];
+    if (!$isEdit && is_array($_SESSION['ad_form_staged_images'] ?? null)) {
+        $baseImages = array_values(array_unique(array_merge($baseImages, $_SESSION['ad_form_staged_images'])));
+    }
+    if ($keptFromPost !== []) {
+        $baseImages = array_values(array_filter($baseImages, static fn($u) => in_array((string)$u, $keptFromPost, true)));
+        foreach ($keptFromPost as $keptUrl) {
+            if (!in_array($keptUrl, $baseImages, true)) {
+                $baseImages[] = $keptUrl;
+            }
         }
     }
 
     $payload = array_merge([
-        'title' => trim((string)($_POST['title'] ?? '')),
+        'title' => $postedTitle,
         'description' => trim((string)($_POST['description'] ?? '')),
         'ad_type' => $adType,
         'category_group' => $categoryGroup,
@@ -191,7 +225,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'is_sold' => isset($_POST['is_sold']) ? 1 : 0,
         'is_promoted' => (int)($ad['is_promoted'] ?? 0),
         'promoted_until' => $ad['promoted_until'] ?? null,
-        'images' => $isEdit ? ($ad['images'] ?? []) : [],
+        'images' => $baseImages,
     ], $extras);
     if (function_exists('phoneCatalogAssignmentFromPost')) {
         $payload = array_merge($payload, phoneCatalogAssignmentFromPost(
@@ -217,18 +251,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
     $ad = array_merge($ad, $payload);
 
-    $keptImageUrls = is_array($_POST['keep_images'] ?? null) ? $_POST['keep_images'] : [];
+    $keptImageUrls = is_array($_POST['keep_images'] ?? null) ? array_map('strval', $_POST['keep_images']) : [];
     $originalImageUrls = is_array($payload['images'] ?? null) ? $payload['images'] : [];
-    $hasKeptImage = array_intersect($originalImageUrls, array_map('strval', $keptImageUrls)) !== [];
+    $hasKeptImage = array_intersect($originalImageUrls, $keptImageUrls) !== [];
     $hasValidUpload = false;
     if (isset($_FILES['images']) && is_array($_FILES['images']['name'] ?? null)) {
-        $allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+        $allowedImageTypes = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'image/heic', 'image/heif'];
         foreach ($_FILES['images']['name'] as $imageIndex => $_imageName) {
             if ((int)($_FILES['images']['error'][$imageIndex] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
                 continue;
             }
             $tmpImage = (string)($_FILES['images']['tmp_name'][$imageIndex] ?? '');
             $imageType = $tmpImage !== '' ? (mime_content_type($tmpImage) ?: '') : '';
+            $nameHint = mb_strtolower((string)$_imageName);
+            if (($imageType === '' || $imageType === 'application/octet-stream') && (str_ends_with($nameHint, '.heic') || str_ends_with($nameHint, '.heif'))) {
+                $imageType = 'image/heic';
+            }
             if (in_array($imageType, $allowedImageTypes, true)) {
                 $hasValidUpload = true;
                 break;
@@ -236,22 +274,40 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     }
 
+    $listingTypeNow = normalizeListingType((string)($payload['listing_type'] ?? 'sell'), $adType);
+    $photosRequired = ($payload['ad_type'] ?? '') === 'telefon' && $listingTypeNow !== 'buy';
+
+    // Naslov nije obavezan — predloži sa servera.
+    if ($payload['title'] === '') {
+        $payload['title'] = suggestAdTitle($payload);
+        $ad['title'] = $payload['title'];
+    }
+
     if ($formError !== '') {
         // već postavljen (npr. servis bez potvrđenog PIB-a)
-    } elseif ($payload['title'] === '') {
-        $formError = 'Naslov je obavezan.';
     } elseif ($payload['location'] === '') {
         $formError = 'Grad je obavezan.';
+        $formErrors['location'] = $formError;
     } elseif ($payload['contact_phone'] === '') {
         $formError = 'Broj telefona je obavezan.';
-    } elseif (($payload['ad_type'] ?? '') === 'telefon' && !$hasKeptImage && !$hasValidUpload) {
+        $formErrors['contact_phone'] = $formError;
+    } elseif ($photosRequired && !$hasKeptImage && !$hasValidUpload && $originalImageUrls === []) {
         $formError = 'Za oglas telefona obavezna je najmanje jedna fotografija uređaja.';
+        $formErrors['images'] = $formError;
     } elseif (($payload['ad_type'] ?? '') === 'servis' && !$allowServiceType) {
         $formError = 'Servisne usluge mogu da objavljuju samo registrovane firme sa potvrđenim PIB-om.';
-    } elseif ($payload['price_type'] === 'fixed' && $payload['price'] <= 0) {
+        $formErrors['ad_type'] = $formError;
+    } elseif ($payload['price_type'] === 'fixed' && $payload['price'] <= 0 && $adType !== 'servis') {
         $formError = 'Unesi cenu ili označi Po dogovoru.';
+        $formErrors['price'] = $formError;
     } elseif ($payload['price'] < 0) {
         $formError = 'Cena nije validna.';
+        $formErrors['price'] = $formError;
+    } elseif ($adType === 'servis' && $payload['price_type'] === 'fixed' && $payload['price'] <= 0) {
+        $payload['price_type'] = 'negotiable';
+        $payload['price'] = 0;
+        $ad['price_type'] = 'negotiable';
+        $ad['price'] = 0;
     } elseif ($payload['price_type'] === 'fixed') {
         $priceConfirmed = !empty($_POST['price_confirmed']);
         $priceErr = validateAdPrice(
@@ -262,6 +318,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         );
         if ($priceErr !== null) {
             $formError = $priceErr;
+            $formErrors['price'] = $priceErr;
+        }
+    }
+
+    if ($formError !== '') {
+        // Sačuvaj nove upload-e da korisnik ne bira ponovo.
+        $stagedNew = stageAdFormUploads($userId);
+        if ($stagedNew !== []) {
+            $mergedImages = array_values(array_unique(array_merge($originalImageUrls, $stagedNew)));
+            $_SESSION['ad_form_staged_images'] = $mergedImages;
+            $ad['images'] = $mergedImages;
+            $payload['images'] = $mergedImages;
+        } elseif ($originalImageUrls !== []) {
+            $_SESSION['ad_form_staged_images'] = $originalImageUrls;
+            $ad['images'] = $originalImageUrls;
         }
     }
 
@@ -269,9 +340,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($payload['shop_name'] === '') {
             $payload['shop_name'] = trim((string)(($profile['shop_name'] ?? '') ?: getSellerShopName($profile)));
         }
+        if ($payload['title'] === '') {
+            $payload['title'] = 'Oglas';
+        }
 
         if ($isEdit) {
             saveAd($payload, $adId);
+            unset($_SESSION['ad_form_staged_images']);
             setFlash('success', 'Oglas je uspešno izmenjen.');
             header('Location: /nalog.php?tab=oglasi');
             exit;
@@ -309,6 +384,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         $newId = saveAd($payload);
         bindAdSubmitToken($submitToken, $newId);
+        unset($_SESSION['ad_form_staged_images']);
+        clearStagedAdFormUploads($userId);
 
         $profilePatch = [];
         if (trim((string)($profile['phone'] ?? '')) === '' && $payload['contact_phone'] !== '') {
@@ -399,6 +476,14 @@ $currentCurrency = adCurrency($ad);
 $currentListing = normalizeListingType((string)($ad['listing_type'] ?? 'sell'), $currentType);
 $phoneBrands = $schema['phone_brands'];
 $existingImages = is_array($ad['images'] ?? null) ? $ad['images'] : [];
+if (!$isEdit && $existingImages === [] && is_array($_SESSION['ad_form_staged_images'] ?? null)) {
+    $existingImages = array_values(array_filter($_SESSION['ad_form_staged_images'], static fn($u) => is_string($u) && $u !== ''));
+    $ad['images'] = $existingImages;
+}
+$titlePreview = trim((string)($ad['title'] ?? ''));
+if ($titlePreview === '') {
+    $titlePreview = suggestAdTitle($ad);
+}
 $groupMeta = [];
 foreach ($cfg['groups'] as $key => $group) {
     $groupMeta[$key] = [

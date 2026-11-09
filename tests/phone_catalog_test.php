@@ -250,7 +250,7 @@ $_SESSION['user'] = findUserById(1);
 ob_start();
 include dirname(__DIR__) . '/public/ad_form.php';
 $form = (string)ob_get_clean();
-check(str_contains($form, 'name="phone_model_id"') && str_contains($form, 'Ručni unos'), 'forma ima izbor modela i ručni unos');
+check(str_contains($form, 'name="phone_model_id"') && (str_contains($form, 'Ručni unos') || str_contains($form, 'ručni unos')), 'forma ima izbor modela i ručni unos');
 check(str_contains($form, 'value="apple-iphone-15"') && str_contains($form, 'selected'), 'link sa modela unapred bira iPhone 15');
 check(str_contains($form, 'name="description"') && !str_contains($form, 'A16 Bionic'), 'specifikacije se ne upisuju u opis');
 check(str_contains($form, 'name="condition_state"') && str_contains($form, 'name="price"') && str_contains($form, 'name="location"'), 'stanje, cena i grad ostaju polja prodavca');
