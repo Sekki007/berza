@@ -111,8 +111,6 @@ body.account-menu-open{overflow:hidden;}
 }
 .home-intro{margin:0 0 12px;}
 .home-intro h1{margin:0 0 6px;font-size:22px;line-height:1.25;color:var(--text);}
-.home-intro-free{margin:0;font-size:14px;line-height:1.45;color:var(--text-muted);}
-.home-intro-free strong{color:var(--text);}
 .status-page h1{margin:0 0 8px;font-size:26px;line-height:1.25;}
 .status-page p{margin:0;color:var(--text-muted);line-height:1.45;}
 .status-links{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;}
