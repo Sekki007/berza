@@ -52,13 +52,15 @@ Novi model se dodaje u seed: `id`, marka, slugovi, bar jedan `source_ids` zapis 
 Masovno punjenje modela ide preko Wikidata (ne GSMArena / Mobilni svet):
 
 ```bash
-php tools/sync_phone_catalog_wikidata.php
+php tools/sync_phone_catalog_wikidata.php --list-brands
+php tools/sync_phone_catalog_wikidata.php --brand=apple
+php tools/sync_phone_catalog_wikidata.php --brand=apple --apply
 php tools/sync_phone_catalog_wikidata.php --apply
 ```
 
-Ili u adminu: **Katalog telefona** → Pregledaj sync → Primeni sync (`/admin_phone_catalog.php`).
+Ili u adminu: **Katalog telefona** → etape po brendu (Pregled / Primeni) ili sync svih (`/admin_phone_catalog.php`).
 
-Sync povlači smartphone modele odabranih brendova od 2016. godine. Upisuje dimenzije, težinu, dijagonalu, čipset i memorijske varijante **samo ako postoje na Wikidata stavci**. Proizvođačke specifikacije (npr. Apple Support) se ne prepisuju. Prazna polja se ne pogađaju.
+Sync povlači smartphone i mobile-phone modele odabranih brendova od 2014. godine. Preporuka je sync **po brendu** da SPARQL ne timeout-uje. Upisuje dimenzije, težinu, dijagonalu, čipset i memorijske varijante **samo ako postoje na Wikidata stavci**. Bez slika. Proizvođačke specifikacije (npr. Apple Support) se ne prepisuju. Prazna polja se ne pogađaju. Ponovni sync istog skupa daje 0 novih — to je normalno.
 
 ## Povezivanje postojećih oglasa
 
