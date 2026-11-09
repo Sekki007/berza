@@ -4499,8 +4499,9 @@ body.page-detail .main-wrap.kp-detail-wrap {
 .pcat-results-bar select,.pcat-offer-filters select{font:inherit;padding:7px 8px;border:1px solid var(--border);border-radius:8px;background:#fff;}
 .pcat-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;}
 .pcat-card{background:#fff;border:1px solid var(--border);border-radius:14px;overflow:hidden;display:flex;flex-direction:column;min-width:0;}
-.pcat-card-media{aspect-ratio:1;background:#f7f8f6;display:flex;align-items:center;justify-content:center;text-decoration:none;}
-.pcat-card-media img{width:100%;height:100%;object-fit:cover;}
+.pcat-card-media{position:relative;display:block;aspect-ratio:1 / 0.82;background:#f7f8f6;overflow:hidden;text-decoration:none;}
+.pcat-card-media img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center;display:block;}
+.pcat-card-media .pcat-placeholder{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);}
 .pcat-placeholder{width:64px;height:64px;border-radius:50%;background:#e8f5e9;color:var(--kp-green-dark);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:800;}
 .pcat-placeholder-lg{width:120px;height:120px;font-size:48px;}
 .pcat-card-body{padding:10px 12px 12px;display:flex;flex-direction:column;gap:4px;flex:1;}
@@ -4527,7 +4528,7 @@ body.page-detail .main-wrap.kp-detail-wrap {
 .pcat-bc{font-size:13px;color:var(--text-muted);margin:0 0 12px;}
 .pcat-model-head{background:#fff;border:1px solid var(--border);border-radius:20px;overflow:hidden;display:grid;}
 .pcat-model-photo{background:#f4f6f2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:18px;min-height:220px;}
-.pcat-model-photo img{width:100%;max-width:340px;height:auto;object-fit:contain;}
+.pcat-model-photo img{width:100%;max-width:340px;max-height:360px;height:auto;object-fit:contain;}
 .pcat-model-photo p{margin:0;font-size:11px;color:#98a0a4;text-align:center;}
 .pcat-model-info,.pcat-stats{padding:18px 16px;}
 .pcat-model-info h1{margin:2px 0 8px;font-size:30px;letter-spacing:-.4px;}
