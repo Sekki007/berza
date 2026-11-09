@@ -286,8 +286,12 @@ $showPriceConfirm = $priceEurNow > $priceWarnEur && $priceEurNow <= maxAdPriceEu
                         <?php endforeach; ?>
                     </div>
                     <label class="ad-photo-add" data-photo-drop>
-                        <input type="file" name="images[]" accept="image/*,.heic,.heif" capture="environment" multiple data-photo-input <?= $photosRequired && $existingImages === [] ? 'required' : '' ?>>
-                        <span>+ Dodaj fotografije<br><small>Kamera ili galerija</small></span>
+                        <input type="file" name="images[]" accept="image/*,.heic,.heif" multiple data-photo-input <?= $photosRequired && $existingImages === [] ? 'required' : '' ?>>
+                        <span>+ Dodaj fotografije<br><small>Galerija ili kamera</small></span>
+                    </label>
+                    <label class="ad-photo-camera-link">
+                        <input type="file" accept="image/*,.heic,.heif" capture="environment" data-photo-camera>
+                        <span>Samo kamera</span>
                     </label>
                     <div class="photo-upload" data-photo-preview></div>
                 </div>

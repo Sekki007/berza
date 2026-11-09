@@ -707,6 +707,11 @@ body.page-ad-form {
 .ad-photo-add input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
 .ad-photo-add:hover,.ad-photo-add.is-drag{border-color:var(--kp-green);color:var(--kp-green-dark);background:#f3faf4;}
 .ad-photo-add small{display:block;margin-top:4px;font-weight:normal;color:var(--text-muted);font-size:12px;}
+.ad-photo-camera-link{
+  display:inline-flex;align-items:center;gap:6px;margin:-2px 0 12px;font-size:13px;color:var(--link);
+  cursor:pointer;position:relative;font-weight:600;
+}
+.ad-photo-camera-link input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;}
 .ad-form-submit{
   display:grid;grid-template-columns:1.4fr 1fr;gap:8px;
   position:sticky;bottom:calc(var(--mobile-bar-h,56px) + var(--safe-bottom));

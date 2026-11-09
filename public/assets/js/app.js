@@ -304,7 +304,7 @@
 
     const cat = one('#ad-category', form);
     const catWrap = one('[data-category-wrap]', form);
-    if (cat) {
+    if (cat && cat.tagName === 'SELECT') {
       const options = all('#ad-category option', form);
       let firstVisible = null;
       let visibleCount = 0;
@@ -330,6 +330,12 @@
       if (type === 'delovi') {
         applyCategoryGroupDefaults(form, true);
       }
+    } else if (cat) {
+      // v2: category_group je hidden input (ne select)
+      if (type === 'telefon') cat.value = 'phones';
+      else if (type === 'servis') cat.value = 'service';
+      else if (type === 'delovi' && !(cat.value || '').trim()) cat.value = 'other_parts';
+      if (catWrap) catWrap.setAttribute('hidden', '');
     }
 
     const batt = one('[data-battery-field]', form);
@@ -389,7 +395,7 @@
 
   function applyCategoryGroupDefaults(form, forceEquip) {
     const cat = one('#ad-category', form);
-    if (!cat) return;
+    if (!cat || cat.tagName !== 'SELECT') return;
     const opt = cat.options[cat.selectedIndex];
     if (!opt || opt.disabled || opt.hidden) return;
 
@@ -439,7 +445,7 @@
     const form = one('[data-ad-form]');
     if (!form) return;
     const cat = one('#ad-category', form);
-    if (!cat) return;
+    if (!cat || cat.tagName !== 'SELECT') return;
     cat.addEventListener('change', function () {
       applyCategoryGroupDefaults(form, true);
     });
@@ -1653,6 +1659,17 @@
       }
       await addIncomingFiles(incoming);
     });
+
+    const cameraInput = one('[data-photo-camera]', input.form || document);
+    if (cameraInput) {
+      cameraInput.addEventListener('change', async function () {
+        if (busy) return;
+        const incoming = Array.from(cameraInput.files || []);
+        cameraInput.value = '';
+        if (!incoming.length) return;
+        await addIncomingFiles(incoming);
+      });
+    }
 
     // Kad se obriše postojeća slika, otključaj "Dodaj" ako ima mesta
     const existing = one('[data-photo-existing]');
