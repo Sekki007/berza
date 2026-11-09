@@ -125,5 +125,30 @@ check(!empty($after['ok']) && count($after['models']) >= count($seed['models']),
 $pixel = phoneCatalogModel('google-pixel-fiction');
 check(is_array($pixel) && ($pixel['specs'][0]['label'] ?? '') === 'Težina', 'novi Pixel Fiction model je u katalogu');
 
+// Prošireni sync: etape, tipovi, godine, filter brenda
+$stages = phoneCatalogWikidataBrandStages();
+$slugs = phoneCatalogWikidataBrandSlugs();
+check(count($stages) >= 15, 'ima bar 15 brand etapa');
+check(in_array('nokia', $slugs, true) && in_array('vivo', $slugs, true) && in_array('xiaomi', $slugs, true), 'brendovi nokia/vivo/xiaomi');
+check(phoneCatalogWikidataMinYear() <= 2014, 'min godina ≤ 2014');
+$types = phoneCatalogWikidataInstanceTypes();
+check(in_array('Q19723451', $types, true) && in_array('Q22645', $types, true), 'smartphone + mobile phone tipovi');
+
+$appleSparql = phoneCatalogWikidataSparql('apple');
+check(str_contains($appleSparql, 'wd:Q312') && !str_contains($appleSparql, 'wd:Q20718'), 'SPARQL za apple samo Apple Q-id');
+check(str_contains($appleSparql, 'wd:Q22645'), 'SPARQL uključuje mobile phone tip');
+
+$appleOnly = phoneCatalogWikidataSync(false, $bindings, 'apple');
+check(!empty($appleOnly['ok']), 'sync sa brand=apple prolazi na fixture');
+check((int)$appleOnly['summary']['incoming'] === 1, 'brand=apple filtrira na 1 model iz fixture-a');
+check(($appleOnly['summary']['brand'] ?? '') === 'apple', 'summary.brand=apple');
+
+$bad = phoneCatalogWikidataSync(false, null, 'nije-brend');
+check(empty($bad['ok']), 'nepoznat brand vraća grešku');
+
+check(phoneCatalogWikidataLabelAllowed('nokia', 'Nokia G22'), 'nokia label ok');
+check(!phoneCatalogWikidataLabelAllowed('nokia', 'Samsung Galaxy A54'), 'nokia odbija samsung label');
+check(phoneCatalogWikidataLabelAllowed('vivo', 'Vivo X100'), 'vivo label ok');
+
 echo $failed === 0 ? "\nSvi testovi prolaze.\n" : "\nNeuspešnih: {$failed}\n";
 exit($failed === 0 ? 0 : 1);

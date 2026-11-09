@@ -353,11 +353,11 @@ function phoneCatalogTokens(string $folded): array
 function phoneCatalogNormalizeStorage(string $raw): string
 {
     $folded = phoneCatalogFold($raw);
-    if (preg_match('/\b(32|64|128|256|512)\s*gb\b/', $folded, $match) === 1) {
+    if (preg_match('/\b(16|32|64|128|256|512)\s*gb\b/', $folded, $match) === 1) {
         return $match[1] . 'GB';
     }
-    if (preg_match('/\b1\s*tb\b/', $folded) === 1) {
-        return '1TB';
+    if (preg_match('/\b(1|2)\s*tb\b/', $folded, $match) === 1) {
+        return $match[1] . 'TB';
     }
     return '';
 }

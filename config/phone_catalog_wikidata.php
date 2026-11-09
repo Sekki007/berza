@@ -17,30 +17,110 @@ function phoneCatalogWikidataEndpoint(): string
 
 /**
  * Brendovi koje sync uvodi. Ključ je Wikidata Q-id proizvođača.
+ * Isti brand_slug može imati više Q-id (npr. Nokia + HMD Global).
  *
  * @return array<string,array{brand:string,brand_slug:string}>
  */
 function phoneCatalogWikidataBrands(): array
 {
+    // Q-id = P176 manufacturer koji na Wikidata stvarno ima smartphone stavke.
     return [
         'Q312' => ['brand' => 'Apple', 'brand_slug' => 'apple'],
         'Q20718' => ['brand' => 'Samsung', 'brand_slug' => 'samsung'],
-        'Q463094' => ['brand' => 'Google', 'brand_slug' => 'google'],
-        'Q488128' => ['brand' => 'Xiaomi', 'brand_slug' => 'xiaomi'],
-        'Q24133' => ['brand' => 'Huawei', 'brand_slug' => 'huawei'],
-        'Q21006422' => ['brand' => 'OnePlus', 'brand_slug' => 'oneplus'],
-        'Q308831' => ['brand' => 'Motorola', 'brand_slug' => 'motorola'],
-        'Q1321733' => ['brand' => 'Oppo', 'brand_slug' => 'oppo'],
-        'Q65124388' => ['brand' => 'Realme', 'brand_slug' => 'realme'],
-        'Q5561401' => ['brand' => 'Honor', 'brand_slug' => 'honor'],
-        'Q109657451' => ['brand' => 'Nothing', 'brand_slug' => 'nothing'],
-        'Q18656' => ['brand' => 'Asus', 'brand_slug' => 'asus'],
+        'Q95' => ['brand' => 'Google', 'brand_slug' => 'google'],
+        'Q463094' => ['brand' => 'Google', 'brand_slug' => 'google'], // Google LLC (stariji P176)
+        'Q1636958' => ['brand' => 'Xiaomi', 'brand_slug' => 'xiaomi'],
+        'Q160120' => ['brand' => 'Huawei', 'brand_slug' => 'huawei'],
+        'Q16499972' => ['brand' => 'OnePlus', 'brand_slug' => 'oneplus'],
+        'Q2084900' => ['brand' => 'Oppo', 'brand_slug' => 'oppo'],
+        'Q56275466' => ['brand' => 'Realme', 'brand_slug' => 'realme'],
+        'Q27070331' => ['brand' => 'Honor', 'brand_slug' => 'honor'],
+        'Q152864' => ['brand' => 'Asus', 'brand_slug' => 'asus'],
+        'Q1418' => ['brand' => 'Nokia', 'brand_slug' => 'nokia'],
+        'Q24090301' => ['brand' => 'Nokia', 'brand_slug' => 'nokia'], // HMD Global
+        'Q18301787' => ['brand' => 'Vivo', 'brand_slug' => 'vivo'],
+        'Q30594096' => ['brand' => 'Infinix', 'brand_slug' => 'infinix'],
+        'Q6014034' => ['brand' => 'Sony', 'brand_slug' => 'sony'],
+        'Q162345' => ['brand' => 'LG', 'brand_slug' => 'lg'],
+        'Q136484' => ['brand' => 'ZTE', 'brand_slug' => 'zte'],
+        'Q1143917' => ['brand' => 'Meizu', 'brand_slug' => 'meizu'],
+        'Q14799' => ['brand' => 'Lenovo', 'brand_slug' => 'lenovo'],
+        'Q186012' => ['brand' => 'HTC', 'brand_slug' => 'htc'],
+        'Q502121' => ['brand' => 'BlackBerry', 'brand_slug' => 'blackberry'],
     ];
+}
+
+/**
+ * Jedinstveni brand_slug → prikazni redosled za admin / CLI etape.
+ *
+ * @return list<array{slug:string,brand:string,qids:list<string>}>
+ */
+function phoneCatalogWikidataBrandStages(): array
+{
+    $bySlug = [];
+    foreach (phoneCatalogWikidataBrands() as $qid => $meta) {
+        $slug = (string)$meta['brand_slug'];
+        if (!isset($bySlug[$slug])) {
+            $bySlug[$slug] = [
+                'slug' => $slug,
+                'brand' => (string)$meta['brand'],
+                'qids' => [],
+            ];
+        }
+        $bySlug[$slug]['qids'][] = $qid;
+    }
+    return array_values($bySlug);
+}
+
+/** @return list<string> */
+function phoneCatalogWikidataBrandSlugs(): array
+{
+    return array_map(static fn(array $s): string => $s['slug'], phoneCatalogWikidataBrandStages());
+}
+
+function phoneCatalogWikidataNormalizeBrandSlug(?string $brandSlug): ?string
+{
+    $brandSlug = mb_strtolower(trim((string)$brandSlug));
+    if ($brandSlug === '' || $brandSlug === 'all') {
+        return null;
+    }
+    return in_array($brandSlug, phoneCatalogWikidataBrandSlugs(), true) ? $brandSlug : null;
+}
+
+/**
+ * @return array<string,array{brand:string,brand_slug:string}>
+ */
+function phoneCatalogWikidataBrandsFiltered(?string $brandSlug = null): array
+{
+    $brandSlug = phoneCatalogWikidataNormalizeBrandSlug($brandSlug);
+    if ($brandSlug === null) {
+        return phoneCatalogWikidataBrands();
+    }
+    $out = [];
+    foreach (phoneCatalogWikidataBrands() as $qid => $meta) {
+        if ($meta['brand_slug'] === $brandSlug) {
+            $out[$qid] = $meta;
+        }
+    }
+    return $out;
 }
 
 function phoneCatalogWikidataMinYear(): int
 {
-    return 2016;
+    return 2014;
+}
+
+/**
+ * Tipovi stavki: smartphone + mobile phone (šire pokrivanje novijih modela).
+ *
+ * @return list<string>
+ */
+function phoneCatalogWikidataInstanceTypes(): array
+{
+    return [
+        'Q19723451', // smartphone
+        'Q22645',    // mobile phone
+    ];
 }
 
 function phoneCatalogWikidataUserAgent(): string
@@ -48,25 +128,36 @@ function phoneCatalogWikidataUserAgent(): string
     return 'KupiTelefonCatalogBot/1.0 (https://kupitelefon.rs; wikidata phone catalog sync)';
 }
 
-function phoneCatalogWikidataSparql(): string
+function phoneCatalogWikidataSparql(?string $brandSlug = null): string
 {
+    $brandsMap = phoneCatalogWikidataBrandsFiltered($brandSlug);
     $brandValues = [];
-    foreach (array_keys(phoneCatalogWikidataBrands()) as $qid) {
+    foreach (array_keys($brandsMap) as $qid) {
         $brandValues[] = 'wd:' . $qid;
     }
     $brands = implode(' ', $brandValues);
+    $types = implode(' ', array_map(static fn(string $q): string => 'wd:' . $q, phoneCatalogWikidataInstanceTypes()));
     $minYear = phoneCatalogWikidataMinYear();
 
     return <<<SPARQL
 SELECT ?item ?itemLabel ?brand ?mass ?massUnit ?height ?width ?depth ?display ?mem ?memUnit ?inception ?cpuLabel WHERE {
   VALUES ?brand { {$brands} }
-  ?item wdt:P31 wd:Q19723451 ;
+  VALUES ?type { {$types} }
+  ?item wdt:P31 ?type ;
         wdt:P176 ?brand .
   ?item rdfs:label ?itemLabel FILTER (LANG(?itemLabel) = "en")
   FILTER (!REGEX(?itemLabel, "^Q[0-9]+$"))
   FILTER (!CONTAINS(LCASE(?itemLabel), "series"))
+  FILTER (!CONTAINS(LCASE(?itemLabel), "concept"))
   OPTIONAL { ?item wdt:P571 ?inception }
-  FILTER (!BOUND(?inception) || YEAR(?inception) >= {$minYear})
+  OPTIONAL { ?item wdt:P577 ?published }
+  BIND(COALESCE(?inception, ?published) AS ?start)
+  # Mobile phone bez datuma često vuče stare feature telefone — traži datum.
+  # Smartphone bez datuma i dalje ulazi (noviji modeli ponekad nemaju P571).
+  FILTER (
+    (BOUND(?start) && YEAR(?start) >= {$minYear})
+    || (!BOUND(?start) && ?type = wd:Q19723451)
+  )
   OPTIONAL {
     ?item p:P2067/psv:P2067 [ wikibase:quantityAmount ?mass ; wikibase:quantityUnit ?massUnit ] .
   }
@@ -96,13 +187,35 @@ SPARQL;
 /**
  * @return array{ok:bool,error?:string,bindings?:list<array<string,mixed>>,http_status?:int}
  */
-function phoneCatalogWikidataFetchBindings(?string $sparql = null): array
+function phoneCatalogWikidataResolveBrandArg(?string $brandSlug): array
+{
+    if ($brandSlug === null) {
+        return ['ok' => true, 'slug' => null];
+    }
+    $raw = trim($brandSlug);
+    if ($raw === '' || strcasecmp($raw, 'all') === 0) {
+        return ['ok' => true, 'slug' => null];
+    }
+    $normalized = phoneCatalogWikidataNormalizeBrandSlug($raw);
+    if ($normalized === null) {
+        return ['ok' => false, 'error' => 'Nepoznat brend za sync: ' . $raw, 'slug' => null];
+    }
+    return ['ok' => true, 'slug' => $normalized];
+}
+
+function phoneCatalogWikidataFetchBindings(?string $sparql = null, ?string $brandSlug = null): array
 {
     if (!function_exists('curl_init')) {
         return ['ok' => false, 'error' => 'PHP curl nije dostupan.'];
     }
 
-    $query = $sparql ?? phoneCatalogWikidataSparql();
+    $resolved = phoneCatalogWikidataResolveBrandArg($brandSlug);
+    if (empty($resolved['ok'])) {
+        return ['ok' => false, 'error' => (string)$resolved['error']];
+    }
+    $brandSlug = $resolved['slug'];
+
+    $query = $sparql ?? phoneCatalogWikidataSparql($brandSlug);
     $url = phoneCatalogWikidataEndpoint() . '?query=' . rawurlencode($query);
     $ch = curl_init($url);
     if ($ch === false) {
@@ -111,7 +224,7 @@ function phoneCatalogWikidataFetchBindings(?string $sparql = null): array
     curl_setopt_array($ch, [
         CURLOPT_RETURNTRANSFER => true,
         CURLOPT_FOLLOWLOCATION => true,
-        CURLOPT_TIMEOUT => 90,
+        CURLOPT_TIMEOUT => 120,
         CURLOPT_HTTPHEADER => [
             'Accept: application/sparql-results+json',
             'User-Agent: ' . phoneCatalogWikidataUserAgent(),
@@ -205,17 +318,20 @@ function phoneCatalogWikidataFormatStorage(string $amount, string $unitUri): str
     // Q79738 gigabyte, Q2382367 gibibyte, Q2111 megabyte, Q208212 Q1121037 terabyte-ish
     if (in_array($unit, ['Q79738', 'Q2382367'], true) || $unit === '') {
         $gb = (int)round($num);
-        if (in_array($gb, [32, 64, 128, 256, 512], true)) {
+        if (in_array($gb, [16, 32, 64, 128, 256, 512], true)) {
             return $gb . 'GB';
         }
         if ($gb === 1024 || $gb === 1000) {
             return '1TB';
         }
-        if ($gb >= 16 && $gb <= 2048) {
+        if ($gb === 2048 || $gb === 2000) {
+            return '2TB';
+        }
+        if ($gb >= 16 && $gb <= 4096) {
             return phoneCatalogNormalizeStorage($gb . 'GB');
         }
     }
-    if (in_array($unit, ['Q208212', 'Q1121037', 'Q691231'], true) || $num == 1.0) {
+    if (in_array($unit, ['Q208212', 'Q1121037', 'Q691231'], true) || $num == 1.0 || $num == 2.0) {
         $tb = phoneCatalogNormalizeStorage(phoneCatalogWikidataFormatNumber($amount, 0) . 'TB');
         if ($tb !== '') {
             return $tb;
@@ -250,21 +366,39 @@ function phoneCatalogWikidataLabelAllowed(string $brandSlug, string $label): boo
     }
 
     // Strana marka u nazivu → verovatno loš P176.
-    $foreign = [
-        'apple' => ['samsung', 'galaxy', 'xiaomi', 'redmi', 'pixel', 'huawei', 'honor', 'oneplus', 'motorola', 'nokia', 'oppo', 'realme'],
-        'samsung' => ['iphone', 'pixel', 'xiaomi', 'redmi', 'huawei', 'honor', 'oneplus', 'nokia', 'oppo', 'realme'],
-        'google' => ['iphone', 'samsung', 'galaxy', 'xiaomi', 'redmi', 'huawei', 'honor', 'oneplus', 'nokia', 'oppo', 'realme', 'motorola'],
-        'xiaomi' => ['iphone', 'samsung', 'galaxy', 'pixel', 'huawei', 'honor', 'oneplus', 'nokia', 'oppo', 'realme'],
-        'huawei' => ['iphone', 'samsung', 'galaxy', 'pixel', 'xiaomi', 'redmi', 'oneplus', 'nokia', 'oppo', 'realme'],
-        'oneplus' => ['iphone', 'samsung', 'galaxy', 'pixel', 'xiaomi', 'redmi', 'huawei', 'honor', 'nokia', 'oppo', 'realme'],
-        'motorola' => ['iphone', 'samsung', 'galaxy', 'pixel', 'xiaomi', 'redmi', 'huawei', 'honor', 'oneplus', 'nokia', 'oppo', 'realme'],
-        'oppo' => ['iphone', 'samsung', 'galaxy', 'pixel', 'xiaomi', 'redmi', 'huawei', 'honor', 'oneplus', 'nokia', 'realme'],
-        'realme' => ['iphone', 'samsung', 'galaxy', 'pixel', 'xiaomi', 'redmi', 'huawei', 'honor', 'oneplus', 'nokia', 'oppo'],
-        'honor' => ['iphone', 'samsung', 'galaxy', 'pixel', 'xiaomi', 'redmi', 'oneplus', 'nokia', 'oppo', 'realme'],
-        'nothing' => ['iphone', 'samsung', 'galaxy', 'pixel', 'xiaomi', 'redmi', 'huawei', 'honor', 'oneplus', 'nokia', 'oppo', 'realme'],
-        'asus' => ['iphone', 'samsung', 'galaxy', 'pixel', 'xiaomi', 'redmi', 'huawei', 'honor', 'oneplus', 'nokia', 'oppo', 'realme'],
-    ];
-    foreach ($foreign[$brandSlug] ?? [] as $needle) {
+    $foreignNeedles = ['iphone', 'samsung', 'galaxy', 'xiaomi', 'redmi', 'poco', 'pixel', 'huawei', 'honor', 'oneplus', 'motorola', 'nokia', 'oppo', 'realme', 'vivo', 'tecno', 'infinix', 'sony', 'xperia', 'zenfone', 'nothing', 'fairphone', 'blackberry', 'lenovo', 'meizu', 'htc'];
+    $ownTokens = match ($brandSlug) {
+        'apple' => ['iphone'],
+        'samsung' => ['samsung', 'galaxy'],
+        'google' => ['pixel', 'nexus'],
+        'xiaomi' => ['xiaomi', 'redmi', 'poco', 'mi'],
+        'huawei' => ['huawei', 'mate', 'nova'],
+        'oneplus' => ['oneplus'],
+        'motorola' => ['motorola', 'moto'],
+        'oppo' => ['oppo'],
+        'realme' => ['realme'],
+        'honor' => ['honor'],
+        'nothing' => ['nothing'],
+        'asus' => ['asus', 'zenfone', 'rog'],
+        'nokia' => ['nokia'],
+        'vivo' => ['vivo', 'iqoo'],
+        'tecno' => ['tecno'],
+        'infinix' => ['infinix'],
+        'sony' => ['sony', 'xperia'],
+        'lg' => ['lg'],
+        'zte' => ['zte', 'nubia', 'axon'],
+        'tcl' => ['tcl'],
+        'meizu' => ['meizu'],
+        'lenovo' => ['lenovo'],
+        'fairphone' => ['fairphone'],
+        'htc' => ['htc'],
+        'blackberry' => ['blackberry'],
+        default => [],
+    };
+    foreach ($foreignNeedles as $needle) {
+        if (in_array($needle, $ownTokens, true)) {
+            continue;
+        }
         if (str_contains($lower, $needle)) {
             return false;
         }
@@ -283,6 +417,19 @@ function phoneCatalogWikidataLabelAllowed(string $brandSlug, string $label): boo
         'honor' => (bool)preg_match('/\bhonor\b/i', $label),
         'nothing' => (bool)preg_match('/\bnothing\b/i', $label),
         'asus' => (bool)preg_match('/\b(asus|zenfone|rog)\b/i', $label),
+        'nokia' => (bool)preg_match('/\bnokia\b/i', $label),
+        'vivo' => (bool)preg_match('/\b(vivo|iqoo)\b/i', $label),
+        'tecno' => (bool)preg_match('/\btecno\b/i', $label),
+        'infinix' => (bool)preg_match('/\binfinix\b/i', $label),
+        'sony' => (bool)preg_match('/\b(sony|xperia)\b/i', $label),
+        'lg' => (bool)preg_match('/\blg\b/i', $label),
+        'zte' => (bool)preg_match('/\b(zte|nubia|axon)\b/i', $label),
+        'tcl' => (bool)preg_match('/\btcl\b/i', $label),
+        'meizu' => (bool)preg_match('/\bmeizu\b/i', $label),
+        'lenovo' => (bool)preg_match('/\blenovo\b/i', $label),
+        'fairphone' => (bool)preg_match('/\bfairphone\b/i', $label),
+        'htc' => (bool)preg_match('/\bhtc\b/i', $label),
+        'blackberry' => (bool)preg_match('/\bblackberry\b/i', $label),
         default => true,
     };
 }
@@ -444,10 +591,14 @@ function phoneCatalogWikidataBuildFromBindings(array $bindings): array
 
         $variants = [];
         foreach (array_keys($entry['mem']) as $storage) {
-            $variantId = $entry['id'] . '-' . mb_strtolower($storage);
+            $storageNorm = phoneCatalogNormalizeStorage((string)$storage);
+            if ($storageNorm === '') {
+                continue;
+            }
+            $variantId = $entry['id'] . '-' . mb_strtolower($storageNorm);
             $variants[] = [
                 'id' => $variantId,
-                'storage' => $storage,
+                'storage' => $storageNorm,
                 'source_id' => $sourceId,
             ];
         }
@@ -638,10 +789,16 @@ function phoneCatalogWikidataMerge(array $existingRaw, array $incoming): array
             $variantKeys[(string)($variant['storage'] ?? '')] = true;
         }
         foreach (($incomingModel['variants'] ?? []) as $variant) {
-            $storage = (string)($variant['storage'] ?? '');
-            if ($storage === '' || isset($variantKeys[$storage])) {
+            if (!is_array($variant)) {
                 continue;
             }
+            $storage = phoneCatalogNormalizeStorage((string)($variant['storage'] ?? ''));
+            $variantId = trim((string)($variant['id'] ?? ''));
+            $variantSource = trim((string)($variant['source_id'] ?? ''));
+            if ($storage === '' || $variantId === '' || $variantSource === '' || isset($variantKeys[$storage])) {
+                continue;
+            }
+            $variant['storage'] = $storage;
             $keptVariants[] = $variant;
             $variantKeys[$storage] = true;
         }
@@ -736,10 +893,16 @@ function phoneCatalogWikidataMerge(array $existingRaw, array $incoming): array
 /**
  * @return array{ok:bool,error?:string,summary?:array<string,mixed>,document?:array<string,mixed>,bundle?:array<string,mixed>}
  */
-function phoneCatalogWikidataSync(bool $apply = false, ?array $bindings = null): array
+function phoneCatalogWikidataSync(bool $apply = false, ?array $bindings = null, ?string $brandSlug = null): array
 {
+    $resolved = phoneCatalogWikidataResolveBrandArg($brandSlug);
+    if (empty($resolved['ok'])) {
+        return ['ok' => false, 'error' => (string)$resolved['error']];
+    }
+    $brandSlug = $resolved['slug'];
+
     if ($bindings === null) {
-        $fetch = phoneCatalogWikidataFetchBindings();
+        $fetch = phoneCatalogWikidataFetchBindings(null, $brandSlug);
         if (empty($fetch['ok'])) {
             return ['ok' => false, 'error' => (string)($fetch['error'] ?? 'Wikidata fetch nije uspeo.')];
         }
@@ -749,6 +912,22 @@ function phoneCatalogWikidataSync(bool $apply = false, ?array $bindings = null):
     $built = phoneCatalogWikidataBuildFromBindings($bindings);
     if (empty($built['ok'])) {
         return ['ok' => false, 'error' => (string)($built['error'] ?? 'Gradnja modela nije uspela.')];
+    }
+
+    // Ako je etapa po brendu, zadrži samo modele tog slug-a (zaštita od šuma u fixture/testu).
+    if ($brandSlug !== null) {
+        $built['models'] = array_values(array_filter(
+            $built['models'],
+            static fn(array $m): bool => (string)($m['brand_slug'] ?? '') === $brandSlug
+        ));
+        $built['stats']['incoming'] = count($built['models']);
+        $withSpecs = 0;
+        foreach ($built['models'] as $m) {
+            if (($m['specs'] ?? []) !== []) {
+                $withSpecs++;
+            }
+        }
+        $built['stats']['with_specs'] = $withSpecs;
     }
 
     $existing = phoneCatalogLoadRawDocument();
@@ -764,6 +943,7 @@ function phoneCatalogWikidataSync(bool $apply = false, ?array $bindings = null):
     $summary['incoming'] = $built['stats']['incoming'];
     $summary['incoming_with_specs'] = $built['stats']['with_specs'];
     $summary['bindings'] = $built['stats']['bindings'];
+    $summary['brand'] = $brandSlug ?? 'all';
 
     if ($apply) {
         phoneCatalogWriteBundle($merged['bundle']);
