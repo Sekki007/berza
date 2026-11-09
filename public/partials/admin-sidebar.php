@@ -13,6 +13,7 @@ $adminLinks = [
     ['id' => 'ads', 'href' => '/ads.php', 'label' => 'Oglasi'],
     ['id' => 'expiry', 'href' => '/admin_expiry.php', 'label' => 'Istek' . ($expiringSoon > 0 ? " ($expiringSoon)" : '')],
     ['id' => 'import', 'href' => '/admin_import.php', 'label' => 'KP uvoz'],
+    ['id' => 'phone-catalog', 'href' => '/admin_phone_catalog.php', 'label' => 'Katalog telefona'],
     ['id' => 'cleanup', 'href' => '/admin_cleanup.php', 'label' => 'Čišćenje'],
     ['id' => 'top', 'href' => '/admin_top.php', 'label' => 'TOP' . ($pendingTop > 0 ? " ($pendingTop)" : '')],
     ['id' => 'credits', 'href' => '/admin_credits.php', 'label' => 'Krediti' . ($pendingCredits > 0 ? " ($pendingCredits)" : '')],

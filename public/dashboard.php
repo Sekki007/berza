@@ -118,6 +118,7 @@ require __DIR__ . '/partials/layout-start.php';
             <a href="/admin_reports.php">Prijave<?= (int)$stats['openReports'] > 0 ? ' (' . (int)$stats['openReports'] . ' otvorenih)' : '' ?></a>
             <a href="/admin_users.php">Upravljanje korisnicima</a>
             <a href="/ads.php">Upravljanje oglasima</a>
+            <a href="/admin_phone_catalog.php">Katalog telefona (Wikidata)</a>
             <a href="/admin_settings.php">Podešavanja sajta</a>
         </div>
 

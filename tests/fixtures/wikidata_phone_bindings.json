@@ -1,0 +1,44 @@
+{
+  "bindings": [
+    {
+      "item": { "type": "uri", "value": "http://www.wikidata.org/entity/Q121992935" },
+      "itemLabel": { "type": "literal", "value": "iPhone 15" },
+      "brand": { "type": "uri", "value": "http://www.wikidata.org/entity/Q312" },
+      "mass": { "type": "literal", "value": "171" },
+      "massUnit": { "type": "uri", "value": "http://www.wikidata.org/entity/Q41803" },
+      "height": { "type": "literal", "value": "147.6" },
+      "width": { "type": "literal", "value": "71.6" },
+      "depth": { "type": "literal", "value": "7.8" },
+      "display": { "type": "literal", "value": "6.1" },
+      "mem": { "type": "literal", "value": "128" },
+      "memUnit": { "type": "uri", "value": "http://www.wikidata.org/entity/Q79738" },
+      "cpuLabel": { "type": "literal", "value": "Apple A16" }
+    },
+    {
+      "item": { "type": "uri", "value": "http://www.wikidata.org/entity/Q121992935" },
+      "itemLabel": { "type": "literal", "value": "iPhone 15" },
+      "brand": { "type": "uri", "value": "http://www.wikidata.org/entity/Q312" },
+      "mem": { "type": "literal", "value": "256" },
+      "memUnit": { "type": "uri", "value": "http://www.wikidata.org/entity/Q79738" }
+    },
+    {
+      "item": { "type": "uri", "value": "http://www.wikidata.org/entity/Q999999001" },
+      "itemLabel": { "type": "literal", "value": "Samsung Galaxy Test One" },
+      "brand": { "type": "uri", "value": "http://www.wikidata.org/entity/Q20718" },
+      "mass": { "type": "literal", "value": "168" },
+      "massUnit": { "type": "uri", "value": "http://www.wikidata.org/entity/Q41803" },
+      "height": { "type": "literal", "value": "146.3" },
+      "width": { "type": "literal", "value": "70.9" },
+      "depth": { "type": "literal", "value": "7.6" },
+      "display": { "type": "literal", "value": "6.1" },
+      "cpuLabel": { "type": "literal", "value": "Snapdragon Test" }
+    },
+    {
+      "item": { "type": "uri", "value": "http://www.wikidata.org/entity/Q999999002" },
+      "itemLabel": { "type": "literal", "value": "Pixel Fiction" },
+      "brand": { "type": "uri", "value": "http://www.wikidata.org/entity/Q463094" },
+      "mass": { "type": "literal", "value": "197" },
+      "massUnit": { "type": "uri", "value": "http://www.wikidata.org/entity/Q41803" }
+    }
+  ]
+}

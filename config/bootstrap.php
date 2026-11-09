@@ -1639,6 +1639,7 @@ require_once __DIR__ . '/ad_stats.php';
 require_once __DIR__ . '/storefront.php';
 require_once __DIR__ . '/shop_catalog.php';
 require_once __DIR__ . '/phone_catalog.php';
+require_once __DIR__ . '/phone_catalog_wikidata.php';
 require_once __DIR__ . '/kp_import.php';
 require_once __DIR__ . '/ads_cleanup.php';
 require_once __DIR__ . '/services_directory.php';

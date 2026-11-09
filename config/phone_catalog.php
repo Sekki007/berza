@@ -1313,3 +1313,63 @@ function phoneCatalogSourcesForModel(array $model): array
     }
     return $out;
 }
+
+/**
+ * Učitaj sirovi katalog iz skladišta ili seeda.
+ *
+ * @return array<string,mixed>
+ */
+function phoneCatalogLoadRawDocument(): array
+{
+    if (function_exists('readJsonFile')) {
+        $stored = readJsonFile(phoneCatalogStoreFilename());
+        if (is_array($stored) && isset($stored['models']) && is_array($stored['models']) && $stored['models'] !== []) {
+            return $stored;
+        }
+    }
+    $decoded = json_decode((string)file_get_contents(phoneCatalogSeedPath()), true);
+    return is_array($decoded) ? $decoded : ['version' => 1, 'coverage_note' => '', 'sources' => [], 'models' => []];
+}
+
+/**
+ * @param array<string,mixed> $bundle normalizovan bundle (ok=true)
+ * @return array<string,mixed>
+ */
+function phoneCatalogExportDocument(array $bundle): array
+{
+    return [
+        'version' => 1,
+        'coverage_note' => (string)($bundle['coverage_note'] ?? ''),
+        'sources' => array_values($bundle['sources'] ?? []),
+        'models' => array_map(static function (array $model): array {
+            return [
+                'id' => $model['id'],
+                'brand' => $model['brand'],
+                'brand_slug' => $model['brand_slug'],
+                'name' => $model['name'],
+                'official_name' => $model['official_name'],
+                'slug' => $model['slug'],
+                'source_ids' => $model['source_ids'],
+                'aliases' => array_map(
+                    static fn(array $tokens): string => implode(' ', $tokens),
+                    $model['aliases']
+                ),
+                'colors' => $model['colors'],
+                'variants' => array_values($model['variants']),
+                'highlights' => $model['highlights'],
+                'specs' => $model['specs'],
+                'image' => null,
+            ];
+        }, array_values($bundle['models'] ?? [])),
+    ];
+}
+
+/** @param array<string,mixed> $bundle normalizovan bundle (ok=true) */
+function phoneCatalogWriteBundle(array $bundle): void
+{
+    if (empty($bundle['ok'])) {
+        throw new InvalidArgumentException('Neispravan katalog bundle.');
+    }
+    writeJsonFile(phoneCatalogStoreFilename(), phoneCatalogExportDocument($bundle));
+    phoneCatalogResetCache();
+}
