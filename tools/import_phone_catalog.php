@@ -70,29 +70,7 @@ if (!$apply) {
     exit(0);
 }
 
-writeJsonFile(phoneCatalogStoreFilename(), [
-    'version' => 1,
-    'coverage_note' => $bundle['coverage_note'],
-    'sources' => array_values($bundle['sources']),
-    'models' => array_map(static function (array $model): array {
-        return [
-            'id' => $model['id'],
-            'brand' => $model['brand'],
-            'brand_slug' => $model['brand_slug'],
-            'name' => $model['name'],
-            'official_name' => $model['official_name'],
-            'slug' => $model['slug'],
-            'source_ids' => $model['source_ids'],
-            'aliases' => array_map(static fn(array $tokens): string => implode(' ', $tokens), $model['aliases']),
-            'colors' => $model['colors'],
-            'variants' => array_values($model['variants']),
-            'highlights' => $model['highlights'],
-            'specs' => $model['specs'],
-            'image' => null,
-        ];
-    }, array_values($bundle['models'])),
-]);
-phoneCatalogResetCache();
+phoneCatalogWriteBundle($bundle);
 echo "Upisano: " . phoneCatalogStoreFilename() . ' (' . storageDriver() . ")\n";
 
 if (!$sql) {

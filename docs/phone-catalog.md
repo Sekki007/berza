@@ -47,6 +47,19 @@ Bez `--apply` ništa se ne upisuje. Provera odbija specifikaciju bez izvora i sl
 
 Novi model se dodaje u seed: `id`, marka, slugovi, bar jedan `source_ids` zapis i aliasi. Specifikacija mora imati `source_id` koji postoji u `sources`. Posle izmene seeda ponovo pokrenuti `--apply` ako dokument `phone_models.json` već postoji, jer on ima prednost nad seedom.
 
+## Wikidata sync
+
+Masovno punjenje modela ide preko Wikidata (ne GSMArena / Mobilni svet):
+
+```bash
+php tools/sync_phone_catalog_wikidata.php
+php tools/sync_phone_catalog_wikidata.php --apply
+```
+
+Ili u adminu: **Katalog telefona** → Pregledaj sync → Primeni sync (`/admin_phone_catalog.php`).
+
+Sync povlači smartphone modele odabranih brendova od 2016. godine. Upisuje dimenzije, težinu, dijagonalu, čipset i memorijske varijante **samo ako postoje na Wikidata stavci**. Proizvođačke specifikacije (npr. Apple Support) se ne prepisuju. Prazna polja se ne pogađaju.
+
 ## Povezivanje postojećih oglasa
 
 ```bash
