@@ -477,6 +477,102 @@
     return title.slice(0, 120);
   }
 
+  function initPhoneCatalogPicker() {
+    var form = one('[data-ad-form]');
+    if (!form) return;
+    var modelSel = one('[data-phone-model]', form);
+    var variantSel = one('[data-phone-variant]', form);
+    var brand = one('[data-phone-brand]', form);
+    var modelInput = one('#ad-model', form);
+    var storage = one('select[name="storage"]', form);
+    var device = one('select[name="device_type"]', form);
+    var wrap = one('[data-phone-catalog-picker]', form);
+    if (!modelSel || !variantSel) return;
+
+    function variantsFor(opt) {
+      if (!opt) return [];
+      try {
+        return JSON.parse(opt.getAttribute('data-variants') || '[]') || [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function refillVariants(keep) {
+      var opt = modelSel.options[modelSel.selectedIndex];
+      var vars = variantsFor(opt);
+      var current = keep ? variantSel.value : '';
+      variantSel.innerHTML = '';
+      var empty = document.createElement('option');
+      empty.value = '';
+      empty.textContent = vars.length ? 'Nije izabrano' : 'Nema službene varijante';
+      variantSel.appendChild(empty);
+      vars.forEach(function (variant) {
+        var option = document.createElement('option');
+        option.value = variant.id;
+        option.textContent = variant.storage;
+        option.setAttribute('data-storage', variant.storage);
+        if (variant.id === current) option.selected = true;
+        variantSel.appendChild(option);
+      });
+      variantSel.disabled = vars.length === 0;
+    }
+
+    function applyModel() {
+      var opt = modelSel.options[modelSel.selectedIndex];
+      if (!opt || !opt.value) {
+        refillVariants(false);
+        return;
+      }
+      var brandName = opt.getAttribute('data-brand') || '';
+      var modelName = opt.getAttribute('data-name') || '';
+      if (brand && brandName) {
+        Array.prototype.forEach.call(brand.options, function (option) {
+          if (option.value === brandName) option.selected = true;
+        });
+        brand.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      if (modelInput && modelName) {
+        modelInput.value = modelName;
+        modelInput.dispatchEvent(new Event('input', { bubbles: true }));
+      }
+      refillVariants(true);
+    }
+
+    function applyVariant() {
+      var opt = variantSel.options[variantSel.selectedIndex];
+      if (!opt || !storage) return;
+      var value = opt.getAttribute('data-storage') || '';
+      if (!value) return;
+      var matched = false;
+      Array.prototype.forEach.call(storage.options, function (option) {
+        if (option.value === value) {
+          option.selected = true;
+          matched = true;
+        }
+      });
+      if (matched) storage.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+
+    function syncDevice() {
+      var phone = !device || device.value === 'phone';
+      if (wrap) wrap.hidden = !phone;
+      modelSel.disabled = !phone;
+      if (!phone) {
+        modelSel.value = '';
+        refillVariants(false);
+        variantSel.disabled = true;
+      } else if (variantSel.options.length > 1) {
+        variantSel.disabled = false;
+      }
+    }
+
+    modelSel.addEventListener('change', applyModel);
+    variantSel.addEventListener('change', applyVariant);
+    if (device) device.addEventListener('change', syncDevice);
+    syncDevice();
+  }
+
   function initAdFormExtras() {
     const form = one('[data-ad-form]');
     if (!form) return;
@@ -2459,6 +2555,7 @@
     initFormTypeSelect();
     initCategoryGroupSync();
     initAdFormExtras();
+    initPhoneCatalogPicker();
     initActiveNav();
     initAccountMenu();
     initAccountTabs();

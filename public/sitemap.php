@@ -35,6 +35,7 @@ $staticPages = [
     ['/registracija', '0.6', 'monthly'],
     ['/postavi-oglas', '0.6', 'weekly'],
     ['/oglasi', '0.9', 'daily'],
+    ['/katalog', '0.8', 'daily'],
     ['/vodici', '0.7', 'weekly'],
     ['/servisi', '0.9', 'daily'],
     ['/provera-imei', '0.8', 'monthly'],
@@ -60,6 +61,19 @@ foreach (listingLandingCandidatesForSitemap($publicAds) as $landingPath) {
         'priority' => '0.75',
         'changefreq' => 'daily',
     ]);
+}
+
+if (function_exists('phoneCatalogSitemapPaths')) {
+    foreach (phoneCatalogSitemapPaths() as $catalogPath) {
+        if ($catalogPath === '/katalog') {
+            continue;
+        }
+        $addUrl([
+            'loc' => absoluteUrl($catalogPath),
+            'priority' => '0.6',
+            'changefreq' => 'weekly',
+        ]);
+    }
 }
 
 foreach (getPublishedGuides() as $guide) {

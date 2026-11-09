@@ -1,0 +1,554 @@
+{
+  "version": 1,
+  "coverage_note": "Prva verzija ima kontrolisan skup modela, ne sve telefone na tržištu. Specifikacije su upisane samo kada postoji proveren izvor. Ostali modeli imaju samo identitet.",
+  "sources": [
+    {
+      "id": "apple-iphone-15",
+      "kind": "manufacturer",
+      "publisher": "Apple",
+      "title": "iPhone 15 - Tech Specs",
+      "url": "https://support.apple.com/en-us/111831",
+      "retrieved_at": "2026-11-06",
+      "note": "Zvanična Apple Support stranica tehničkih specifikacija. Nije masovno preuzimanje. U katalog je prenet skraćen izvod, ne cela stranica."
+    },
+    {
+      "id": "wd-Q67214165",
+      "kind": "wikidata",
+      "publisher": "Wikidata",
+      "title": "iPhone 11",
+      "url": "https://www.wikidata.org/wiki/Q67214165",
+      "retrieved_at": "2026-11-06",
+      "note": "Identitet modela. Opis stavke: 2019 smartphone model produced by Apple Inc. Specifikacije nisu preuzete."
+    },
+    {
+      "id": "wd-Q96608989",
+      "kind": "wikidata",
+      "publisher": "Wikidata",
+      "title": "iPhone 12",
+      "url": "https://www.wikidata.org/wiki/Q96608989",
+      "retrieved_at": "2026-11-06",
+      "note": "Identitet modela. Opis stavke: 14th generation of the iPhone. Specifikacije nisu preuzete."
+    },
+    {
+      "id": "wd-Q100319367",
+      "kind": "wikidata",
+      "publisher": "Wikidata",
+      "title": "iPhone 12 Pro",
+      "url": "https://www.wikidata.org/wiki/Q100319367",
+      "retrieved_at": "2026-11-06",
+      "note": "Identitet modela. Specifikacije nisu preuzete."
+    },
+    {
+      "id": "wd-Q108118280",
+      "kind": "wikidata",
+      "publisher": "Wikidata",
+      "title": "iPhone 13",
+      "url": "https://www.wikidata.org/wiki/Q108118280",
+      "retrieved_at": "2026-11-06",
+      "note": "Identitet modela. Opis stavke: 15th generation of the iPhone. Specifikacije nisu preuzete."
+    },
+    {
+      "id": "wd-Q108541666",
+      "kind": "wikidata",
+      "publisher": "Wikidata",
+      "title": "iPhone 13 mini",
+      "url": "https://www.wikidata.org/wiki/Q108541666",
+      "retrieved_at": "2026-11-06",
+      "note": "Identitet modela. Opis stavke: smartphone. Specifikacije nisu preuzete."
+    },
+    {
+      "id": "wd-Q108541719",
+      "kind": "wikidata",
+      "publisher": "Wikidata",
+      "title": "iPhone 13 Pro",
+      "url": "https://www.wikidata.org/wiki/Q108541719",
+      "retrieved_at": "2026-11-06",
+      "note": "Identitet modela. Opis stavke: smartphone by Apple. Specifikacije nisu preuzete."
+    },
+    {
+      "id": "wd-Q108541741",
+      "kind": "wikidata",
+      "publisher": "Wikidata",
+      "title": "iPhone 13 Pro Max",
+      "url": "https://www.wikidata.org/wiki/Q108541741",
+      "retrieved_at": "2026-11-06",
+      "note": "Identitet modela. Opis stavke: smartphone by Apple Inc. Specifikacije nisu preuzete."
+    },
+    {
+      "id": "wd-Q110397828",
+      "kind": "wikidata",
+      "publisher": "Wikidata",
+      "title": "iPhone 14",
+      "url": "https://www.wikidata.org/wiki/Q110397828",
+      "retrieved_at": "2026-11-06",
+      "note": "Identitet modela. Opis stavke: 16th generation of the iPhone. Specifikacije nisu preuzete."
+    },
+    {
+      "id": "wd-Q113800722",
+      "kind": "wikidata",
+      "publisher": "Wikidata",
+      "title": "iPhone 14 Pro",
+      "url": "https://www.wikidata.org/wiki/Q113800722",
+      "retrieved_at": "2026-11-06",
+      "note": "Identitet modela. Opis stavke: smartphone by Apple Inc. Specifikacije nisu preuzete."
+    },
+    {
+      "id": "wd-Q121992935",
+      "kind": "wikidata",
+      "publisher": "Wikidata",
+      "title": "iPhone 15",
+      "url": "https://www.wikidata.org/wiki/Q121992935",
+      "retrieved_at": "2026-11-06",
+      "note": "Identitet modela. Opis stavke: 17th generation of the iPhone. Brojke specifikacije nisu uzete sa Wikidata jer stavka ne nabraja sve službene kapacitete."
+    },
+    {
+      "id": "wd-Q124653339",
+      "kind": "wikidata",
+      "publisher": "Wikidata",
+      "title": "iPhone 15 Plus",
+      "url": "https://www.wikidata.org/wiki/Q124653339",
+      "retrieved_at": "2026-11-06",
+      "note": "Identitet modela po nazivu stavke. Specifikacije nisu preuzete."
+    },
+    {
+      "id": "wd-Q122442399",
+      "kind": "wikidata",
+      "publisher": "Wikidata",
+      "title": "iPhone 15 Pro",
+      "url": "https://www.wikidata.org/wiki/Q122442399",
+      "retrieved_at": "2026-11-06",
+      "note": "Identitet modela. Opis stavke: smartphone by Apple. Specifikacije nisu preuzete."
+    },
+    {
+      "id": "wd-Q130267745",
+      "kind": "wikidata",
+      "publisher": "Wikidata",
+      "title": "iPhone 16",
+      "url": "https://www.wikidata.org/wiki/Q130267745",
+      "retrieved_at": "2026-11-06",
+      "note": "Identitet modela. Opis stavke: 18th generation of the iPhone. Specifikacije nisu preuzete."
+    },
+    {
+      "id": "wd-Q130267746",
+      "kind": "wikidata",
+      "publisher": "Wikidata",
+      "title": "iPhone 16 Pro",
+      "url": "https://www.wikidata.org/wiki/Q130267746",
+      "retrieved_at": "2026-11-06",
+      "note": "Identitet modela. Opis stavke: 18th generation of the iPhone (Pro version). Specifikacije nisu preuzete."
+    },
+    {
+      "id": "wd-Q130315105",
+      "kind": "wikidata",
+      "publisher": "Wikidata",
+      "title": "iPhone 16 Pro Max",
+      "url": "https://www.wikidata.org/wiki/Q130315105",
+      "retrieved_at": "2026-11-06",
+      "note": "Identitet modela. Opis stavke: 18th generation of the iPhone. Specifikacije nisu preuzete."
+    },
+    {
+      "id": "wd-Q118586112",
+      "kind": "wikidata",
+      "publisher": "Wikidata",
+      "title": "Samsung Galaxy S23",
+      "url": "https://www.wikidata.org/wiki/Q118586112",
+      "retrieved_at": "2026-11-06",
+      "note": "Identitet modela. Specifikacije nisu preuzete."
+    },
+    {
+      "id": "wd-Q116556239",
+      "kind": "wikidata",
+      "publisher": "Wikidata",
+      "title": "Samsung Galaxy S23 Ultra",
+      "url": "https://www.wikidata.org/wiki/Q116556239",
+      "retrieved_at": "2026-11-06",
+      "note": "Identitet modela po nazivu stavke. Specifikacije nisu preuzete."
+    },
+    {
+      "id": "wd-Q106044016",
+      "kind": "wikidata",
+      "publisher": "Wikidata",
+      "title": "Samsung Galaxy A52",
+      "url": "https://www.wikidata.org/wiki/Q106044016",
+      "retrieved_at": "2026-11-06",
+      "note": "Identitet modela. Opis stavke: 2022 mid-range Android-based smartphone from Samsung. Specifikacije nisu preuzete."
+    },
+    {
+      "id": "wd-Q117154490",
+      "kind": "wikidata",
+      "publisher": "Wikidata",
+      "title": "Samsung Galaxy A54 5G",
+      "url": "https://www.wikidata.org/wiki/Q117154490",
+      "retrieved_at": "2026-11-06",
+      "note": "Identitet modela. Opis stavke: 2023 Android-based smartphone by Samsung. U katalogu je prikazan kao Galaxy A54 jer se tako zove u oglasima. Specifikacije nisu preuzete."
+    },
+    {
+      "id": "wd-Q124813406",
+      "kind": "wikidata",
+      "publisher": "Wikidata",
+      "title": "Samsung Galaxy A55 5G",
+      "url": "https://www.wikidata.org/wiki/Q124813406",
+      "retrieved_at": "2026-11-06",
+      "note": "Identitet modela. Opis stavke: 2024 Android-based smartphone by Samsung. Specifikacije nisu preuzete."
+    },
+    {
+      "id": "wd-Q124316718",
+      "kind": "wikidata",
+      "publisher": "Wikidata",
+      "title": "Samsung Galaxy S24",
+      "url": "https://www.wikidata.org/wiki/Q124316718",
+      "retrieved_at": "2026-11-06",
+      "note": "Identitet modela. Opis stavke: smartphone model. Specifikacije nisu preuzete."
+    },
+    {
+      "id": "wd-Q135543826",
+      "kind": "wikidata",
+      "publisher": "Wikidata",
+      "title": "Xiaomi 13T Pro",
+      "url": "https://www.wikidata.org/wiki/Q135543826",
+      "retrieved_at": "2026-11-06",
+      "note": "Identitet modela. Opis stavke: Android smartphone by Xiaomi. Specifikacije nisu preuzete."
+    },
+    {
+      "id": "wd-Q115670608",
+      "kind": "wikidata",
+      "publisher": "Wikidata",
+      "title": "Xiaomi 13",
+      "url": "https://www.wikidata.org/wiki/Q115670608",
+      "retrieved_at": "2026-11-06",
+      "note": "Identitet modela. Opis stavke: 2022 Android-based smartphones manufactured by Xiaomi. Specifikacije nisu preuzete."
+    },
+    {
+      "id": "wd-Q123858018",
+      "kind": "wikidata",
+      "publisher": "Wikidata",
+      "title": "Redmi Note 13",
+      "url": "https://www.wikidata.org/wiki/Q123858018",
+      "retrieved_at": "2026-11-06",
+      "note": "Identitet modela. Opis stavke: android smartphone developed by Xiaomi. Specifikacije nisu preuzete."
+    },
+    {
+      "id": "wd-Q114438993",
+      "kind": "wikidata",
+      "publisher": "Wikidata",
+      "title": "Pixel 7",
+      "url": "https://www.wikidata.org/wiki/Q114438993",
+      "retrieved_at": "2026-11-06",
+      "note": "Identitet modela. Opis stavke: 2022 Android smartphone by Google. Specifikacije nisu preuzete."
+    },
+    {
+      "id": "wd-Q122317241",
+      "kind": "wikidata",
+      "publisher": "Wikidata",
+      "title": "Pixel 8",
+      "url": "https://www.wikidata.org/wiki/Q122317241",
+      "retrieved_at": "2026-11-06",
+      "note": "Identitet modela. Opis stavke: 2023 Android smartphone by Google. Specifikacije nisu preuzete."
+    },
+    {
+      "id": "wd-Q62793603",
+      "kind": "wikidata",
+      "publisher": "Wikidata",
+      "title": "Huawei P30 Pro",
+      "url": "https://www.wikidata.org/wiki/Q62793603",
+      "retrieved_at": "2026-11-06",
+      "note": "Identitet modela. Opis stavke: Android smartphone model by Huawei. Specifikacije nisu preuzete."
+    }
+  ],
+  "models": [
+    {
+      "id": "apple-iphone-11",
+      "brand": "Apple",
+      "brand_slug": "apple",
+      "name": "iPhone 11",
+      "slug": "iphone-11",
+      "source_ids": ["wd-Q67214165"],
+      "aliases": ["iphone 11", "apple iphone 11"]
+    },
+    {
+      "id": "apple-iphone-12",
+      "brand": "Apple",
+      "brand_slug": "apple",
+      "name": "iPhone 12",
+      "slug": "iphone-12",
+      "source_ids": ["wd-Q96608989"],
+      "aliases": ["iphone 12", "apple iphone 12"]
+    },
+    {
+      "id": "apple-iphone-12-pro",
+      "brand": "Apple",
+      "brand_slug": "apple",
+      "name": "iPhone 12 Pro",
+      "slug": "iphone-12-pro",
+      "source_ids": ["wd-Q100319367"],
+      "aliases": ["iphone 12 pro", "apple iphone 12 pro"]
+    },
+    {
+      "id": "apple-iphone-13",
+      "brand": "Apple",
+      "brand_slug": "apple",
+      "name": "iPhone 13",
+      "slug": "iphone-13",
+      "source_ids": ["wd-Q108118280"],
+      "aliases": ["iphone 13", "apple iphone 13"]
+    },
+    {
+      "id": "apple-iphone-13-mini",
+      "brand": "Apple",
+      "brand_slug": "apple",
+      "name": "iPhone 13 mini",
+      "slug": "iphone-13-mini",
+      "source_ids": ["wd-Q108541666"],
+      "aliases": ["iphone 13 mini", "apple iphone 13 mini"]
+    },
+    {
+      "id": "apple-iphone-13-pro",
+      "brand": "Apple",
+      "brand_slug": "apple",
+      "name": "iPhone 13 Pro",
+      "slug": "iphone-13-pro",
+      "source_ids": ["wd-Q108541719"],
+      "aliases": ["iphone 13 pro", "apple iphone 13 pro"]
+    },
+    {
+      "id": "apple-iphone-13-pro-max",
+      "brand": "Apple",
+      "brand_slug": "apple",
+      "name": "iPhone 13 Pro Max",
+      "slug": "iphone-13-pro-max",
+      "source_ids": ["wd-Q108541741"],
+      "aliases": ["iphone 13 pro max", "apple iphone 13 pro max"]
+    },
+    {
+      "id": "apple-iphone-14",
+      "brand": "Apple",
+      "brand_slug": "apple",
+      "name": "iPhone 14",
+      "slug": "iphone-14",
+      "source_ids": ["wd-Q110397828"],
+      "aliases": ["iphone 14", "apple iphone 14"]
+    },
+    {
+      "id": "apple-iphone-14-pro",
+      "brand": "Apple",
+      "brand_slug": "apple",
+      "name": "iPhone 14 Pro",
+      "slug": "iphone-14-pro",
+      "source_ids": ["wd-Q113800722"],
+      "aliases": ["iphone 14 pro", "apple iphone 14 pro"]
+    },
+    {
+      "id": "apple-iphone-15",
+      "brand": "Apple",
+      "brand_slug": "apple",
+      "name": "iPhone 15",
+      "slug": "iphone-15",
+      "source_ids": ["apple-iphone-15", "wd-Q121992935"],
+      "aliases": ["iphone 15", "apple iphone 15"],
+      "colors": ["Black", "Blue", "Green", "Yellow", "Pink"],
+      "variants": [
+        {"id": "128gb", "storage": "128GB", "source_id": "apple-iphone-15"},
+        {"id": "256gb", "storage": "256GB", "source_id": "apple-iphone-15"},
+        {"id": "512gb", "storage": "512GB", "source_id": "apple-iphone-15"}
+      ],
+      "highlights": [
+        {"title": "6,1\" Super Retina XDR", "detail": "OLED, 2556 × 1179, 460 ppi", "source_id": "apple-iphone-15"},
+        {"title": "A16 Bionic", "detail": "6 jezgara CPU, 5 jezgara GPU", "source_id": "apple-iphone-15"},
+        {"title": "48 MP glavna kamera", "detail": "ƒ/1.6, senzorska stabilizacija", "source_id": "apple-iphone-15"},
+        {"title": "Do 20 h videa", "detail": "Striming do 16 h", "source_id": "apple-iphone-15"},
+        {"title": "USB-C", "detail": "USB 2, do 480 Mb/s", "source_id": "apple-iphone-15"},
+        {"title": "IP68", "detail": "Do 6 m, do 30 minuta", "source_id": "apple-iphone-15"}
+      ],
+      "specs": [
+        {"group": "Ekran", "label": "Tip", "value": "Super Retina XDR OLED", "source_id": "apple-iphone-15"},
+        {"group": "Ekran", "label": "Dijagonala", "value": "6,1 inča (dijagonala), OLED preko celog ekrana", "source_id": "apple-iphone-15"},
+        {"group": "Ekran", "label": "Rezolucija", "value": "2556 × 1179 piksela, 460 ppi", "source_id": "apple-iphone-15"},
+        {"group": "Ekran", "label": "Svetlost", "value": "1000 nita tipično; 1600 nita vrh HDR; 2000 nita vrh napolju", "source_id": "apple-iphone-15"},
+        {"group": "Ekran", "label": "Ostalo", "value": "Dynamic Island, HDR, True Tone, širok kolor (P3), Haptic Touch, kontrast 2.000.000:1 (tipično)", "source_id": "apple-iphone-15"},
+        {"group": "Performanse", "label": "Čip", "value": "A16 Bionic", "source_id": "apple-iphone-15"},
+        {"group": "Performanse", "label": "CPU", "value": "6 jezgara (2 performanse + 4 efikasnost)", "source_id": "apple-iphone-15"},
+        {"group": "Performanse", "label": "GPU", "value": "5 jezgara", "source_id": "apple-iphone-15"},
+        {"group": "Performanse", "label": "Neural Engine", "value": "16 jezgara", "source_id": "apple-iphone-15"},
+        {"group": "Performanse", "label": "Kapacitet", "value": "128 GB, 256 GB ili 512 GB", "source_id": "apple-iphone-15"},
+        {"group": "Kamere", "label": "Glavna", "value": "48 MP, 26 mm, ƒ/1.6, senzorska optička stabilizacija", "source_id": "apple-iphone-15"},
+        {"group": "Kamere", "label": "Ultraširoka", "value": "12 MP, 13 mm, ƒ/2.4, ugao 120°", "source_id": "apple-iphone-15"},
+        {"group": "Kamere", "label": "Zum", "value": "2× (12 MP) preko quad-pixel senzora; optički opseg 4×; digitalni do 10×", "source_id": "apple-iphone-15"},
+        {"group": "Kamere", "label": "Prednja", "value": "12 MP TrueDepth, ƒ/1.9", "source_id": "apple-iphone-15"},
+        {"group": "Kamere", "label": "Video", "value": "4K Dolby Vision do 60 fps", "source_id": "apple-iphone-15"},
+        {"group": "Baterija i punjenje", "label": "Video", "value": "Do 20 sati", "source_id": "apple-iphone-15"},
+        {"group": "Baterija i punjenje", "label": "Striming videa", "value": "Do 16 sati", "source_id": "apple-iphone-15"},
+        {"group": "Baterija i punjenje", "label": "Audio", "value": "Do 80 sati", "source_id": "apple-iphone-15"},
+        {"group": "Baterija i punjenje", "label": "Bežično", "value": "MagSafe do 15 W, Qi2 do 15 W, Qi do 7,5 W", "source_id": "apple-iphone-15"},
+        {"group": "Baterija i punjenje", "label": "Brzo punjenje", "value": "Do 50% za oko 30 minuta sa adapterom od 20 W ili jačim", "source_id": "apple-iphone-15"},
+        {"group": "Baterija i punjenje", "label": "Konektor", "value": "USB-C, USB 2 (do 480 Mb/s)", "source_id": "apple-iphone-15"},
+        {"group": "Dizajn i otpornost", "label": "Dimenzije", "value": "147,6 × 71,6 × 7,80 mm", "source_id": "apple-iphone-15"},
+        {"group": "Dizajn i otpornost", "label": "Težina", "value": "171 g", "source_id": "apple-iphone-15"},
+        {"group": "Dizajn i otpornost", "label": "Materijal", "value": "Aluminijum, Ceramic Shield napred, staklo pozadi", "source_id": "apple-iphone-15"},
+        {"group": "Dizajn i otpornost", "label": "Boje", "value": "Black, Blue, Green, Yellow, Pink", "source_id": "apple-iphone-15"},
+        {"group": "Dizajn i otpornost", "label": "Otpornost", "value": "IP68, najviše 6 metara do 30 minuta, po IEC 60529", "source_id": "apple-iphone-15"},
+        {"group": "Povezivanje", "label": "Mreža", "value": "5G i Gigabit LTE. Dostupnost zavisi od operatera i modela.", "source_id": "apple-iphone-15"},
+        {"group": "Povezivanje", "label": "Wi-Fi i Bluetooth", "value": "Wi-Fi 6 (802.11ax), Bluetooth 5.3", "source_id": "apple-iphone-15"},
+        {"group": "Povezivanje", "label": "Ostalo", "value": "NFC, Ultra Wideband druge generacije, Face ID", "source_id": "apple-iphone-15"},
+        {"group": "Povezivanje", "label": "SIM", "value": "Dual eSIM (dva aktivna). Apple na ovoj stranici navodi da iPhone 15 i iPhone 15 Plus nisu kompatibilni sa fizičkom SIM karticom.", "source_id": "apple-iphone-15"},
+        {"group": "Povezivanje", "label": "Godina", "value": "2023", "source_id": "apple-iphone-15"}
+      ]
+    },
+    {
+      "id": "apple-iphone-15-plus",
+      "brand": "Apple",
+      "brand_slug": "apple",
+      "name": "iPhone 15 Plus",
+      "slug": "iphone-15-plus",
+      "source_ids": ["wd-Q124653339"],
+      "aliases": ["iphone 15 plus", "apple iphone 15 plus"]
+    },
+    {
+      "id": "apple-iphone-15-pro",
+      "brand": "Apple",
+      "brand_slug": "apple",
+      "name": "iPhone 15 Pro",
+      "slug": "iphone-15-pro",
+      "source_ids": ["wd-Q122442399"],
+      "aliases": ["iphone 15 pro", "apple iphone 15 pro"]
+    },
+    {
+      "id": "apple-iphone-16",
+      "brand": "Apple",
+      "brand_slug": "apple",
+      "name": "iPhone 16",
+      "slug": "iphone-16",
+      "source_ids": ["wd-Q130267745"],
+      "aliases": ["iphone 16", "apple iphone 16"]
+    },
+    {
+      "id": "apple-iphone-16-pro",
+      "brand": "Apple",
+      "brand_slug": "apple",
+      "name": "iPhone 16 Pro",
+      "slug": "iphone-16-pro",
+      "source_ids": ["wd-Q130267746"],
+      "aliases": ["iphone 16 pro", "apple iphone 16 pro"]
+    },
+    {
+      "id": "apple-iphone-16-pro-max",
+      "brand": "Apple",
+      "brand_slug": "apple",
+      "name": "iPhone 16 Pro Max",
+      "slug": "iphone-16-pro-max",
+      "source_ids": ["wd-Q130315105"],
+      "aliases": ["iphone 16 pro max", "apple iphone 16 pro max"]
+    },
+    {
+      "id": "samsung-galaxy-s23",
+      "brand": "Samsung",
+      "brand_slug": "samsung",
+      "name": "Galaxy S23",
+      "slug": "galaxy-s23",
+      "source_ids": ["wd-Q118586112"],
+      "aliases": ["galaxy s23", "samsung galaxy s23"]
+    },
+    {
+      "id": "samsung-galaxy-s23-ultra",
+      "brand": "Samsung",
+      "brand_slug": "samsung",
+      "name": "Galaxy S23 Ultra",
+      "slug": "galaxy-s23-ultra",
+      "source_ids": ["wd-Q116556239"],
+      "aliases": ["galaxy s23 ultra", "samsung galaxy s23 ultra"]
+    },
+    {
+      "id": "samsung-galaxy-s24",
+      "brand": "Samsung",
+      "brand_slug": "samsung",
+      "name": "Galaxy S24",
+      "slug": "galaxy-s24",
+      "source_ids": ["wd-Q124316718"],
+      "aliases": ["galaxy s24", "samsung galaxy s24"]
+    },
+    {
+      "id": "samsung-galaxy-a52",
+      "brand": "Samsung",
+      "brand_slug": "samsung",
+      "name": "Galaxy A52",
+      "slug": "galaxy-a52",
+      "source_ids": ["wd-Q106044016"],
+      "aliases": ["galaxy a52", "samsung galaxy a52", "samsung a52"]
+    },
+    {
+      "id": "samsung-galaxy-a54",
+      "brand": "Samsung",
+      "brand_slug": "samsung",
+      "name": "Galaxy A54",
+      "official_name": "Galaxy A54 5G",
+      "slug": "galaxy-a54",
+      "source_ids": ["wd-Q117154490"],
+      "aliases": ["galaxy a54", "galaxy a54 5g", "samsung galaxy a54", "samsung galaxy a54 5g", "samsung a54"]
+    },
+    {
+      "id": "samsung-galaxy-a55",
+      "brand": "Samsung",
+      "brand_slug": "samsung",
+      "name": "Galaxy A55",
+      "official_name": "Galaxy A55 5G",
+      "slug": "galaxy-a55",
+      "source_ids": ["wd-Q124813406"],
+      "aliases": ["galaxy a55", "galaxy a55 5g", "samsung galaxy a55", "samsung a55"]
+    },
+    {
+      "id": "xiaomi-13",
+      "brand": "Xiaomi",
+      "brand_slug": "xiaomi",
+      "name": "Xiaomi 13",
+      "slug": "xiaomi-13",
+      "source_ids": ["wd-Q115670608"],
+      "aliases": ["xiaomi 13"]
+    },
+    {
+      "id": "xiaomi-13t-pro",
+      "brand": "Xiaomi",
+      "brand_slug": "xiaomi",
+      "name": "13T Pro",
+      "official_name": "Xiaomi 13T Pro",
+      "slug": "13t-pro",
+      "source_ids": ["wd-Q135543826"],
+      "aliases": ["xiaomi 13t pro", "13t pro"]
+    },
+    {
+      "id": "redmi-note-13",
+      "brand": "Xiaomi",
+      "brand_slug": "xiaomi",
+      "name": "Redmi Note 13",
+      "slug": "redmi-note-13",
+      "source_ids": ["wd-Q123858018"],
+      "aliases": ["redmi note 13", "xiaomi redmi note 13"]
+    },
+    {
+      "id": "google-pixel-7",
+      "brand": "Google",
+      "brand_slug": "google",
+      "name": "Pixel 7",
+      "slug": "pixel-7",
+      "source_ids": ["wd-Q114438993"],
+      "aliases": ["pixel 7", "google pixel 7"]
+    },
+    {
+      "id": "google-pixel-8",
+      "brand": "Google",
+      "brand_slug": "google",
+      "name": "Pixel 8",
+      "slug": "pixel-8",
+      "source_ids": ["wd-Q122317241"],
+      "aliases": ["pixel 8", "google pixel 8"]
+    },
+    {
+      "id": "huawei-p30-pro",
+      "brand": "Huawei",
+      "brand_slug": "huawei",
+      "name": "P30 Pro",
+      "official_name": "Huawei P30 Pro",
+      "slug": "p30-pro",
+      "source_ids": ["wd-Q62793603"],
+      "aliases": ["huawei p30 pro", "p30 pro"]
+    }
+  ]
+}

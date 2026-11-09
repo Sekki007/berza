@@ -47,6 +47,7 @@ if ($user) {
                     <h4>Istraži</h4>
                     <a href="/">Početna</a>
                     <a href="/oglasi/telefoni">Telefoni</a>
+                    <a href="/katalog">Katalog telefona</a>
                     <a href="/oglasi/delovi">Delovi</a>
                     <a href="/oglasi/oprema">Oprema</a>
                     <a href="/oglasi/servis">Servis</a>
@@ -119,6 +120,13 @@ if ($user) {
             <button type="button" class="mobile-account-menu-close" data-close-account-menu aria-label="Zatvori">×</button>
         </div>
         <nav class="mobile-account-menu-nav">
+            <a href="/katalog" class="mobile-account-menu-item">
+                <span class="mobile-account-menu-icon">K</span>
+                <span class="mobile-account-menu-text">
+                    <strong>Katalog telefona</strong>
+                    <small>Modeli, specifikacije i aktivni oglasi</small>
+                </span>
+            </a>
             <a href="/provera-imei" class="mobile-account-menu-item">
                 <span class="mobile-account-menu-icon">#</span>
                 <span class="mobile-account-menu-text">

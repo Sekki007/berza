@@ -208,6 +208,10 @@ $compareCount = count(compareIds());
     </header>
 <?php endif; ?>
 
+<?php if (!$minimalHeader && function_exists('renderPhoneCatalogNav')): ?>
+    <?= renderPhoneCatalogNav() ?>
+<?php endif; ?>
+
 <?php if ($flash): ?>
     <div class="container" style="padding-top:12px;">
         <div class="alert alert-<?= h($flash['type']) ?>"><?= h($flash['message']) ?></div>

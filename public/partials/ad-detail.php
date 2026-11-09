@@ -183,6 +183,10 @@ $renderPlatformMessage = static function () use ($site, $isOwnAd, $msgHref): voi
 
             <section class="kp-card kp-offer kp-slot-offer <?= $isBuy ? 'is-buy' : '' ?> <?= $isTrade ? 'is-trade' : '' ?>" data-offer aria-labelledby="ad-title">
                 <h1 id="ad-title" class="kp-listing-title"><?= h($displayTitle) ?></h1>
+                <?php $catalogHref = function_exists('phoneCatalogUrlForAd') ? phoneCatalogUrlForAd($ad) : ''; ?>
+                <?php if ($catalogHref !== ''): ?>
+                    <p class="kp-catalog-link"><a href="<?= h($catalogHref) ?>">Ovaj model u katalogu telefona</a></p>
+                <?php endif; ?>
                 <?php if ($subtitleParts !== []): ?>
                     <p class="kp-offer-sub"><?= h(implode(' · ', $subtitleParts)) ?></p>
                 <?php endif; ?>

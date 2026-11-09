@@ -98,6 +98,19 @@ if ($isEdit) {
     }
 }
 
+if (!$isEdit && ($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET' && function_exists('phoneCatalogModel')) {
+    $prefillCatalog = trim((string)($_GET['katalog'] ?? ''));
+    $prefillModel = $prefillCatalog !== '' ? phoneCatalogModel($prefillCatalog) : null;
+    if ($prefillModel && trim((string)$ad['model']) === '') {
+        $ad['phone_model_id'] = $prefillModel['id'];
+        $ad['phone_variant_id'] = null;
+        $ad['brand'] = $prefillModel['brand'];
+        $ad['model'] = $prefillModel['name'];
+        $ad['device_type'] = 'phone';
+        $ad['ad_type'] = 'telefon';
+    }
+}
+
 $formError = '';
 $canPostService = canPostServiceAds($profile);
 $editingOwnService = $isEdit && getAdType($ad) === 'servis';
@@ -180,6 +193,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'promoted_until' => $ad['promoted_until'] ?? null,
         'images' => $isEdit ? ($ad['images'] ?? []) : [],
     ], $extras);
+    if (function_exists('phoneCatalogAssignmentFromPost')) {
+        $payload = array_merge($payload, phoneCatalogAssignmentFromPost(
+            $_POST,
+            $adType,
+            (string)($payload['device_type'] ?? ''),
+            (string)($payload['storage'] ?? ''),
+            (string)($payload['brand'] ?? ''),
+            (string)($payload['model'] ?? '')
+        ));
+    }
 
     if (isAdmin() && isset($_POST['is_promoted'])) {
         $payload['is_promoted'] = 1;
