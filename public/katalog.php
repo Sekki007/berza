@@ -309,8 +309,6 @@ require __DIR__ . '/partials/layout-start.php';
                     <?php endforeach; ?>
                 </div>
             <?php endif; ?>
-
-            <p class="pcat-note"><?= h((string)$bundle['coverage_note']) ?> <?= h(phoneCatalogPriceMethodology()) ?></p>
         </section>
     </div>
 
