@@ -443,9 +443,11 @@ $showPriceConfirm = $priceEurNow > $priceWarnEur && $priceEurNow <= maxAdPriceEu
             <?php endif; ?>
 
             <div class="ad-form-sticky" data-ad-sticky>
-                <button class="btn-call" type="submit"><?= $isEdit ? 'Sačuvaj' : 'Objavi oglas' ?></button>
+                <button class="btn-call" type="submit"><?= $isEdit ? 'Sačuvaj izmene' : 'Objavi oglas' ?></button>
                 <?php if (!$isEdit): ?>
                     <button class="btn-message" type="submit" name="save_and_add_another" value="1">+ još</button>
+                <?php else: ?>
+                    <a href="/nalog.php?tab=oglasi" class="btn-message">Odustani</a>
                 <?php endif; ?>
             </div>
         </form>
