@@ -221,7 +221,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'shop_name' => trim((string)($_POST['shop_name'] ?? '')),
         'shop_category_id' => normalizeAdShopCategoryId($profile, (string)($_POST['shop_category_id'] ?? '')),
         'badge' => trim((string)($_POST['badge'] ?? '')),
-        'is_active' => isset($_POST['is_active']) ? 1 : 0,
+        // Nova objava je uvek aktivna — forma nema „Aktivan” na create, pa bi
+        // isset($_POST['is_active']) inače uvek dao 0 (neaktivan oglas).
+        'is_active' => $isEdit ? (isset($_POST['is_active']) ? 1 : 0) : 1,
         'is_sold' => isset($_POST['is_sold']) ? 1 : 0,
         'is_promoted' => (int)($ad['is_promoted'] ?? 0),
         'promoted_until' => $ad['promoted_until'] ?? null,

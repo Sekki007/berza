@@ -415,6 +415,21 @@ $showPriceConfirm = $priceEurNow > $priceWarnEur && $priceEurNow <= maxAdPriceEu
                 </div>
             </section>
 
+            <?php if ($isEdit || isAdmin()): ?>
+                <section class="ad-form-section">
+                    <h3 class="ad-form-section-title">Status</h3>
+                    <div class="form-group form-checks">
+                        <?php if ($isEdit): ?>
+                            <label class="type-chip" style="min-width:auto;flex:none;"><input type="checkbox" name="is_active" <?= (int)($ad['is_active'] ?? 1) === 1 ? 'checked' : '' ?>> Aktivan</label>
+                            <label class="type-chip" style="min-width:auto;flex:none;"><input type="checkbox" name="is_sold" <?= !empty($ad['is_sold']) ? 'checked' : '' ?>> Prodato</label>
+                        <?php endif; ?>
+                        <?php if (isAdmin()): ?>
+                            <label class="type-chip" style="min-width:auto;flex:none;"><input type="checkbox" name="is_promoted" <?= !empty($ad['is_promoted']) ? 'checked' : '' ?>> TOP (admin)</label>
+                        <?php endif; ?>
+                    </div>
+                </section>
+            <?php endif; ?>
+
             <div class="ad-form-submit ad-form-submit--desktop">
                 <button class="btn-call" type="submit"><?= $isEdit ? 'Sačuvaj izmene' : 'Objavi oglas' ?></button>
                 <?php if (!$isEdit): ?>
