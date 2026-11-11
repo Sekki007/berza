@@ -45,6 +45,25 @@ foreach ($catalogModels as $catalogModel) {
 }
 $selectedCatalogRam = ($selectedCatalog && function_exists('phoneCatalogModelRam')) ? phoneCatalogModelRam($selectedCatalog) : '';
 $selectedCatalogColors = ($selectedCatalog && is_array($selectedCatalog['colors'] ?? null)) ? $selectedCatalog['colors'] : [];
+$storageOptions = array_values($schema['storage_options'] ?? ['64GB', '128GB', '256GB', '512GB', '1TB']);
+$storageChipVariants = [];
+if ($selectedCatalog && ($selectedCatalog['variants'] ?? []) !== []) {
+    foreach ($selectedCatalog['variants'] as $variant) {
+        $storageChipVariants[] = [
+            'id' => (string)$variant['id'],
+            'storage' => (string)$variant['storage'],
+        ];
+    }
+} else {
+    foreach ($storageOptions as $stOpt) {
+        $storageChipVariants[] = [
+            'id' => '',
+            'storage' => (string)$stOpt,
+        ];
+    }
+}
+$storageNow = trim((string)($ad['storage'] ?? ''));
+$variantNow = trim((string)($ad['phone_variant_id'] ?? ''));
 $phoneModelLabel = match ($currentListing) {
     'buy' => 'Koji telefon tražiš?',
     'trade' => 'Koji telefon menjaš?',
@@ -172,10 +191,19 @@ $showPriceConfirm = $priceEurNow > $priceWarnEur && $priceEurNow <= maxAdPriceEu
                     <label for="phone-search" data-phone-model-label><?= h($phoneModelLabel) ?></label>
                     <input type="search" id="phone-search" data-phone-search autocomplete="off" placeholder="npr. iPhone 15, Galaxy S24…" value="<?= h($selectedCatalog ? ($selectedCatalog['brand'] . ' ' . $selectedCatalog['name']) : trim(($ad['brand'] ?? '') . ' ' . ($ad['model'] ?? ''))) ?>">
                     <div class="ad-typeahead-list" data-phone-suggestions hidden role="listbox"></div>
-                    <div class="chip-grid" data-phone-variant-chips <?= $selectedCatalog && $selectedCatalog['variants'] !== [] ? '' : 'hidden' ?>>
-                        <?php if ($selectedCatalog): foreach ($selectedCatalog['variants'] as $variant): ?>
-                            <button type="button" class="chip-option <?= (string)($ad['phone_variant_id'] ?? '') === $variant['id'] || (string)($ad['storage'] ?? '') === $variant['storage'] ? 'is-on' : '' ?>" data-variant-chip data-variant-id="<?= h($variant['id']) ?>" data-storage="<?= h($variant['storage']) ?>"><?= h($variant['storage']) ?></button>
-                        <?php endforeach; endif; ?>
+                    <div class="form-group" data-storage-chips-wrap style="margin-top:10px;margin-bottom:0;">
+                        <label>Memorija</label>
+                        <div class="chip-grid" data-phone-variant-chips data-default-storage="<?= h(json_encode($storageOptions, JSON_UNESCAPED_UNICODE)) ?>">
+                            <?php foreach ($storageChipVariants as $variant): ?>
+                                <button type="button" class="chip-option <?= ($variantNow !== '' && $variantNow === $variant['id']) || ($storageNow !== '' && $storageNow === $variant['storage']) ? 'is-on' : '' ?>" data-variant-chip data-variant-id="<?= h($variant['id']) ?>" data-storage="<?= h($variant['storage']) ?>"><?= h($variant['storage']) ?></button>
+                            <?php endforeach; ?>
+                        </div>
+                        <select name="storage" data-title-source data-storage-select hidden aria-hidden="true" tabindex="-1">
+                            <option value="">—</option>
+                            <?php foreach ($storageOptions as $st): ?>
+                                <option value="<?= h($st) ?>" <?= $storageNow === $st ? 'selected' : '' ?>><?= h($st) ?></option>
+                            <?php endforeach; ?>
+                        </select>
                     </div>
                     <p class="form-hint"><button type="button" class="linkish" data-manual-phone-toggle>Ne vidim model – ručni unos</button></p>
                 </div>
@@ -194,15 +222,6 @@ $showPriceConfirm = $priceEurNow > $priceWarnEur && $priceEurNow <= maxAdPriceEu
                             <label>Model</label>
                             <input name="model" id="ad-model" data-title-source value="<?= h((string)$ad['model']) ?>" placeholder="npr. iPhone 13 Pro Max" autocomplete="off">
                         </div>
-                    </div>
-                    <div class="form-group">
-                        <label>Memorija</label>
-                        <select name="storage" data-title-source data-storage-select>
-                            <option value="">—</option>
-                            <?php foreach ($schema['storage_options'] as $st): ?>
-                                <option value="<?= h($st) ?>" <?= ($ad['storage'] ?? '') === $st ? 'selected' : '' ?>><?= h($st) ?></option>
-                            <?php endforeach; ?>
-                        </select>
                     </div>
                 </div>
                 <div class="form-group" data-title-preview-block data-title-for="telefon">

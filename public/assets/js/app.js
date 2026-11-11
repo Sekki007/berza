@@ -2662,20 +2662,59 @@
     const ramSel = one('[data-ram-select]', form);
     const colorChips = one('[data-color-chips]', form);
     const colorInput = one('[data-color-input]', form);
+    let defaultStorageOptions = ['64GB', '128GB', '256GB', '512GB', '1TB'];
+    if (variantChips) {
+      try {
+        const parsedDefaults = JSON.parse(variantChips.getAttribute('data-default-storage') || '[]');
+        if (Array.isArray(parsedDefaults) && parsedDefaults.length) {
+          defaultStorageOptions = parsedDefaults;
+        }
+      } catch (e) {}
+    }
+
+    function defaultStorageVariants() {
+      return defaultStorageOptions.map(function (st) {
+        return { id: '', storage: st };
+      });
+    }
+
+    function renderStorageChips(variants, selectedStorage, selectedVariantId) {
+      if (!variantChips) return;
+      const vars = (Array.isArray(variants) && variants.length) ? variants : defaultStorageVariants();
+      variantChips.innerHTML = '';
+      variantChips.hidden = false;
+      const wrap = one('[data-storage-chips-wrap]', form);
+      if (wrap) wrap.hidden = false;
+      vars.forEach(function (v) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        const on = (selectedVariantId && v.id && selectedVariantId === v.id)
+          || (selectedStorage && selectedStorage === v.storage);
+        btn.className = 'chip-option' + (on ? ' is-on' : '');
+        btn.setAttribute('data-variant-chip', '1');
+        btn.setAttribute('data-variant-id', v.id || '');
+        btn.setAttribute('data-storage', v.storage || '');
+        btn.textContent = v.storage || '';
+        variantChips.appendChild(btn);
+      });
+    }
 
     function applyVariantSelection(variantId, storage, silent) {
       if (variantIdInput) variantIdInput.value = variantId || '';
-      if (storageSel && storage) {
+      if (storageSel) {
         Array.prototype.forEach.call(storageSel.options, function (o) {
-          o.selected = o.value === storage;
+          o.selected = !!(storage && o.value === storage);
         });
         if (!silent) storageSel.dispatchEvent(new Event('change', { bubbles: true }));
       }
       if (variantChips) {
         variantChips.querySelectorAll('[data-variant-chip]').forEach(function (b) {
-          const match = (variantId && b.getAttribute('data-variant-id') === variantId)
-            || (storage && b.getAttribute('data-storage') === storage);
-          b.classList.toggle('is-on', !!match);
+          const btnId = b.getAttribute('data-variant-id') || '';
+          const btnSt = b.getAttribute('data-storage') || '';
+          let on = false;
+          if (variantId) on = btnId === variantId;
+          else if (storage) on = btnSt === storage;
+          b.classList.toggle('is-on', on);
         });
       }
       refreshTitlePreview();
@@ -2747,38 +2786,27 @@
 
       renderColorChips(item.colors || [], colorInput ? (colorInput.value || '').trim() : '');
 
-      if (variantChips) {
-        variantChips.innerHTML = '';
-        const vars = item.variants || [];
-        variantChips.hidden = vars.length === 0;
-        vars.forEach(function (v) {
-          const btn = document.createElement('button');
-          btn.type = 'button';
-          btn.className = 'chip-option';
-          btn.setAttribute('data-variant-chip', '1');
-          btn.setAttribute('data-variant-id', v.id);
-          btn.setAttribute('data-storage', v.storage);
-          btn.textContent = v.storage;
-          variantChips.appendChild(btn);
-        });
+      const catalogVars = item.variants || [];
+      const currentStorage = storage || (storageSel ? (storageSel.value || '').trim() : '');
+      renderStorageChips(catalogVars, currentStorage, '');
 
-        let chosen = null;
-        if (storage) {
-          for (let i = 0; i < vars.length; i++) {
-            if (vars[i].storage === storage) {
-              chosen = vars[i];
-              break;
-            }
+      let chosen = null;
+      if (currentStorage) {
+        for (let i = 0; i < catalogVars.length; i++) {
+          if (catalogVars[i].storage === currentStorage) {
+            chosen = catalogVars[i];
+            break;
           }
         }
-        if (!chosen && vars.length === 1) chosen = vars[0];
-        if (chosen) {
-          applyVariantSelection(chosen.id, chosen.storage, false);
-        } else {
-          if (variantIdInput) variantIdInput.value = '';
-          refreshTitlePreview();
-        }
+      }
+      if (!chosen && catalogVars.length === 1) chosen = catalogVars[0];
+      if (chosen) {
+        applyVariantSelection(chosen.id, chosen.storage, false);
+      } else if (currentStorage) {
+        // Model bez katalog varijante: zadrži izabranu memoriju bez phone_variant_id.
+        applyVariantSelection('', currentStorage, false);
       } else {
+        if (variantIdInput) variantIdInput.value = '';
         refreshTitlePreview();
       }
     }
