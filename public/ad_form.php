@@ -32,6 +32,7 @@ $ad = [
     'color' => '',
     'sim_status' => '',
     'battery_health' => null,
+    'trade_for' => '',
     'has_warranty' => 0,
     'warranty_months' => null,
     'accessories' => [],

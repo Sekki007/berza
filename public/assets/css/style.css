@@ -4629,6 +4629,8 @@ body.page-detail .main-wrap.kp-detail-wrap {
   margin:0 0 6px;font-size:16px;font-weight:700;line-height:1.35;color:var(--text);
   padding:12px 14px;border-radius:12px;background:#f6f8f6;border:1px dashed var(--border);
 }
+.chip-option:has(input:disabled){opacity:.45;cursor:not-allowed;pointer-events:none;}
+button.chip-option{font:inherit;}
 .ad-form-draft-status{margin:8px 0 0;font-size:12px;color:var(--kp-green-dark);font-weight:700;}
 .field-error{margin:0 0 8px;color:#b42318;font-size:13px;font-weight:600;}
 .ad-form-page--v2 .linkish{

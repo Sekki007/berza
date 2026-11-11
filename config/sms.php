@@ -28,6 +28,24 @@ function normalizePhoneRs(string $raw): ?string
     return '+381' . $digits;
 }
 
+/** Prikaz srpskog mobilnog u formatu 06x xxx xxxx (ili 06x xxx xxx). */
+function formatPhoneRsDisplay(string $raw): string
+{
+    $trimmed = trim($raw);
+    if ($trimmed === '') {
+        return '';
+    }
+    $e164 = normalizePhoneRs($trimmed);
+    if ($e164 === null) {
+        return $trimmed;
+    }
+    $local = '0' . substr($e164, 4);
+    if (preg_match('/^(0\d{2})(\d{3})(\d{3,4})$/', $local, $m) === 1) {
+        return $m[1] . ' ' . $m[2] . ' ' . $m[3];
+    }
+    return $local;
+}
+
 function isAllowedSmsPhone(string $e164): bool
 {
     return (bool)preg_match('/^\+3816\d{7,8}$/', $e164);

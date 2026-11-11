@@ -274,11 +274,14 @@
     });
 
     form.querySelectorAll('[data-listing-opt]').forEach(function (lab) {
-      const forTypes = (lab.getAttribute('data-for-types') || '').split(',');
+      const forTypes = (lab.getAttribute('data-for-types') || '').split(',').map(function (s) { return s.trim(); }).filter(Boolean);
       const ok = forTypes.indexOf(type) !== -1;
       lab.hidden = !ok;
       const inp = lab.querySelector('input');
-      if (inp) inp.disabled = !ok;
+      if (inp) {
+        inp.disabled = !ok;
+        if (ok) inp.removeAttribute('disabled');
+      }
       if (!ok && inp && inp.checked) {
         inp.checked = false;
         lab.classList.remove('is-on');
@@ -290,10 +293,27 @@
       const fallback = type === 'servis'
         ? one('[data-listing-type][value="service"]', form)
         : one('[data-listing-type][value="sell"]', form);
-      if (fallback && !fallback.disabled) {
+      if (fallback) {
+        fallback.disabled = false;
+        fallback.removeAttribute('disabled');
         fallback.checked = true;
         const lab = fallback.closest('.chip-option');
-        if (lab) lab.classList.add('is-on');
+        if (lab) {
+          lab.hidden = false;
+          lab.classList.add('is-on');
+        }
+      }
+    } else if (type === 'servis') {
+      const serviceInp = one('[data-listing-type][value="service"]', form);
+      if (serviceInp) {
+        serviceInp.disabled = false;
+        serviceInp.removeAttribute('disabled');
+        serviceInp.checked = true;
+        const lab = serviceInp.closest('.chip-option');
+        if (lab) {
+          lab.hidden = false;
+          lab.classList.add('is-on');
+        }
       }
     }
 
@@ -341,13 +361,19 @@
     const batt = one('[data-battery-field]', form);
     if (batt) {
       batt.hidden = type !== 'telefon';
-      const bh = batt.querySelector('input');
-      if (bh) {
-        var moreWrap = batt.closest('[data-panel-more]') || batt.closest('[data-panel]');
-        var moreHidden = moreWrap && moreWrap.hasAttribute('hidden');
-        bh.disabled = type !== 'telefon' || !!moreHidden;
-      }
+      batt.querySelectorAll('input, select, textarea, button').forEach(function (el) {
+        el.disabled = type !== 'telefon';
+      });
     }
+
+    form.querySelectorAll('[data-title-preview-block]').forEach(function (block) {
+      const forType = block.getAttribute('data-title-for') || '';
+      if (forType === 'telefon') {
+        block.hidden = type !== 'telefon';
+      } else if (forType === 'other') {
+        block.hidden = type === 'telefon';
+      }
+    });
 
     const phoneCond = one('[data-phone-condition-block]', form);
     if (phoneCond) {
@@ -495,8 +521,10 @@
 
     const brand = one('[data-phone-brand]', form);
     const model = one('#ad-model', form);
-    const storage = one('select[name="storage"]', form);
+    const storage = one('select[name="storage"]', form) || one('[data-storage-select]', form);
     const condition = one('[data-cond-phone]:checked', form) || one('[data-cond-phone]', form);
+    const listing = one('[data-listing-type]:checked', form);
+    const tradeFor = one('[data-trade-for]', form);
     const b = brand ? (brand.value || '').trim() : '';
     const m = model ? (model.value || '').trim() : '';
     const parts = [];
@@ -512,6 +540,10 @@
     let title = parts.join(' ').trim();
     const cond = condition ? (condition.value || '').trim() : '';
     if (cond) title = (title + (title ? ' – ' : '') + cond).trim();
+    if (listing && listing.value === 'trade' && tradeFor) {
+      const tf = (tradeFor.value || '').trim();
+      if (tf) title = (title + (title ? ' ' : '') + 'za ' + tf).trim();
+    }
     return title.slice(0, 120);
   }
 
@@ -2545,24 +2577,43 @@
     }
 
     function refreshTitlePreview() {
-      const preview = one('[data-title-preview]', form);
       const titleInput = one('[data-ad-title]', form);
       const suggested = buildSuggestedAdTitle(form);
       const manual = titleInput && (titleInput.value || '').trim();
-      const text = manual || suggested || 'Naslov će se napraviti automatski';
-      if (preview) preview.textContent = text;
+      const core = manual || suggested || 'biće napravljen automatski';
+      const text = 'Naslov oglasa: ' + core;
+      form.querySelectorAll('[data-title-preview]').forEach(function (preview) {
+        preview.textContent = text;
+      });
+      const mirror = one('[data-ad-title-mirror]', form);
+      if (mirror && titleInput && document.activeElement !== mirror) {
+        mirror.value = titleInput.value;
+      }
     }
 
-    // Title edit toggle
-    const titleEdit = one('[data-title-edit]', form);
-    const titleToggle = one('[data-title-edit-toggle]', form);
-    if (titleToggle && titleEdit) {
+    form.querySelectorAll('[data-title-edit-toggle]').forEach(function (titleToggle) {
       titleToggle.addEventListener('click', function () {
+        const block = titleToggle.closest('[data-title-preview-block]') || form;
+        const titleEdit = one('[data-title-edit]', block);
+        if (!titleEdit) return;
         titleEdit.hidden = !titleEdit.hidden;
         if (!titleEdit.hidden) {
-          const t = one('[data-ad-title]', form);
+          const t = one('[data-ad-title], [data-ad-title-mirror]', titleEdit);
           if (t) t.focus();
         }
+      });
+    });
+
+    const titleInputMain = one('[data-ad-title]', form);
+    const titleMirror = one('[data-ad-title-mirror]', form);
+    if (titleMirror && titleInputMain) {
+      titleMirror.addEventListener('input', function () {
+        titleInputMain.value = titleMirror.value;
+        refreshTitlePreview();
+      });
+      titleInputMain.addEventListener('input', function () {
+        if (document.activeElement !== titleMirror) titleMirror.value = titleInputMain.value;
+        refreshTitlePreview();
       });
     }
 
@@ -2608,6 +2659,59 @@
     const modelInput = one('#ad-model', form);
     const storageSel = one('[data-storage-select]', form);
     const variantChips = one('[data-phone-variant-chips]', form);
+    const ramSel = one('[data-ram-select]', form);
+    const colorChips = one('[data-color-chips]', form);
+    const colorInput = one('[data-color-input]', form);
+
+    function applyVariantSelection(variantId, storage, silent) {
+      if (variantIdInput) variantIdInput.value = variantId || '';
+      if (storageSel && storage) {
+        Array.prototype.forEach.call(storageSel.options, function (o) {
+          o.selected = o.value === storage;
+        });
+        if (!silent) storageSel.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      if (variantChips) {
+        variantChips.querySelectorAll('[data-variant-chip]').forEach(function (b) {
+          const match = (variantId && b.getAttribute('data-variant-id') === variantId)
+            || (storage && b.getAttribute('data-storage') === storage);
+          b.classList.toggle('is-on', !!match);
+        });
+      }
+      refreshTitlePreview();
+    }
+
+    function renderColorChips(colors, selected) {
+      if (!colorChips) return;
+      const list = Array.isArray(colors) ? colors.filter(Boolean) : [];
+      colorChips.innerHTML = '';
+      colorChips.hidden = list.length === 0;
+      if (list.length === 0) {
+        if (colorInput) colorInput.hidden = false;
+        return;
+      }
+      let matched = false;
+      list.forEach(function (color) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        const on = selected && selected === color;
+        if (on) matched = true;
+        btn.className = 'chip-option' + (on ? ' is-on' : '');
+        btn.setAttribute('data-color-chip', color);
+        btn.textContent = color;
+        colorChips.appendChild(btn);
+      });
+      const other = document.createElement('button');
+      other.type = 'button';
+      other.className = 'chip-option' + ((selected && !matched) ? ' is-on' : '');
+      other.setAttribute('data-color-chip', '__other__');
+      other.textContent = 'Ostalo';
+      colorChips.appendChild(other);
+      if (colorInput) {
+        colorInput.hidden = !(selected && !matched);
+        if (matched) colorInput.value = selected;
+      }
+    }
 
     function pickModel(item, storage) {
       if (!item) return;
@@ -2623,6 +2727,26 @@
       }
       if (search) search.value = item.label;
       if (suggestBox) suggestBox.hidden = true;
+
+      if (ramSel) {
+        const ram = (item.ram || '').trim();
+        if (ram) {
+          let found = false;
+          Array.prototype.forEach.call(ramSel.options, function (o) {
+            if (o.value === ram) {
+              o.selected = true;
+              found = true;
+            }
+          });
+          if (!found) {
+            // keep empty if catalog RAM not in options
+            Array.prototype.forEach.call(ramSel.options, function (o) { o.selected = o.value === ''; });
+          }
+        }
+      }
+
+      renderColorChips(item.colors || [], colorInput ? (colorInput.value || '').trim() : '');
+
       if (variantChips) {
         variantChips.innerHTML = '';
         const vars = item.variants || [];
@@ -2630,35 +2754,72 @@
         vars.forEach(function (v) {
           const btn = document.createElement('button');
           btn.type = 'button';
-          btn.className = 'chip-option' + ((storage && storage === v.storage) ? ' is-on' : '');
+          btn.className = 'chip-option';
           btn.setAttribute('data-variant-chip', '1');
           btn.setAttribute('data-variant-id', v.id);
           btn.setAttribute('data-storage', v.storage);
           btn.textContent = v.storage;
           variantChips.appendChild(btn);
         });
+
+        let chosen = null;
+        if (storage) {
+          for (let i = 0; i < vars.length; i++) {
+            if (vars[i].storage === storage) {
+              chosen = vars[i];
+              break;
+            }
+          }
+        }
+        if (!chosen && vars.length === 1) chosen = vars[0];
+        if (chosen) {
+          applyVariantSelection(chosen.id, chosen.storage, false);
+        } else {
+          if (variantIdInput) variantIdInput.value = '';
+          refreshTitlePreview();
+        }
+      } else {
+        refreshTitlePreview();
       }
-      if (storage && storageSel) {
-        Array.prototype.forEach.call(storageSel.options, function (o) {
-          o.selected = o.value === storage;
-        });
-      }
-      refreshTitlePreview();
     }
 
     if (variantChips) {
       variantChips.addEventListener('click', function (e) {
         const btn = e.target.closest('[data-variant-chip]');
         if (!btn) return;
-        if (variantIdInput) variantIdInput.value = btn.getAttribute('data-variant-id') || '';
-        const st = btn.getAttribute('data-storage') || '';
-        if (storageSel && st) {
-          Array.prototype.forEach.call(storageSel.options, function (o) {
-            o.selected = o.value === st;
-          });
-          storageSel.dispatchEvent(new Event('change', { bubbles: true }));
+        applyVariantSelection(btn.getAttribute('data-variant-id') || '', btn.getAttribute('data-storage') || '', false);
+      });
+    }
+
+    if (colorChips) {
+      colorChips.addEventListener('click', function (e) {
+        const btn = e.target.closest('[data-color-chip]');
+        if (!btn || !colorInput) return;
+        const val = btn.getAttribute('data-color-chip') || '';
+        colorChips.querySelectorAll('[data-color-chip]').forEach(function (b) {
+          b.classList.toggle('is-on', b === btn);
+        });
+        if (val === '__other__') {
+          colorInput.hidden = false;
+          colorInput.focus();
+        } else {
+          colorInput.value = val;
+          colorInput.hidden = true;
+          colorInput.dispatchEvent(new Event('input', { bubbles: true }));
         }
-        variantChips.querySelectorAll('[data-variant-chip]').forEach(function (b) {
+        refreshTitlePreview();
+      });
+    }
+
+    const batteryChips = one('[data-battery-chips]', form);
+    const batteryInput = one('[data-battery-input]', form);
+    if (batteryChips && batteryInput) {
+      batteryChips.addEventListener('click', function (e) {
+        const btn = e.target.closest('[data-battery-chip]');
+        if (!btn) return;
+        const val = btn.getAttribute('data-battery-chip');
+        batteryInput.value = val === null ? '' : val;
+        batteryChips.querySelectorAll('[data-battery-chip]').forEach(function (b) {
           b.classList.toggle('is-on', b === btn);
         });
         refreshTitlePreview();
@@ -2688,6 +2849,19 @@
         suggestBox.hidden = hits.length === 0;
       });
     }
+
+    function syncPhoneModelLabel() {
+      const label = one('[data-phone-model-label]', form);
+      const listing = one('[data-listing-type]:checked', form);
+      const tradeWrap = one('[data-trade-for-wrap]', form);
+      if (!label) return;
+      const v = listing ? listing.value : 'sell';
+      if (v === 'buy') label.textContent = 'Koji telefon tražiš?';
+      else if (v === 'trade') label.textContent = 'Koji telefon menjaš?';
+      else label.textContent = 'Koji telefon prodaješ?';
+      if (tradeWrap) tradeWrap.hidden = v !== 'trade';
+    }
+    syncPhoneModelLabel();
 
     // Compat multi typeahead for parts
     const compatSearch = one('[data-compat-search]', form);
@@ -2823,15 +2997,17 @@
       }
     }
 
-    // Listing change → photo requirement / intent chips
+    // Listing change → photo requirement / intent chips / model label
     form.querySelectorAll('[data-listing-type]').forEach(function (inp) {
       inp.addEventListener('change', function () {
         form.querySelectorAll('[data-listing-opt]').forEach(function (lab) {
           const i = lab.querySelector('[data-listing-type]');
-          lab.classList.toggle('is-on', !!(i && i.checked));
+          lab.classList.toggle('is-on', !!(i && i.checked && !i.disabled));
         });
         const typeEl = one('[data-form-type]:checked', form);
         syncPhonePhotoRequirement(form, typeEl ? typeEl.value : 'telefon');
+        syncPhoneModelLabel();
+        refreshTitlePreview();
       });
     });
 
@@ -2867,12 +3043,20 @@
     var deferredPrompt = null;
     var dismissKey = 'kt_pwa_install_dismissed';
     var mode = 'android';
+    var pendingPwaMode = null;
+    var path = (window.location.pathname || '');
+    var isLoginPage = path === '/prijava' || path === '/login.php' || path.indexOf('/prijava') === 0;
 
     function dismissed() {
       try { return localStorage.getItem(dismissKey) === '1'; } catch (e) { return false; }
     }
     function setDismissed() {
       try { localStorage.setItem(dismissKey, '1'); } catch (e) {}
+    }
+
+    function cookieBannerOpen() {
+      var cookieBanner = document.getElementById('kp-cookie-banner');
+      return !!(cookieBanner && !cookieBanner.hidden);
     }
 
     function setBtnVisible(btn, visible) {
@@ -2883,6 +3067,12 @@
 
     function showBanner(nextMode) {
       if (!banner || isStandalonePwa() || dismissed()) return;
+      // Na prijavi: ne prikazuj „Dodaj na telefon“ dok je cookie baner otvoren.
+      if (isLoginPage && cookieBannerOpen()) {
+        pendingPwaMode = nextMode || mode || 'android';
+        banner.hidden = true;
+        return;
+      }
       mode = nextMode || 'android';
       if (hint) {
         hint.textContent = mode === 'ios'
@@ -2894,6 +3084,21 @@
       setBtnVisible(installBtn, mode !== 'ios');
       setBtnVisible(iosHelpBtn, mode === 'ios');
       banner.hidden = false;
+    }
+
+    var cookieBannerEl = document.getElementById('kp-cookie-banner');
+    if (cookieBannerEl && typeof MutationObserver === 'function') {
+      var cookieObs = new MutationObserver(function () {
+        if (!cookieBannerOpen() && pendingPwaMode) {
+          var next = pendingPwaMode;
+          pendingPwaMode = null;
+          showBanner(next);
+        } else if (isLoginPage && cookieBannerOpen() && banner && !banner.hidden) {
+          pendingPwaMode = mode || 'android';
+          banner.hidden = true;
+        }
+      });
+      cookieObs.observe(cookieBannerEl, { attributes: true, attributeFilter: ['hidden'] });
     }
 
     window.addEventListener('beforeinstallprompt', function (e) {

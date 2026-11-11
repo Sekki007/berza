@@ -60,7 +60,7 @@ function check(bool $ok, string $message): void
     echo "FAIL {$message}\n";
 }
 
-// 1) suggestAdTitle za 3 kategorije + prazan naslov
+// 1) suggestAdTitle za 3 kategorije + memorija u naslovu + Menjam
 $phoneTitle = suggestAdTitle([
     'ad_type' => 'telefon',
     'brand' => 'Apple',
@@ -69,6 +69,29 @@ $phoneTitle = suggestAdTitle([
     'condition_state' => 'Polovno',
 ]);
 check($phoneTitle === 'iPhone 15 128GB – Polovno', 'naslov telefona: ' . $phoneTitle);
+
+$phoneTitleMem = suggestAdTitle([
+    'ad_type' => 'telefon',
+    'listing_type' => 'sell',
+    'brand' => 'Apple',
+    'model' => 'iPhone 15 Pro',
+    'storage' => '256GB',
+    'condition_state' => 'Polovno',
+]);
+check($phoneTitleMem === 'iPhone 15 Pro 256GB – Polovno', 'naslov sa memorijom: ' . $phoneTitleMem);
+
+$tradeTitle = suggestAdTitle([
+    'ad_type' => 'telefon',
+    'listing_type' => 'trade',
+    'brand' => 'Apple',
+    'model' => 'iPhone 15 Pro',
+    'storage' => '256GB',
+    'condition_state' => 'Polovno',
+    'trade_for' => 'iPhone 14 Pro',
+]);
+check($tradeTitle === 'iPhone 15 Pro 256GB – Polovno za iPhone 14 Pro', 'naslov Menjam: ' . $tradeTitle);
+check(normalizeListingType('trade', 'telefon') === 'trade', 'listing Menjam = trade');
+check(isTradeListing(['ad_type' => 'telefon', 'listing_type' => 'trade']), 'isTradeListing za Menjam');
 
 $partsTitle = suggestAdTitle([
     'ad_type' => 'delovi',
@@ -80,9 +103,31 @@ check($partsTitle === 'Ekran/LCD za iPhone 16 Pro – Original', 'naslov delova:
 
 $serviceTitle = suggestAdTitle([
     'ad_type' => 'servis',
+    'listing_type' => 'service',
     'service_types' => ['screen'],
 ]);
 check(str_contains($serviceTitle, 'Servis'), 'naslov servisa: ' . $serviceTitle);
+check(normalizeListingType('service', 'servis') === 'service', 'listing Servis = service');
+check(normalizeListingType('sell', 'servis') === 'service', 'Servis forsira listing service');
+
+$serviceExtras = parseAdFormExtras([
+    'listing_type' => 'service',
+    'service_types' => ['screen'],
+    'supported_brands' => ['Apple'],
+], 'servis');
+check(($serviceExtras['listing_type'] ?? '') === 'service', 'parseAdFormExtras Servis listing');
+
+$tradeExtras = parseAdFormExtras([
+    'listing_type' => 'trade',
+    'trade_for' => 'Galaxy S24',
+    'ram' => '8GB',
+], 'telefon');
+check(($tradeExtras['listing_type'] ?? '') === 'trade' && ($tradeExtras['trade_for'] ?? '') === 'Galaxy S24', 'parseAdFormExtras Menjam za');
+
+if (function_exists('formatPhoneRsDisplay')) {
+    check(formatPhoneRsDisplay('0612345678') === '061 234 5678', 'format telefona 06x xxx xxxx');
+    check(formatPhoneRsDisplay('+381612345678') === '061 234 5678', 'format telefona iz +381');
+}
 
 // 2) Kreiranje oglasa — sve 3 kategorije (preko saveAd, bez HTTP)
 $users = getUsers();
@@ -145,6 +190,19 @@ check(str_contains((string)($adParts['title'] ?? ''), 'za'), 'delovi naslov sadr
 $idService = saveAd(makeAdPayload($uid, 'servis', ''));
 $adService = getAdById($idService);
 check(is_array($adService) && getAdType($adService) === 'servis', 'kreiran servis oglas #' . $idService);
+check(getAdListingType($adService) === 'service', 'servis oglas ima listing_type=service');
+
+$tradePayload = makeAdPayload($uid, 'telefon', '');
+$tradePayload['listing_type'] = 'trade';
+$tradePayload['trade_for'] = 'iPhone 13';
+$tradePayload['storage'] = '256GB';
+$tradePayload['model'] = 'iPhone 15 Pro';
+$tradePayload['title'] = suggestAdTitle($tradePayload);
+$idTrade = saveAd($tradePayload);
+$adTrade = getAdById($idTrade);
+check(is_array($adTrade) && getAdListingType($adTrade) === 'trade', 'kreiran Menjam oglas #' . $idTrade);
+check(str_contains((string)($adTrade['title'] ?? ''), '256GB'), 'Menjam naslov sadrži memoriju');
+check(str_contains((string)($adTrade['title'] ?? ''), 'za iPhone 13'), 'Menjam naslov sadrži Menjam za');
 
 // 3) Staging slika posle "greške" — simulacija upload-a (minimalni JPEG bez GD)
 $tmp = tempnam(sys_get_temp_dir(), 'adimg');

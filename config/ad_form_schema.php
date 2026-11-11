@@ -309,6 +309,7 @@ function parseAdFormExtras(array $post, string $adType): array
         'equipment_type' => '',
         'compatible_models' => '',
         'originality' => '',
+        'trade_for' => '',
         'service_types' => [],
         'supported_brands' => [],
         'has_work_warranty' => 0,
@@ -323,9 +324,11 @@ function parseAdFormExtras(array $post, string $adType): array
         $extras['color'] = trim((string)($post['color'] ?? ''));
         $sim = trim((string)($post['sim_status'] ?? ''));
         $extras['sim_status'] = in_array($sim, $schema['sim_statuses'], true) ? $sim : '';
-        $bh = trim((string)($post['battery_health'] ?? ''));
-        if ($bh !== '' && is_numeric($bh)) {
-            $extras['battery_health'] = max(0, min(100, (int)$bh));
+        $bhRaw = trim((string)($post['battery_health'] ?? ''));
+        if ($bhRaw === 'lt85' || $bhRaw === 'below85' || $bhRaw === 'ispod85') {
+            $extras['battery_health'] = 84;
+        } elseif ($bhRaw !== '' && is_numeric($bhRaw)) {
+            $extras['battery_health'] = max(0, min(100, (int)$bhRaw));
         }
         $extras['has_warranty'] = isset($post['has_warranty']) ? 1 : 0;
         if ($extras['has_warranty']) {
@@ -333,6 +336,9 @@ function parseAdFormExtras(array $post, string $adType): array
             $extras['warranty_months'] = $wm > 0 ? $wm : null;
         }
         $extras['accessories'] = normalizeStringList($post['accessories'] ?? [], array_keys($schema['phone_accessories']));
+        if ($listingType === 'trade') {
+            $extras['trade_for'] = mb_substr(trim((string)($post['trade_for'] ?? '')), 0, 120);
+        }
     }
 
     if ($adType === 'delovi') {
@@ -388,7 +394,11 @@ function adAttributeRows(array $ad): array
         $add('Boja', $ad['color'] ?? '');
         $add('SIM', $ad['sim_status'] ?? '');
         if (isset($ad['battery_health']) && $ad['battery_health'] !== null && $ad['battery_health'] !== '') {
-            $add('Battery Health', (int)$ad['battery_health'] . '%');
+            $bh = (int)$ad['battery_health'];
+            $add('Battery Health', $bh < 85 ? 'ispod 85%' : ($bh . '%'));
+        }
+        if (isTradeListing($ad)) {
+            $add('Menjam za', $ad['trade_for'] ?? '');
         }
         if (!empty($ad['has_warranty'])) {
             $months = (int)($ad['warranty_months'] ?? 0);
@@ -536,6 +546,12 @@ function suggestAdTitle(array $ad): string
     $title = trim(implode(' ', $parts));
     if ($condition !== '') {
         $title = trim($title . ($title !== '' ? ' – ' : '') . $condition);
+    }
+    if (isTradeListing($ad)) {
+        $tradeFor = trim((string)($ad['trade_for'] ?? ''));
+        if ($tradeFor !== '') {
+            $title = trim($title . ($title !== '' ? ' ' : '') . 'za ' . $tradeFor);
+        }
     }
     return mb_strimwidth($title, 0, 120, '');
 }
