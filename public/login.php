@@ -49,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         session_regenerate_id(true);
         setSessionUserFromProfile($user);
         issueRememberLogin($user, $rememberMe);
-        setFlash('success', 'Upešno ste prijavljeni.');
+        setFlash('success', 'Uspešno ste prijavljeni.');
         $okFallback = $isAdminUser ? '/dashboard.php' : '/nalog.php';
         header('Location: ' . ($loginNext !== '' ? $loginNext : $okFallback));
         exit;

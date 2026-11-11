@@ -317,6 +317,31 @@ function phoneCatalogModel(string $id): ?array
     return $bundle['models'][$id] ?? null;
 }
 
+/**
+ * RAM iz kataloga (specifikacija), npr. "8GB". Prazno ako izvor ne navodi.
+ */
+function phoneCatalogModelRam(array $model): string
+{
+    foreach ($model['specs'] ?? [] as $row) {
+        if (!is_array($row)) {
+            continue;
+        }
+        $label = mb_strtolower(trim((string)($row['label'] ?? '')));
+        if ($label === '' || (!str_contains($label, 'ram') && $label !== 'radna memorija')) {
+            continue;
+        }
+        $value = trim((string)($row['value'] ?? ''));
+        if ($value === '') {
+            continue;
+        }
+        if (preg_match('/(\d+)\s*GB/i', $value, $m) === 1) {
+            return $m[1] . 'GB';
+        }
+        return $value;
+    }
+    return '';
+}
+
 function phoneCatalogFindBySlug(string $brandSlug, string $modelSlug): ?array
 {
     $brandSlug = strtolower(trim($brandSlug));

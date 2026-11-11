@@ -39,8 +39,40 @@ foreach ($catalogModels as $catalogModel) {
         'name' => $catalogModel['name'],
         'label' => trim($catalogModel['brand'] . ' ' . $catalogModel['name']),
         'variants' => $variants,
+        'colors' => array_values($catalogModel['colors'] ?? []),
+        'ram' => function_exists('phoneCatalogModelRam') ? phoneCatalogModelRam($catalogModel) : '',
     ];
 }
+$selectedCatalogRam = ($selectedCatalog && function_exists('phoneCatalogModelRam')) ? phoneCatalogModelRam($selectedCatalog) : '';
+$selectedCatalogColors = ($selectedCatalog && is_array($selectedCatalog['colors'] ?? null)) ? $selectedCatalog['colors'] : [];
+$phoneModelLabel = match ($currentListing) {
+    'buy' => 'Koji telefon tražiš?',
+    'trade' => 'Koji telefon menjaš?',
+    default => 'Koji telefon prodaješ?',
+};
+$contactPhoneDisplay = function_exists('formatPhoneRsDisplay')
+    ? formatPhoneRsDisplay((string)($ad['contact_phone'] ?? ''))
+    : (string)($ad['contact_phone'] ?? '');
+$batteryNow = isset($ad['battery_health']) && $ad['battery_health'] !== null && $ad['battery_health'] !== ''
+    ? (int)$ad['battery_health']
+    : null;
+$batteryChip = '';
+if ($batteryNow !== null) {
+    if (in_array($batteryNow, [100, 95, 90, 85], true)) {
+        $batteryChip = (string)$batteryNow;
+    } elseif ($batteryNow < 85) {
+        $batteryChip = 'lt85';
+    }
+}
+$colorNow = trim((string)($ad['color'] ?? ''));
+$colorIsOther = $colorNow !== '' && !in_array($colorNow, $selectedCatalogColors, true);
+$phoneExtraOpen = trim((string)($ad['ram'] ?? '')) !== ''
+    || $colorNow !== ''
+    || trim((string)($ad['sim_status'] ?? '')) !== ''
+    || !empty($ad['has_warranty'])
+    || (is_array($ad['accessories'] ?? null) && $ad['accessories'] !== [])
+    || $currentDeviceType !== 'phone'
+    || trim((string)($ad['description'] ?? '')) !== '';
 $partsKindChips = $schema['parts_kind_chips'] ?? [];
 $currentPartsKind = '';
 $eqNow = trim((string)($ad['equipment_type'] ?? ''));
@@ -52,14 +84,6 @@ foreach ($partsKindChips as $kindKey => $kindMeta) {
     }
 }
 $manualPhoneOpen = $selectedCatalogId === '' && (trim((string)($ad['brand'] ?? '')) !== '' || trim((string)($ad['model'] ?? '')) !== '');
-$phoneExtraOpen = trim((string)($ad['ram'] ?? '')) !== ''
-    || trim((string)($ad['color'] ?? '')) !== ''
-    || trim((string)($ad['sim_status'] ?? '')) !== ''
-    || (isset($ad['battery_health']) && $ad['battery_health'] !== null && $ad['battery_health'] !== '')
-    || !empty($ad['has_warranty'])
-    || (is_array($ad['accessories'] ?? null) && $ad['accessories'] !== [])
-    || $currentDeviceType !== 'phone'
-    || trim((string)($ad['description'] ?? '')) !== '';
 $isBuy = $currentListing === 'buy';
 $photosRequired = $currentType === 'telefon' && !$isBuy;
 $priceWarnEur = warnAdPriceEur();
@@ -143,23 +167,9 @@ $showPriceConfirm = $priceEurNow > $priceWarnEur && $priceEurNow <= maxAdPriceEu
                 </div>
             </section>
 
-            <?php if (!empty($shopCategoriesForForm)): ?>
-                <section class="ad-form-section">
-                    <div class="form-group">
-                        <label for="shop-category-id">Kategorija u izlogu</label>
-                        <select name="shop_category_id" id="shop-category-id">
-                            <option value="">Bez kategorije</option>
-                            <?php foreach ($shopCategoriesForForm as $sc): ?>
-                                <option value="<?= h($sc['id']) ?>" <?= ($currentShopCategoryId ?? '') === $sc['id'] ? 'selected' : '' ?>><?= h($sc['name']) ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
-                </section>
-            <?php endif; ?>
-
             <section class="ad-form-section" data-panel="telefon" <?= $currentType !== 'telefon' ? 'hidden' : '' ?>>
                 <div class="form-group">
-                    <label for="phone-search">Koji telefon prodaješ?</label>
+                    <label for="phone-search" data-phone-model-label><?= h($phoneModelLabel) ?></label>
                     <input type="search" id="phone-search" data-phone-search autocomplete="off" placeholder="npr. iPhone 15, Galaxy S24…" value="<?= h($selectedCatalog ? ($selectedCatalog['brand'] . ' ' . $selectedCatalog['name']) : trim(($ad['brand'] ?? '') . ' ' . ($ad['model'] ?? ''))) ?>">
                     <div class="ad-typeahead-list" data-phone-suggestions hidden role="listbox"></div>
                     <div class="chip-grid" data-phone-variant-chips <?= $selectedCatalog && $selectedCatalog['variants'] !== [] ? '' : 'hidden' ?>>
@@ -194,6 +204,27 @@ $showPriceConfirm = $priceEurNow > $priceWarnEur && $priceEurNow <= maxAdPriceEu
                             <?php endforeach; ?>
                         </select>
                     </div>
+                </div>
+                <div class="form-group" data-title-preview-block data-title-for="telefon">
+                    <p class="ad-title-preview" data-title-preview><?= h($titlePreview !== '' ? ('Naslov oglasa: ' . $titlePreview) : 'Naslov oglasa: biće napravljen automatski') ?></p>
+                    <button type="button" class="btn-sm" data-title-edit-toggle>Izmeni</button>
+                    <div class="form-group" data-title-edit <?= trim((string)($ad['title'] ?? '')) !== '' ? '' : 'hidden' ?> style="margin-top:8px;">
+                        <input name="title" id="ad-title" data-ad-title data-keep-enabled="1" maxlength="120" autocomplete="off" value="<?= h((string)$ad['title']) ?>" placeholder="Ručni naslov">
+                        <button type="button" class="btn-sm" data-suggest-title>Osveži predlog</button>
+                    </div>
+                </div>
+                <div class="form-group" data-trade-for-wrap <?= $currentListing === 'trade' ? '' : 'hidden' ?>>
+                    <label for="trade-for">Menjam za…</label>
+                    <input name="trade_for" id="trade-for" data-trade-for value="<?= h((string)($ad['trade_for'] ?? '')) ?>" placeholder="npr. iPhone 14 Pro" maxlength="120" autocomplete="off">
+                </div>
+            </section>
+
+            <section class="ad-form-section" data-title-preview-block data-title-for="other" <?= $currentType === 'telefon' ? 'hidden' : '' ?>>
+                <p class="ad-title-preview" data-title-preview><?= h($titlePreview !== '' ? ('Naslov oglasa: ' . $titlePreview) : 'Naslov oglasa: biće napravljen automatski') ?></p>
+                <button type="button" class="btn-sm" data-title-edit-toggle>Izmeni</button>
+                <div class="form-group" data-title-edit <?= trim((string)($ad['title'] ?? '')) !== '' ? '' : 'hidden' ?> style="margin-top:8px;">
+                    <input type="text" data-ad-title-mirror maxlength="120" autocomplete="off" value="<?= h((string)$ad['title']) ?>" placeholder="Ručni naslov">
+                    <button type="button" class="btn-sm" data-suggest-title>Osveži predlog</button>
                 </div>
             </section>
 
@@ -307,6 +338,16 @@ $showPriceConfirm = $priceEurNow > $priceWarnEur && $priceEurNow <= maxAdPriceEu
                     </div>
                 </div>
 
+                <div class="form-group" data-battery-field <?= $currentType !== 'telefon' ? 'hidden' : '' ?>>
+                    <label>Baterija %</label>
+                    <div class="chip-grid" data-battery-chips>
+                        <?php foreach (['100' => '100', '95' => '95', '90' => '90', '85' => '85', 'lt85' => 'ispod 85', '' => 'ne znam'] as $bhVal => $bhLabel): ?>
+                            <button type="button" class="chip-option <?= $batteryChip === (string)$bhVal ? 'is-on' : '' ?>" data-battery-chip="<?= h((string)$bhVal) ?>"><?= h($bhLabel) ?></button>
+                        <?php endforeach; ?>
+                    </div>
+                    <input type="hidden" name="battery_health" data-battery-input data-title-source value="<?= $batteryChip === 'lt85' ? 'lt85' : ($batteryNow !== null ? h((string)$batteryNow) : '') ?>">
+                </div>
+
                 <div class="form-group" data-title-price-block>
                     <label data-price-label><?= $isBuy ? 'Budžet do' : ($currentType === 'servis' ? 'Cena od' : 'Cena') ?></label>
                     <?php if (!empty($formErrors['price'])): ?><p class="field-error"><?= h($formErrors['price']) ?></p><?php endif; ?>
@@ -338,6 +379,18 @@ $showPriceConfirm = $priceEurNow > $priceWarnEur && $priceEurNow <= maxAdPriceEu
                     </label>
                 </div>
 
+                <?php if (!empty($shopCategoriesForForm)): ?>
+                    <div class="form-group" data-shop-category-wrap>
+                        <label for="shop-category-id">Kategorija u izlogu</label>
+                        <select name="shop_category_id" id="shop-category-id">
+                            <option value="">Bez kategorije</option>
+                            <?php foreach ($shopCategoriesForForm as $sc): ?>
+                                <option value="<?= h($sc['id']) ?>" <?= ($currentShopCategoryId ?? '') === $sc['id'] ? 'selected' : '' ?>><?= h($sc['name']) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                <?php endif; ?>
+
                 <div class="form-row">
                     <div class="form-group">
                         <label for="ad-location"><?= $currentType === 'servis' ? 'Adresa / grad *' : 'Grad *' ?></label>
@@ -347,7 +400,7 @@ $showPriceConfirm = $priceEurNow > $priceWarnEur && $priceEurNow <= maxAdPriceEu
                     <div class="form-group">
                         <label>Telefon *</label>
                         <?php if (!empty($formErrors['contact_phone'])): ?><p class="field-error"><?= h($formErrors['contact_phone']) ?></p><?php endif; ?>
-                        <input name="contact_phone" type="tel" inputmode="tel" placeholder="06x xxx xxxx" value="<?= h((string)$ad['contact_phone']) ?>" required autocomplete="tel">
+                        <input name="contact_phone" type="tel" inputmode="tel" placeholder="06x xxx xxxx" value="<?= h($contactPhoneDisplay) ?>" required autocomplete="tel">
                     </div>
                 </div>
 
@@ -362,24 +415,38 @@ $showPriceConfirm = $priceEurNow > $priceWarnEur && $priceEurNow <= maxAdPriceEu
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="form-row">
-                            <div class="form-group"><label>RAM</label>
-                                <select name="ram"><option value="">—</option>
-                                    <?php foreach ($schema['ram_options'] as $ram): ?><option value="<?= h($ram) ?>" <?= ($ad['ram'] ?? '') === $ram ? 'selected' : '' ?>><?= h($ram) ?></option><?php endforeach; ?>
-                                </select>
-                            </div>
-                            <div class="form-group"><label>Boja</label>
-                                <input name="color" data-title-source value="<?= h((string)($ad['color'] ?? '')) ?>" placeholder="npr. Graphite" autocomplete="off">
-                            </div>
+                        <div class="form-group"><label>RAM</label>
+                            <select name="ram" data-ram-select><option value="">—</option>
+                                <?php
+                                $ramValue = trim((string)($ad['ram'] ?? ''));
+                                if ($ramValue === '' && $selectedCatalogRam !== '') {
+                                    $ramValue = $selectedCatalogRam;
+                                }
+                                foreach ($schema['ram_options'] as $ram): ?>
+                                    <option value="<?= h($ram) ?>" <?= $ramValue === $ram ? 'selected' : '' ?>><?= h($ram) ?></option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
-                        <div class="form-row">
-                            <div class="form-group"><label>SIM</label>
-                                <select name="sim_status"><option value="">—</option>
-                                    <?php foreach ($schema['sim_statuses'] as $sim): ?><option value="<?= h($sim) ?>" <?= ($ad['sim_status'] ?? '') === $sim ? 'selected' : '' ?>><?= h($sim) ?></option><?php endforeach; ?>
-                                </select>
+                        <div class="form-group" data-color-field>
+                            <label>Boja</label>
+                            <div class="chip-grid" data-color-chips <?= $selectedCatalogColors === [] ? 'hidden' : '' ?>>
+                                <?php foreach ($selectedCatalogColors as $colorOpt): ?>
+                                    <button type="button" class="chip-option <?= $colorNow === $colorOpt ? 'is-on' : '' ?>" data-color-chip="<?= h($colorOpt) ?>"><?= h($colorOpt) ?></button>
+                                <?php endforeach; ?>
+                                <button type="button" class="chip-option <?= $colorIsOther ? 'is-on' : '' ?>" data-color-chip="__other__">Ostalo</button>
                             </div>
-                            <div class="form-group" data-battery-field><label>Baterija %</label>
-                                <input type="number" name="battery_health" min="0" max="100" step="1" inputmode="numeric" data-title-source value="<?= isset($ad['battery_health']) && $ad['battery_health'] !== null && $ad['battery_health'] !== '' ? h((string)$ad['battery_health']) : '' ?>">
+                            <input name="color" data-color-input data-title-source value="<?= h($colorNow) ?>" placeholder="npr. Graphite" autocomplete="off" <?= ($selectedCatalogColors !== [] && !$colorIsOther) ? 'hidden' : '' ?>>
+                        </div>
+                        <div class="form-group"><label>SIM</label>
+                            <div class="chip-grid" data-sim-chips>
+                                <?php foreach ($schema['sim_statuses'] as $sim): ?>
+                                    <label class="chip-option <?= (string)($ad['sim_status'] ?? '') === $sim ? 'is-on' : '' ?>">
+                                        <input type="radio" name="sim_status" value="<?= h($sim) ?>" <?= (string)($ad['sim_status'] ?? '') === $sim ? 'checked' : '' ?>><span><?= h($sim) ?></span>
+                                    </label>
+                                <?php endforeach; ?>
+                                <label class="chip-option <?= (string)($ad['sim_status'] ?? '') === '' ? 'is-on' : '' ?>">
+                                    <input type="radio" name="sim_status" value="" <?= (string)($ad['sim_status'] ?? '') === '' ? 'checked' : '' ?>><span>Ne znam</span>
+                                </label>
                             </div>
                         </div>
                         <div class="form-group">
@@ -403,17 +470,6 @@ $showPriceConfirm = $priceEurNow > $priceWarnEur && $priceEurNow <= maxAdPriceEu
             <datalist id="city-suggestions">
                 <?php foreach ($cfg['cities'] as $city): ?><option value="<?= h($city) ?>"></option><?php endforeach; ?>
             </datalist>
-
-            <section class="ad-form-section">
-                <h3 class="ad-form-section-title">Naslov</h3>
-                <p class="ad-title-preview" data-title-preview><?= h($titlePreview !== '' ? $titlePreview : 'Naslov će se napraviti automatski') ?></p>
-                <p class="form-hint">Nije obavezan. Ako ostane prazan, server ga složi (npr. iPhone 15 128GB – Polovno).</p>
-                <button type="button" class="btn-sm" data-title-edit-toggle>izmeni</button>
-                <div class="form-group" data-title-edit <?= trim((string)($ad['title'] ?? '')) !== '' ? '' : 'hidden' ?> style="margin-top:8px;">
-                    <input name="title" id="ad-title" data-ad-title maxlength="120" autocomplete="off" value="<?= h((string)$ad['title']) ?>" placeholder="Ručni naslov">
-                    <button type="button" class="btn-sm" data-suggest-title>Osveži predlog</button>
-                </div>
-            </section>
 
             <?php if ($isEdit || isAdmin()): ?>
                 <section class="ad-form-section">
