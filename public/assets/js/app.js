@@ -492,6 +492,19 @@
     }
   }
 
+  function batteryHealthFromRaw(raw) {
+    raw = String(raw == null ? '' : raw).trim().toLowerCase();
+    if (raw === 'lt85' || raw === 'below85' || raw === 'ispod85') return 84;
+    if (!/^\d+$/.test(raw)) return null;
+    return Math.max(0, Math.min(100, parseInt(raw, 10)));
+  }
+
+  function batteryScaleColor(n) {
+    if (n >= 85) return '#3d9a50';
+    if (n >= 70) return '#d97706';
+    return '#dc2626';
+  }
+
   function buildSuggestedAdTitle(form) {
     const typeEl = one('[data-form-type]:checked', form);
     const type = typeEl ? typeEl.value : 'telefon';
@@ -537,6 +550,9 @@
     }
     const st = storage ? (storage.value || '').trim() : '';
     if (st) parts.push(st);
+    const battery = one('[data-battery-input]', form);
+    const bh = batteryHealthFromRaw(battery ? battery.value : '');
+    if (bh !== null) parts.push('BH ' + bh + '%');
     let title = parts.join(' ').trim();
     const cond = condition ? (condition.value || '').trim() : '';
     if (cond) title = (title + (title ? ' – ' : '') + cond).trim();
@@ -2839,19 +2855,51 @@
       });
     }
 
-    const batteryChips = one('[data-battery-chips]', form);
+    const batteryRange = one('[data-battery-range]', form);
     const batteryInput = one('[data-battery-input]', form);
-    if (batteryChips && batteryInput) {
-      batteryChips.addEventListener('click', function (e) {
-        const btn = e.target.closest('[data-battery-chip]');
-        if (!btn) return;
-        const val = btn.getAttribute('data-battery-chip');
-        batteryInput.value = val === null ? '' : val;
-        batteryChips.querySelectorAll('[data-battery-chip]').forEach(function (b) {
-          b.classList.toggle('is-on', b === btn);
-        });
-        refreshTitlePreview();
+    const batteryUnknown = one('[data-battery-unknown]', form);
+    const batteryReadout = one('[data-battery-readout]', form);
+    const batteryScale = one('[data-battery-scale]', form);
+
+    function syncBatteryControl(opts) {
+      opts = opts || {};
+      if (!batteryRange || !batteryInput) return;
+      if (opts.fromInput && batteryUnknown) {
+        batteryUnknown.checked = batteryHealthFromRaw(batteryInput.value) === null;
+      }
+      if (opts.fromSlider && batteryUnknown) batteryUnknown.checked = false;
+      const unknown = !!(batteryUnknown && batteryUnknown.checked);
+      let n = (!opts.fromSlider && !unknown) ? batteryHealthFromRaw(batteryInput.value) : null;
+      if (n === null) n = batteryHealthFromRaw(batteryRange.value);
+      if (n === null) n = 100;
+      if (!opts.fromSlider || String(batteryRange.value) !== String(n)) {
+        batteryRange.value = String(n);
+      }
+      batteryRange.setAttribute('aria-valuenow', String(n));
+      batteryRange.setAttribute('aria-valuetext', unknown ? 'nepoznato' : (n + '%'));
+      if (batteryReadout) batteryReadout.textContent = unknown ? '—' : (n + '%');
+      if (batteryScale) {
+        batteryScale.classList.toggle('is-unknown', unknown);
+        batteryScale.style.setProperty('--bh-pct', n + '%');
+        batteryScale.style.setProperty('--bh-color', batteryScaleColor(n));
+      }
+      batteryInput.value = unknown ? '' : String(n);
+      if (opts.notify) {
+        batteryInput.dispatchEvent(new Event('input', { bubbles: true }));
+        batteryInput.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    }
+
+    if (batteryRange && batteryInput) {
+      batteryRange.addEventListener('input', function () {
+        syncBatteryControl({ fromSlider: true, notify: true });
       });
+      if (batteryUnknown) {
+        batteryUnknown.addEventListener('change', function () {
+          syncBatteryControl({ notify: true });
+        });
+      }
+      syncBatteryControl({ fromInput: true, notify: false });
     }
 
     if (search && suggestBox) {
@@ -2994,6 +3042,7 @@
         }
         const typeEl = one('[data-form-type]:checked', form);
         if (typeEl) syncAdFormByType(typeEl.value);
+        if (typeof syncBatteryControl === 'function') syncBatteryControl({ fromInput: true, notify: false });
         refreshTitlePreview();
       } catch (e) {}
     }

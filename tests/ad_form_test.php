@@ -80,6 +80,41 @@ $phoneTitleMem = suggestAdTitle([
 ]);
 check($phoneTitleMem === 'iPhone 15 Pro 256GB – Polovno', 'naslov sa memorijom: ' . $phoneTitleMem);
 
+$phoneTitleBh = suggestAdTitle([
+    'ad_type' => 'telefon',
+    'listing_type' => 'sell',
+    'brand' => 'Apple',
+    'model' => 'iPhone 15 Pro',
+    'storage' => '256GB',
+    'battery_health' => 87,
+    'condition_state' => 'Polovno',
+]);
+check($phoneTitleBh === 'iPhone 15 Pro 256GB BH 87% – Polovno', 'naslov sa baterijom: ' . $phoneTitleBh);
+
+$tradeBh = suggestAdTitle([
+    'ad_type' => 'telefon',
+    'listing_type' => 'trade',
+    'brand' => 'Apple',
+    'model' => 'iPhone 15 Pro',
+    'storage' => '256GB',
+    'battery_health' => '92',
+    'condition_state' => 'Polovno',
+    'trade_for' => 'iPhone 14 Pro',
+]);
+check($tradeBh === 'iPhone 15 Pro 256GB BH 92% – Polovno za iPhone 14 Pro', 'Menjam naslov sa baterijom: ' . $tradeBh);
+
+$bhExtras = parseAdFormExtras(['battery_health' => '87', 'listing_type' => 'sell'], 'telefon');
+check(($bhExtras['battery_health'] ?? null) === 87, 'tačan procenat baterije se čuva');
+$bhEmpty = parseAdFormExtras(['battery_health' => '', 'listing_type' => 'sell'], 'telefon');
+check(array_key_exists('battery_health', $bhEmpty) && $bhEmpty['battery_health'] === null, 'prazna baterija ostaje nepoznata');
+$bhRow = '';
+foreach (adAttributeRows(['ad_type' => 'telefon', 'battery_health' => 82, 'brand' => 'Apple']) as $row) {
+    if (($row['label'] ?? '') === 'Battery Health') {
+        $bhRow = (string)($row['value'] ?? '');
+    }
+}
+check($bhRow === '82%', 'detalj prikazuje tačan procenat baterije: ' . $bhRow);
+
 $tradeTitle = suggestAdTitle([
     'ad_type' => 'telefon',
     'listing_type' => 'trade',
