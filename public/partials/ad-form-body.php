@@ -200,6 +200,21 @@ $showPriceConfirm = $priceEurNow > $priceWarnEur && $priceEurNow <= maxAdPriceEu
                             <?php endforeach; ?>
                         </select>
                     </div>
+                    <div class="form-group" data-battery-field style="margin-top:12px;margin-bottom:0;" <?= $currentType !== 'telefon' ? 'hidden' : '' ?>>
+                        <label for="ad-battery-range">Baterija %</label>
+                        <div class="battery-scale<?= $batteryUnknown ? ' is-unknown' : '' ?>" data-battery-scale style="--bh-pct: <?= (int)$batterySlider ?>%; --bh-color: <?= h($batteryColor) ?>;">
+                            <div class="battery-scale-track">
+                                <input type="range" id="ad-battery-range" min="0" max="100" step="1" value="<?= (int)$batterySlider ?>" data-battery-range aria-valuemin="0" aria-valuemax="100" aria-valuenow="<?= (int)$batterySlider ?>" aria-valuetext="<?= $batteryUnknown ? 'nepoznato' : ((int)$batterySlider . '%') ?>" aria-label="Zdravlje baterije u procentima">
+                                <div class="battery-scale-ticks" aria-hidden="true"><span>0%</span><span>50%</span><span>100%</span></div>
+                            </div>
+                            <output class="battery-readout" data-battery-readout for="ad-battery-range"><?= $batteryUnknown ? '—' : ((int)$batterySlider . '%') ?></output>
+                        </div>
+                        <label class="check-inline battery-unknown-label">
+                            <input type="checkbox" data-battery-unknown <?= $batteryUnknown ? 'checked' : '' ?>>
+                            <span>Ne znam</span>
+                        </label>
+                        <input type="hidden" name="battery_health" data-battery-input data-title-source value="<?= $batteryUnknown ? '' : (int)$batterySlider ?>">
+                    </div>
                     <p class="form-hint"><button type="button" class="linkish" data-manual-phone-toggle>Ne vidim model – ručni unos</button></p>
                 </div>
                 <div class="ad-form-more" data-manual-phone <?= $manualPhoneOpen ? '' : 'hidden' ?>>
@@ -350,22 +365,6 @@ $showPriceConfirm = $priceEurNow > $priceWarnEur && $priceEurNow <= maxAdPriceEu
                             </label>
                         <?php endforeach; ?>
                     </div>
-                </div>
-
-                <div class="form-group" data-battery-field <?= $currentType !== 'telefon' ? 'hidden' : '' ?>>
-                    <label for="ad-battery-range">Baterija %</label>
-                    <div class="battery-scale<?= $batteryUnknown ? ' is-unknown' : '' ?>" data-battery-scale style="--bh-pct: <?= (int)$batterySlider ?>%; --bh-color: <?= h($batteryColor) ?>;">
-                        <div class="battery-scale-track">
-                            <input type="range" id="ad-battery-range" min="0" max="100" step="1" value="<?= (int)$batterySlider ?>" data-battery-range aria-valuemin="0" aria-valuemax="100" aria-valuenow="<?= (int)$batterySlider ?>" aria-valuetext="<?= $batteryUnknown ? 'nepoznato' : ((int)$batterySlider . '%') ?>" aria-label="Zdravlje baterije u procentima">
-                            <div class="battery-scale-ticks" aria-hidden="true"><span>0%</span><span>50%</span><span>100%</span></div>
-                        </div>
-                        <output class="battery-readout" data-battery-readout for="ad-battery-range"><?= $batteryUnknown ? '—' : ((int)$batterySlider . '%') ?></output>
-                    </div>
-                    <label class="check-inline battery-unknown-label">
-                        <input type="checkbox" data-battery-unknown <?= $batteryUnknown ? 'checked' : '' ?>>
-                        <span>Ne znam</span>
-                    </label>
-                    <input type="hidden" name="battery_health" data-battery-input data-title-source value="<?= $batteryUnknown ? '' : (int)$batterySlider ?>">
                 </div>
 
                 <div class="form-group" data-title-price-block>
