@@ -72,17 +72,12 @@ $phoneModelLabel = match ($currentListing) {
 $contactPhoneDisplay = function_exists('formatPhoneRsDisplay')
     ? formatPhoneRsDisplay((string)($ad['contact_phone'] ?? ''))
     : (string)($ad['contact_phone'] ?? '');
-$batteryNow = isset($ad['battery_health']) && $ad['battery_health'] !== null && $ad['battery_health'] !== ''
-    ? (int)$ad['battery_health']
+$batteryNow = isset($ad['battery_health']) && $ad['battery_health'] !== null && $ad['battery_health'] !== '' && is_numeric($ad['battery_health'])
+    ? max(0, min(100, (int)$ad['battery_health']))
     : null;
-$batteryChip = '';
-if ($batteryNow !== null) {
-    if (in_array($batteryNow, [100, 95, 90, 85], true)) {
-        $batteryChip = (string)$batteryNow;
-    } elseif ($batteryNow < 85) {
-        $batteryChip = 'lt85';
-    }
-}
+$batteryUnknown = $batteryNow === null;
+$batterySlider = $batteryNow ?? 100;
+$batteryColor = $batterySlider >= 85 ? '#3d9a50' : ($batterySlider >= 70 ? '#d97706' : '#dc2626');
 $colorNow = trim((string)($ad['color'] ?? ''));
 $colorIsOther = $colorNow !== '' && !in_array($colorNow, $selectedCatalogColors, true);
 $phoneExtraOpen = trim((string)($ad['ram'] ?? '')) !== ''
@@ -204,6 +199,21 @@ $showPriceConfirm = $priceEurNow > $priceWarnEur && $priceEurNow <= maxAdPriceEu
                                 <option value="<?= h($st) ?>" <?= $storageNow === $st ? 'selected' : '' ?>><?= h($st) ?></option>
                             <?php endforeach; ?>
                         </select>
+                    </div>
+                    <div class="form-group" data-battery-field style="margin-top:12px;margin-bottom:0;" <?= $currentType !== 'telefon' ? 'hidden' : '' ?>>
+                        <label for="ad-battery-range">Baterija %</label>
+                        <div class="battery-scale<?= $batteryUnknown ? ' is-unknown' : '' ?>" data-battery-scale style="--bh-pct: <?= (int)$batterySlider ?>%; --bh-color: <?= h($batteryColor) ?>;">
+                            <div class="battery-scale-track">
+                                <input type="range" id="ad-battery-range" min="0" max="100" step="1" value="<?= (int)$batterySlider ?>" data-battery-range aria-valuemin="0" aria-valuemax="100" aria-valuenow="<?= (int)$batterySlider ?>" aria-valuetext="<?= $batteryUnknown ? 'nepoznato' : ((int)$batterySlider . '%') ?>" aria-label="Zdravlje baterije u procentima">
+                                <div class="battery-scale-ticks" aria-hidden="true"><span>0%</span><span>50%</span><span>100%</span></div>
+                            </div>
+                            <output class="battery-readout" data-battery-readout for="ad-battery-range"><?= $batteryUnknown ? '—' : ((int)$batterySlider . '%') ?></output>
+                        </div>
+                        <label class="check-inline battery-unknown-label">
+                            <input type="checkbox" data-battery-unknown <?= $batteryUnknown ? 'checked' : '' ?>>
+                            <span>Ne znam</span>
+                        </label>
+                        <input type="hidden" name="battery_health" data-battery-input data-title-source value="<?= $batteryUnknown ? '' : (int)$batterySlider ?>">
                     </div>
                     <p class="form-hint"><button type="button" class="linkish" data-manual-phone-toggle>Ne vidim model – ručni unos</button></p>
                 </div>
@@ -355,16 +365,6 @@ $showPriceConfirm = $priceEurNow > $priceWarnEur && $priceEurNow <= maxAdPriceEu
                             </label>
                         <?php endforeach; ?>
                     </div>
-                </div>
-
-                <div class="form-group" data-battery-field <?= $currentType !== 'telefon' ? 'hidden' : '' ?>>
-                    <label>Baterija %</label>
-                    <div class="chip-grid" data-battery-chips>
-                        <?php foreach (['100' => '100', '95' => '95', '90' => '90', '85' => '85', 'lt85' => 'ispod 85', '' => 'ne znam'] as $bhVal => $bhLabel): ?>
-                            <button type="button" class="chip-option <?= $batteryChip === (string)$bhVal ? 'is-on' : '' ?>" data-battery-chip="<?= h((string)$bhVal) ?>"><?= h($bhLabel) ?></button>
-                        <?php endforeach; ?>
-                    </div>
-                    <input type="hidden" name="battery_health" data-battery-input data-title-source value="<?= $batteryChip === 'lt85' ? 'lt85' : ($batteryNow !== null ? h((string)$batteryNow) : '') ?>">
                 </div>
 
                 <div class="form-group" data-title-price-block>

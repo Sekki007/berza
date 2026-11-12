@@ -393,9 +393,9 @@ function adAttributeRows(array $ad): array
         $add('RAM', $ad['ram'] ?? '');
         $add('Boja', $ad['color'] ?? '');
         $add('SIM', $ad['sim_status'] ?? '');
-        if (isset($ad['battery_health']) && $ad['battery_health'] !== null && $ad['battery_health'] !== '') {
-            $bh = (int)$ad['battery_health'];
-            $add('Battery Health', $bh < 85 ? 'ispod 85%' : ($bh . '%'));
+        if (isset($ad['battery_health']) && $ad['battery_health'] !== null && $ad['battery_health'] !== '' && is_numeric($ad['battery_health'])) {
+            $bh = max(0, min(100, (int)$ad['battery_health']));
+            $add('Battery Health', $bh . '%');
         }
         if (isTradeListing($ad)) {
             $add('Menjam za', $ad['trade_for'] ?? '');
@@ -542,6 +542,10 @@ function suggestAdTitle(array $ad): string
     }
     if ($storage !== '') {
         $parts[] = $storage;
+    }
+    $batteryRaw = $ad['battery_health'] ?? null;
+    if ($batteryRaw !== null && $batteryRaw !== '' && is_numeric($batteryRaw)) {
+        $parts[] = 'BH ' . max(0, min(100, (int)$batteryRaw)) . '%';
     }
     $title = trim(implode(' ', $parts));
     if ($condition !== '') {
