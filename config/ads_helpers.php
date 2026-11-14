@@ -788,6 +788,15 @@ function incrementAdViews(int $adId): void
     if ($last > 0 && (time() - $last) < $cooldown) {
         return;
     }
+
+    // MySQL: samo uski red brojača. Ceo ads.json ostaje netaknut.
+    if (function_exists('usesMySqlStorage') && usesMySqlStorage()) {
+        if (function_exists('bumpAdStat') && bumpAdStat($adId, 'views')) {
+            $_SESSION['ad_view_hits'][$key] = time();
+        }
+        return;
+    }
+
     $_SESSION['ad_view_hits'][$key] = time();
 
     $ads = readJsonFile('ads.json');
