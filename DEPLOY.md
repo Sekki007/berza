@@ -208,6 +208,15 @@ git push -u origin main --force
 | `STORAGE_DRIVER=json` | Čitanje/pisanje iz `data/*.json` |
 | `STORAGE_DRIVER=mysql` | Čitanje/pisanje iz MySQL tabele `json_documents` |
 
+Pregledi oglasa (`ads.json` / `ad_stats.json`) u MySQL režimu idu u uske tabele `ad_counter` i `ad_counter_daily`, ne u ceo JSON dokument. Posle `git pull` migracija krene sama na prvom zahtevu. Može i odmah:
+
+```bash
+php tools/migrate_ad_counters.php
+php tools/migrate_ad_counters.php --check
+```
+
+Drugo pokretanje ne duplira brojeve. Nema izmene MySQL konfiguracije.
+
 Rollback:
 
 ```bash
