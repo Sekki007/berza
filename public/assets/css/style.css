@@ -637,6 +637,9 @@ body.page-ad-form {
 .ad-form-optional{font-weight:500;font-size:12px;color:var(--text-muted);}
 .ad-form-section .form-group{margin-bottom:12px;}
 .ad-form-section .form-group:last-child{margin-bottom:0;}
+.ad-desc-head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:6px;}
+.ad-desc-head label{margin:0;}
+.ad-desc-head .btn-sm{flex-shrink:0;}
 .ad-form-section .form-row{gap:10px;margin-bottom:0;}
 .ad-form-section .form-row .form-group{margin-bottom:12px;}
 .ad-form-cat-group{margin-bottom:14px;}

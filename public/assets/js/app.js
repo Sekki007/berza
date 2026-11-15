@@ -505,6 +505,128 @@
     return '#dc2626';
   }
 
+  function buildSuggestedAdDescription(form) {
+    const typeEl = one('[data-form-type]:checked', form);
+    const type = typeEl ? typeEl.value : 'telefon';
+    const listing = one('[data-listing-type]:checked', form);
+    const listingType = listing ? (listing.value || 'sell') : 'sell';
+    const locationEl = one('#ad-location', form) || one('[name="location"]', form);
+    const location = locationEl ? (locationEl.value || '').trim() : '';
+
+    if (type === 'servis') {
+      const lines = [];
+      lines.push('Nudim uslugu servisa mobilnih telefona.');
+      if (location) lines.push('Lokacija: ' + location + '.');
+      lines.push('Piši za termin i cenu.');
+      return lines.join(' ');
+    }
+
+    if (type === 'delovi') {
+      const eq = one('[data-equipment-type]', form) || one('[name="equipment_type"]', form);
+      let eqVal = eq ? (eq.value || '').trim() : '';
+      if (!eqVal) {
+        const kind = one('[data-parts-kind]:checked', form);
+        if (kind) eqVal = (kind.getAttribute('data-equipment-value') || '').trim();
+      }
+      const compat = one('[data-compat-value]', form) || one('input[name="compatible_models"]', form);
+      const compatVal = compat ? (compat.value || '').trim() : '';
+      const cond = one('[data-cond-parts]:checked', form);
+      const condVal = cond ? (cond.value || '').trim() : '';
+      const orig = one('input[name="originality"]:checked', form);
+      const origVal = orig ? (orig.value || '').trim() : '';
+      const verb = listingType === 'buy' ? 'Tražim' : 'Prodajem';
+      const lines = [];
+      let head = verb + ' ' + (eqVal && eqVal !== 'Ostalo' ? eqVal.toLowerCase() : 'deo / opremu');
+      if (compatVal) head += ' za ' + compatVal;
+      head += '.';
+      lines.push(head);
+      if (condVal) lines.push('Stanje: ' + condVal + '.');
+      if (origVal && origVal !== 'Ne znam') lines.push('Poreklo: ' + origVal + '.');
+      if (location) lines.push('Lično preuzimanje: ' + location + '.');
+      lines.push('Piši za detalje.');
+      return lines.join(' ');
+    }
+
+    const brand = one('[data-phone-brand]', form);
+    const model = one('#ad-model', form);
+    const storage = one('select[name="storage"]', form) || one('[data-storage-select]', form);
+    const condition = one('[data-cond-phone]:checked', form);
+    const battery = one('[data-battery-input]', form);
+    const sim = one('input[name="sim_status"]:checked', form);
+    const warrantyToggle = one('[data-warranty-toggle]', form);
+    const warrantyMonths = one('[name="warranty_months"]', form);
+    const color = one('[data-color-input]', form) || one('input[name="color"]', form);
+    const tradeFor = one('[data-trade-for]', form);
+    const deviceSelect = one('[data-device-type-select]', form) || one('[data-device-type-hidden]', form);
+    const device = deviceSelect ? (deviceSelect.value || 'phone') : 'phone';
+
+    const b = brand ? (brand.value || '').trim() : '';
+    const m = model ? (model.value || '').trim() : '';
+    const st = storage ? (storage.value || '').trim() : '';
+    const cond = condition ? (condition.value || '').trim() : '';
+    const bh = batteryHealthFromRaw(battery ? battery.value : '');
+    const simVal = sim ? (sim.value || '').trim() : '';
+    const colorVal = color ? (color.value || '').trim() : '';
+    const hasWarranty = !!(warrantyToggle && warrantyToggle.checked);
+    const months = warrantyMonths ? parseInt(warrantyMonths.value || '0', 10) : 0;
+
+    const accessories = [];
+    form.querySelectorAll('input[name="accessories[]"]:checked').forEach(function (inp) {
+      const v = (inp.value || '').trim();
+      if (v) accessories.push(v);
+    });
+
+    const deviceWord = device === 'watch' ? 'sat' : (device === 'tablet' ? 'tablet' : 'telefon');
+    let verb = 'Prodajem';
+    if (listingType === 'buy') verb = 'Tražim';
+    else if (listingType === 'trade') verb = 'Menjam';
+
+    const nameParts = [];
+    const cue = /^(iphone|galaxy|pixel|redmi|poco|xiaomi|huawei|honor|nothing)\b/i;
+    if (b && b !== 'Ostalo' && m && (m.toLowerCase().indexOf(b.toLowerCase()) === 0 || cue.test(m))) {
+      nameParts.push(m);
+    } else {
+      if (b && b !== 'Ostalo') nameParts.push(b);
+      if (m) nameParts.push(m);
+    }
+    const name = nameParts.join(' ').trim() || deviceWord;
+
+    const lines = [];
+    let head = verb + ' ' + name;
+    if (st) head += ', ' + st;
+    head += '.';
+    lines.push(head);
+
+    const facts = [];
+    if (cond) facts.push('stanje: ' + cond);
+    if (bh !== null) facts.push('BH ' + bh + '%');
+    if (simVal && simVal !== 'Ne znam') facts.push('SIM: ' + simVal);
+    if (colorVal) facts.push('boja: ' + colorVal);
+    if (facts.length) {
+      lines.push(facts.join(', ').replace(/^./, function (c) { return c.toUpperCase(); }) + '.');
+    }
+
+    if (accessories.length) {
+      lines.push('Uz uređaj ide: ' + accessories.join(', ') + '.');
+    }
+    if (hasWarranty) {
+      lines.push(months > 0 ? ('Garancija: ' + months + ' mes.') : 'Ima garanciju.');
+    }
+    if (listingType === 'trade') {
+      const tf = tradeFor ? (tradeFor.value || '').trim() : '';
+      lines.push(tf ? ('Za zamenu tražim: ' + tf + '.') : 'Otvoren/a za zamenu.');
+    }
+    if (location) {
+      lines.push((listingType === 'buy' ? 'Lokacija: ' : 'Lično preuzimanje: ') + location + '.');
+    }
+    if (listingType === 'buy') {
+      lines.push('Javi se sa stanjem i cenom.');
+    } else {
+      lines.push('Ozbiljne ponude samo.');
+    }
+    return lines.join(' ');
+  }
+
   function buildSuggestedAdTitle(form) {
     const typeEl = one('[data-form-type]:checked', form);
     const type = typeEl ? typeEl.value : 'telefon';
@@ -695,6 +817,23 @@
       suggestBtn.addEventListener('click', function () {
         titleManual = false;
         fillSuggestedTitle(true);
+      });
+    }
+
+    const descBox = one('[data-ad-description]', form) || one('textarea[name="description"]', form);
+    const suggestDescBtn = one('[data-suggest-description]', form);
+    if (suggestDescBtn && descBox) {
+      suggestDescBtn.addEventListener('click', function () {
+        const suggested = buildSuggestedAdDescription(form);
+        if (!suggested) return;
+        const current = (descBox.value || '').trim();
+        if (current && current !== suggested) {
+          const ok = window.confirm('Zameniti postojeći opis predlogom?');
+          if (!ok) return;
+        }
+        descBox.value = suggested;
+        descBox.dispatchEvent(new Event('input', { bubbles: true }));
+        descBox.focus();
       });
     }
 

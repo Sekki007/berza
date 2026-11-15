@@ -481,8 +481,12 @@ $showPriceConfirm = $priceEurNow > $priceWarnEur && $priceEurNow <= maxAdPriceEu
                 </div>
 
                 <div class="form-group">
-                    <label>Opis</label>
-                    <textarea name="description" rows="3" placeholder="Stanje, adresa, šta ide uz oglas…"><?= h((string)$ad['description']) ?></textarea>
+                    <div class="ad-desc-head">
+                        <label for="ad-description">Opis</label>
+                        <button type="button" class="btn-sm" data-suggest-description>Predloži opis</button>
+                    </div>
+                    <textarea id="ad-description" name="description" rows="4" data-ad-description placeholder="Stanje, adresa, šta ide uz oglas…"><?= h((string)$ad['description']) ?></textarea>
+                    <p class="form-hint" data-description-hint>Predlog se sklapa iz brenda, modela, memorije, stanja, BH i grada. Možeš da ga izmeniš.</p>
                 </div>
             </section>
 
