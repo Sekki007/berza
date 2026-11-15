@@ -98,6 +98,7 @@ $hasOrderBar = $shopCatalogMode && $messagesOn && !$isSold && !$shopCatalogOwn;
                         </div>
                     <?php endif; ?>
 
+                    <?php $keywordChips = function_exists('adKeywordChips') ? adKeywordChips($ad) : []; ?>
                     <div class="listing-tags listing-tags-compact">
                         <?php if ($intentBadge !== ''): ?>
                             <span class="tag tag-intent-<?= h(getAdListingType($ad)) ?>"><?= h($intentBadge) ?></span>
@@ -105,6 +106,15 @@ $hasOrderBar = $shopCatalogMode && $messagesOn && !$isSold && !$shopCatalogOwn;
                         <span class="tag <?= $type === 'telefon' ? 'tag-cat-phone' : ($type === 'delovi' ? 'tag-cat-parts' : 'tag-cat-service') ?>">
                             <?= h($categoryLabel) ?>
                         </span>
+                        <?php foreach ($keywordChips as $kw): ?>
+                            <span
+                                class="tag tag-kw tag-kw-<?= h((string)$kw['kind']) ?>"
+                                data-browse-url="<?= h((string)$kw['href']) ?>"
+                                title="Prikaži oglase: <?= h((string)$kw['label']) ?>"
+                                role="link"
+                                tabindex="0"
+                            ><?= h((string)$kw['label']) ?></span>
+                        <?php endforeach; ?>
                         <?php
                         $bhCard = $ad['battery_health'] ?? null;
                         if ($type === 'telefon' && $bhCard !== null && $bhCard !== ''):
@@ -125,14 +135,11 @@ $hasOrderBar = $shopCatalogMode && $messagesOn && !$isSold && !$shopCatalogOwn;
                         <?php if ($cardExcerpt !== ''): ?>
                             <p class="listing-desc"><?= h($cardExcerpt) ?></p>
                         <?php endif; ?>
-                        <div class="listing-tags">
-                            <?php if (!empty($ad['badge'])): ?>
+                        <?php if (!empty($ad['badge'])): ?>
+                            <div class="listing-tags">
                                 <span class="tag tag-green"><?= h((string)$ad['badge']) ?></span>
-                            <?php endif; ?>
-                            <?php if (!empty($ad['model'])): ?>
-                                <span class="tag tag-gray"><?= h((string)$ad['model']) ?></span>
-                            <?php endif; ?>
-                        </div>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
 

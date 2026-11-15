@@ -1178,7 +1178,7 @@ function adHighlightChips(array $ad): array
     $push((string)($ad['condition_state'] ?? ''));
     $type = getAdType($ad);
     if ($type === 'telefon') {
-        $push((string)($ad['storage'] ?? ''));
+        // Memorija ide u klikabilne keyword chipove (adKeywordChips).
         $bh = $ad['battery_health'] ?? null;
         if ($bh !== null && $bh !== '' && is_numeric((string)$bh)) {
             $push('BH ' . max(0, min(100, (int)$bh)) . '%');
@@ -1193,6 +1193,108 @@ function adHighlightChips(array $ad): array
     }
 
     return array_slice($chips, 0, 6);
+}
+
+/**
+ * Klikabilni chipovi brend / model / memorija.
+ * Model sa katalog vezom vodi na /katalog/... (lista oglasa tog modela).
+ *
+ * @return list<array{kind:string,label:string,href:string}>
+ */
+function adKeywordChips(array $ad): array
+{
+    $type = getAdType($ad);
+    if ($type !== 'telefon') {
+        return [];
+    }
+
+    $device = function_exists('getAdDeviceType') ? getAdDeviceType($ad) : 'phone';
+    if (!in_array($device, ['phone', 'watch', ''], true)) {
+        return [];
+    }
+
+    $brand = trim((string)($ad['brand'] ?? ''));
+    if ($brand === 'Ostalo') {
+        $brand = '';
+    }
+    $model = trim((string)($ad['model'] ?? ''));
+    $storage = trim((string)($ad['storage'] ?? ''));
+    if ($storage === '' && function_exists('phoneCatalogNormalizeStorage')) {
+        $storage = phoneCatalogNormalizeStorage((string)($ad['phone_storage_norm'] ?? ''));
+    } elseif ($storage !== '' && function_exists('phoneCatalogNormalizeStorage')) {
+        $norm = phoneCatalogNormalizeStorage($storage);
+        if ($norm !== '') {
+            $storage = $norm;
+        }
+    }
+
+    $baseQuery = ['type' => 'telefon'];
+    if ($device === 'watch') {
+        $baseQuery['device_type'] = 'watch';
+    }
+
+    $listUrl = static function (array $extra) use ($baseQuery): string {
+        $params = array_filter(array_merge($baseQuery, $extra), static fn($v) => $v !== '' && $v !== null);
+        $path = '/oglasi/telefoni';
+        if (($params['device_type'] ?? '') === 'watch') {
+            $path = '/oglasi';
+        }
+        unset($params['type']);
+        $qs = $params === [] ? '' : ('?' . http_build_query($params));
+        return $path . $qs;
+    };
+
+    $chips = [];
+    if ($brand !== '') {
+        $chips[] = [
+            'kind' => 'brand',
+            'label' => $brand,
+            'href' => $listUrl(['brand' => $brand]),
+        ];
+    }
+
+    if ($model !== '') {
+        $href = '';
+        $label = $model;
+        if (function_exists('phoneCatalogUrlForAd')) {
+            $catalogHref = phoneCatalogUrlForAd($ad);
+            if ($catalogHref !== '') {
+                $href = $catalogHref;
+                $catalogId = trim((string)($ad['phone_model_id'] ?? ''));
+                if ($catalogId !== '' && function_exists('phoneCatalogModel')) {
+                    $catalogModel = phoneCatalogModel($catalogId);
+                    if (is_array($catalogModel) && trim((string)($catalogModel['name'] ?? '')) !== '') {
+                        $label = (string)$catalogModel['name'];
+                    }
+                }
+            }
+        }
+        if ($href === '') {
+            $href = $listUrl(array_filter([
+                'brand' => $brand,
+                'model' => $model,
+            ]));
+        }
+        $chips[] = [
+            'kind' => 'model',
+            'label' => $label,
+            'href' => $href,
+        ];
+    }
+
+    if ($storage !== '') {
+        $chips[] = [
+            'kind' => 'storage',
+            'label' => $storage,
+            'href' => $listUrl(array_filter([
+                'brand' => $brand,
+                'model' => $model,
+                'q' => $storage,
+            ])),
+        ];
+    }
+
+    return $chips;
 }
 
 /**

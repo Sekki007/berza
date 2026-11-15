@@ -184,6 +184,7 @@ $renderPlatformMessage = static function () use ($site, $isOwnAd, $msgHref): voi
             <section class="kp-card kp-offer kp-slot-offer <?= $isBuy ? 'is-buy' : '' ?> <?= $isTrade ? 'is-trade' : '' ?>" data-offer aria-labelledby="ad-title">
                 <h1 id="ad-title" class="kp-listing-title"><?= h($displayTitle) ?></h1>
                 <?php $catalogHref = function_exists('phoneCatalogUrlForAd') ? phoneCatalogUrlForAd($ad) : ''; ?>
+                <?php $keywordChips = function_exists('adKeywordChips') ? adKeywordChips($ad) : []; ?>
                 <?php if ($catalogHref !== ''): ?>
                     <p class="kp-catalog-link"><a href="<?= h($catalogHref) ?>">Ovaj model u katalogu telefona</a></p>
                 <?php endif; ?>
@@ -215,8 +216,13 @@ $renderPlatformMessage = static function () use ($site, $isOwnAd, $msgHref): voi
                     <?php endif; ?>
                 </div>
 
-                <?php if ($highlightChips !== []): ?>
+                <?php if ($keywordChips !== [] || $highlightChips !== []): ?>
                     <ul class="kp-chips">
+                        <?php foreach ($keywordChips as $kw): ?>
+                            <li class="kp-chip-kw kp-chip-kw-<?= h((string)$kw['kind']) ?>">
+                                <a href="<?= h((string)$kw['href']) ?>" title="Prikaži oglase: <?= h((string)$kw['label']) ?>"><?= h((string)$kw['label']) ?></a>
+                            </li>
+                        <?php endforeach; ?>
                         <?php foreach ($highlightChips as $chip): ?>
                             <li><?= h($chip) ?></li>
                         <?php endforeach; ?>
@@ -250,12 +256,22 @@ $renderPlatformMessage = static function () use ($site, $isOwnAd, $msgHref): voi
 
             <div class="kp-card kp-rail-links">
                 <div class="filter-head">Brza pretraga</div>
-                <a class="kp-browse-link" href="/index.php?<?= h(http_build_query(array_filter(['type' => $type, 'device_type' => getAdDeviceType($ad) ?: null]))) ?>"><?= h(adCategoryLabel($ad)) ?></a>
+                <?php
+                $browseTypeHref = '/oglasi';
+                if ($type === 'telefon') {
+                    $browseTypeHref = getAdDeviceType($ad) === 'watch' ? '/oglasi?device_type=watch' : '/oglasi/telefoni';
+                } elseif ($type === 'delovi') {
+                    $browseTypeHref = '/oglasi/delovi';
+                } elseif ($type === 'servis') {
+                    $browseTypeHref = '/oglasi/servis';
+                }
+                ?>
+                <a class="kp-browse-link" href="<?= h($browseTypeHref) ?>"><?= h(adCategoryLabel($ad)) ?></a>
                 <?php if ($adBrand !== '' && $adBrand !== 'Ostalo'): ?>
-                    <a class="kp-browse-link" href="/index.php?brand=<?= urlencode($adBrand) ?>"><?= h($adBrand) ?></a>
+                    <a class="kp-browse-link" href="<?= h($type === 'telefon' ? ('/oglasi/telefoni?brand=' . rawurlencode($adBrand)) : ('/oglasi?brand=' . rawurlencode($adBrand))) ?>"><?= h($adBrand) ?></a>
                 <?php endif; ?>
                 <?php if (trim($sellerLocation) !== ''): ?>
-                    <a class="kp-browse-link" href="/index.php?location=<?= urlencode($sellerLocation) ?>"><?= h($sellerLocation) ?></a>
+                    <a class="kp-browse-link" href="/oglasi?location=<?= urlencode($sellerLocation) ?>"><?= h($sellerLocation) ?></a>
                 <?php endif; ?>
                 <?php if ($sellerShopUrl !== ''): ?>
                     <a class="kp-browse-link" href="<?= h($sellerShopUrl) ?>">Svi oglasi prodavca</a>

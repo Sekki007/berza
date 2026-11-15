@@ -167,6 +167,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'google_tag_ads_id' => strtoupper(trim((string)($_POST['google_tag_ads_id'] ?? $current['google_tag_ads_id'] ?? ''))),
         'google_tag_require_consent' => (string)($_POST['google_tag_require_consent'] ?? '0') === '1',
         'ga4_property_id' => preg_replace('/\D+/', '', (string)($_POST['ga4_property_id'] ?? $current['ga4_property_id'] ?? '')) ?? '',
+        'openai_pixel_enabled' => (string)($_POST['openai_pixel_enabled'] ?? '0') === '1',
+        'openai_pixel_id' => preg_replace('/[^A-Za-z0-9_-]/', '', (string)($_POST['openai_pixel_id'] ?? $current['openai_pixel_id'] ?? '')) ?? '',
+        'openai_pixel_require_consent' => (string)($_POST['openai_pixel_require_consent'] ?? '0') === '1',
+        'openai_pixel_debug' => (string)($_POST['openai_pixel_debug'] ?? '0') === '1',
     ]);
 
     $defaultsSms = defaultSiteSettings();
@@ -631,6 +635,42 @@ require __DIR__ . '/partials/layout-start.php';
                     </label>
                 </div>
 
+                <hr style="margin:14px 0;border:none;border-top:1px solid var(--border-light);">
+
+                <h3 style="font-size:16px;margin-bottom:8px;">ChatGPT / OpenAI Ads Pixel</h3>
+                <p class="form-hint" style="margin-bottom:12px;">
+                    Pixel za merenje saobraćaja i konverzija iz ChatGPT / OpenAI Ads kampanja.
+                </p>
+
+                <div class="form-group form-checks">
+                    <input type="hidden" name="openai_pixel_enabled" value="0">
+                    <label class="type-chip" style="min-width:auto;flex:none;">
+                        <input type="checkbox" name="openai_pixel_enabled" value="1" <?= !empty($settings['openai_pixel_enabled']) ? 'checked' : '' ?>>
+                        Uključi OpenAI Pixel
+                    </label>
+                </div>
+
+                <div class="form-group">
+                    <label>Pixel ID</label>
+                    <input name="openai_pixel_id" value="<?= h((string)($settings['openai_pixel_id'] ?? '')) ?>" placeholder="npr. EyuKxkKbHL9BsHhHKuHHuE">
+                </div>
+
+                <div class="form-group form-checks">
+                    <input type="hidden" name="openai_pixel_require_consent" value="0">
+                    <label class="type-chip" style="min-width:auto;flex:none;">
+                        <input type="checkbox" name="openai_pixel_require_consent" value="1" <?= !empty($settings['openai_pixel_require_consent']) || !isset($settings['openai_pixel_require_consent']) ? 'checked' : '' ?>>
+                        Traži pristanak za marketing kolačiće (preporučeno)
+                    </label>
+                </div>
+
+                <div class="form-group form-checks">
+                    <input type="hidden" name="openai_pixel_debug" value="0">
+                    <label class="type-chip" style="min-width:auto;flex:none;">
+                        <input type="checkbox" name="openai_pixel_debug" value="1" <?= !empty($settings['openai_pixel_debug']) ? 'checked' : '' ?>>
+                        Debug režim (samo za test)
+                    </label>
+                </div>
+
                 <div class="form-group" style="padding:12px;border:1px solid var(--border);border-radius:6px;background:#fafafa;">
                     <strong style="display:block;margin-bottom:8px;">Šta se automatski meri</strong>
                     <ul style="margin:0;padding-left:18px;font-size:13px;color:var(--text-muted);line-height:1.55;">
@@ -654,6 +694,12 @@ require __DIR__ . '/partials/layout-start.php';
                     <?php endif; ?>
                     · Google:
                     <?php if (!empty($settings['google_tag_enabled']) && (trim((string)($settings['google_tag_ga4_id'] ?? '')) !== '' || trim((string)($settings['google_tag_ads_id'] ?? '')) !== '')): ?>
+                        <strong style="color:var(--kp-green-dark);">spreman</strong>
+                    <?php else: ?>
+                        <strong style="color:#b45309;">isključen / nema ID</strong>
+                    <?php endif; ?>
+                    · OpenAI:
+                    <?php if (!empty($settings['openai_pixel_enabled']) && trim((string)($settings['openai_pixel_id'] ?? '')) !== ''): ?>
                         <strong style="color:var(--kp-green-dark);">spreman</strong>
                     <?php else: ?>
                         <strong style="color:#b45309;">isključen / nema ID</strong>

@@ -341,5 +341,6 @@ if ($user) {
     <script src="<?= h(assetUrl('/assets/js/app.js')) ?>" defer></script>
     <?= renderFacebookPixelBootstrap() ?>
     <?= renderGoogleTagBootstrap() ?>
+    <?= function_exists('renderOpenAiPixelBootstrap') ? renderOpenAiPixelBootstrap() : '' ?>
 </body>
 </html>

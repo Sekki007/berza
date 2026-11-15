@@ -1857,6 +1857,23 @@
     });
   }
 
+  function initBrowseChips() {
+    all('[data-browse-url]').forEach(function (el) {
+      var go = function (e) {
+        if (e) {
+          e.preventDefault();
+          e.stopPropagation();
+        }
+        var url = el.getAttribute('data-browse-url');
+        if (url) window.location.href = url;
+      };
+      el.addEventListener('click', go);
+      el.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') go(e);
+      });
+    });
+  }
+
   function initMsgToast() {
     const toast = one('[data-msg-toast]');
     if (!toast) return;
@@ -3179,6 +3196,7 @@
     initSearchSuggest();
     initCopyLink();
     initShopLinks();
+    initBrowseChips();
     initPhoneReveal();
     initMsgToast();
     initChatScroll();
