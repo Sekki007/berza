@@ -270,6 +270,10 @@ function phoneCatalogNormalizeBundle(array $raw): array
             }
         }
         $sourceIds = array_values(array_map('strval', $model['source_ids']));
+        $deviceType = strtolower(trim((string)($model['device_type'] ?? '')));
+        if (!in_array($deviceType, ['phone', 'watch'], true)) {
+            $deviceType = '';
+        }
         $models[$id] = [
             'id' => $id,
             'brand' => trim((string)$model['brand']),
@@ -277,6 +281,7 @@ function phoneCatalogNormalizeBundle(array $raw): array
             'name' => trim((string)$model['name']),
             'official_name' => trim((string)($model['official_name'] ?? '')),
             'slug' => (string)$model['slug'],
+            'device_type' => $deviceType,
             'source_ids' => $sourceIds,
             'aliases' => array_values($aliases),
             'variants' => $variants,
@@ -309,6 +314,71 @@ function phoneCatalogModels(): array
         }
     }
     return $out;
+}
+
+/** Da li je katalog model sat (ne telefon). */
+function phoneCatalogModelIsWatch(array $model): bool
+{
+    $deviceType = strtolower(trim((string)($model['device_type'] ?? '')));
+    if ($deviceType === 'watch') {
+        return true;
+    }
+    if ($deviceType === 'phone') {
+        return false;
+    }
+    $blob = phoneCatalogFold(
+        (string)($model['brand'] ?? '') . ' ' . (string)($model['name'] ?? '') . ' ' . (string)($model['official_name'] ?? '') . ' ' . (string)($model['slug'] ?? '')
+    );
+    if ($blob === '') {
+        return false;
+    }
+    return (bool)preg_match('/\b(watch|smartwatch|galaxy watch|apple watch|pametni sat)\b/u', $blob);
+}
+
+function phoneCatalogModelIsPhone(array $model): bool
+{
+    return !phoneCatalogModelIsWatch($model);
+}
+
+/** @return list<array<string,mixed>> */
+function phoneCatalogPhoneModels(): array
+{
+    $out = [];
+    foreach (phoneCatalogModels() as $model) {
+        if (phoneCatalogModelIsPhone($model)) {
+            $out[] = $model;
+        }
+    }
+    return $out;
+}
+
+/** Oglas koji ulazi u brojanje/filtere javnog kataloga telefona. */
+function phoneCatalogAdIsPhoneOffer(array $ad): bool
+{
+    if (!phoneCatalogAdCountsAsOffer($ad)) {
+        return false;
+    }
+    $device = strtolower(trim((string)($ad['device_type'] ?? '')));
+    return $device === '' || $device === 'phone';
+}
+
+/** @param list<array<string,mixed>> $offers
+ *  @return list<array<string,mixed>>
+ */
+function phoneCatalogPhoneOffersOnly(array $offers): array
+{
+    $out = [];
+    foreach ($offers as $ad) {
+        if (is_array($ad) && phoneCatalogAdIsPhoneOffer($ad)) {
+            $out[] = $ad;
+        }
+    }
+    return $out;
+}
+
+function phoneCatalogIndexPerPage(): int
+{
+    return 24;
 }
 
 function phoneCatalogModel(string $id): ?array
@@ -998,6 +1068,7 @@ function phoneCatalogSanitizeIndexQuery(array $query, array $offersByModel): arr
     }
     $q = trim((string)preg_replace('/[^\p{L}\p{N} .+\/-]/u', '', (string)($query['q'] ?? '')) ?? '');
     $q = trim(mb_substr($q, 0, 80));
+    $page = max(1, (int)($query['page'] ?? 1));
     return [
         'q' => $q,
         'brands' => $brands,
@@ -1007,8 +1078,47 @@ function phoneCatalogSanitizeIndexQuery(array $query, array $offersByModel): arr
         'storage' => $storage,
         'with_ads' => (string)($query['with_ads'] ?? '') === '1',
         'sort' => $sort,
+        'page' => $page,
         'facets' => $facets,
     ];
+}
+
+/**
+ * Query string parametri za /katalog (bez praznih), za linkove filtera/paginacije.
+ *
+ * @param array<string,mixed> $filters
+ * @return array<string,mixed>
+ */
+function phoneCatalogIndexQueryParams(array $filters, ?int $page = null): array
+{
+    $params = [];
+    $q = trim((string)($filters['q'] ?? ''));
+    if ($q !== '') {
+        $params['q'] = $q;
+    }
+    $brands = $filters['brands'] ?? [];
+    if (is_array($brands) && $brands !== []) {
+        $params['brand'] = array_values($brands);
+    }
+    foreach (['price_band', 'condition', 'storage', 'sort'] as $key) {
+        $value = trim((string)($filters[$key] ?? ''));
+        if ($value === '' || ($key === 'sort' && $value === 'ads')) {
+            continue;
+        }
+        $params[$key] = $value;
+    }
+    $minBattery = (int)($filters['min_battery'] ?? 0);
+    if ($minBattery > 0) {
+        $params['min_battery'] = $minBattery;
+    }
+    if (!empty($filters['with_ads'])) {
+        $params['with_ads'] = 1;
+    }
+    $pageNum = $page ?? (int)($filters['page'] ?? 1);
+    if ($pageNum > 1) {
+        $params['page'] = $pageNum;
+    }
+    return $params;
 }
 
 /** @param array<string,list<array<string,mixed>>> $offersByModel
@@ -1021,7 +1131,7 @@ function phoneCatalogIndexFacets(array $offersByModel): array
     $storages = [];
     $battery = false;
     $price = false;
-    foreach (phoneCatalogModels() as $model) {
+    foreach (phoneCatalogPhoneModels() as $model) {
         if (!in_array($model['brand'], $brands, true)) {
             $brands[] = $model['brand'];
         }
@@ -1030,7 +1140,7 @@ function phoneCatalogIndexFacets(array $offersByModel): array
                 $storages[] = $variant['storage'];
             }
         }
-        foreach ($offersByModel[$model['id']] ?? [] as $ad) {
+        foreach (phoneCatalogPhoneOffersOnly($offersByModel[$model['id']] ?? []) as $ad) {
             $condition = trim((string)($ad['condition_state'] ?? ''));
             if ($condition !== '' && !in_array($condition, $conditions, true)) {
                 $conditions[] = $condition;
@@ -1080,8 +1190,8 @@ function phoneCatalogFilterModels(array $filters, array $offersByModel): array
 {
     $q = phoneCatalogFold((string)($filters['q'] ?? ''));
     $out = [];
-    foreach (phoneCatalogModels() as $model) {
-        $offers = $offersByModel[$model['id']] ?? [];
+    foreach (phoneCatalogPhoneModels() as $model) {
+        $offers = phoneCatalogPhoneOffersOnly($offersByModel[$model['id']] ?? []);
         $stats = phoneCatalogPriceStats($offers);
         if (!empty($filters['with_ads']) && $stats['active'] < 1) {
             continue;
@@ -1198,7 +1308,8 @@ function phoneCatalogIndexFiltersActive(array $filters): bool
         || (int)($filters['min_battery'] ?? 0) > 0
         || (string)($filters['storage'] ?? '') !== ''
         || !empty($filters['with_ads'])
-        || (string)($filters['sort'] ?? 'ads') !== 'ads';
+        || (string)($filters['sort'] ?? 'ads') !== 'ads'
+        || (int)($filters['page'] ?? 1) > 1;
 }
 
 /** @param list<array<string,mixed>> $offers
@@ -1423,7 +1534,7 @@ function phoneCatalogExportDocument(array $bundle): array
         'coverage_note' => (string)($bundle['coverage_note'] ?? ''),
         'sources' => array_values($bundle['sources'] ?? []),
         'models' => array_map(static function (array $model): array {
-            return [
+            $row = [
                 'id' => $model['id'],
                 'brand' => $model['brand'],
                 'brand_slug' => $model['brand_slug'],
@@ -1441,6 +1552,11 @@ function phoneCatalogExportDocument(array $bundle): array
                 'specs' => $model['specs'],
                 'image' => null,
             ];
+            $deviceType = strtolower(trim((string)($model['device_type'] ?? '')));
+            if (in_array($deviceType, ['phone', 'watch'], true)) {
+                $row['device_type'] = $deviceType;
+            }
+            return $row;
         }, array_values($bundle['models'] ?? [])),
     ];
 }
@@ -1794,6 +1910,10 @@ function phoneCatalogAddModelsFromAds(array $keys = [], bool $apply = false, boo
             (string)$group['brand'] . ' ' . (string)$group['model'],
         ])));
 
+        $deviceType = strtolower(trim((string)($group['device_type'] ?? 'phone')));
+        if (!in_array($deviceType, ['phone', 'watch'], true)) {
+            $deviceType = 'phone';
+        }
         $modelsById[$id] = [
             'id' => $id,
             'brand' => (string)$group['brand'],
@@ -1801,6 +1921,7 @@ function phoneCatalogAddModelsFromAds(array $keys = [], bool $apply = false, boo
             'name' => (string)$group['name'],
             'official_name' => (string)$group['model'],
             'slug' => (string)$group['slug'],
+            'device_type' => $deviceType,
             'source_ids' => [phoneCatalogSiteSourceId()],
             'aliases' => $aliases,
             'colors' => [],

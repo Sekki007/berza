@@ -48,7 +48,11 @@ if ($isModel) {
 
 $offersByModel = phoneCatalogOffersByModel();
 $filters = phoneCatalogSanitizeIndexQuery($_GET, $offersByModel);
-$models = phoneCatalogFilterModels($filters, $offersByModel);
+$allModels = phoneCatalogFilterModels($filters, $offersByModel);
+$perPage = phoneCatalogIndexPerPage();
+$pagination = paginateAds($allModels, (int)$filters['page'], $perPage);
+$models = $pagination['items'];
+$filters['page'] = (int)$pagination['page'];
 $meta = phoneCatalogIndexMeta();
 $pageTitle = $meta['title'];
 $pageDescription = $meta['description'];
@@ -71,11 +75,11 @@ $jsonLd = [
     ],
     'mainEntity' => [
         '@type' => 'ItemList',
-        'numberOfItems' => count($models),
-        'itemListElement' => array_values(array_map(static function (array $model, int $index): array {
+        'numberOfItems' => (int)$pagination['total'],
+        'itemListElement' => array_values(array_map(static function (array $model, int $index) use ($pagination, $perPage): array {
             return [
                 '@type' => 'ListItem',
-                'position' => $index + 1,
+                'position' => (((int)$pagination['page'] - 1) * $perPage) + $index + 1,
                 'url' => absoluteUrl(phoneCatalogUrl($model)),
                 'name' => $model['brand'] . ' ' . $model['name'],
             ];
@@ -90,8 +94,9 @@ $hiddenForHero = static function (array $filters): string {
         $html .= '<input type="hidden" name="brand[]" value="' . h($brand) . '">';
     }
     foreach (['price_band', 'condition', 'storage', 'sort'] as $key) {
-        if ((string)($filters[$key] ?? '') !== '') {
-            $html .= '<input type="hidden" name="' . h($key) . '" value="' . h((string)$filters[$key]) . '">';
+        $value = (string)($filters[$key] ?? '');
+        if ($value !== '' && !($key === 'sort' && $value === 'ads')) {
+            $html .= '<input type="hidden" name="' . h($key) . '" value="' . h($value) . '">';
         }
     }
     if ((int)$filters['min_battery'] > 0) {
@@ -101,6 +106,11 @@ $hiddenForHero = static function (array $filters): string {
         $html .= '<input type="hidden" name="with_ads" value="1">';
     }
     return $html;
+};
+$catalogListUrl = static function (array $filters, ?int $page = null): string {
+    $params = phoneCatalogIndexQueryParams($filters, $page);
+    $qs = $params === [] ? '' : ('?' . http_build_query($params));
+    return '/katalog' . $qs;
 };
 
 require __DIR__ . '/partials/layout-start.php';
@@ -123,7 +133,7 @@ require __DIR__ . '/partials/layout-start.php';
                 <a role="listitem" class="<?= $allOn ? 'is-on' : '' ?>" href="/katalog">Svi brendovi</a>
                 <?php foreach ($facets['brands'] as $brand): ?>
                     <?php $on = $filters['brands'] === [$brand]; ?>
-                    <a role="listitem" class="<?= $on ? 'is-on' : '' ?>" href="/katalog?<?= h(http_build_query(['brand' => [$brand]])) ?>"><?= h($brand) ?></a>
+                    <a role="listitem" class="<?= $on ? 'is-on' : '' ?>" href="<?= h($catalogListUrl(['brands' => [$brand], 'sort' => 'ads', 'q' => '', 'price_band' => '', 'condition' => '', 'storage' => '', 'min_battery' => 0, 'with_ads' => false, 'page' => 1])) ?>"><?= h($brand) ?></a>
                 <?php endforeach; ?>
             </div>
         <?php endif; ?>
@@ -237,7 +247,10 @@ require __DIR__ . '/partials/layout-start.php';
 
         <section class="pcat-results" aria-labelledby="pcat-results-title">
             <div class="pcat-results-bar">
-                <h2 id="pcat-results-title"><?= $filters['with_ads'] ? 'Modeli sa oglasima' : 'Modeli' ?></h2>
+                <h2 id="pcat-results-title">
+                    <?= $filters['with_ads'] ? 'Telefoni sa oglasima' : 'Telefoni' ?>
+                    <span><?= (int)$pagination['total'] ?></span>
+                </h2>
                 <form method="get" action="/katalog">
                     <?= $hiddenForHero(array_merge($filters, ['sort' => ''])) ?>
                     <label for="pcat-sort">Sortiraj</label>
@@ -251,7 +264,7 @@ require __DIR__ . '/partials/layout-start.php';
             </div>
 
             <?php if ($models === []): ?>
-                <p class="pcat-empty">Nema modela za izabrane filtere. Filteri ne izmišljaju oglase ni cene.</p>
+                <p class="pcat-empty">Nema telefona za izabrane filtere. Filteri ne izmišljaju oglase ni cene.</p>
             <?php else: ?>
                 <div class="pcat-grid">
                     <?php foreach ($models as $card): ?>
@@ -308,6 +321,17 @@ require __DIR__ . '/partials/layout-start.php';
                         </article>
                     <?php endforeach; ?>
                 </div>
+                <?php if ((int)$pagination['pages'] > 1): ?>
+                    <nav class="pagination pcat-pagination" aria-label="Stranice kataloga">
+                        <?php if ((int)$pagination['page'] > 1): ?>
+                            <a class="btn-sm" href="<?= h($catalogListUrl($filters, (int)$pagination['page'] - 1)) ?>">← Prethodna</a>
+                        <?php endif; ?>
+                        <span class="form-hint" style="margin:0;align-self:center;">Strana <?= (int)$pagination['page'] ?> / <?= (int)$pagination['pages'] ?> · <?= (int)$perPage ?> po strani</span>
+                        <?php if ((int)$pagination['page'] < (int)$pagination['pages']): ?>
+                            <a class="btn-sm btn-sm-primary" href="<?= h($catalogListUrl($filters, (int)$pagination['page'] + 1)) ?>">Sledeća →</a>
+                        <?php endif; ?>
+                    </nav>
+                <?php endif; ?>
             <?php endif; ?>
         </section>
     </div>

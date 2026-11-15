@@ -4519,6 +4519,7 @@ body.page-detail .main-wrap.kp-detail-wrap {
 .pcat-sell > a,.pcat-btn{background:var(--kp-yellow);color:#3a2f00;font-weight:800;padding:10px 14px;border-radius:9px;text-decoration:none;text-align:center;}
 .pcat-btn-ghost{background:#fff;color:var(--kp-green-dark);border:1.5px solid var(--kp-green);}
 .pcat-empty,.pcat-stats-empty{background:#fff;border:1px dashed var(--border);border-radius:12px;padding:14px;line-height:1.45;}
+.pcat-pagination{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:center;margin-top:16px;}
 .pcat-bc{font-size:13px;color:var(--text-muted);margin:0 0 12px;}
 .pcat-model-head{background:#fff;border:1px solid var(--border);border-radius:20px;overflow:hidden;display:grid;}
 .pcat-model-photo{background:#f4f6f2;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:18px;min-height:220px;}

@@ -2,6 +2,8 @@
 
 Javne adrese su `/katalog` i `/katalog/{marka}/{model}`, na primer `/katalog/apple/iphone-15`. Iste putanje važe i kroz `router.php` i kroz `public/index.php`, koji Nginx koristi kao rezervu.
 
+Javni `/katalog` prikazuje **samo telefone** (satovi se ne listaju). Filteri i brojanje oglasa važe samo za telefonske oglase. Lista je paginirana (24 po strani, `?page=`).
+
 Katalog čita aktivne oglase u trenutku otvaranja stranice. Promena cene ili stanja, novi oglas sa izabranim modelom i obrisan ili prodat oglas odmah menjaju broj i raspon. Nema posebnog keša cena.
 
 ## Šta je u prvoj verziji

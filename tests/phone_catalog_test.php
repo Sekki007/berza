@@ -196,6 +196,16 @@ $batteryIds = array_column(phoneCatalogFilterModels($batteryFilters, $offers), '
 check(in_array('apple-iphone-15', $batteryIds, true) && !in_array('apple-iphone-15-pro', $batteryIds, true), 'BH filter traži oglas koji stvarno ima battery health');
 $noBatteryFacets = phoneCatalogIndexFacets([]);
 check($noBatteryFacets['battery'] === false, 'BH filter se ne nudi kad nijedan oglas nema podatak');
+check(phoneCatalogModelIsWatch(['name' => 'Watch SE', 'brand' => 'Apple', 'device_type' => 'watch', 'slug' => 'watch-se']), 'watch device_type je sat');
+check(!phoneCatalogModelIsWatch(['name' => 'iPhone 15', 'brand' => 'Apple', 'device_type' => 'phone', 'slug' => 'iphone-15']), 'iPhone nije sat');
+$indexAll = phoneCatalogFilterModels(phoneCatalogSanitizeIndexQuery([], $offers), $offers);
+foreach ($indexAll as $row) {
+    check(phoneCatalogModelIsPhone($row), 'index filter vraća samo telefone: ' . (string)($row['id'] ?? ''));
+}
+check(phoneCatalogIndexPerPage() >= 12, 'katalog ima paginaciju po strani');
+$paged = phoneCatalogSanitizeIndexQuery(['page' => '2'], $offers);
+check((int)$paged['page'] === 2, 'page query se čita');
+check(phoneCatalogIndexFiltersActive($paged), 'page>1 je aktivan filter/noindex');
 
 $assignment = phoneCatalogAssignmentFromPost([
     'phone_model_id' => 'apple-iphone-15',
