@@ -105,7 +105,6 @@ Disallow: /register.php
 Disallow: /poruke.php
 Disallow: /favorites.php
 Disallow: /favorite.php
-Disallow: /uporedi.php
 Disallow: /report.php
 Disallow: /forgot-password.php
 Disallow: /reset-password.php

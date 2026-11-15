@@ -26,7 +26,6 @@ $ogImageHeight = isset($ogImageHeight) ? (int)$ogImageHeight : 630;
 $canonicalUrl = $canonicalUrl ?? absoluteUrl(parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/');
 $unreadMessages = ($user && !empty($site['enable_messages'])) ? getUnreadMessageCount((int)$user['id']) : 0;
 $unreadNotifications = $user ? getUnreadNotificationCount((int)$user['id']) : 0;
-$compareCount = count(compareIds());
 ?>
 <!DOCTYPE html>
 <html lang="sr">
@@ -80,7 +79,7 @@ $compareCount = count(compareIds());
         ?>
     <?php endif; ?>
 </head>
-<body class="<?= h($bodyClass) ?>" data-page="<?= h($activePage) ?>" data-compare-count="<?= (int)$compareCount ?>"<?= $user ? ' data-logged-in="1" data-user-id="' . (int)$user['id'] . '" data-unread-messages="' . (int)$unreadMessages . '" data-unread-notifications="' . (int)$unreadNotifications . '"' : '' ?>>
+<body class="<?= h($bodyClass) ?>" data-page="<?= h($activePage) ?>"<?= $user ? ' data-logged-in="1" data-user-id="' . (int)$user['id'] . '" data-unread-messages="' . (int)$unreadMessages . '" data-unread-notifications="' . (int)$unreadNotifications . '"' : '' ?>>
 <?php if (!$minimalHeader): ?>
     <div class="topbar">
         <div class="topbar-inner">

@@ -321,11 +321,6 @@ if ($user) {
         </nav>
     <?php endif; ?>
 
-    <a class="compare-bar" href="/uporedi.php" data-compare-bar <?= count(compareIds()) > 0 ? '' : 'hidden' ?>>
-        <span data-compare-bar-label>Uporedi (<span data-compare-count><?= count(compareIds()) ?></span>)</span>
-        <span class="btn-sm btn-sm-primary">Otvori</span>
-    </a>
-
     <div class="pwa-install" data-pwa-install hidden>
         <div class="pwa-install-text">
             <strong>Dodaj KupiTelefon na telefon</strong>

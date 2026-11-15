@@ -12,7 +12,6 @@ $isPromoted = function_exists('isAdTopActive') ? isAdTopActive($ad) : !empty($ad
 $isHighlighted = function_exists('isAdHighlighted') ? isAdHighlighted($ad) : !empty($ad['is_highlighted']);
 $adHref = adUrl($ad);
 $adId = (int)($ad['id'] ?? 0);
-$inCompare = isInCompare($adId);
 $isFav = function_exists('isFavorite') ? isFavorite($adId) : false;
 $favEnabled = !empty(siteSettings()['enable_favorites']);
 $views = (int)($ad['views'] ?? 0);
@@ -156,15 +155,6 @@ $hasOrderBar = $shopCatalogMode && $messagesOn && !$isSold && !$shopCatalogOwn;
     <?php if ($relativeTime !== '' && !$hasOrderBar): ?>
         <span class="kp-list-time" title="Objavljeno"><?= h($relativeTime) ?></span>
     <?php endif; ?>
-    <?php if (!$hasOrderBar): ?>
-        <button type="button"
-                class="listing-compare-btn kp-list-cmp <?= $inCompare ? 'active is-in-compare' : '' ?>"
-                data-compare-toggle="<?= $adId ?>"
-                aria-pressed="<?= $inCompare ? 'true' : 'false' ?>"
-                title="Uporedi">
-            <?= $inCompare ? '✓' : '⇄' ?>
-        </button>
-    <?php endif; ?>
     <?php
     if ($hasOrderBar):
         $orderDefault = 'Zdravo, zainteresovan/a sam za „' . (string)($ad['title'] ?? 'artikal') . '”'
@@ -196,13 +186,6 @@ $hasOrderBar = $shopCatalogMode && $messagesOn && !$isSold && !$shopCatalogOwn;
                 <?php if ($relativeTime !== ''): ?>
                     <span class="shop-order-time" title="Objavljeno"><?= h($relativeTime) ?></span>
                 <?php endif; ?>
-                <button type="button"
-                        class="listing-compare-btn kp-list-cmp <?= $inCompare ? 'active is-in-compare' : '' ?>"
-                        data-compare-toggle="<?= $adId ?>"
-                        aria-pressed="<?= $inCompare ? 'true' : 'false' ?>"
-                        title="Uporedi">
-                    <?= $inCompare ? '✓' : '⇄' ?>
-                </button>
             </div>
         </div>
     <?php endif; ?>

@@ -218,7 +218,6 @@ if ($galleryDisplay !== []) {
 $canonicalUrl = absoluteUrl(adUrl($ad));
 $ogType = 'product';
 $jsonLd = seoAdJsonLd($ad, $seller);
-$inCompare = isInCompare($id);
 $adBrand = (string)($ad['brand'] ?? '');
 $adCategory = (string)($ad['category'] ?? '');
 

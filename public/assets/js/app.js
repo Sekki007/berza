@@ -1262,77 +1262,6 @@
     });
   }
 
-  function updateCompareBar(count) {
-    const bar = one('[data-compare-bar]');
-    const labelCount = one('[data-compare-count]');
-    if (labelCount) labelCount.textContent = String(count);
-    if (bar) {
-      if (count > 0) bar.removeAttribute('hidden');
-      else bar.setAttribute('hidden', 'hidden');
-    }
-    document.body.setAttribute('data-compare-count', String(count));
-  }
-
-  function initCompare() {
-    document.addEventListener('click', function (e) {
-      const btn = e.target.closest('[data-compare-toggle]');
-      if (!btn) return;
-      e.preventDefault();
-      e.stopPropagation();
-      const adId = btn.getAttribute('data-compare-toggle');
-      const body = new FormData();
-      body.append('ad_id', adId);
-      body.append('ajax', '1');
-      appendCsrf(body);
-      fetch('/uporedi.php', {
-        method: 'POST',
-        body: body,
-        credentials: 'same-origin',
-        headers: csrfHeaders({ 'Accept': 'application/json' })
-      }).then(function (r) { return r.json(); }).then(function (data) {
-        if (!data || !data.ok) return;
-        if (data.full) {
-          alert('Možeš uporediti najviše 3 oglasa. Otvori poređenje da ukloniš neki.');
-          window.location.href = '/uporedi.php';
-          return;
-        }
-        // Dodat u poređenje → odmah na stranicu poređenja
-        if (data.added) {
-          window.location.href = '/uporedi.php';
-          return;
-        }
-        // Uklonjen sa liste — ostani na stranici
-        all('[data-compare-toggle="' + adId + '"]').forEach(function (el) {
-          el.classList.remove('active', 'is-in-compare');
-          el.setAttribute('aria-pressed', 'false');
-          if (el.classList.contains('listing-compare-btn') || el.classList.contains('kp-list-cmp')) {
-            el.textContent = '⇄';
-          } else if (el.tagName === 'BUTTON') {
-            el.textContent = '⇄ Uporedi';
-          }
-        });
-        updateCompareBar(data.count || 0);
-      }).catch(function () {
-        // Fallback bez JS JSON: klasični POST redirect
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = '/uporedi.php';
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = 'ad_id';
-        input.value = adId;
-        form.appendChild(input);
-        const redir = document.createElement('input');
-        redir.type = 'hidden';
-        redir.name = 'redirect';
-        redir.value = '/uporedi.php';
-        form.appendChild(redir);
-        document.body.appendChild(form);
-        form.submit();
-      });
-    });
-  }
-
   function initShareAd() {
     all('[data-share-ad]').forEach(function (btn) {
       btn.addEventListener('click', function () {
@@ -3259,7 +3188,6 @@
     initLiveInbox();
     initUnreadPolling();
     initAdsView();
-    initCompare();
     initShareAd();
     initNativeChrome();
     initPushNotifications();

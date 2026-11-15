@@ -238,9 +238,6 @@ $renderPlatformMessage = static function () use ($site, $isOwnAd, $msgHref): voi
                             data-fb-caption="<?= h(adShareCardCaption($ad)) ?>"
                         >Slika za FB</a>
                     <?php endif; ?>
-                    <button type="button" class="kp-action-link" data-compare-toggle="<?= (int)$ad['id'] ?>" aria-pressed="<?= $inCompare ? 'true' : 'false' ?>">
-                        <?= $inCompare ? 'U poređenju' : 'Uporedi' ?>
-                    </button>
                     <?php if (!empty($site['enable_favorites'])): ?>
                         <a class="kp-action-link" href="/favorite.php?id=<?= (int)$ad['id'] ?>"><?= $isFav ? 'Sačuvano' : 'Sačuvaj' ?></a>
                     <?php endif; ?>
