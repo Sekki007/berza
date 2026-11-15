@@ -267,6 +267,15 @@ check(str_contains($formBlank, 'data-default-storage') && str_contains($formBlan
 $home = catalogPage('/');
 check(str_contains($home, 'href="/katalog"') && str_contains($home, 'Katalog telefona'), 'link kataloga je u navigaciji početne');
 
+$adGroups = phoneCatalogCollectAdModelGroups();
+$adGap = phoneCatalogAdModelGapSummary($adGroups);
+check($adGap['total'] >= 1, 'admin gap: modeli sa oglasa');
+check(phoneCatalogBrandSlugFromName('Apple') === 'apple', 'brand slug Apple');
+$siteSrc = phoneCatalogSiteSource();
+check(($siteSrc['id'] ?? '') === 'site-ads' && str_starts_with((string)($siteSrc['url'] ?? ''), 'https://'), 'site-ads izvor');
+$dryAds = phoneCatalogAddModelsFromAds([], false, false);
+check(!empty($dryAds['ok']) && (int)$dryAds['summary']['candidates'] === count($adGap['missing']), 'dry-run dodavanja sa oglasa');
+
 if ($failed > 0) {
     echo "\n{$failed} provera nije prošlo.\n";
     exit(1);

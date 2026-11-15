@@ -62,6 +62,17 @@ Ili u adminu: **Katalog telefona** → etape po brendu (Pregled / Primeni) ili s
 
 Sync povlači smartphone i mobile-phone modele odabranih brendova od 2014. godine. Preporuka je sync **po brendu** da SPARQL ne timeout-uje. Upisuje dimenzije, težinu, dijagonalu, čipset i memorijske varijante **samo ako postoje na Wikidata stavci**. Bez slika. Proizvođačke specifikacije (npr. Apple Support) se ne prepisuju. Prazna polja se ne pogađaju. Ponovni sync istog skupa daje 0 novih — to je normalno.
 
+## Modeli sa sajta → katalog (admin)
+
+Na `/admin_phone_catalog.php` sekcija **Modeli sa sajta → katalog**:
+
+1. Lista jedinstvenih `brand` + `model` sa telefonskih oglasa.
+2. Prikazuje koje već postoje u katalogu, koje nedostaju, i koje su u katalogu bez spekova.
+3. **Dodaj izabrane / sve koje nedostaju** pravi stub modele (identitet + izvor `site-ads`, bez spekova) u `phone_models.json`.
+4. Opciono odmah **poveže oglase** (`phone_model_id` …).
+
+Redosled punjenja: (1) stubovi sa oglasa, (2) Wikidata sync za delimične spekove, (3) ručno / proizvođač za top modele. AI se ne koristi kao izvor istine.
+
 ## Povezivanje postojećih oglasa
 
 ```bash

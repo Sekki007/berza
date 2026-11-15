@@ -1398,3 +1398,395 @@ function phoneCatalogWriteBundle(array $bundle): void
     writeJsonFile(phoneCatalogStoreFilename(), phoneCatalogExportDocument($bundle));
     phoneCatalogResetCache();
 }
+
+function phoneCatalogSiteSourceId(): string
+{
+    return 'site-ads';
+}
+
+/**
+ * Izvor identiteta za stub modele nastale iz oglasa na sajtu.
+ *
+ * @return array<string,mixed>
+ */
+function phoneCatalogSiteSource(): array
+{
+    $base = function_exists('appBaseUrl') ? rtrim(appBaseUrl(), '/') : 'https://kupitelefon.rs';
+    if (!str_starts_with($base, 'https://')) {
+        $base = 'https://kupitelefon.rs';
+    }
+    return [
+        'id' => phoneCatalogSiteSourceId(),
+        'kind' => 'public',
+        'publisher' => 'KupiTelefon',
+        'title' => 'Identitet modela iz oglasa na sajtu',
+        'url' => $base . '/katalog',
+        'retrieved_at' => gmdate('Y-m-d'),
+        'note' => 'Stub kreiran iz brand/model polja oglasa. Specifikacije nisu popunjene i ne smeju se pogađati.',
+    ];
+}
+
+/**
+ * Mapiranje naziva brenda → brand_slug.
+ *
+ * @return array<string,string> folded brand => slug
+ */
+function phoneCatalogBrandSlugMap(): array
+{
+    $map = [
+        'apple' => 'apple',
+        'samsung' => 'samsung',
+        'xiaomi' => 'xiaomi',
+        'huawei' => 'huawei',
+        'google' => 'google',
+        'motorola' => 'motorola',
+        'nokia' => 'nokia',
+        'oneplus' => 'oneplus',
+        'honor' => 'honor',
+        'oppo' => 'oppo',
+        'realme' => 'realme',
+        'vivo' => 'vivo',
+        'asus' => 'asus',
+        'sony' => 'sony',
+        'lg' => 'lg',
+        'zte' => 'zte',
+        'meizu' => 'meizu',
+        'lenovo' => 'lenovo',
+        'htc' => 'htc',
+        'blackberry' => 'blackberry',
+        'infinix' => 'infinix',
+        'tecno' => 'tecno',
+        'nothing' => 'nothing',
+    ];
+    if (function_exists('phoneCatalogWikidataBrandStages')) {
+        foreach (phoneCatalogWikidataBrandStages() as $stage) {
+            $slug = (string)($stage['slug'] ?? '');
+            $brand = phoneCatalogFold((string)($stage['brand'] ?? ''));
+            if ($slug !== '' && $brand !== '') {
+                $map[$brand] = $slug;
+            }
+        }
+    }
+    return $map;
+}
+
+function phoneCatalogBrandSlugFromName(string $brand): string
+{
+    $folded = phoneCatalogFold($brand);
+    if ($folded === '' || $folded === 'ostalo') {
+        return '';
+    }
+    $map = phoneCatalogBrandSlugMap();
+    if (isset($map[$folded])) {
+        return $map[$folded];
+    }
+    if (function_exists('slugifyTitle')) {
+        return slugifyTitle($brand);
+    }
+    if (function_exists('phoneCatalogWikidataSlug')) {
+        return phoneCatalogWikidataSlug($brand);
+    }
+    $slug = preg_replace('/[^a-z0-9]+/u', '-', mb_strtolower(trim($brand))) ?? '';
+    return trim($slug, '-');
+}
+
+function phoneCatalogModelSlugFromName(string $name): string
+{
+    if (function_exists('phoneCatalogWikidataSlug')) {
+        return phoneCatalogWikidataSlug($name);
+    }
+    if (function_exists('slugifyTitle')) {
+        return slugifyTitle($name);
+    }
+    $slug = preg_replace('/[^a-z0-9]+/u', '-', mb_strtolower(trim($name))) ?? '';
+    return trim($slug, '-');
+}
+
+/**
+ * Jedinstveni brand+model parovi sa sajta (telefon oglasi).
+ *
+ * @param list<array<string,mixed>>|null $ads
+ * @return list<array{
+ *   key:string,brand:string,model:string,brand_slug:string,name:string,slug:string,
+ *   proposed_id:string,ad_count:int,offer_count:int,status:string,model_id:?string,
+ *   has_specs:bool,reason:string
+ * }>
+ */
+function phoneCatalogCollectAdModelGroups(?array $ads = null): array
+{
+    if ($ads === null) {
+        $ads = function_exists('getAllAds') ? getAllAds() : [];
+    }
+    $groups = [];
+    foreach ($ads as $ad) {
+        if (!is_array($ad) || !phoneCatalogAdIsLinkablePhone($ad)) {
+            continue;
+        }
+        $brand = trim((string)($ad['brand'] ?? ''));
+        $model = trim((string)($ad['model'] ?? ''));
+        if ($brand === '' || $model === '') {
+            continue;
+        }
+        if (phoneCatalogFold($brand) === 'ostalo') {
+            continue;
+        }
+        $key = phoneCatalogFold($brand) . '|' . phoneCatalogFold($model);
+        if (!isset($groups[$key])) {
+            $name = function_exists('phoneCatalogWikidataModelName')
+                ? phoneCatalogWikidataModelName($brand, $model)
+                : $model;
+            $name = trim($name) !== '' ? trim($name) : $model;
+            $brandSlug = phoneCatalogBrandSlugFromName($brand);
+            $slug = phoneCatalogModelSlugFromName($name);
+            $groups[$key] = [
+                'key' => $key,
+                'brand' => $brand,
+                'model' => $model,
+                'brand_slug' => $brandSlug,
+                'name' => $name,
+                'slug' => $slug,
+                'proposed_id' => $brandSlug !== '' && $slug !== '' ? ($brandSlug . '-' . $slug) : '',
+                'ad_count' => 0,
+                'offer_count' => 0,
+                'status' => 'unmatched',
+                'model_id' => null,
+                'has_specs' => false,
+                'reason' => '',
+            ];
+        }
+        $groups[$key]['ad_count']++;
+        if (phoneCatalogAdCountsAsOffer($ad)) {
+            $groups[$key]['offer_count']++;
+        }
+    }
+
+    foreach ($groups as &$group) {
+        $probe = [
+            'brand' => $group['brand'],
+            'model' => $group['model'],
+            'title' => $group['brand'] . ' ' . $group['model'],
+            'ad_type' => 'telefon',
+            'device_type' => 'phone',
+            'category_group' => 'phones',
+        ];
+        $match = phoneCatalogMatchAd($probe);
+        $group['status'] = (string)($match['status'] ?? 'unmatched');
+        $group['reason'] = (string)($match['reason'] ?? '');
+        $group['model_id'] = isset($match['model_id']) ? (string)$match['model_id'] : null;
+        if ($group['model_id']) {
+            $catalogModel = phoneCatalogModel($group['model_id']);
+            $group['has_specs'] = is_array($catalogModel) && ($catalogModel['specs'] ?? []) !== [];
+        }
+    }
+    unset($group);
+
+    $list = array_values($groups);
+    usort($list, static function (array $a, array $b): int {
+        $offer = ((int)$b['offer_count']) <=> ((int)$a['offer_count']);
+        if ($offer !== 0) {
+            return $offer;
+        }
+        $adsCmp = ((int)$b['ad_count']) <=> ((int)$a['ad_count']);
+        if ($adsCmp !== 0) {
+            return $adsCmp;
+        }
+        $brand = strcmp((string)$a['brand'], (string)$b['brand']);
+        if ($brand !== 0) {
+            return $brand;
+        }
+        return strcmp((string)$a['model'], (string)$b['model']);
+    });
+    return $list;
+}
+
+/**
+ * @param list<array<string,mixed>> $groups
+ * @return array{total:int,linked:int,unmatched:int,ambiguous:int,linked_without_specs:int,missing:list<array<string,mixed>>}
+ */
+function phoneCatalogAdModelGapSummary(array $groups): array
+{
+    $summary = [
+        'total' => count($groups),
+        'linked' => 0,
+        'unmatched' => 0,
+        'ambiguous' => 0,
+        'linked_without_specs' => 0,
+        'missing' => [],
+    ];
+    foreach ($groups as $group) {
+        $status = (string)($group['status'] ?? '');
+        if ($status === 'linked') {
+            $summary['linked']++;
+            if (empty($group['has_specs'])) {
+                $summary['linked_without_specs']++;
+            }
+            continue;
+        }
+        if ($status === 'ambiguous') {
+            $summary['ambiguous']++;
+            $summary['missing'][] = $group;
+            continue;
+        }
+        if ($status === 'unmatched') {
+            $summary['unmatched']++;
+            $summary['missing'][] = $group;
+        }
+    }
+    return $summary;
+}
+
+/**
+ * Dodaj stub modele iz oglasa u katalog (identitet, bez spekova).
+ *
+ * @param list<string> $keys fold ključevi brand|model; prazno = svi missing
+ * @return array{ok:bool,error?:string,summary:array<string,int|list<string>>,linked?:array<string,int>}
+ */
+function phoneCatalogAddModelsFromAds(array $keys = [], bool $apply = false, bool $linkAfter = true): array
+{
+    $groups = phoneCatalogCollectAdModelGroups();
+    $gap = phoneCatalogAdModelGapSummary($groups);
+    $wanted = [];
+    foreach ($gap['missing'] as $group) {
+        $key = (string)$group['key'];
+        if ($keys !== [] && !in_array($key, $keys, true)) {
+            continue;
+        }
+        if ((string)($group['brand_slug'] ?? '') === '' || (string)($group['slug'] ?? '') === '' || (string)($group['proposed_id'] ?? '') === '') {
+            continue;
+        }
+        $wanted[$key] = $group;
+    }
+
+    $summary = [
+        'candidates' => count($wanted),
+        'added' => 0,
+        'skipped_existing' => 0,
+        'skipped_invalid' => 0,
+        'total' => 0,
+        'added_ids' => [],
+    ];
+
+    if ($wanted === []) {
+        return ['ok' => true, 'summary' => $summary];
+    }
+
+    $raw = phoneCatalogLoadRawDocument();
+    $sources = [];
+    foreach (($raw['sources'] ?? []) as $source) {
+        if (!is_array($source)) {
+            continue;
+        }
+        $id = trim((string)($source['id'] ?? ''));
+        if ($id !== '') {
+            $sources[$id] = $source;
+        }
+    }
+    $siteSource = phoneCatalogSiteSource();
+    $sources[phoneCatalogSiteSourceId()] = $siteSource;
+
+    $modelsById = [];
+    $paths = [];
+    foreach (($raw['models'] ?? []) as $model) {
+        if (!is_array($model)) {
+            continue;
+        }
+        $id = trim((string)($model['id'] ?? ''));
+        if ($id === '') {
+            continue;
+        }
+        $modelsById[$id] = $model;
+        $path = trim((string)($model['brand_slug'] ?? '')) . '/' . trim((string)($model['slug'] ?? ''));
+        if ($path !== '/') {
+            $paths[$path] = $id;
+        }
+    }
+
+    $addedIds = [];
+    foreach ($wanted as $group) {
+        $id = (string)$group['proposed_id'];
+        $path = (string)$group['brand_slug'] . '/' . (string)$group['slug'];
+        if (isset($modelsById[$id]) || isset($paths[$path])) {
+            $summary['skipped_existing']++;
+            continue;
+        }
+        $probe = [
+            'brand' => $group['brand'],
+            'model' => $group['model'],
+            'title' => $group['brand'] . ' ' . $group['model'],
+            'ad_type' => 'telefon',
+            'device_type' => 'phone',
+            'category_group' => 'phones',
+        ];
+        // Ponovo proveri match — možda je već pokriven aliasom pod drugim id.
+        $match = phoneCatalogMatchAd($probe);
+        if (($match['status'] ?? '') === 'linked') {
+            $summary['skipped_existing']++;
+            continue;
+        }
+
+        $aliases = array_values(array_unique(array_filter([
+            (string)$group['name'],
+            (string)$group['model'],
+            (string)$group['brand'] . ' ' . (string)$group['name'],
+            (string)$group['brand'] . ' ' . (string)$group['model'],
+        ])));
+
+        $modelsById[$id] = [
+            'id' => $id,
+            'brand' => (string)$group['brand'],
+            'brand_slug' => (string)$group['brand_slug'],
+            'name' => (string)$group['name'],
+            'official_name' => (string)$group['model'],
+            'slug' => (string)$group['slug'],
+            'source_ids' => [phoneCatalogSiteSourceId()],
+            'aliases' => $aliases,
+            'colors' => [],
+            'variants' => [],
+            'highlights' => [],
+            'specs' => [],
+            'image' => null,
+        ];
+        $paths[$path] = $id;
+        $addedIds[] = $id;
+        $summary['added']++;
+    }
+
+    $summary['added_ids'] = array_slice($addedIds, 0, 40);
+    $document = [
+        'version' => 1,
+        'coverage_note' => (string)($raw['coverage_note'] ?? ''),
+        'sources' => array_values($sources),
+        'models' => array_values($modelsById),
+    ];
+    $summary['total'] = count($document['models']);
+
+    $normalized = phoneCatalogNormalizeBundle($document);
+    if (empty($normalized['ok'])) {
+        return [
+            'ok' => false,
+            'error' => implode('; ', $normalized['errors'] ?? ['Neispravan katalog.']),
+            'summary' => $summary,
+        ];
+    }
+
+    if (!$apply) {
+        return ['ok' => true, 'summary' => $summary];
+    }
+
+    phoneCatalogWriteBundle($normalized);
+
+    $linked = null;
+    if ($linkAfter && function_exists('getAllAds') && function_exists('writeJsonFile')) {
+        $plan = phoneCatalogPlanLinks(getAllAds(), true, false);
+        writeJsonFile('ads.json', $plan['ads']);
+        $ls = $plan['summary'] ?? [];
+        $linked = [
+            'linked' => (int)($ls['linked'] ?? 0),
+            'already' => (int)($ls['already'] ?? 0),
+            'unmatched' => (int)($ls['unmatched'] ?? 0),
+            'ambiguous' => (int)($ls['ambiguous'] ?? 0),
+        ];
+    }
+
+    return ['ok' => true, 'summary' => $summary, 'linked' => $linked];
+}
