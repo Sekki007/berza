@@ -400,19 +400,75 @@ function phoneCatalogAdStorage(array $ad): string
     return phoneCatalogNormalizeStorage((string)($ad['title'] ?? '') . ' ' . (string)($ad['model'] ?? ''));
 }
 
-function phoneCatalogAdIsLinkablePhone(array $ad): bool
+/**
+ * Da li oglas sme u katalog (stub / veza / brojanje ponuda).
+ * Ulaze: telefoni i satovi. Ne ulaze: delovi, oprema, servis, tableti, slušalice.
+ */
+function phoneCatalogAdIsCatalogEligible(array $ad): bool
 {
-    if (!function_exists('shopAdIsPhoneListing') || !shopAdIsPhoneListing($ad)) {
+    if (!function_exists('getAdType')) {
         return false;
     }
+    $type = getAdType($ad);
+    if ($type === 'delovi' || $type === 'servis') {
+        return false;
+    }
+    if ($type !== 'telefon') {
+        return false;
+    }
+
+    $equipment = trim((string)($ad['equipment_type'] ?? ''));
+    if ($equipment !== '' && function_exists('equipmentOpremaTypes') && function_exists('equipmentPartsTypes')) {
+        $known = array_merge(equipmentOpremaTypes(), equipmentPartsTypes());
+        if (in_array($equipment, $known, true)) {
+            return false;
+        }
+    }
+
+    $device = strtolower(trim((string)($ad['device_type'] ?? '')));
+    if ($device === '') {
+        $device = 'phone';
+    }
+    if (!in_array($device, ['phone', 'watch'], true)) {
+        return false;
+    }
+
     $text = mb_strtolower(trim((string)($ad['title'] ?? '') . ' ' . (string)($ad['model'] ?? '')));
     if ($text === '') {
         return false;
     }
-    if (preg_match('/\b(ekran|displej|lcd|flex|kućište|kuciste|matičn|maticn|rezervni)\b/u', $text) === 1) {
+
+    // Delovi / servis u naslovu i kad je ad_type greškom „telefon“.
+    if (preg_match('/\b(ekran|displej|lcd|flex|kućište|kuciste|matičn|maticn|rezervni|popravka)\b/u', $text) === 1) {
         return false;
     }
+    if (preg_match('/\bservis\b/u', $text) === 1) {
+        return false;
+    }
+
+    // Tableti.
+    if (preg_match('/\b(ipad|galaxy\s+tab|tab\s+[as]\d+|tablet)\b/u', $text) === 1) {
+        return false;
+    }
+
+    // Oprema / dodatna oprema.
+    $accessory = preg_match('/\b(maska|futrola|punjač|punjac|kabl|kabel|powerbank|zaštitno\s+staklo|zastitno\s+staklo|slušalice|slusalice|airpods|airpod|earbuds)\b/u', $text) === 1;
+    if ($accessory) {
+        $phoneWithStorage = $device === 'phone'
+            && preg_match('/\b(iphone|galaxy\s+[as]\d+|pixel\s+\d+|redmi|xiaomi)\b/u', $text) === 1
+            && preg_match('/\b\d{2,4}\s*gb\b/u', $text) === 1;
+        if (!$phoneWithStorage) {
+            return false;
+        }
+    }
+
     return true;
+}
+
+/** @deprecated alias — koristi phoneCatalogAdIsCatalogEligible */
+function phoneCatalogAdIsLinkablePhone(array $ad): bool
+{
+    return phoneCatalogAdIsCatalogEligible($ad);
 }
 
 /**
@@ -424,9 +480,9 @@ function phoneCatalogAdIsLinkablePhone(array $ad): bool
 function phoneCatalogMatchAd(array $ad): array
 {
     $none = ['status' => 'unmatched', 'model_id' => null, 'variant_id' => null, 'storage' => null, 'alias' => null, 'reason' => 'nema_modela'];
-    if (!phoneCatalogAdIsLinkablePhone($ad)) {
+    if (!phoneCatalogAdIsCatalogEligible($ad)) {
         $none['status'] = 'skip';
-        $none['reason'] = 'nije_telefon';
+        $none['reason'] = 'nije_katalog_uredjaj';
         return $none;
     }
 
@@ -1519,7 +1575,7 @@ function phoneCatalogCollectAdModelGroups(?array $ads = null): array
     }
     $groups = [];
     foreach ($ads as $ad) {
-        if (!is_array($ad) || !phoneCatalogAdIsLinkablePhone($ad)) {
+        if (!is_array($ad) || !phoneCatalogAdIsCatalogEligible($ad)) {
             continue;
         }
         $brand = trim((string)($ad['brand'] ?? ''));
@@ -1529,6 +1585,10 @@ function phoneCatalogCollectAdModelGroups(?array $ads = null): array
         }
         if (phoneCatalogFold($brand) === 'ostalo') {
             continue;
+        }
+        $device = strtolower(trim((string)($ad['device_type'] ?? '')));
+        if ($device === '' || !in_array($device, ['phone', 'watch'], true)) {
+            $device = 'phone';
         }
         $key = phoneCatalogFold($brand) . '|' . phoneCatalogFold($model);
         if (!isset($groups[$key])) {
@@ -1546,6 +1606,7 @@ function phoneCatalogCollectAdModelGroups(?array $ads = null): array
                 'name' => $name,
                 'slug' => $slug,
                 'proposed_id' => $brandSlug !== '' && $slug !== '' ? ($brandSlug . '-' . $slug) : '',
+                'device_type' => $device,
                 'ad_count' => 0,
                 'offer_count' => 0,
                 'status' => 'unmatched',
@@ -1553,6 +1614,8 @@ function phoneCatalogCollectAdModelGroups(?array $ads = null): array
                 'has_specs' => false,
                 'reason' => '',
             ];
+        } elseif ($device === 'watch') {
+            $groups[$key]['device_type'] = 'watch';
         }
         $groups[$key]['ad_count']++;
         if (phoneCatalogAdCountsAsOffer($ad)) {
@@ -1566,7 +1629,7 @@ function phoneCatalogCollectAdModelGroups(?array $ads = null): array
             'model' => $group['model'],
             'title' => $group['brand'] . ' ' . $group['model'],
             'ad_type' => 'telefon',
-            'device_type' => 'phone',
+            'device_type' => (string)($group['device_type'] ?? 'phone'),
             'category_group' => 'phones',
         ];
         $match = phoneCatalogMatchAd($probe);
@@ -1714,7 +1777,7 @@ function phoneCatalogAddModelsFromAds(array $keys = [], bool $apply = false, boo
             'model' => $group['model'],
             'title' => $group['brand'] . ' ' . $group['model'],
             'ad_type' => 'telefon',
-            'device_type' => 'phone',
+            'device_type' => (string)($group['device_type'] ?? 'phone'),
             'category_group' => 'phones',
         ];
         // Ponovo proveri match — možda je već pokriven aliasom pod drugim id.

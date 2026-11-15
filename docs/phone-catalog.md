@@ -66,7 +66,7 @@ Sync povlači smartphone i mobile-phone modele odabranih brendova od 2014. godin
 
 Na `/admin_phone_catalog.php` sekcija **Modeli sa sajta → katalog**:
 
-1. Lista jedinstvenih `brand` + `model` sa telefonskih oglasa.
+1. Lista jedinstvenih `brand` + `model` sa oglasa **telefona i satova** (ne delovi, oprema, servis, tableti, slušalice).
 2. Prikazuje koje već postoje u katalogu, koje nedostaju, i koje su u katalogu bez spekova.
 3. **Dodaj izabrane / sve koje nedostaju** pravi stub modele (identitet + izvor `site-ads`, bez spekova) u `phone_models.json`.
 4. Opciono odmah **poveže oglase** (`phone_model_id` …).

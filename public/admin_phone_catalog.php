@@ -169,7 +169,8 @@ require __DIR__ . '/partials/layout-start.php';
         <div class="form-card" id="ads-models" style="padding:16px;margin-bottom:14px;">
             <h3 style="margin:0 0 8px;font-size:16px;">Modeli sa sajta → katalog</h3>
             <p style="margin:0 0 12px;color:var(--text-muted);font-size:14px;line-height:1.45;">
-                Uzima jedinstvene <strong>brand + model</strong> sa telefonskih oglasa.
+                Uzima jedinstvene <strong>brand + model</strong> sa oglasa tipa <strong>telefon</strong> i <strong>sat</strong>.
+                Delovi, oprema, servis, tableti i slušalice se ne ubacuju.
                 Nedostajuće dodaje kao stub (identitet, bez spekova), pa može da poveže oglase.
                 Specifikacije se kasnije pune iz Wikidata ili proizvođača — ne pogađaju se.
             </p>
@@ -217,7 +218,7 @@ require __DIR__ . '/partials/layout-start.php';
 
             <?php if ($missingGroups === []): ?>
                 <p style="margin:0;font-size:14px;color:var(--text-muted);">
-                    Svi modeli sa telefonskih oglasa već postoje u katalogu (ili su poklopljeni).
+                    Svi modeli sa oglasa telefona/satova već postoje u katalogu (ili su poklopljeni).
                 </p>
             <?php else: ?>
                 <form method="post" action="/admin_phone_catalog.php">

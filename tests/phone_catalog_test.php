@@ -128,13 +128,27 @@ $ads = [
 $match15 = phoneCatalogMatchAd($ads[0]);
 check($match15['model_id'] === 'apple-iphone-15' && $match15['variant_id'] === '128gb', 'iPhone 15 128 GB dobija model i varijantu');
 check(phoneCatalogMatchAd($ads[2])['model_id'] === 'apple-iphone-15-pro', 'iPhone 15 Pro ne pripada običnom iPhone 15');
-check(phoneCatalogMatchAd($ads[3])['status'] === 'skip', 'sat nije telefon');
-check(phoneCatalogMatchAd($ads[4])['status'] === 'skip', 'maska nije telefon');
-check(phoneCatalogMatchAd($ads[5])['status'] === 'skip', 'ekran nije telefon');
+check(phoneCatalogMatchAd($ads[3])['status'] === 'unmatched', 'sat ulazi u katalog, ali nema model');
+check(phoneCatalogMatchAd($ads[4])['status'] === 'skip', 'maska/delovi nisu u katalogu');
+check(phoneCatalogMatchAd($ads[5])['status'] === 'skip', 'ekran/deo nije u katalogu');
 check(phoneCatalogMatchAd($ads[6])['model_id'] === 'samsung-galaxy-a54', 'Galaxy A54 5G se vezuje na A54');
 check(phoneCatalogMatchAd($ads[7])['model_id'] === 'samsung-galaxy-s23-ultra', 'S23 Ultra ne ide na običan S23');
-check(phoneCatalogMatchAd($ads[8])['status'] === 'skip', 'tablet nije telefon');
+check(phoneCatalogMatchAd($ads[8])['status'] === 'skip', 'tablet nije u katalogu');
 check(phoneCatalogMatchAd($ads[9])['status'] === 'unmatched', 'iPhone 15 Pro Max se ne vezuje na kraći model');
+check(phoneCatalogMatchAd(array_merge($base, [
+    'id' => 520,
+    'title' => 'Zamena ekrana iPhone',
+    'brand' => 'Apple',
+    'model' => 'iPhone 15',
+    'ad_type' => 'servis',
+]))['status'] === 'skip', 'servis nije u katalogu');
+check(phoneCatalogMatchAd(array_merge($base, [
+    'id' => 521,
+    'title' => 'Maska iPhone 15',
+    'brand' => 'Apple',
+    'model' => 'iPhone 15',
+    'equipment_type' => 'Maska/Futrola',
+]))['status'] === 'skip', 'oprema nije u katalogu');
 
 $manual = $ads[0];
 $manual['phone_model_link'] = ['method' => 'manual'];
@@ -143,7 +157,7 @@ $seller['phone_model_id'] = 'apple-iphone-12';
 $seller['phone_model_link'] = ['method' => 'seller'];
 $plan = phoneCatalogPlanLinks(array_merge($ads, [array_merge($manual, ['id' => 512]), array_merge($seller, ['id' => 513])]), false, false);
 check($plan['summary']['linked'] >= 3, 'dry-run prepoznaje telefone');
-check($plan['summary']['skipped_not_phone'] >= 4, 'sat, tablet, maska i ekran su preskočeni');
+check($plan['summary']['skipped_not_phone'] >= 3, 'tablet, maska i ekran su preskočeni');
 check($plan['summary']['skipped_manual'] === 1, 'ručni unos se ne prepisuje');
 check($plan['summary']['skipped_seller'] === 1, 'prodavčeva veza se ne prepisuje');
 $applied = phoneCatalogPlanLinks($ads, true, false);
@@ -153,7 +167,7 @@ foreach ($applied['ads'] as $row) {
         $linked501 = $row;
     }
     if ((int)$row['id'] === 504) {
-        check(!isset($row['phone_model_id']), 'sat ne dobija model_id');
+        check(empty($row['phone_model_id']), 'sat bez modela u katalogu ne dobija model_id');
         check($row['contact_phone'] === '0615550199' && $row['description'] === 'Opis koji mora ostati netaknut.' && (float)$row['price'] === 180.0, 'javna polja oglasa ostaju ista');
     }
 }
