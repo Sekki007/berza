@@ -57,19 +57,19 @@ Posle izmena: commit + push na `https://github.com/Sekki007/berza.git`.
 
 Ako i dalje crashuje: u Playgrounds napravi **New App**, pa zameni `ContentView.swift` / dodaj `WebView.swift` sadržajem iz ovog repoa.
 
-## Šta app radi (MVP)
+## Šta app radi (hibrid)
 
-- Učitava `https://kupitelefon.rs` u native režimu (`kt-native-app`, kao Android)
-- Splash sa brendom dok se prvi put učita
-- Bez Safari chrome-a; spoljni `tel:` / `mailto:` / off-site idu napolje
-- Navigacija unutar sajta ostaje u WebView-u (mobilni meni sajta)
-- Dugme **Ponovo** ako učitavanje padne
+- **Oglasi** — native SwiftUI lista (čita javni HTML sa kupitelefon.rs, **bez izmene sajta**)
+- Filter: Sve / Telefoni / Delovi / Servisi + pretraga
+- Tap na oglas → sheet sa WebView detaljem
+- Tabovi **Pretraga / Besplatno / Nalog** → WebView (forma i nalog još nemaju API)
+- Outgoing network capability obavezna
 
 ## Šta još nije
 
-- App Store upload (treba Apple Developer + kasnije Mac/Xcode ili Playgrounds publish flow)
-- Push notifikacije / native badge (ima na Android Capacitor)
-- Potpuni native UI oglasa (treba API)
+- App Store upload (Apple Developer + kasnije Mac/Xcode)
+- Push notifikacije
+- Potpuni native detalj / prijava / postavi oglas (treba API — trenutno namerno ne diramo sajt)
 
 ## Razvoj
 

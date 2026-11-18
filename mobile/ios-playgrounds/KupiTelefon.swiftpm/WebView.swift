@@ -19,12 +19,12 @@ final class WebViewModel: ObservableObject {
 
     func startLoadWatchdog() {
         watchdog?.invalidate()
-        watchdog = Timer.scheduledTimer(withTimeInterval: 20, repeats: false) { [weak self] _ in
+        watchdog = Timer.scheduledTimer(withTimeInterval: 25, repeats: false) { [weak self] _ in
             DispatchQueue.main.async {
                 guard let self = self else { return }
                 if !self.hasLoadedOnce && self.lastError == nil {
                     self.isLoading = false
-                    self.lastError = "Stranica se nije učitala. U Playgrounds App Settings uključi Network / Outgoing Connections, pa tapni Ponovo."
+                    self.lastError = "Stranica se nije učitala. Proveri Network / Outgoing Connections u Playgrounds."
                 }
             }
         }
@@ -39,21 +39,6 @@ final class WebViewModel: ObservableObject {
         } else {
             webView?.load(URLRequest(url: startURL))
         }
-    }
-
-    func goHome() {
-        lastError = nil
-        isLoading = true
-        startLoadWatchdog()
-        webView?.load(URLRequest(url: startURL))
-    }
-
-    func goBack() {
-        webView?.goBack()
-    }
-
-    func goForward() {
-        webView?.goForward()
     }
 
     fileprivate func markLoaded(webView: WKWebView) {
@@ -107,7 +92,6 @@ struct SiteWebView: UIViewRepresentable {
         webView.allowsBackForwardNavigationGestures = true
         webView.allowsLinkPreview = false
         webView.scrollView.contentInsetAdjustmentBehavior = .automatic
-        webView.scrollView.alwaysBounceVertical = true
         webView.backgroundColor = UIColor(red: 0.949, green: 0.949, blue: 0.949, alpha: 1)
         webView.isOpaque = true
         if #available(iOS 15.0, *) {
@@ -118,8 +102,8 @@ struct SiteWebView: UIViewRepresentable {
         webView.customUserAgent = baseUA + " KupiTelefonApp/1.0 (ios)"
 
         model.webView = webView
+        model.startLoadWatchdog()
         var request = URLRequest(url: model.startURL)
-        request.cachePolicy = .reloadIgnoringLocalCacheData
         request.timeoutInterval = 30
         webView.load(request)
         return webView
@@ -155,9 +139,6 @@ struct SiteWebView: UIViewRepresentable {
         func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
             DispatchQueue.main.async {
                 self.model.isLoading = true
-                if self.model.hasLoadedOnce {
-                    self.model.lastError = nil
-                }
             }
         }
 
