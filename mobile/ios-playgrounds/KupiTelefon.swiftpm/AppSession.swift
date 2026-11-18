@@ -16,26 +16,27 @@ final class AppSession: ObservableObject {
 
     func refreshSession() async {
         do {
-            let html = try await KTNetwork.getHTML("/nalog.php")
-            if let token = KTNetwork.extractCSRF(from: html) {
+            let json = try await KTNetwork.apiAuthStatus()
+            if let token = json["csrf"] as? String, !token.isEmpty {
                 csrf = token
             }
-            let logged = html.contains("data-logged-in=\"1\"")
-                || html.contains("tab=oglasi")
-                || html.contains("Moji oglasi")
-                || html.contains("/logout.php")
-            isLoggedIn = logged
-            if logged {
-                if let name = HomeFeedParser.firstMatch(in: html, pattern: #"kp-account-name[^>]*>([\s\S]*?)<"#)
-                    ?? HomeFeedParser.firstMatch(in: html, pattern: #"class="[^"]*user-name[^"]*"[^>]*>([\s\S]*?)<"#) {
-                    displayName = HomeFeedParser.decodeHTML(name)
-                }
+            isLoggedIn = MobileAPIMapper.boolValue(json["logged_in"])
+            if let user = json["user"] as? [String: Any] {
+                username = MobileAPIMapper.stringValue(user["username"])
+                displayName = MobileAPIMapper.stringValue(user["name"], fallback: username)
+            } else if !isLoggedIn {
+                username = ""
+                displayName = ""
+            }
+            if isLoggedIn {
                 await refreshBadges()
             } else {
                 unreadMessages = 0
                 unreadNotifications = 0
             }
-        } catch {}
+        } catch {
+            // Keep previous state on transient network errors.
+        }
     }
 
     func login(username: String, password: String) async throws {
@@ -43,57 +44,71 @@ final class AppSession: ObservableObject {
         lastError = nil
         defer { isBusy = false }
 
-        let loginPage = try await KTNetwork.getHTML("/prijava")
-        let token = KTNetwork.extractCSRF(from: loginPage) ?? csrf
-        let result = try await KTNetwork.postForm(
-            path: "/prijava",
-            fields: [
-                "username": username,
-                "password": password,
-                "remember_me": "1",
-                "next": "/nalog.php"
-            ],
-            csrf: token
-        )
+        var token = csrf
+        if token.isEmpty {
+            let boot = try await KTNetwork.apiAuthStatus()
+            token = boot["csrf"] as? String ?? ""
+            csrf = token
+        }
 
-        if result.html.contains("verify-phone")
-            || (result.finalURL?.absoluteString.contains("verify-phone") ?? false) {
+        let result = try await KTNetwork.apiLogin(username: username, password: password, csrf: token)
+        if let nextCSRF = result["csrf"] as? String, !nextCSRF.isEmpty {
+            csrf = nextCSRF
+        }
+
+        let err = result["error"] as? String ?? ""
+        if err == "phone_verify_required" {
             throw KTAuthError.phoneVerifyRequired
         }
-
-        await refreshSession()
-        if !isLoggedIn {
+        if err == "invalid_credentials" || err == "missing_credentials" {
             throw KTAuthError.invalidCredentials
         }
+        if let message = result["message"] as? String, !MobileAPIMapper.boolValue(result["ok"]) {
+            throw KTAuthError.unknown(message)
+        }
+        if !MobileAPIMapper.boolValue(result["ok"]) {
+            throw KTAuthError.invalidCredentials
+        }
+
+        isLoggedIn = true
         self.username = username
+        if let user = result["user"] as? [String: Any] {
+            displayName = MobileAPIMapper.stringValue(user["name"], fallback: username)
+        } else {
+            displayName = username
+        }
+        await refreshBadges()
     }
 
     func logout() async {
-        _ = try? await KTNetwork.getHTML("/logout.php")
+        let token = csrf.isEmpty ? (try? await KTNetwork.apiAuthStatus())?["csrf"] as? String ?? "" : csrf
+        if let result = try? await KTNetwork.apiLogout(csrf: token),
+           let next = result["csrf"] as? String, !next.isEmpty {
+            csrf = next
+        }
         isLoggedIn = false
         username = ""
         displayName = ""
         unreadMessages = 0
         unreadNotifications = 0
-        csrf = ""
         await refreshSession()
     }
 
     func refreshBadges() async {
         guard isLoggedIn else { return }
         do {
-            let json = try await KTNetwork.getJSON("/api/messages.php?action=unread") as? [String: Any]
-            if let ok = json?["ok"] as? Bool, ok {
-                unreadMessages = json?["unread"] as? Int ?? 0
-                unreadNotifications = json?["unread_notifications"] as? Int ?? 0
+            let json = try await KTNetwork.getJSON("/api/messages.php?action=unread")
+            if MobileAPIMapper.boolValue(json["ok"]) {
+                unreadMessages = MobileAPIMapper.intValue(json["unread"])
+                unreadNotifications = MobileAPIMapper.intValue(json["unread_notifications"])
             }
         } catch {}
     }
 
     func ensureCSRF() async -> String {
         if !csrf.isEmpty { return csrf }
-        let html = try? await KTNetwork.getHTML(isLoggedIn ? "/nalog.php" : "/prijava")
-        if let html = html, let token = KTNetwork.extractCSRF(from: html) {
+        if let boot = try? await KTNetwork.apiAuthStatus(),
+           let token = boot["csrf"] as? String, !token.isEmpty {
             csrf = token
         }
         return csrf

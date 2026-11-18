@@ -16,7 +16,6 @@ struct PostAdNativeView: View {
     @State private var condition = "Polovno"
     @State private var status = ""
     @State private var loading = false
-    @State private var donePath: String?
 
     private let types = [("telefon", "Telefon"), ("delovi", "Delovi"), ("servis", "Servis")]
     private let intents = [("sell", "Prodajem"), ("buy", "Trazim"), ("trade", "Zamena")]
@@ -72,7 +71,7 @@ struct PostAdNativeView: View {
 
                 sectionTitle("Opis")
                 TextEditor(text: $description)
-                    .frame(minHeight: 120)
+                    .frame(minHeight: dutHeight)
                     .padding(10)
                     .background(Color.white)
                     .cornerRadius(12)
@@ -99,13 +98,15 @@ struct PostAdNativeView: View {
                 }
                 .disabled(loading || title.trimmingCharacters(in: .whitespaces).isEmpty)
 
-                Text("Napomena: fotografije dodaj posle objave u „Moji oglasi” na sajtu, ili u sledecem koraku app-a.")
+                Text("Fotografije mozes dodati odmah posle objave u „Moji oglasi” na sajtu.")
                     .font(.caption2)
                     .foregroundColor(Brand.muted)
             }
             .padding(16)
         }
     }
+
+    private var dutHeight: CGFloat { 120 }
 
     private func sectionTitle(_ t: String) -> some View {
         Text(t).font(.system(size: 14, weight: .bold)).foregroundColor(Brand.text)
@@ -144,48 +145,61 @@ struct PostAdNativeView: View {
         status = ""
         defer { loading = false }
         do {
-            let page = try await KTNetwork.getHTML("/postavi-oglas")
-            let csrf: String
-            if let extracted = KTNetwork.extractCSRF(from: page) {
-                csrf = extracted
-            } else {
-                csrf = await session.ensureCSRF()
+            let boot = try await KTNetwork.apiCreateBootstrap()
+            if let csrf = boot["csrf"] as? String, !csrf.isEmpty {
+                session.csrf = csrf
             }
-            let submitToken = HomeFeedParser.firstMatch(in: page, pattern: #"name="ad_submit_token"\s+value="([^"]+)""#) ?? ""
+            if !MobileAPIMapper.boolValue(boot["ok"]) {
+                if MobileAPIMapper.stringValue(boot["error"]) == "auth_required" {
+                    session.isLoggedIn = false
+                    status = "Sesija istekla — prijavi se ponovo."
+                    return
+                }
+                status = MobileAPIMapper.stringValue(boot["message"], fallback: "Nije moguce otvoriti formu.")
+                return
+            }
 
-            let fields: [String: String] = [
+            let submitToken = MobileAPIMapper.stringValue(boot["ad_submit_token"])
+            let csrf = session.csrf
+
+            var fields: [String: String] = [
                 "ad_type": adType,
                 "listing_type": listingType,
                 "title": title,
                 "brand": brand,
                 "model": model,
                 "price": price.replacingOccurrences(of: ",", with: "."),
-                "price_type": price.isEmpty ? "open" : "fixed",
+                "price_type": price.trimmingCharacters(in: .whitespaces).isEmpty ? "open" : "fixed",
                 "currency": "eur",
                 "location": location,
                 "contact_phone": phone,
                 "description": description,
                 "condition_state": condition,
                 "device_type": "phone",
-                "price_confirmed": "1",
                 "ad_submit_token": submitToken
             ]
+            if adType == "delovi" {
+                fields["equipment_group"] = "parts"
+            }
 
-            let result = try await KTNetwork.postForm(path: "/postavi-oglas", fields: fields, csrf: csrf)
-            if result.html.contains("uspeh") || result.html.contains("Objavljen") || result.html.contains("/oglas/")
-                || (result.finalURL?.absoluteString.contains("oglas") ?? false)
-                || (result.finalURL?.absoluteString.contains("nalog") ?? false) {
-                status = "Objavljen! Proveri „Moji oglasi”."
+            let result = try await KTNetwork.apiCreateAd(fields: fields, csrf: csrf)
+            if let nextCSRF = result["csrf"] as? String, !nextCSRF.isEmpty {
+                session.csrf = nextCSRF
+            }
+
+            if MobileAPIMapper.boolValue(result["ok"]) {
+                let note = MobileAPIMapper.stringValue(result["note"])
+                status = note.isEmpty ? "Objavljen! Proveri „Moji oglasi”." : "Objavljen! \(note)"
                 title = ""; description = ""; price = ""; brand = ""; model = ""
                 await session.refreshSession()
-            } else if result.html.contains("prijava") || result.html.contains("/prijava") {
+            } else if MobileAPIMapper.stringValue(result["error"]) == "auth_required" {
                 session.isLoggedIn = false
                 status = "Sesija istekla — prijavi se ponovo."
             } else {
-                let flash = HomeFeedParser.decodeHTML(
-                    HomeFeedParser.firstMatch(in: result.html, pattern: #"flash[^>]*>([\s\S]*?)</"#) ?? ""
+                status = MobileAPIMapper.stringValue(
+                    result["message"],
+                    fallback: "Server nije prihvatio oglas. Proveri obavezna polja."
                 )
-                status = flash.isEmpty ? "Server nije prihvatio oglas. Proveri obavezna polja." : flash
             }
         } catch {
             status = error.localizedDescription

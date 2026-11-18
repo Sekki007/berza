@@ -52,13 +52,10 @@ struct AdDetailView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
-                    if session.isLoggedIn {
-                        Task { await toggleFavorite() }
-                    } else {
-                        showLogin = true
-                    }
+                    Task { await toggleFavorite() }
                 } label: {
-                    Image(systemName: "heart")
+                    Image(systemName: loader.isFavorite ? "heart.fill" : "heart")
+                        .foregroundColor(loader.isFavorite ? Brand.price : Brand.text)
                 }
             }
         }
@@ -317,8 +314,22 @@ struct AdDetailView: View {
     }
 
     private func toggleFavorite() async {
-        _ = try? await KTNetwork.getHTML("/favorite.php?id=\(listing.id)")
-        toast = "Sacuvano u omiljene."
+        let csrf = await session.ensureCSRF()
+        do {
+            let result = try await KTNetwork.apiToggleFavorite(adId: listing.id, csrf: csrf)
+            if let next = result["csrf"] as? String, !next.isEmpty {
+                session.csrf = next
+            }
+            guard MobileAPIMapper.boolValue(result["ok"]) else {
+                toast = MobileAPIMapper.stringValue(result["message"], fallback: "Nije uspelo.")
+                return
+            }
+            let favorited = MobileAPIMapper.boolValue(result["favorited"])
+            loader.isFavorite = favorited
+            toast = favorited ? "Sacuvano u omiljene." : "Uklonjeno iz omiljenih."
+        } catch {
+            toast = error.localizedDescription
+        }
     }
 
     private func openURL(_ url: URL) {

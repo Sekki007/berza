@@ -127,9 +127,9 @@ struct MessagesInboxView: View {
         errorText = nil
         defer { loading = false }
         do {
-            let json = try await KTNetwork.getJSON("/api/messages.php?action=threads") as? [String: Any]
-            guard let ok = json?["ok"] as? Bool, ok,
-                  let arr = json?["threads"] as? [[String: Any]] else {
+            let json = try await KTNetwork.getJSON("/api/messages.php?action=threads")
+            guard let ok = json["ok"] as? Bool, ok,
+                  let arr = json["threads"] as? [[String: Any]] else {
                 throw KTAuthError.unknown("Ne mogu da ucitam poruke.")
             }
             threads = arr.compactMap { row in
@@ -223,8 +223,8 @@ struct MessageThreadView: View {
         defer { loading = false }
         do {
             let path = "/api/messages.php?action=thread&ad=\(thread.adId)&with=\(thread.partnerId)"
-            let json = try await KTNetwork.getJSON(path) as? [String: Any]
-            let arr = json?["messages"] as? [[String: Any]] ?? []
+            let json = try await KTNetwork.getJSON(path)
+            let arr = json["messages"] as? [[String: Any]] ?? []
             messages = arr.compactMap { row in
                 ChatMessage(
                     id: row["id"] as? Int ?? Int.random(in: 1...999999),

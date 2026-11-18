@@ -23,10 +23,10 @@ final class HomeFeedLoader: ObservableObject {
         let cat = category
         let q = query
         do {
-            let batch = try await Self.fetchPage(category: cat, query: q, page: page)
+            let (batch, hasMore) = try await Self.fetchPage(category: cat, query: q, page: page)
             ads = batch
             seenIds = Set(batch.map(\.id))
-            canLoadMore = batch.count >= 8
+            canLoadMore = hasMore
         } catch {
             if ads.isEmpty {
                 errorMessage = error.localizedDescription
@@ -45,7 +45,7 @@ final class HomeFeedLoader: ObservableObject {
         let cat = category
         let q = query
         do {
-            let batch = try await Self.fetchPage(category: cat, query: q, page: next)
+            let (batch, hasMore) = try await Self.fetchPage(category: cat, query: q, page: next)
             let fresh = batch.filter { !seenIds.contains($0.id) }
             if fresh.isEmpty {
                 canLoadMore = false
@@ -54,7 +54,7 @@ final class HomeFeedLoader: ObservableObject {
             page = next
             for ad in fresh { seenIds.insert(ad.id) }
             ads.append(contentsOf: fresh)
-            canLoadMore = batch.count >= 8
+            canLoadMore = hasMore
         } catch {}
     }
 
@@ -67,17 +67,26 @@ final class HomeFeedLoader: ObservableObject {
         await refresh()
     }
 
-    private static func fetchPage(category: FeedCategory, query: String, page: Int) async throws -> [AdListing] {
-        var path = category.listPath
-        var queryItems: [String] = ["page=\(page)"]
+    private static func fetchPage(category: FeedCategory, query: String, page: Int) async throws -> ([AdListing], Bool) {
+        var parts = [
+            "page=\(page)",
+            "per_page=24"
+        ]
+        if let type = category.apiType {
+            parts.append("type=\(type)")
+        }
+        if let eg = category.apiEquipmentGroup {
+            parts.append("equipment_group=\(eg)")
+        }
         let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
         if !q.isEmpty {
             let encoded = q.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? q
-            queryItems.append("q=\(encoded)")
+            parts.append("q=\(encoded)")
         }
-        path += (path.contains("?") ? "&" : "?") + queryItems.joined(separator: "&")
-        let html = try await KTNetwork.getHTML(path)
-        return HomeFeedParser.parse(html: html)
+        let json = try await KTNetwork.apiAds(query: parts.joined(separator: "&"))
+        let items = MobileAPIMapper.listings(from: json)
+        let hasMore = MobileAPIMapper.boolValue(json["has_more"])
+        return (items, hasMore)
     }
 }
 
@@ -153,8 +162,7 @@ enum HomeFeedParser {
         var s = raw
         let map = [
             "&amp;": "&", "&quot;": "\"", "&#039;": "'", "&apos;": "'",
-            "&lt;": "<", "&gt;": ">", "&nbsp;": " ", "&#39;": "'",
-            "<br>": "\n", "<br/>": "\n", "<br />": "\n"
+            "&lt;": "<", "&gt;": ">", "&nbsp;": " ", "&#39;": "'"
         ]
         for (k, v) in map { s = s.replacingOccurrences(of: k, with: v) }
         if let tagRegex = try? NSRegularExpression(pattern: "<[^>]+>", options: []) {

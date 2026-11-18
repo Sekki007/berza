@@ -4,6 +4,7 @@ final class AdDetailLoader: ObservableObject {
     @Published var detail: AdDetail?
     @Published var isLoading = false
     @Published var errorMessage: String?
+    @Published var isFavorite = false
 
     private let listing: AdListing
 
@@ -18,8 +19,18 @@ final class AdDetailLoader: ObservableObject {
         defer { isLoading = false }
 
         do {
-            let html = try await KTNetwork.getHTML(listing.path)
-            detail = AdDetailParser.parse(html: html, fallback: listing)
+            let json = try await KTNetwork.apiAdDetail(id: listing.id)
+            guard MobileAPIMapper.boolValue(json["ok"]) else {
+                errorMessage = MobileAPIMapper.stringValue(json["error"], fallback: "Oglas nije pronadjen.")
+                return
+            }
+            detail = MobileAPIMapper.detail(from: json, fallback: listing)
+            if let ad = json["ad"] as? [String: Any] {
+                isFavorite = MobileAPIMapper.boolValue(ad["favorite"])
+            }
+            if let csrf = json["csrf"] as? String, !csrf.isEmpty {
+                // Session may pick this up later via refresh; store is optional.
+            }
         } catch {
             errorMessage = error.localizedDescription
         }
@@ -48,139 +59,6 @@ final class AdDetailLoader: ObservableObject {
             favoriteURL: URL(string: "https://kupitelefon.rs/favorite.php?id=\(listing.id)"),
             reportURL: URL(string: "https://kupitelefon.rs/report.php?ad=\(listing.id)"),
             pageURL: listing.detailURL
-        )
-    }
-}
-
-enum AdDetailParser {
-    static func parse(html: String, fallback: AdListing) -> AdDetail {
-        let title = HomeFeedParser.decodeHTML(
-            HomeFeedParser.firstMatch(in: html, pattern: #"id="ad-title"[^>]*>([\s\S]*?)</h1>"#)
-                ?? HomeFeedParser.firstMatch(in: html, pattern: #"kp-listing-title">([\s\S]*?)</h1>"#)
-                ?? fallback.title
-        )
-
-        var price = HomeFeedParser.decodeHTML(
-            HomeFeedParser.firstMatch(in: html, pattern: #"class="kp-price[^"]*"[^>]*>([\s\S]*?)</div>"#) ?? ""
-        )
-        if price.isEmpty { price = fallback.price }
-        if price.isEmpty {
-            let euroPattern = "(\\d+[\\d.,]*\\s*\u{20AC})"
-            price = HomeFeedParser.decodeHTML(HomeFeedParser.firstMatch(in: html, pattern: euroPattern) ?? "")
-        }
-
-        let priceNote = HomeFeedParser.decodeHTML(
-            HomeFeedParser.firstMatch(in: html, pattern: #"kp-price-rsd">([\s\S]*?)</span>"#)
-                ?? HomeFeedParser.firstMatch(in: html, pattern: #"kp-price-note">([\s\S]*?)</span>"#)
-                ?? ""
-        )
-
-        let location = HomeFeedParser.decodeHTML(
-            HomeFeedParser.firstMatch(in: html, pattern: #"oglasi\?location=([^"&]+)"#)
-                .map { $0.removingPercentEncoding ?? $0 }
-                ?? fallback.location
-        )
-
-        let seller = HomeFeedParser.decodeHTML(
-            HomeFeedParser.firstMatch(in: html, pattern: #"kp-seller-name-link"[^>]*>([\s\S]*?)</a>"#)
-                ?? HomeFeedParser.firstMatch(in: html, pattern: #"kp-seller-name-plain">([\s\S]*?)</span>"#)
-                ?? ""
-        )
-
-        let sellerMeta = HomeFeedParser.decodeHTML(
-            HomeFeedParser.firstMatch(in: html, pattern: #"kp-seller-meta-line">([\s\S]*?)</p>"#) ?? ""
-        )
-
-        let shopPath = HomeFeedParser.firstMatch(in: html, pattern: #"kp-seller-name-link"[^>]*href="([^"]+)""#)
-            ?? HomeFeedParser.firstMatch(in: html, pattern: #"kp-seller-link"[^>]*href="([^"]+)""#)
-
-        var description = HomeFeedParser.decodeHTML(
-            HomeFeedParser.firstMatch(in: html, pattern: #"kp-desc-body">([\s\S]*?)</div>"#)
-                ?? HomeFeedParser.firstMatch(in: html, pattern: #"kp-desc-preview">([\s\S]*?)</span>"#)
-                ?? ""
-        )
-        description = description.replacingOccurrences(of: "\n\n+", with: "\n\n", options: .regularExpression)
-
-        var images: [URL] = []
-        if let imgRegex = try? NSRegularExpression(pattern: #"kp-gallery-slide[\s\S]{0,900}?src="([^"]+)""#, options: []) {
-            let range = NSRange(html.startIndex..<html.endIndex, in: html)
-            for match in imgRegex.matches(in: html, options: [], range: range) {
-                if match.numberOfRanges > 1, let r = Range(match.range(at: 1), in: html) {
-                    if let url = AdListing.makeURL(String(html[r])), !images.contains(url) {
-                        images.append(url)
-                    }
-                }
-            }
-        }
-        if images.isEmpty, let u = fallback.imageURL {
-            images = [u]
-        }
-
-        var facts: [AdFact] = []
-        if let chipRegex = try? NSRegularExpression(
-            pattern: #"kp-keyfact">[\s\S]*?<small>([\s\S]*?)</small>[\s\S]*?<b>([\s\S]*?)</b>"#,
-            options: []
-        ) {
-            let range = NSRange(html.startIndex..<html.endIndex, in: html)
-            for match in chipRegex.matches(in: html, options: [], range: range).prefix(8) {
-                if match.numberOfRanges > 2,
-                   let lr = Range(match.range(at: 1), in: html),
-                   let vr = Range(match.range(at: 2), in: html) {
-                    let label = HomeFeedParser.decodeHTML(String(html[lr]))
-                    let value = HomeFeedParser.decodeHTML(String(html[vr]))
-                    if !value.isEmpty {
-                        facts.append(AdFact(label: label, value: value))
-                    }
-                }
-            }
-        }
-
-        var chips: [String] = []
-        if let kwRegex = try? NSRegularExpression(pattern: #"kp-chip-kw[^>]*>[\s\S]*?<a[^>]*>([\s\S]*?)</a>"#, options: []) {
-            let range = NSRange(html.startIndex..<html.endIndex, in: html)
-            for match in kwRegex.matches(in: html, options: [], range: range).prefix(8) {
-                if match.numberOfRanges > 1, let r = Range(match.range(at: 1), in: html) {
-                    let t = HomeFeedParser.decodeHTML(String(html[r]))
-                    if !t.isEmpty { chips.append(t) }
-                }
-            }
-        }
-        if chips.isEmpty { chips = [fallback.categoryLabel] }
-
-        let views = HomeFeedParser.decodeHTML(
-            HomeFeedParser.firstMatch(in: html, pattern: #"kp-head-stats">[\s\S]*?(\d+)[\s\S]*?</span>"#) ?? ""
-        )
-
-        let callHref = HomeFeedParser.firstMatch(in: html, pattern: #"href="(tel:[^"]+)""#)
-        let viberHref = HomeFeedParser.firstMatch(in: html, pattern: #"href="((?:viber|https):[^"]*viber[^"]*)""#)
-        let waHref = HomeFeedParser.firstMatch(in: html, pattern: #"href="(https://wa\.me/[^"]+)""#)
-        let msgHref = HomeFeedParser.firstMatch(in: html, pattern: #"class="kp-platform-msg"[^>]*href="([^"]+)""#)
-            ?? HomeFeedParser.firstMatch(in: html, pattern: #"href="(/poruke\.php[^"]*)""#)
-            ?? "/poruke.php"
-        let partnerId = Int(HomeFeedParser.firstMatch(in: html, pattern: #"poruke\.php[^"]*[?&]with=(\d+)"#) ?? "0") ?? 0
-
-        return AdDetail(
-            id: fallback.id,
-            title: title,
-            price: price,
-            priceNote: priceNote,
-            location: location,
-            description: description,
-            sellerName: seller,
-            sellerMeta: sellerMeta,
-            imageURLs: images,
-            facts: facts,
-            chips: chips,
-            views: views,
-            callURL: callHref.flatMap { URL(string: $0.replacingOccurrences(of: " ", with: "")) },
-            viberURL: viberHref.flatMap { AdListing.makeURL($0) },
-            whatsappURL: waHref.flatMap { AdListing.makeURL($0) },
-            messageURL: AdListing.makeURL(msgHref),
-            partnerId: partnerId,
-            shopURL: AdListing.makeURL(shopPath),
-            favoriteURL: URL(string: "https://kupitelefon.rs/favorite.php?id=\(fallback.id)"),
-            reportURL: URL(string: "https://kupitelefon.rs/report.php?ad=\(fallback.id)"),
-            pageURL: fallback.detailURL
         )
     }
 }

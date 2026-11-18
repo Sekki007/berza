@@ -49,21 +49,22 @@ struct FavoritesView: View {
             if session.isLoggedIn { await load() }
         }
         .refreshable { await load() }
+        .onChange(of: session.isLoggedIn) { logged in
+            if logged { Task { await load() } }
+            else { ads = [] }
+        }
     }
 
     private func load() async {
         loading = true
         defer { loading = false }
         do {
-            let html = try await KTNetwork.getHTML("/favorites.php")
-            if html.contains("/prijava") && !html.contains("listing-card") {
-                session.isLoggedIn = false
-                return
+            let json = try await KTNetwork.apiFavorites()
+            if let csrf = json["csrf"] as? String, !csrf.isEmpty {
+                session.csrf = csrf
             }
-            ads = HomeFeedParser.parse(html: html)
-            if ads.isEmpty {
-                errorText = "Nema omiljenih oglasa."
-            }
+            ads = MobileAPIMapper.listings(from: json)
+            errorText = ads.isEmpty ? "Nema omiljenih oglasa." : nil
         } catch {
             errorText = error.localizedDescription
         }

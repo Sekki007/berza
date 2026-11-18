@@ -94,4 +94,21 @@ enum FeedCategory: String, CaseIterable, Identifiable {
         case .servis: return "/oglasi/servis"
         }
     }
+
+    var apiType: String? {
+        switch self {
+        case .all: return nil
+        case .telefon: return "telefon"
+        case .delovi, .oprema: return "delovi"
+        case .servis: return "servis"
+        }
+    }
+
+    var apiEquipmentGroup: String? {
+        switch self {
+        case .oprema: return "oprema"
+        case .delovi: return "parts"
+        default: return nil
+        }
+    }
 }
