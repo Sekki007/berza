@@ -15,11 +15,7 @@ struct AdListing: Identifiable, Hashable {
     }
 
     var imageURL: URL? {
-        guard let imagePath = imagePath, !imagePath.isEmpty else { return nil }
-        if imagePath.hasPrefix("http") {
-            return URL(string: imagePath)
-        }
-        return URL(string: "https://kupitelefon.rs" + imagePath)
+        Self.makeURL(imagePath)
     }
 
     var categoryLabel: String {
@@ -30,6 +26,30 @@ struct AdListing: Identifiable, Hashable {
         default: return category.isEmpty ? "Oglas" : category.capitalized
         }
     }
+
+    static func makeURL(_ path: String?) -> URL? {
+        guard let path = path, !path.isEmpty else { return nil }
+        if path.hasPrefix("http") {
+            return URL(string: path)
+        }
+        return URL(string: "https://kupitelefon.rs" + path)
+    }
+}
+
+struct AdDetail: Identifiable {
+    let id: Int
+    var title: String
+    var price: String
+    var location: String
+    var description: String
+    var sellerName: String
+    var imageURLs: [URL]
+    var chips: [String]
+    var callURL: URL?
+    var messageURL: URL?
+    var favoriteURL: URL?
+    var reportURL: URL?
+    var pageURL: URL
 }
 
 enum FeedCategory: String, CaseIterable, Identifiable {
@@ -51,7 +71,6 @@ enum FeedCategory: String, CaseIterable, Identifiable {
         }
     }
 
-    /// Javni URL na sajtu (bez izmene backend-a).
     var listPath: String {
         switch self {
         case .all: return "/"

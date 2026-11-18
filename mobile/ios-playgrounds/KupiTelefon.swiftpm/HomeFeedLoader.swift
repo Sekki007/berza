@@ -1,6 +1,5 @@
 import Foundation
 
-/// Čita javni HTML sa kupitelefon.rs (bez izmene sajta) i parsira listing kartice.
 final class HomeFeedLoader: ObservableObject {
     @Published var ads: [AdListing] = []
     @Published var isLoading = false
@@ -54,9 +53,7 @@ final class HomeFeedLoader: ObservableObject {
             for ad in fresh { seenIds.insert(ad.id) }
             ads.append(contentsOf: fresh)
             canLoadMore = batch.count >= 8
-        } catch {
-            // keep current list
-        }
+        } catch {}
     }
 
     @MainActor
@@ -81,9 +78,7 @@ final class HomeFeedLoader: ObservableObject {
         }
         components.queryItems = items
 
-        guard let url = components.url else {
-            throw URLError(.badURL)
-        }
+        guard let url = components.url else { throw URLError(.badURL) }
 
         var request = URLRequest(url: url)
         request.setValue("KupiTelefonApp/1.0 (ios; native-feed)", forHTTPHeaderField: "User-Agent")
@@ -103,19 +98,34 @@ final class HomeFeedLoader: ObservableObject {
 
 enum HomeFeedParser {
     static func parse(html: String) -> [AdListing] {
-        let parts = html.components(separatedBy: "<article class=\"listing-card")
-        guard parts.count > 1 else { return [] }
+        // Cel article — ne seci na 4500 (cena je cesto posle 4k karaktera).
+        guard let regex = try? NSRegularExpression(
+            pattern: #"<article class="listing-card[\s\S]*?</article>"#,
+            options: [.caseInsensitive]
+        ) else { return [] }
+
+        let range = NSRange(html.startIndex..<html.endIndex, in: html)
+        let matches = regex.matches(in: html, options: [], range: range)
 
         var out: [AdListing] = []
-        out.reserveCapacity(parts.count - 1)
+        out.reserveCapacity(matches.count)
 
-        for chunk in parts.dropFirst() {
-            let block = String(chunk.prefix(4500))
+        for match in matches {
+            guard let r = Range(match.range, in: html) else { continue }
+            let block = String(html[r])
             guard let id = firstInt(in: block, pattern: #"data-ad-id="(\d+)""#) else { continue }
             guard let path = firstMatch(in: block, pattern: #"href="(/oglas/[^"]+)""#) else { continue }
-            let title = decodeHTML(firstMatch(in: block, pattern: #"kp-list-title">(.*?)</h2>"#) ?? "Oglas")
-            let price = decodeHTML(firstMatch(in: block, pattern: #"kp-list-price-main">(.*?)</span>"#) ?? "")
-            let location = decodeHTML(firstMatch(in: block, pattern: #"kp-list-meta-loc"[^>]*>(.*?)</span>"#) ?? "")
+            let title = decodeHTML(firstMatch(in: block, pattern: #"kp-list-title">([\s\S]*?)</h2>"#) ?? "Oglas")
+            var price = decodeHTML(firstMatch(in: block, pattern: #"kp-list-price-main">([\s\S]*?)</span>"#) ?? "")
+            if price.isEmpty {
+                price = decodeHTML(firstMatch(in: block, pattern: #"(\d+[\d.,]*\s*€)"#) ?? "")
+            }
+            if price.isEmpty {
+                if block.contains("Po dogovoru") { price = "Po dogovoru" }
+                else if block.contains("Traži se") || block.contains("Trazi se") { price = "Trazi se" }
+                else if block.contains(">Zamena<") { price = "Zamena" }
+            }
+            let location = decodeHTML(firstMatch(in: block, pattern: #"kp-list-meta-loc"[^>]*>([\s\S]*?)</span>"#) ?? "")
             let category = firstMatch(in: block, pattern: #"data-category="([^"]+)""#) ?? ""
             let imagePath = firstMatch(in: block, pattern: #"src="(/uploads/[^"]+)""#)
                 ?? firstMatch(in: block, pattern: #"src="(https://kupitelefon\.rs/uploads/[^"]+)""#)
@@ -138,7 +148,7 @@ enum HomeFeedParser {
         return out
     }
 
-    private static func firstMatch(in text: String, pattern: String) -> String? {
+    static func firstMatch(in text: String, pattern: String) -> String? {
         guard let regex = try? NSRegularExpression(pattern: pattern, options: [.dotMatchesLineSeparators, .caseInsensitive]) else {
             return nil
         }
@@ -151,12 +161,12 @@ enum HomeFeedParser {
         return String(text[r])
     }
 
-    private static func firstInt(in text: String, pattern: String) -> Int? {
+    static func firstInt(in text: String, pattern: String) -> Int? {
         guard let s = firstMatch(in: text, pattern: pattern) else { return nil }
         return Int(s)
     }
 
-    private static func decodeHTML(_ raw: String) -> String {
+    static func decodeHTML(_ raw: String) -> String {
         var s = raw
         let map = [
             "&amp;": "&",
@@ -166,11 +176,19 @@ enum HomeFeedParser {
             "&lt;": "<",
             "&gt;": ">",
             "&nbsp;": " ",
-            "&#39;": "'"
+            "&#39;": "'",
+            "<br>": "\n",
+            "<br/>": "\n",
+            "<br />": "\n"
         ]
         for (k, v) in map {
             s = s.replacingOccurrences(of: k, with: v)
         }
-        return s.trimmingCharacters(in: .whitespacesAndNewlines)
+        // strip leftover tags
+        if let tagRegex = try? NSRegularExpression(pattern: "<[^>]+>", options: []) {
+            s = tagRegex.stringByReplacingMatches(in: s, options: [], range: NSRange(s.startIndex..<s.endIndex, in: s), withTemplate: "")
+        }
+        return s.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+            .trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }

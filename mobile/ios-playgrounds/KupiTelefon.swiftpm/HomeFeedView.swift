@@ -14,9 +14,7 @@ struct HomeFeedView: View {
         }
         .background(Brand.bg.ignoresSafeArea())
         .sheet(item: $selectedAd) { ad in
-            NavigationStack {
-                SiteBrowserView(title: ad.title, url: ad.detailURL, showsClose: true)
-            }
+            AdDetailView(listing: ad)
         }
         .sheet(item: $openLink) { link in
             SiteBrowserSheet(link: link)
