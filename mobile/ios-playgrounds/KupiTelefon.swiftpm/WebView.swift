@@ -4,7 +4,8 @@ import WebKit
 final class WebViewModel: ObservableObject {
     let startURL: URL
 
-    @Published var isLoading = false
+    @Published var isLoading = true
+    @Published var hasLoadedOnce = false
     @Published var lastError: String?
     @Published var canGoBack = false
     @Published var canGoForward = false
@@ -17,11 +18,18 @@ final class WebViewModel: ObservableObject {
 
     func reload() {
         lastError = nil
+        isLoading = true
         if let webView = webView, webView.url != nil {
             webView.reload()
         } else {
             webView?.load(URLRequest(url: startURL))
         }
+    }
+
+    func goHome() {
+        lastError = nil
+        isLoading = true
+        webView?.load(URLRequest(url: startURL))
     }
 
     func goBack() {
@@ -41,8 +49,28 @@ struct SiteWebView: UIViewRepresentable {
     }
 
     func makeUIView(context: Context) -> WKWebView {
+        let userContent = WKUserContentController()
+        let bootScript = WKUserScript(
+            source: """
+            window.KtNativeApp = true;
+            window.KtNativePlatform = 'ios';
+            try {
+              document.documentElement.classList.add('kt-native-app');
+              var apply = function () {
+                if (document.body) document.body.classList.add('kt-native-app');
+              };
+              apply();
+              document.addEventListener('DOMContentLoaded', apply);
+            } catch (e) {}
+            """,
+            injectionTime: .atDocumentStart,
+            forMainFrameOnly: true
+        )
+        userContent.addUserScript(bootScript)
+
         let config = WKWebViewConfiguration()
         config.allowsInlineMediaPlayback = true
+        config.userContentController = userContent
         if #available(iOS 14.0, *) {
             config.defaultWebpagePreferences.allowsContentJavaScript = true
         }
@@ -51,9 +79,18 @@ struct SiteWebView: UIViewRepresentable {
         webView.navigationDelegate = context.coordinator
         webView.uiDelegate = context.coordinator
         webView.allowsBackForwardNavigationGestures = true
+        webView.allowsLinkPreview = false
         webView.scrollView.contentInsetAdjustmentBehavior = .automatic
-        webView.backgroundColor = .systemBackground
+        webView.scrollView.alwaysBounceVertical = true
+        webView.backgroundColor = UIColor(red: 0.949, green: 0.949, blue: 0.949, alpha: 1)
         webView.isOpaque = true
+        if #available(iOS 15.0, *) {
+            webView.underPageBackgroundColor = UIColor(red: 0.949, green: 0.949, blue: 0.949, alpha: 1)
+        }
+
+        // Mark as native app so sajt uključi kt-native-app (kao Android Capacitor).
+        let baseUA = webView.value(forKey: "userAgent") as? String ?? ""
+        webView.customUserAgent = baseUA + " KupiTelefonApp/1.0 (ios)"
 
         model.webView = webView
         webView.load(URLRequest(url: model.startURL))
@@ -95,8 +132,18 @@ struct SiteWebView: UIViewRepresentable {
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+            // Reinforce native class after SPA/full navigations.
+            webView.evaluateJavaScript(
+                """
+                window.KtNativeApp = true;
+                document.documentElement.classList.add('kt-native-app');
+                if (document.body) document.body.classList.add('kt-native-app');
+                """
+            , completionHandler: nil)
+
             DispatchQueue.main.async {
                 self.model.isLoading = false
+                self.model.hasLoadedOnce = true
                 self.model.canGoBack = webView.canGoBack
                 self.model.canGoForward = webView.canGoForward
             }
@@ -110,6 +157,11 @@ struct SiteWebView: UIViewRepresentable {
         }
 
         func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+            let ns = error as NSError
+            // Ignore cancelled navigations (npr. redirect / external open).
+            if ns.domain == NSURLErrorDomain && ns.code == NSURLErrorCancelled {
+                return
+            }
             DispatchQueue.main.async {
                 self.model.isLoading = false
                 self.model.lastError = error.localizedDescription

@@ -2492,6 +2492,8 @@
 
   function isNativeApp() {
     try {
+      if (window.KtNativeApp === true) return true;
+      if (/KupiTelefonApp/i.test(navigator.userAgent || '')) return true;
       return !!(window.Capacitor && typeof window.Capacitor.isNativePlatform === 'function' && window.Capacitor.isNativePlatform());
     } catch (e) {
       return false;

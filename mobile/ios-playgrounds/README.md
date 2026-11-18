@@ -57,10 +57,10 @@ Ako i dalje crashuje: u Playgrounds napravi **New App**, pa zameni `ContentView.
 
 ## Šta app radi (MVP)
 
-- Učitava `https://kupitelefon.rs`
-- Loading bar dok stranica stiže
-- `tel:`, `mailto:`, WhatsApp i linkovi van kupitelefon.rs otvaraju se spolja
-- Navigacija unutar sajta ostaje u WebView-u
+- Učitava `https://kupitelefon.rs` u native režimu (`kt-native-app`, kao Android)
+- Splash sa brendom dok se prvi put učita
+- Bez Safari chrome-a; spoljni `tel:` / `mailto:` / off-site idu napolje
+- Navigacija unutar sajta ostaje u WebView-u (mobilni meni sajta)
 - Dugme **Ponovo** ako učitavanje padne
 
 ## Šta još nije
