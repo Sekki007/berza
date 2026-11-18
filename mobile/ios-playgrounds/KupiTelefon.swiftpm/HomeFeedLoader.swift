@@ -68,30 +68,15 @@ final class HomeFeedLoader: ObservableObject {
     }
 
     private func fetchPage(_ page: Int) async throws -> [AdListing] {
-        var components = URLComponents(string: "https://kupitelefon.rs" + category.listPath)!
-        var items: [URLQueryItem] = [
-            URLQueryItem(name: "page", value: String(page))
-        ]
+        var path = category.listPath
+        var queryItems: [String] = ["page=\(page)"]
         let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
         if !q.isEmpty {
-            items.append(URLQueryItem(name: "q", value: q))
+            let encoded = q.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? q
+            queryItems.append("q=\(encoded)")
         }
-        components.queryItems = items
-
-        guard let url = components.url else { throw URLError(.badURL) }
-
-        var request = URLRequest(url: url)
-        request.setValue("KupiTelefonApp/1.0 (ios; native-feed)", forHTTPHeaderField: "User-Agent")
-        request.timeoutInterval = 30
-
-        let (data, response) = try await URLSession.shared.data(for: request)
-        if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
-            throw URLError(.badServerResponse)
-        }
-
-        let html = String(data: data, encoding: .utf8)
-            ?? String(data: data, encoding: .isoLatin1)
-            ?? ""
+        path += (path.contains("?") ? "&" : "?") + queryItems.joined(separator: "&")
+        let html = try await KTNetwork.getHTML(path)
         return HomeFeedParser.parse(html: html)
     }
 }

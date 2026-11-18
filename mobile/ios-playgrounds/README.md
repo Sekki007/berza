@@ -1,25 +1,28 @@
-# KupiTelefon iOS (Swift Playgrounds)
+# KupiTelefon iOS — native app (Swift Playgrounds)
 
-Hybrid app: **native Oglasi feed** + WebView za detalj / poruke / postavi / nalog.  
-**Sajt se ne menja** — app čita javni HTML i postojeće stranice.
+Profesionalni **native SwiftUI** klijent za kupitelefon.rs.  
+**Sajt se ne menja.** App koristi javne stranice + postojeći `/api/messages.php` preko cookie sesije.
 
-Projekat: [`KupiTelefon.swiftpm`](./KupiTelefon.swiftpm/)
+## Tabovi
 
-## Tabovi (kao mockup)
+1. **Oglasi** — native feed, filteri, detalj  
+2. **Pretraga** — native rezultati  
+3. **Besplatno** — native forma za novi oglas (prijava obavezna)  
+4. **Poruke** — native inbox + chat (API)  
+5. **Nalog** — native hub (moji oglasi, omiljeni, katalog, servisi, uslovi…)
 
-1. **Oglasi** — native lista, kategorije, pretraga, bell/heart  
-2. **Pretraga** — hub linkova (filteri, katalog, IMEI…)  
-3. **Besplatno** — WebView `/postavi-oglas`  
-4. **Poruke** — WebView `/poruke.php`  
-5. **Nalog** — native hub kartica → WebView ekrani
+## Prijava
+
+U Nalog → **Prijavi se** (isti nalog kao na sajtu). Cookie sesija radi i za poruke/omiljene.
 
 ## iPad
 
-1. Pull `https://github.com/Sekki007/berza`  
-2. Otvori `mobile/ios-playgrounds/KupiTelefon.swiftpm` u Swift Playgrounds  
-3. Uključi **Outgoing Connections / Network** ako treba  
+1. Pull `berza`  
+2. Otvori `KupiTelefon.swiftpm`  
+3. Network / Outgoing Connections ON  
 4. Run
 
 ## Napomena
 
-Pun native detalj/login/poruke traži API kasnije. Ova verzija je vizuelni shell da se vidi kako app izgleda.
+Bez novog backend API-ja: neke admin/napredne opcije i upload više fotografija su ograniceni.  
+Osnova marketplace app-a je native.

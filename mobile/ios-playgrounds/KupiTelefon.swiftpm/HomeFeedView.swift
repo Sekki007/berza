@@ -1,9 +1,12 @@
 import SwiftUI
 
 struct HomeFeedView: View {
+    @EnvironmentObject private var session: AppSession
     @StateObject private var loader = HomeFeedLoader()
-    @State private var openLink: SiteLink?
     @State private var searchDraft = ""
+    @State private var showLogin = false
+    @State private var showFavorites = false
+    @State private var showNotifications = false
 
     var body: some View {
         NavigationStack {
@@ -17,8 +20,29 @@ struct HomeFeedView: View {
             .navigationDestination(for: AdListing.self) { ad in
                 AdDetailView(listing: ad)
             }
-            .sheet(item: $openLink) { link in
-                SiteBrowserSheet(link: link)
+            .sheet(isPresented: $showLogin) {
+                NavigationStack { LoginView().environmentObject(session) }
+            }
+            .sheet(isPresented: $showFavorites) {
+                NavigationStack {
+                    FavoritesView()
+                        .environmentObject(session)
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button("Zatvori") { showFavorites = false }
+                            }
+                        }
+                }
+            }
+            .sheet(isPresented: $showNotifications) {
+                NavigationStack {
+                    StaticInfoView(title: "Obavestenja", path: "/nalog.php?tab=obavestenja")
+                        .toolbar {
+                            ToolbarItem(placement: .cancellationAction) {
+                                Button("Zatvori") { showNotifications = false }
+                            }
+                        }
+                }
             }
             .task {
                 if loader.ads.isEmpty {
@@ -34,16 +58,15 @@ struct HomeFeedView: View {
                 BrandLogo(size: 26)
                 Spacer(minLength: 8)
                 iconButton("bell") {
-                    openLink = SiteLink("Obavestenja", path: "/nalog.php?tab=obavestenja")
+                    if session.isLoggedIn { showNotifications = true } else { showLogin = true }
                 }
                 iconButton("heart") {
-                    openLink = SiteLink("Omiljeni", path: "/favorites.php")
+                    if session.isLoggedIn { showFavorites = true } else { showLogin = true }
                 }
             }
 
             HStack(spacing: 10) {
-                Image(systemName: "magnifyingglass")
-                    .foregroundColor(Brand.muted)
+                Image(systemName: "magnifyingglass").foregroundColor(Brand.muted)
                 TextField("Pretraga oglasa", text: $searchDraft)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
@@ -58,8 +81,7 @@ struct HomeFeedView: View {
                         loader.query = ""
                         Task { await loader.applySearch() }
                     } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundColor(Brand.muted)
+                        Image(systemName: "xmark.circle.fill").foregroundColor(Brand.muted)
                     }
                 }
             }
@@ -121,59 +143,36 @@ struct HomeFeedView: View {
     @ViewBuilder
     private var feedBody: some View {
         if loader.isLoading && loader.ads.isEmpty {
-            VStack(spacing: 14) {
-                ProgressView().tint(Brand.green).scaleEffect(1.2)
-                Text("Ucitavanje oglasa...")
-                    .font(.subheadline)
-                    .foregroundColor(Brand.muted)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            ProgressView("Ucitavanje oglasa...").tint(Brand.green)
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if let err = loader.errorMessage, loader.ads.isEmpty {
-            VStack(spacing: 14) {
-                Image(systemName: "wifi.exclamationmark")
-                    .font(.system(size: 34))
-                    .foregroundColor(Brand.muted)
-                Text("Ne mogu da ucitam oglase")
-                    .font(.headline)
-                Text(err)
-                    .font(.footnote)
-                    .foregroundColor(.secondary)
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 24)
-                Button("Ponovo") {
-                    Task { await loader.refresh() }
-                }
-                .buttonStyle(.borderedProminent)
-                .tint(Brand.green)
+            VStack(spacing: 12) {
+                Text("Ne mogu da ucitam oglase").font(.headline)
+                Text(err).font(.footnote).foregroundColor(.secondary).multilineTextAlignment(.center)
+                Button("Ponovo") { Task { await loader.refresh() } }
+                    .buttonStyle(.borderedProminent).tint(Brand.green)
             }
+            .padding()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else if loader.ads.isEmpty {
-            Text("Nema oglasa za ovaj filter.")
-                .foregroundColor(.secondary)
+            Text("Nema oglasa.").foregroundColor(.secondary)
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
         } else {
             ScrollView {
                 LazyVStack(spacing: 12) {
                     ForEach(loader.ads) { ad in
-                        NavigationLink(value: ad) {
-                            AdCardView(ad: ad)
-                        }
-                        .buttonStyle(.plain)
-                        .onAppear {
-                            Task { await loader.loadMoreIfNeeded(current: ad) }
-                        }
+                        NavigationLink(value: ad) { AdCardView(ad: ad) }
+                            .buttonStyle(.plain)
+                            .onAppear { Task { await loader.loadMoreIfNeeded(current: ad) } }
                     }
                     if loader.isLoadingMore {
                         ProgressView().tint(Brand.green).padding(.vertical, 16)
                     }
                 }
                 .padding(.horizontal, 14)
-                .padding(.top, 4)
-                .padding(.bottom, 20)
+                .padding(.vertical, 8)
             }
-            .refreshable {
-                await loader.refresh()
-            }
+            .refreshable { await loader.refresh() }
         }
     }
 }

@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct ContentView: View {
+    @EnvironmentObject private var session: AppSession
     @State private var tab = 0
 
     var body: some View {
@@ -9,16 +10,19 @@ struct ContentView: View {
                 switch tab {
                 case 0: HomeFeedView()
                 case 1: SearchHubView()
-                case 2: PostAdHubView()
-                case 3: MessagesHubView()
+                case 2: PostAdNativeView()
+                case 3: MessagesInboxView()
                 default: AccountHubView()
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            MainTabBar(tab: $tab, messagesBadge: 0)
+            MainTabBar(tab: $tab, messagesBadge: session.unreadMessages)
         }
         .background(Brand.bg.ignoresSafeArea())
         .preferredColorScheme(.light)
+        .task {
+            await session.bootstrap()
+        }
     }
 }

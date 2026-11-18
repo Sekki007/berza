@@ -59,6 +59,7 @@ struct AdDetail: Identifiable {
     var viberURL: URL?
     var whatsappURL: URL?
     var messageURL: URL?
+    var partnerId: Int
     var shopURL: URL?
     var favoriteURL: URL?
     var reportURL: URL?

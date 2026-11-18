@@ -3,10 +3,12 @@ import UIKit
 
 struct AdDetailView: View {
     let listing: AdListing
+    @EnvironmentObject private var session: AppSession
     @StateObject private var loader: AdDetailLoader
-    @Environment(\.dismiss) private var dismiss
-    @State private var openLink: SiteLink?
+    @State private var showLogin = false
+    @State private var openThread: MessageThread?
     @State private var imageIndex = 0
+    @State private var toast = ""
 
     init(listing: AdListing) {
         self.listing = listing
@@ -34,13 +36,9 @@ struct AdDetailView: View {
                                 .foregroundColor(Brand.muted)
                             Spacer()
                         }
-                        .padding(.top, 6)
                     }
-
-                    if let err = loader.errorMessage {
-                        Text(err)
-                            .font(.footnote)
-                            .foregroundColor(.secondary)
+                    if !toast.isEmpty {
+                        Text(toast).font(.footnote).foregroundColor(Brand.green)
                     }
                 }
                 .padding(16)
@@ -54,15 +52,30 @@ struct AdDetailView: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
-                    openLink = SiteLink("Omiljeni", path: "/favorite.php?id=\(listing.id)")
+                    if session.isLoggedIn {
+                        Task { await toggleFavorite() }
+                    } else {
+                        showLogin = true
+                    }
                 } label: {
                     Image(systemName: "heart")
                 }
             }
         }
         .task { await loader.load() }
-        .sheet(item: $openLink) { link in
-            SiteBrowserSheet(link: link)
+        .sheet(isPresented: $showLogin) {
+            NavigationStack { LoginView().environmentObject(session) }
+        }
+        .sheet(item: $openThread) { thread in
+            NavigationStack {
+                MessageThreadView(thread: thread)
+                    .environmentObject(session)
+                    .toolbar {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("Zatvori") { openThread = nil }
+                        }
+                    }
+            }
         }
     }
 
@@ -108,7 +121,6 @@ struct AdDetailView: View {
             Text(detail.title)
                 .font(.system(size: 22, weight: .bold))
                 .foregroundColor(Brand.text)
-
             if !detail.price.isEmpty {
                 Text(detail.price)
                     .font(.system(size: 28, weight: .heavy))
@@ -119,7 +131,6 @@ struct AdDetailView: View {
                     .font(.system(size: 13, weight: .medium))
                     .foregroundColor(Brand.muted)
             }
-
             HStack(spacing: 12) {
                 if !detail.location.isEmpty {
                     Label(detail.location, systemImage: "mappin")
@@ -143,8 +154,6 @@ struct AdDetailView: View {
                 VStack(alignment: .leading, spacing: 10) {
                     Text("Kljucne informacije")
                         .font(.system(size: 16, weight: .bold))
-                        .foregroundColor(Brand.text)
-
                     LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
                         ForEach(detail.facts) { fact in
                             VStack(alignment: .leading, spacing: 4) {
@@ -153,7 +162,6 @@ struct AdDetailView: View {
                                     .foregroundColor(Brand.muted)
                                 Text(fact.value)
                                     .font(.system(size: 15, weight: .bold))
-                                    .foregroundColor(Brand.text)
                             }
                             .frame(maxWidth: .infinity, minHeight: 58, alignment: .leading)
                             .padding(12)
@@ -192,35 +200,24 @@ struct AdDetailView: View {
     private var sellerBlock: some View {
         Group {
             if !detail.sellerName.isEmpty {
-                Button {
-                    if let shop = detail.shopURL {
-                        openLink = SiteLink(detail.sellerName, path: shop.absoluteString)
+                HStack(spacing: 12) {
+                    ZStack {
+                        Circle().fill(Brand.green.opacity(0.15)).frame(width: 46, height: 46)
+                        Image(systemName: "bag.fill").foregroundColor(Brand.green)
                     }
-                } label: {
-                    HStack(spacing: 12) {
-                        ZStack {
-                            Circle().fill(Brand.green.opacity(0.15)).frame(width: 46, height: 46)
-                            Image(systemName: "bag.fill").foregroundColor(Brand.green)
-                        }
-                        VStack(alignment: .leading, spacing: 3) {
-                            Text(detail.sellerName)
-                                .font(.system(size: 15, weight: .bold))
-                                .foregroundColor(Brand.text)
-                            Text(detail.sellerMeta.isEmpty ? "Prodavac" : detail.sellerMeta)
-                                .font(.caption)
-                                .foregroundColor(Brand.muted)
-                                .lineLimit(2)
-                        }
-                        Spacer()
-                        if detail.shopURL != nil {
-                            Image(systemName: "chevron.right").foregroundColor(Brand.muted)
-                        }
+                    VStack(alignment: .leading, spacing: 3) {
+                        Text(detail.sellerName)
+                            .font(.system(size: 15, weight: .bold))
+                        Text(detail.sellerMeta.isEmpty ? "Prodavac" : detail.sellerMeta)
+                            .font(.caption)
+                            .foregroundColor(Brand.muted)
+                            .lineLimit(2)
                     }
-                    .padding(14)
-                    .background(Color.white)
-                    .cornerRadius(16)
+                    Spacer()
                 }
-                .buttonStyle(.plain)
+                .padding(14)
+                .background(Color.white)
+                .cornerRadius(16)
             }
         }
     }
@@ -229,11 +226,9 @@ struct AdDetailView: View {
         Group {
             if !detail.description.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Opis oglasa")
-                        .font(.system(size: 16, weight: .bold))
+                    Text("Opis oglasa").font(.system(size: 16, weight: .bold))
                     Text(detail.description)
                         .font(.system(size: 14))
-                        .foregroundColor(Brand.text)
                         .fixedSize(horizontal: false, vertical: true)
                 }
                 .padding(16)
@@ -247,41 +242,18 @@ struct AdDetailView: View {
     private var extraActions: some View {
         HStack(spacing: 10) {
             if let viber = detail.viberURL {
-                Button {
-                    UIApplication.shared.open(viber)
-                } label: {
-                    Text("Viber")
-                        .font(.system(size: 13, weight: .bold))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(Color.white)
-                        .foregroundColor(Brand.text)
-                        .cornerRadius(12)
+                Button { UIApplication.shared.open(viber) } label: {
+                    Text("Viber").font(.system(size: 13, weight: .bold))
+                        .frame(maxWidth: .infinity).padding(.vertical, 12)
+                        .background(Color.white).foregroundColor(Brand.text).cornerRadius(12)
                 }
             }
             if let wa = detail.whatsappURL {
-                Button {
-                    UIApplication.shared.open(wa)
-                } label: {
-                    Text("WhatsApp")
-                        .font(.system(size: 13, weight: .bold))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 12)
-                        .background(Color.white)
-                        .foregroundColor(Brand.text)
-                        .cornerRadius(12)
+                Button { UIApplication.shared.open(wa) } label: {
+                    Text("WhatsApp").font(.system(size: 13, weight: .bold))
+                        .frame(maxWidth: .infinity).padding(.vertical, 12)
+                        .background(Color.white).foregroundColor(Brand.text).cornerRadius(12)
                 }
-            }
-            Button {
-                openLink = SiteLink("Prijavi", path: "/report.php?ad=\(listing.id)")
-            } label: {
-                Text("Prijavi")
-                    .font(.system(size: 13, weight: .bold))
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 12)
-                    .background(Color.white)
-                    .foregroundColor(Brand.muted)
-                    .cornerRadius(12)
             }
         }
     }
@@ -289,9 +261,7 @@ struct AdDetailView: View {
     private var ctaBar: some View {
         HStack(spacing: 10) {
             if let call = detail.callURL {
-                Button {
-                    UIApplication.shared.open(call)
-                } label: {
+                Button { UIApplication.shared.open(call) } label: {
                     Label("Pozovi", systemImage: "phone.fill")
                         .font(.system(size: 16, weight: .bold))
                         .frame(maxWidth: .infinity)
@@ -302,13 +272,7 @@ struct AdDetailView: View {
                 }
             }
 
-            Button {
-                if let msg = detail.messageURL {
-                    openLink = SiteLink("Poruka", path: msg.absoluteString)
-                } else {
-                    openLink = SiteLink("Poruka", path: "/poruke.php")
-                }
-            } label: {
+            Button { startMessage() } label: {
                 Label("Poruka", systemImage: "bubble.left.fill")
                     .font(.system(size: 16, weight: .bold))
                     .frame(maxWidth: .infinity)
@@ -323,5 +287,31 @@ struct AdDetailView: View {
         .padding(.top, 10)
         .padding(.bottom, 12)
         .background(Color.white)
+    }
+
+    private func startMessage() {
+        guard session.isLoggedIn else {
+            showLogin = true
+            return
+        }
+        guard detail.partnerId > 0 else {
+            toast = "Poruka: otvori tab Poruke posle prijave."
+            return
+        }
+        openThread = MessageThread(
+            key: "\(listing.id)-\(detail.partnerId)",
+            adId: listing.id,
+            partnerId: detail.partnerId,
+            partnerName: detail.sellerName,
+            adTitle: detail.title,
+            lastBody: "",
+            relative: "",
+            unread: 0
+        )
+    }
+
+    private func toggleFavorite() async {
+        _ = try? await KTNetwork.getHTML("/favorite.php?id=\(listing.id)")
+        toast = "Sacuvano u omiljene."
     }
 }

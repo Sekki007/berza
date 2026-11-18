@@ -19,16 +19,7 @@ final class AdDetailLoader: ObservableObject {
         defer { isLoading = false }
 
         do {
-            var request = URLRequest(url: listing.detailURL)
-            request.setValue("KupiTelefonApp/1.0 (ios; native-detail)", forHTTPHeaderField: "User-Agent")
-            request.timeoutInterval = 30
-            let (data, response) = try await URLSession.shared.data(for: request)
-            if let http = response as? HTTPURLResponse, !(200...299).contains(http.statusCode) {
-                throw URLError(.badServerResponse)
-            }
-            let html = String(data: data, encoding: .utf8)
-                ?? String(data: data, encoding: .isoLatin1)
-                ?? ""
+            let html = try await KTNetwork.getHTML(listing.path)
             detail = AdDetailParser.parse(html: html, fallback: listing)
         } catch {
             errorMessage = error.localizedDescription
@@ -53,6 +44,7 @@ final class AdDetailLoader: ObservableObject {
             viberURL: nil,
             whatsappURL: nil,
             messageURL: URL(string: "https://kupitelefon.rs/poruke.php"),
+            partnerId: 0,
             shopURL: nil,
             favoriteURL: URL(string: "https://kupitelefon.rs/favorite.php?id=\(listing.id)"),
             reportURL: URL(string: "https://kupitelefon.rs/report.php?ad=\(listing.id)"),
@@ -170,6 +162,7 @@ enum AdDetailParser {
         let msgHref = HomeFeedParser.firstMatch(in: html, pattern: #"class="kp-platform-msg"[^>]*href="([^"]+)""#)
             ?? HomeFeedParser.firstMatch(in: html, pattern: #"href="(/poruke\.php[^"]*)""#)
             ?? "/poruke.php"
+        let partnerId = Int(HomeFeedParser.firstMatch(in: html, pattern: #"poruke\.php[^"]*[?&]with=(\d+)"#) ?? "0") ?? 0
 
         return AdDetail(
             id: fallback.id,
@@ -188,6 +181,7 @@ enum AdDetailParser {
             viberURL: viberHref.flatMap { AdListing.makeURL($0) },
             whatsappURL: waHref.flatMap { AdListing.makeURL($0) },
             messageURL: AdListing.makeURL(msgHref),
+            partnerId: partnerId,
             shopURL: AdListing.makeURL(shopPath),
             favoriteURL: URL(string: "https://kupitelefon.rs/favorite.php?id=\(fallback.id)"),
             reportURL: URL(string: "https://kupitelefon.rs/report.php?ad=\(fallback.id)"),
