@@ -145,10 +145,15 @@ struct PostAdNativeView: View {
         defer { loading = false }
         do {
             let page = try await KTNetwork.getHTML("/postavi-oglas")
-            let csrf = KTNetwork.extractCSRF(from: page) ?? await session.ensureCSRF()
+            let csrf: String
+            if let extracted = KTNetwork.extractCSRF(from: page) {
+                csrf = extracted
+            } else {
+                csrf = await session.ensureCSRF()
+            }
             let submitToken = HomeFeedParser.firstMatch(in: page, pattern: #"name="ad_submit_token"\s+value="([^"]+)""#) ?? ""
 
-            var fields: [String: String] = [
+            let fields: [String: String] = [
                 "ad_type": adType,
                 "listing_type": listingType,
                 "title": title,
