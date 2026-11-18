@@ -1,6 +1,6 @@
 import Foundation
+import Combine
 
-@MainActor
 final class AdDetailLoader: ObservableObject {
     @Published var detail: AdDetail?
     @Published var isLoading = false
@@ -13,6 +13,7 @@ final class AdDetailLoader: ObservableObject {
         self.detail = Self.placeholder(from: listing)
     }
 
+    @MainActor
     func load() async {
         isLoading = true
         errorMessage = nil
@@ -62,8 +63,7 @@ enum AdDetailParser {
         )
 
         var price = HomeFeedParser.decodeHTML(
-            HomeFeedParser.firstMatch(in: html, pattern: #"class="kp-price[^"]*"[^>]*>([\s\S]*?)</div>"#)
-                ?? ""
+            HomeFeedParser.firstMatch(in: html, pattern: #"class="kp-price[^"]*"[^>]*>([\s\S]*?)</div>"#) ?? ""
         )
         if price.isEmpty { price = fallback.price }
         if price.isEmpty {
@@ -146,9 +146,7 @@ enum AdDetailParser {
                 }
             }
         }
-        if chips.isEmpty {
-            chips = [fallback.categoryLabel]
-        }
+        if chips.isEmpty { chips = [fallback.categoryLabel] }
 
         let views = HomeFeedParser.decodeHTML(
             HomeFeedParser.firstMatch(in: html, pattern: #"kp-head-stats">[\s\S]*?(\d+)[\s\S]*?</span>"#) ?? ""
@@ -156,9 +154,7 @@ enum AdDetailParser {
 
         let callHref = HomeFeedParser.firstMatch(in: html, pattern: #"href="(tel:[^"]+)""#)
         let viberHref = HomeFeedParser.firstMatch(in: html, pattern: #"href="((?:viber|https):[^"]*viber[^"]*)""#)
-            ?? HomeFeedParser.firstMatch(in: html, pattern: #"data-contact-channel="viber"[\s\S]{0,120}?href="([^"]+)""#)
         let waHref = HomeFeedParser.firstMatch(in: html, pattern: #"href="(https://wa\.me/[^"]+)""#)
-            ?? HomeFeedParser.firstMatch(in: html, pattern: #"data-contact-channel="whatsapp"[\s\S]{0,120}?href="([^"]+)""#)
         let msgHref = HomeFeedParser.firstMatch(in: html, pattern: #"class="kp-platform-msg"[^>]*href="([^"]+)""#)
             ?? HomeFeedParser.firstMatch(in: html, pattern: #"href="(/poruke\.php[^"]*)""#)
             ?? "/poruke.php"

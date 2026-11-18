@@ -234,7 +234,7 @@ struct MyAdsView: View {
         .navigationDestination(for: AdListing.self) { ad in
             AdDetailView(listing: ad)
         }
-        .sheet(isPresented: $showLogin) { NavigationStack { LoginView() } }
+        .sheet(isPresented: $showLogin) { NavigationStack { LoginView().environmentObject(session) } }
         .task { if session.isLoggedIn { await load() } }
     }
 

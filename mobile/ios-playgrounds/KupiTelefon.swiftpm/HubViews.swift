@@ -138,7 +138,7 @@ struct AccountHubView: View {
                 }
             }
             .sheet(isPresented: $showLogin) {
-                NavigationStack { LoginView() }
+                NavigationStack { LoginView().environmentObject(session) }
             }
             .task { await session.refreshSession() }
         }

@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 
 final class HomeFeedLoader: ObservableObject {
     @Published var ads: [AdListing] = []
@@ -83,7 +84,6 @@ final class HomeFeedLoader: ObservableObject {
 
 enum HomeFeedParser {
     static func parse(html: String) -> [AdListing] {
-        // Cel article — ne seci na 4500 (cena je cesto posle 4k karaktera).
         guard let regex = try? NSRegularExpression(
             pattern: #"<article class="listing-card[\s\S]*?</article>"#,
             options: [.caseInsensitive]
@@ -91,7 +91,6 @@ enum HomeFeedParser {
 
         let range = NSRange(html.startIndex..<html.endIndex, in: html)
         let matches = regex.matches(in: html, options: [], range: range)
-
         var out: [AdListing] = []
         out.reserveCapacity(matches.count)
 
@@ -107,7 +106,7 @@ enum HomeFeedParser {
             }
             if price.isEmpty {
                 if block.contains("Po dogovoru") { price = "Po dogovoru" }
-                else if block.contains("Traži se") || block.contains("Trazi se") { price = "Trazi se" }
+                else if block.contains("Trazi se") || block.contains("Traži se") { price = "Trazi se" }
                 else if block.contains(">Zamena<") { price = "Zamena" }
             }
             let location = decodeHTML(firstMatch(in: block, pattern: #"kp-list-meta-loc"[^>]*>([\s\S]*?)</span>"#) ?? "")
@@ -129,7 +128,6 @@ enum HomeFeedParser {
                 )
             )
         }
-
         return out
     }
 
@@ -154,24 +152,17 @@ enum HomeFeedParser {
     static func decodeHTML(_ raw: String) -> String {
         var s = raw
         let map = [
-            "&amp;": "&",
-            "&quot;": "\"",
-            "&#039;": "'",
-            "&apos;": "'",
-            "&lt;": "<",
-            "&gt;": ">",
-            "&nbsp;": " ",
-            "&#39;": "'",
-            "<br>": "\n",
-            "<br/>": "\n",
-            "<br />": "\n"
+            "&amp;": "&", "&quot;": "\"", "&#039;": "'", "&apos;": "'",
+            "&lt;": "<", "&gt;": ">", "&nbsp;": " ", "&#39;": "'",
+            "<br>": "\n", "<br/>": "\n", "<br />": "\n"
         ]
-        for (k, v) in map {
-            s = s.replacingOccurrences(of: k, with: v)
-        }
-        // strip leftover tags
+        for (k, v) in map { s = s.replacingOccurrences(of: k, with: v) }
         if let tagRegex = try? NSRegularExpression(pattern: "<[^>]+>", options: []) {
-            s = tagRegex.stringByReplacingMatches(in: s, options: [], range: NSRange(s.startIndex..<s.endIndex, in: s), withTemplate: "")
+            s = tagRegex.stringByReplacingMatches(
+                in: s, options: [],
+                range: NSRange(s.startIndex..<s.endIndex, in: s),
+                withTemplate: ""
+            )
         }
         return s.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
             .trimmingCharacters(in: .whitespacesAndNewlines)

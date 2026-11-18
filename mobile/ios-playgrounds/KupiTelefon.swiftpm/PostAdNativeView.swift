@@ -41,7 +41,7 @@ struct PostAdNativeView: View {
             .navigationTitle("Novi oglas")
             .navigationBarTitleDisplayMode(.inline)
             .sheet(isPresented: $showLogin) {
-                NavigationStack { LoginView() }
+                NavigationStack { LoginView().environmentObject(session) }
             }
         }
     }

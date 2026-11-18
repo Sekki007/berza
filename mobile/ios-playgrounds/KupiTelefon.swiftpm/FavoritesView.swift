@@ -43,7 +43,7 @@ struct FavoritesView: View {
             AdDetailView(listing: ad)
         }
         .sheet(isPresented: $showLogin) {
-            NavigationStack { LoginView() }
+            NavigationStack { LoginView().environmentObject(session) }
         }
         .task {
             if session.isLoggedIn { await load() }

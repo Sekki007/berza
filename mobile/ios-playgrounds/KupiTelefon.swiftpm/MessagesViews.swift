@@ -93,7 +93,9 @@ struct MessagesInboxView: View {
                 }
             }
             .sheet(isPresented: $showLogin) {
-                NavigationStack { LoginView() }
+                NavigationStack {
+                    LoginView().environmentObject(session)
+                }
             }
             .task {
                 if session.isLoggedIn {
@@ -192,8 +194,7 @@ struct MessageThreadView: View {
             }
 
             HStack(spacing: 10) {
-                TextField("Poruka...", text: $draft, axis: .vertical)
-                    .lineLimit(1...4)
+                TextField("Poruka...", text: $draft)
                     .padding(12)
                     .background(Brand.bg)
                     .cornerRadius(12)

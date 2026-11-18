@@ -1,7 +1,6 @@
 import Foundation
 import Combine
 
-@MainActor
 final class AppSession: ObservableObject {
     @Published var isLoggedIn = false
     @Published var username: String = ""
@@ -12,12 +11,12 @@ final class AppSession: ObservableObject {
     @Published var isBusy = false
     @Published var lastError: String?
 
-    init() {}
-
+    @MainActor
     func bootstrap() async {
         await refreshSession()
     }
 
+    @MainActor
     func refreshSession() async {
         do {
             let html = try await KTNetwork.getHTML("/nalog.php")
@@ -39,11 +38,10 @@ final class AppSession: ObservableObject {
                 unreadMessages = 0
                 unreadNotifications = 0
             }
-        } catch {
-            // Offline / first launch — keep previous state.
-        }
+        } catch {}
     }
 
+    @MainActor
     func login(username: String, password: String) async throws {
         isBusy = true
         lastError = nil
@@ -62,31 +60,19 @@ final class AppSession: ObservableObject {
             csrf: token
         )
 
-        if result.html.contains("verify-phone") || (result.finalURL?.absoluteString.contains("verify-phone") ?? false) {
+        if result.html.contains("verify-phone")
+            || (result.finalURL?.absoluteString.contains("verify-phone") ?? false) {
             throw KTAuthError.phoneVerifyRequired
         }
 
-        let ok = result.html.contains("/logout.php")
-            || result.html.contains("tab=oglasi")
-            || (result.finalURL?.absoluteString.contains("nalog") ?? false)
-            || result.status == 302
-
-        // Follow-up check
         await refreshSession()
-        if !isLoggedIn && !ok {
-            if result.html.lowercased().contains("pogreš") || result.html.lowercased().contains("pogres")
-                || result.html.contains("flash") && result.html.contains("danger") {
-                throw KTAuthError.invalidCredentials
-            }
-            // One more GET
-            await refreshSession()
-            if !isLoggedIn {
-                throw KTAuthError.invalidCredentials
-            }
+        if !isLoggedIn {
+            throw KTAuthError.invalidCredentials
         }
         self.username = username
     }
 
+    @MainActor
     func logout() async {
         _ = try? await KTNetwork.getHTML("/logout.php")
         isLoggedIn = false
@@ -98,6 +84,7 @@ final class AppSession: ObservableObject {
         await refreshSession()
     }
 
+    @MainActor
     func refreshBadges() async {
         guard isLoggedIn else { return }
         do {
@@ -106,11 +93,10 @@ final class AppSession: ObservableObject {
                 unreadMessages = json?["unread"] as? Int ?? 0
                 unreadNotifications = json?["unread_notifications"] as? Int ?? 0
             }
-        } catch {
-            // ignore
-        }
+        } catch {}
     }
 
+    @MainActor
     func ensureCSRF() async -> String {
         if !csrf.isEmpty { return csrf }
         let html = try? await KTNetwork.getHTML(isLoggedIn ? "/nalog.php" : "/prijava")
