@@ -1,7 +1,6 @@
 import SwiftUI
 import WebKit
 
-@MainActor
 final class WebViewModel: ObservableObject {
     let startURL: URL
 
@@ -18,7 +17,7 @@ final class WebViewModel: ObservableObject {
 
     func reload() {
         lastError = nil
-        if let webView, webView.url != nil {
+        if let webView = webView, webView.url != nil {
             webView.reload()
         } else {
             webView?.load(URLRequest(url: startURL))
@@ -44,7 +43,9 @@ struct SiteWebView: UIViewRepresentable {
     func makeUIView(context: Context) -> WKWebView {
         let config = WKWebViewConfiguration()
         config.allowsInlineMediaPlayback = true
-        config.defaultWebpagePreferences.allowsContentJavaScript = true
+        if #available(iOS 14.0, *) {
+            config.defaultWebpagePreferences.allowsContentJavaScript = true
+        }
 
         let webView = WKWebView(frame: .zero, configuration: config)
         webView.navigationDelegate = context.coordinator
@@ -81,35 +82,37 @@ struct SiteWebView: UIViewRepresentable {
         }
 
         private func openExternally(_ url: URL) {
-            UIApplication.shared.open(url, options: [:], completionHandler: nil)
+            DispatchQueue.main.async {
+                UIApplication.shared.open(url, options: [:], completionHandler: nil)
+            }
         }
 
         func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
-            Task { @MainActor in
-                model.isLoading = true
-                model.lastError = nil
+            DispatchQueue.main.async {
+                self.model.isLoading = true
+                self.model.lastError = nil
             }
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-            Task { @MainActor in
-                model.isLoading = false
-                model.canGoBack = webView.canGoBack
-                model.canGoForward = webView.canGoForward
+            DispatchQueue.main.async {
+                self.model.isLoading = false
+                self.model.canGoBack = webView.canGoBack
+                self.model.canGoForward = webView.canGoForward
             }
         }
 
         func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
-            Task { @MainActor in
-                model.isLoading = false
-                model.lastError = error.localizedDescription
+            DispatchQueue.main.async {
+                self.model.isLoading = false
+                self.model.lastError = error.localizedDescription
             }
         }
 
         func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
-            Task { @MainActor in
-                model.isLoading = false
-                model.lastError = error.localizedDescription
+            DispatchQueue.main.async {
+                self.model.isLoading = false
+                self.model.lastError = error.localizedDescription
             }
         }
 
@@ -141,7 +144,6 @@ struct SiteWebView: UIViewRepresentable {
                 return
             }
 
-            // App / custom schemes
             if !scheme.isEmpty && scheme != "about" && scheme != "blob" {
                 openExternally(url)
                 decisionHandler(.cancel)
@@ -157,7 +159,6 @@ struct SiteWebView: UIViewRepresentable {
             for navigationAction: WKNavigationAction,
             windowFeatures: WKWindowFeatures
         ) -> WKWebView? {
-            // target=_blank → same webview or external
             if let url = navigationAction.request.url {
                 if isAllowedHost(url.host) {
                     webView.load(URLRequest(url: url))
