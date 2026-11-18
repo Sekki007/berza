@@ -1,5 +1,4 @@
-import Foundation
-import Combine
+import SwiftUI
 
 final class AppSession: ObservableObject {
     @Published var isLoggedIn = false
@@ -11,12 +10,10 @@ final class AppSession: ObservableObject {
     @Published var isBusy = false
     @Published var lastError: String?
 
-    @MainActor
     func bootstrap() async {
         await refreshSession()
     }
 
-    @MainActor
     func refreshSession() async {
         do {
             let html = try await KTNetwork.getHTML("/nalog.php")
@@ -41,7 +38,6 @@ final class AppSession: ObservableObject {
         } catch {}
     }
 
-    @MainActor
     func login(username: String, password: String) async throws {
         isBusy = true
         lastError = nil
@@ -72,7 +68,6 @@ final class AppSession: ObservableObject {
         self.username = username
     }
 
-    @MainActor
     func logout() async {
         _ = try? await KTNetwork.getHTML("/logout.php")
         isLoggedIn = false
@@ -84,7 +79,6 @@ final class AppSession: ObservableObject {
         await refreshSession()
     }
 
-    @MainActor
     func refreshBadges() async {
         guard isLoggedIn else { return }
         do {
@@ -96,7 +90,6 @@ final class AppSession: ObservableObject {
         } catch {}
     }
 
-    @MainActor
     func ensureCSRF() async -> String {
         if !csrf.isEmpty { return csrf }
         let html = try? await KTNetwork.getHTML(isLoggedIn ? "/nalog.php" : "/prijava")

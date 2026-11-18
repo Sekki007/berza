@@ -1,5 +1,4 @@
-import Foundation
-import Combine
+import SwiftUI
 
 final class HomeFeedLoader: ObservableObject {
     @Published var ads: [AdListing] = []
@@ -13,7 +12,6 @@ final class HomeFeedLoader: ObservableObject {
     private var page = 1
     private var seenIds = Set<Int>()
 
-    @MainActor
     func refresh() async {
         page = 1
         seenIds.removeAll()
@@ -22,8 +20,10 @@ final class HomeFeedLoader: ObservableObject {
         isLoading = true
         defer { isLoading = false }
 
+        let cat = category
+        let q = query
         do {
-            let batch = try await fetchPage(page)
+            let batch = try await Self.fetchPage(category: cat, query: q, page: page)
             ads = batch
             seenIds = Set(batch.map(\.id))
             canLoadMore = batch.count >= 8
@@ -34,7 +34,6 @@ final class HomeFeedLoader: ObservableObject {
         }
     }
 
-    @MainActor
     func loadMoreIfNeeded(current item: AdListing?) async {
         guard let item = item, canLoadMore, !isLoading, !isLoadingMore else { return }
         guard let idx = ads.firstIndex(of: item), idx >= ads.count - 4 else { return }
@@ -43,8 +42,10 @@ final class HomeFeedLoader: ObservableObject {
         defer { isLoadingMore = false }
 
         let next = page + 1
+        let cat = category
+        let q = query
         do {
-            let batch = try await fetchPage(next)
+            let batch = try await Self.fetchPage(category: cat, query: q, page: next)
             let fresh = batch.filter { !seenIds.contains($0.id) }
             if fresh.isEmpty {
                 canLoadMore = false
@@ -57,18 +58,16 @@ final class HomeFeedLoader: ObservableObject {
         } catch {}
     }
 
-    @MainActor
     func apply(category: FeedCategory) async {
         self.category = category
         await refresh()
     }
 
-    @MainActor
     func applySearch() async {
         await refresh()
     }
 
-    private func fetchPage(_ page: Int) async throws -> [AdListing] {
+    private static func fetchPage(category: FeedCategory, query: String, page: Int) async throws -> [AdListing] {
         var path = category.listPath
         var queryItems: [String] = ["page=\(page)"]
         let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -102,11 +101,12 @@ enum HomeFeedParser {
             let title = decodeHTML(firstMatch(in: block, pattern: #"kp-list-title">([\s\S]*?)</h2>"#) ?? "Oglas")
             var price = decodeHTML(firstMatch(in: block, pattern: #"kp-list-price-main">([\s\S]*?)</span>"#) ?? "")
             if price.isEmpty {
-                price = decodeHTML(firstMatch(in: block, pattern: #"(\d+[\d.,]*\s*€)"#) ?? "")
+                let euroPattern = "(\\d+[\\d.,]*\\s*\u{20AC})"
+                price = decodeHTML(firstMatch(in: block, pattern: euroPattern) ?? "")
             }
             if price.isEmpty {
                 if block.contains("Po dogovoru") { price = "Po dogovoru" }
-                else if block.contains("Trazi se") || block.contains("Traži se") { price = "Trazi se" }
+                else if block.contains("Trazi se") { price = "Trazi se" }
                 else if block.contains(">Zamena<") { price = "Zamena" }
             }
             let location = decodeHTML(firstMatch(in: block, pattern: #"kp-list-meta-loc"[^>]*>([\s\S]*?)</span>"#) ?? "")

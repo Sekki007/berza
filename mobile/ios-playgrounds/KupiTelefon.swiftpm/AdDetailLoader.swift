@@ -1,5 +1,4 @@
-import Foundation
-import Combine
+import SwiftUI
 
 final class AdDetailLoader: ObservableObject {
     @Published var detail: AdDetail?
@@ -13,7 +12,6 @@ final class AdDetailLoader: ObservableObject {
         self.detail = Self.placeholder(from: listing)
     }
 
-    @MainActor
     func load() async {
         isLoading = true
         errorMessage = nil
@@ -67,7 +65,8 @@ enum AdDetailParser {
         )
         if price.isEmpty { price = fallback.price }
         if price.isEmpty {
-            price = HomeFeedParser.decodeHTML(HomeFeedParser.firstMatch(in: html, pattern: #"(\d+[\d.,]*\s*€)"#) ?? "")
+            let euroPattern = "(\\d+[\\d.,]*\\s*\u{20AC})"
+            price = HomeFeedParser.decodeHTML(HomeFeedParser.firstMatch(in: html, pattern: euroPattern) ?? "")
         }
 
         let priceNote = HomeFeedParser.decodeHTML(

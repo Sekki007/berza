@@ -1,9 +1,9 @@
 import SwiftUI
-import UIKit
 
 struct AdDetailView: View {
     let listing: AdListing
     @EnvironmentObject private var session: AppSession
+    @Environment(\.openURL) private var openURLAction
     @StateObject private var loader: AdDetailLoader
     @State private var showLogin = false
     @State private var openThread: MessageThread?
@@ -242,14 +242,18 @@ struct AdDetailView: View {
     private var extraActions: some View {
         HStack(spacing: 10) {
             if let viber = detail.viberURL {
-                Button { UIApplication.shared.open(viber) } label: {
+                Button {
+                    openURL(viber)
+                } label: {
                     Text("Viber").font(.system(size: 13, weight: .bold))
                         .frame(maxWidth: .infinity).padding(.vertical, 12)
                         .background(Color.white).foregroundColor(Brand.text).cornerRadius(12)
                 }
             }
             if let wa = detail.whatsappURL {
-                Button { UIApplication.shared.open(wa) } label: {
+                Button {
+                    openURL(wa)
+                } label: {
                     Text("WhatsApp").font(.system(size: 13, weight: .bold))
                         .frame(maxWidth: .infinity).padding(.vertical, 12)
                         .background(Color.white).foregroundColor(Brand.text).cornerRadius(12)
@@ -261,7 +265,9 @@ struct AdDetailView: View {
     private var ctaBar: some View {
         HStack(spacing: 10) {
             if let call = detail.callURL {
-                Button { UIApplication.shared.open(call) } label: {
+                Button {
+                    openURL(call)
+                } label: {
                     Label("Pozovi", systemImage: "phone.fill")
                         .font(.system(size: 16, weight: .bold))
                         .frame(maxWidth: .infinity)
@@ -313,5 +319,9 @@ struct AdDetailView: View {
     private func toggleFavorite() async {
         _ = try? await KTNetwork.getHTML("/favorite.php?id=\(listing.id)")
         toast = "Sacuvano u omiljene."
+    }
+
+    private func openURL(_ url: URL) {
+        openURLAction(url)
     }
 }

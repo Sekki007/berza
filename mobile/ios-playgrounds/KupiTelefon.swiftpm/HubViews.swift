@@ -90,7 +90,7 @@ struct AccountHubView: View {
                     gridLink("Omiljeni", icon: "heart.fill", dest: .favorites)
                     gridLink("Obavestenja", icon: "bell.fill", dest: .notifications)
                     gridLink("Katalog", icon: "book.fill", dest: .catalog)
-                    gridLink("Servisi", icon: "building.2.fill", dest: .services)
+                    gridLink("Servisi", icon: "building.2", dest: .services)
                     gridLink("IMEI provera", icon: "checkmark.shield.fill", dest: .imei)
                     gridLink("Kako radi", icon: "questionmark.circle.fill", dest: .howto)
                     gridLink("Uslovi", icon: "doc.text.fill", dest: .terms)
