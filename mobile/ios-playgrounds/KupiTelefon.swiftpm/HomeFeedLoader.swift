@@ -55,7 +55,7 @@ final class HomeFeedLoader: ObservableObject {
             ads.append(contentsOf: fresh)
             canLoadMore = batch.count >= 8
         } catch {
-            // Tiho — korisnik i dalje vidi trenutnu listu.
+            // keep current list
         }
     }
 
@@ -71,13 +71,10 @@ final class HomeFeedLoader: ObservableObject {
     }
 
     private func fetchPage(_ page: Int) async throws -> [AdListing] {
-        var components = URLComponents(string: "https://kupitelefon.rs/")!
+        var components = URLComponents(string: "https://kupitelefon.rs" + category.listPath)!
         var items: [URLQueryItem] = [
             URLQueryItem(name: "page", value: String(page))
         ]
-        if category != .all {
-            items.append(URLQueryItem(name: "type", value: category.rawValue))
-        }
         let q = query.trimmingCharacters(in: .whitespacesAndNewlines)
         if !q.isEmpty {
             items.append(URLQueryItem(name: "q", value: q))
