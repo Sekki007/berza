@@ -1,7 +1,6 @@
 import Foundation
 
 /// Čita javni HTML sa kupitelefon.rs (bez izmene sajta) i parsira listing kartice.
-@MainActor
 final class HomeFeedLoader: ObservableObject {
     @Published var ads: [AdListing] = []
     @Published var isLoading = false
@@ -14,6 +13,7 @@ final class HomeFeedLoader: ObservableObject {
     private var page = 1
     private var seenIds = Set<Int>()
 
+    @MainActor
     func refresh() async {
         page = 1
         seenIds.removeAll()
@@ -34,8 +34,9 @@ final class HomeFeedLoader: ObservableObject {
         }
     }
 
+    @MainActor
     func loadMoreIfNeeded(current item: AdListing?) async {
-        guard let item, canLoadMore, !isLoading, !isLoadingMore else { return }
+        guard let item = item, canLoadMore, !isLoading, !isLoadingMore else { return }
         guard let idx = ads.firstIndex(of: item), idx >= ads.count - 4 else { return }
 
         isLoadingMore = true
@@ -58,11 +59,13 @@ final class HomeFeedLoader: ObservableObject {
         }
     }
 
+    @MainActor
     func apply(category: FeedCategory) async {
         self.category = category
         await refresh()
     }
 
+    @MainActor
     func applySearch() async {
         await refresh()
     }
@@ -111,14 +114,14 @@ enum HomeFeedParser {
 
         for chunk in parts.dropFirst() {
             let block = String(chunk.prefix(4500))
-            guard let id = firstInt(in: block, pattern: "data-ad-id=\"(\\d+)\") else { continue }
-            guard let path = firstMatch(in: block, pattern: "href=\"(/oglas/[^\"]+)\") else { continue }
-            let title = decodeHTML(firstMatch(in: block, pattern: "kp-list-title\">(.*?)</h2>") ?? "Oglas")
-            let price = decodeHTML(firstMatch(in: block, pattern: "kp-list-price-main\">(.*?)</span>") ?? "")
-            let location = decodeHTML(firstMatch(in: block, pattern: "kp-list-meta-loc\"[^>]*>(.*?)</span>") ?? "")
-            let category = firstMatch(in: block, pattern: "data-category=\"([^\"]+)\"") ?? ""
-            let imagePath = firstMatch(in: block, pattern: "src=\"(/uploads/[^\"]+)\"")
-                ?? firstMatch(in: block, pattern: "src=\"(https://kupitelefon\\.rs/uploads/[^\"]+)\"")
+            guard let id = firstInt(in: block, pattern: #"data-ad-id="(\d+)""#) else { continue }
+            guard let path = firstMatch(in: block, pattern: #"href="(/oglas/[^"]+)""#) else { continue }
+            let title = decodeHTML(firstMatch(in: block, pattern: #"kp-list-title">(.*?)</h2>"#) ?? "Oglas")
+            let price = decodeHTML(firstMatch(in: block, pattern: #"kp-list-price-main">(.*?)</span>"#) ?? "")
+            let location = decodeHTML(firstMatch(in: block, pattern: #"kp-list-meta-loc"[^>]*>(.*?)</span>"#) ?? "")
+            let category = firstMatch(in: block, pattern: #"data-category="([^"]+)""#) ?? ""
+            let imagePath = firstMatch(in: block, pattern: #"src="(/uploads/[^"]+)""#)
+                ?? firstMatch(in: block, pattern: #"src="(https://kupitelefon\.rs/uploads/[^"]+)""#)
             let isTop = block.contains("listing-badge-promo") || block.contains(">TOP<")
 
             out.append(

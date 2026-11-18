@@ -15,7 +15,7 @@ struct AdListing: Identifiable, Hashable {
     }
 
     var imageURL: URL? {
-        guard let imagePath, !imagePath.isEmpty else { return nil }
+        guard let imagePath = imagePath, !imagePath.isEmpty else { return nil }
         if imagePath.hasPrefix("http") {
             return URL(string: imagePath)
         }

@@ -16,7 +16,7 @@ struct HomeFeedView: View {
 
                 Group {
                     if loader.isLoading && loader.ads.isEmpty {
-                        ProgressView("Učitavanje oglasa…")
+                        ProgressView("Ucitavanje oglasa...")
                             .tint(brandGreen)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                     } else if let err = loader.errorMessage, loader.ads.isEmpty {
@@ -25,7 +25,7 @@ struct HomeFeedView: View {
                                 .font(.headline)
                             Text(err)
                                 .font(.footnote)
-                                .foregroundStyle(.secondary)
+                                .foregroundColor(.secondary)
                                 .multilineTextAlignment(.center)
                                 .padding(.horizontal)
                             Button("Ponovo") {
@@ -37,7 +37,7 @@ struct HomeFeedView: View {
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                     } else if loader.ads.isEmpty {
                         Text("Nema oglasa za ovaj filter.")
-                            .foregroundStyle(.secondary)
+                            .foregroundColor(.secondary)
                             .frame(maxWidth: .infinity, maxHeight: .infinity)
                     } else {
                         ScrollView {
@@ -95,8 +95,8 @@ struct HomeFeedView: View {
     private var searchBar: some View {
         HStack(spacing: 8) {
             Image(systemName: "magnifyingglass")
-                .foregroundStyle(.secondary)
-            TextField("Pretraga oglasa…", text: $searchDraft)
+                .foregroundColor(.secondary)
+            TextField("Pretraga oglasa...", text: $searchDraft)
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
                 .submitLabel(.search)
@@ -111,7 +111,7 @@ struct HomeFeedView: View {
                     Task { await loader.applySearch() }
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.secondary)
+                        .foregroundColor(.secondary)
                 }
             }
         }
@@ -127,7 +127,6 @@ struct HomeFeedView: View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
                 ForEach(FeedCategory.allCases) { cat in
-                    let on = loader.category == cat
                     Button {
                         Task { await loader.apply(category: cat) }
                     } label: {
@@ -135,12 +134,15 @@ struct HomeFeedView: View {
                             .font(.system(size: 13, weight: .semibold))
                             .padding(.horizontal, 12)
                             .padding(.vertical, 8)
-                            .background(on ? brandGreen : Color.white)
-                            .foregroundStyle(on ? Color.white : Color.primary)
+                            .background(loader.category == cat ? brandGreen : Color.white)
+                            .foregroundColor(loader.category == cat ? Color.white : Color.primary)
                             .cornerRadius(18)
                             .overlay(
                                 RoundedRectangle(cornerRadius: 18)
-                                    .stroke(Color(red: 0.86, green: 0.86, blue: 0.86), lineWidth: on ? 0 : 1)
+                                    .stroke(
+                                        Color(red: 0.86, green: 0.86, blue: 0.86),
+                                        lineWidth: loader.category == cat ? 0 : 1
+                                    )
                             )
                     }
                     .buttonStyle(.plain)

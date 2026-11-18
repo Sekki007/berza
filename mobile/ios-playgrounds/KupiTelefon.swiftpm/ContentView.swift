@@ -74,7 +74,7 @@ struct WebTabView: View {
                     VStack(spacing: 12) {
                         Text(model.lastError ?? "Greška")
                             .font(.footnote)
-                            .foregroundStyle(.secondary)
+                            .foregroundColor(.secondary)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal)
                         Button("Ponovo") { model.reload() }
