@@ -9,9 +9,16 @@ struct AdListing: Identifiable, Hashable {
     let path: String
     let category: String
     let isTop: Bool
+    var status: String = "active"
+    var statusLabel: String = ""
+    var isSold: Bool = false
+    var isActive: Bool = true
 
     var detailURL: URL {
-        URL(string: "https://kupitelefon.rs" + path)!
+        if path.hasPrefix("http") {
+            return URL(string: path)!
+        }
+        return URL(string: "https://kupitelefon.rs" + path)!
     }
 
     var imageURL: URL? {

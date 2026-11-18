@@ -79,6 +79,7 @@ struct SearchHubView: View {
 struct AccountHubView: View {
     @EnvironmentObject private var session: AppSession
     @State private var showLogin = false
+    @State private var showRegister = false
 
     var body: some View {
         NavigationStack {
@@ -118,6 +119,15 @@ struct AccountHubView: View {
                                 .foregroundColor(.white)
                                 .cornerRadius(14)
                         }
+                        Button { showRegister = true } label: {
+                            Text("Napravi nalog")
+                                .font(.system(size: 15, weight: .bold))
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 14)
+                                .background(Color.white)
+                                .foregroundColor(Brand.green)
+                                .cornerRadius(14)
+                        }
                     }
                 }
                 .padding(16)
@@ -128,7 +138,7 @@ struct AccountHubView: View {
                 switch dest {
                 case .myAds: MyAdsView()
                 case .favorites: FavoritesView()
-                case .notifications: NativeListingsPage(title: "Obavestenja", path: "/nalog.php?tab=obavestenja")
+                case .notifications: NotificationsView()
                 case .catalog: CatalogBrowseView()
                 case .services: ServicesBrowseView()
                 case .imei: StaticInfoView(title: "Provera IMEI", path: "/provera-imei")
@@ -139,6 +149,9 @@ struct AccountHubView: View {
             }
             .sheet(isPresented: $showLogin) {
                 NavigationStack { LoginView().environmentObject(session) }
+            }
+            .sheet(isPresented: $showRegister) {
+                NavigationStack { RegisterView().environmentObject(session) }
             }
             .task { await session.refreshSession() }
         }

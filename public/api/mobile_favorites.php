@@ -13,15 +13,6 @@ mobileApiCors();
 
 $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 
-function mobileFavoriteCsrf(): string
-{
-    $token = (string)($_POST['_csrf'] ?? $_POST['csrf'] ?? '');
-    if ($token === '') {
-        $token = (string)($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
-    }
-    return $token;
-}
-
 if ($method === 'GET') {
     $ids = favoriteIds();
     $items = [];
@@ -45,7 +36,7 @@ if ($method !== 'POST') {
     mobileApiJson(['ok' => false, 'error' => 'method_not_allowed'], 405);
 }
 
-if (!verifyCsrf(mobileFavoriteCsrf())) {
+if (!verifyCsrf(mobileCsrfFromRequest())) {
     mobileApiJson(['ok' => false, 'error' => 'csrf', 'csrf' => csrfToken()], 403);
 }
 

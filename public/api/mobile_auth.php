@@ -35,15 +35,6 @@ function mobileAuthUserPayload(): ?array
     ];
 }
 
-function mobileCsrfFromRequest(): string
-{
-    $token = (string)($_POST['_csrf'] ?? $_POST['csrf'] ?? '');
-    if ($token === '') {
-        $token = (string)($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
-    }
-    return $token;
-}
-
 if ($method === 'GET' || $action === 'status' || $action === 'bootstrap') {
     mobileApiJson([
         'ok' => true,

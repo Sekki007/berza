@@ -8,6 +8,8 @@ struct LoginView: View {
     @State private var password = ""
     @State private var errorText: String?
     @State private var loading = false
+    @State private var showRegister = false
+    @State private var showVerify = false
 
     var body: some View {
         ScrollView {
@@ -53,16 +55,29 @@ struct LoginView: View {
                 }
                 .disabled(loading || username.isEmpty || password.isEmpty)
 
-                Text("Nemas nalog? Registruj se na kupitelefon.rs pa se vrati ovde.")
-                    .font(.caption)
-                    .foregroundColor(Brand.muted)
-                    .multilineTextAlignment(.center)
+                Button("Nemas nalog? Registruj se") {
+                    showRegister = true
+                }
+                .font(.caption.weight(.semibold))
+                .foregroundColor(Brand.green)
             }
             .padding(20)
         }
         .background(Color.white.ignoresSafeArea())
         .navigationTitle("Prijava")
         .navigationBarTitleDisplayMode(.inline)
+        .sheet(isPresented: $showRegister) {
+            NavigationStack { RegisterView().environmentObject(session) }
+        }
+        .sheet(isPresented: $showVerify) {
+            NavigationStack {
+                VerifyPhoneView(userId: 0, phoneHint: "") {
+                    showVerify = false
+                    dismiss()
+                }
+                .environmentObject(session)
+            }
+        }
     }
 
     private func field(_ title: String, text: Binding<String>) -> some View {
@@ -79,6 +94,8 @@ struct LoginView: View {
         do {
             try await session.login(username: username.trimmingCharacters(in: .whitespacesAndNewlines), password: password)
             dismiss()
+        } catch KTAuthError.phoneVerifyRequired {
+            showVerify = true
         } catch {
             errorText = error.localizedDescription
         }

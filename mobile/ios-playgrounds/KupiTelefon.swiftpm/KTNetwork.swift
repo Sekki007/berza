@@ -132,6 +132,46 @@ enum KTNetwork {
         try await postFormJSON(path: "/api/mobile_ad_create.php", fields: fields, csrf: csrf)
     }
 
+    static func apiMyAds(filter: String = "all") async throws -> [String: Any] {
+        try await getJSON("/api/mobile_my_ads.php?filter=\(filter)")
+    }
+
+    static func apiToggleSold(adId: Int, csrf: String) async throws -> [String: Any] {
+        try await postFormJSON(
+            path: "/api/mobile_my_ads.php",
+            fields: ["action": "toggle_sold", "ad_id": "\(adId)"],
+            csrf: csrf
+        )
+    }
+
+    static func apiRegisterBootstrap() async throws -> [String: Any] {
+        try await getJSON("/api/mobile_register.php?action=bootstrap")
+    }
+
+    static func apiRegister(fields: [String: String], csrf: String) async throws -> [String: Any] {
+        var all = fields
+        all["action"] = "register"
+        return try await postFormJSON(path: "/api/mobile_register.php", fields: all, csrf: csrf)
+    }
+
+    static func apiVerifyPhone(action: String, fields: [String: String], csrf: String) async throws -> [String: Any] {
+        var all = fields
+        all["action"] = action
+        return try await postFormJSON(path: "/api/mobile_register.php", fields: all, csrf: csrf)
+    }
+
+    static func apiNotifications() async throws -> [String: Any] {
+        try await getJSON("/api/mobile_notifications.php")
+    }
+
+    static func apiMarkNotificationsRead(csrf: String) async throws -> [String: Any] {
+        try await postFormJSON(
+            path: "/api/mobile_notifications.php",
+            fields: ["action": "mark_all_read"],
+            csrf: csrf
+        )
+    }
+
     // Legacy helpers still used by messages HTML/JSON bridges
     static func extractCSRF(from html: String) -> String? {
         HomeFeedParser.firstMatch(in: html, pattern: #"name="csrf-token"\s+content="([^"]+)""#)
@@ -203,7 +243,11 @@ enum MobileAPIMapper {
             imagePath: optionalString(dict["image"]),
             path: path,
             category: stringValue(dict["type"]),
-            isTop: boolValue(dict["is_top"])
+            isTop: boolValue(dict["is_top"]),
+            status: stringValue(dict["status"], fallback: "active"),
+            statusLabel: stringValue(dict["status_label"]),
+            isSold: boolValue(dict["is_sold"]),
+            isActive: dict["is_active"] == nil ? true : boolValue(dict["is_active"])
         )
     }
 

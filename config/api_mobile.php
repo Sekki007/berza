@@ -49,11 +49,27 @@ function mobileFormatAdCard(array $ad): array
         'listing_type' => function_exists('getAdListingType') ? getAdListingType($ad) : 'sell',
         'is_top' => function_exists('isAdTopActive') ? isAdTopActive($ad) : !empty($ad['is_promoted']),
         'is_sold' => !empty($ad['is_sold']),
+        'is_active' => (int)($ad['is_active'] ?? 0) === 1,
+        'status' => !empty($ad['is_sold'])
+            ? 'sold'
+            : ((int)($ad['is_active'] ?? 0) === 1 ? 'active' : 'inactive'),
+        'status_label' => !empty($ad['is_sold'])
+            ? 'Prodato'
+            : ((int)($ad['is_active'] ?? 0) === 1 ? 'Aktivan' : 'Neaktivan'),
         'views' => (int)($ad['views'] ?? 0),
         'created_at' => (string)($ad['created_at'] ?? ''),
         'relative' => function_exists('formatRelativeTime') ? formatRelativeTime((string)($ad['created_at'] ?? '')) : '',
         'favorite' => function_exists('isFavorite') ? isFavorite((int)($ad['id'] ?? 0)) : false,
     ];
+}
+
+function mobileCsrfFromRequest(): string
+{
+    $token = (string)($_POST['_csrf'] ?? $_POST['csrf'] ?? '');
+    if ($token === '') {
+        $token = (string)($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
+    }
+    return $token;
 }
 
 function mobileFormatAdDetail(array $ad): array

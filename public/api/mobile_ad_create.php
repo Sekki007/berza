@@ -13,15 +13,6 @@ mobileApiCors();
 
 $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
 
-function mobileCreateCsrf(): string
-{
-    $token = (string)($_POST['_csrf'] ?? $_POST['csrf'] ?? '');
-    if ($token === '') {
-        $token = (string)($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
-    }
-    return $token;
-}
-
 function mobileNormalizeImagesUpload(): void
 {
     if (!isset($_FILES['images'])) {
@@ -65,7 +56,7 @@ if (!isLoggedIn()) {
     mobileApiJson(['ok' => false, 'error' => 'auth_required', 'csrf' => csrfToken()], 401);
 }
 
-if (!verifyCsrf(mobileCreateCsrf())) {
+if (!verifyCsrf(mobileCsrfFromRequest())) {
     mobileApiJson(['ok' => false, 'error' => 'csrf', 'csrf' => csrfToken()], 403);
 }
 
