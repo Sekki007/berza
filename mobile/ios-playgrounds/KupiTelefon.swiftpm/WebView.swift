@@ -11,14 +11,29 @@ final class WebViewModel: ObservableObject {
     @Published var canGoForward = false
 
     weak var webView: WKWebView?
+    private var watchdog: Timer?
 
     init(startURL: URL) {
         self.startURL = startURL
     }
 
+    func startLoadWatchdog() {
+        watchdog?.invalidate()
+        watchdog = Timer.scheduledTimer(withTimeInterval: 20, repeats: false) { [weak self] _ in
+            DispatchQueue.main.async {
+                guard let self = self else { return }
+                if !self.hasLoadedOnce && self.lastError == nil {
+                    self.isLoading = false
+                    self.lastError = "Stranica se nije učitala. U Playgrounds App Settings uključi Network / Outgoing Connections, pa tapni Ponovo."
+                }
+            }
+        }
+    }
+
     func reload() {
         lastError = nil
         isLoading = true
+        startLoadWatchdog()
         if let webView = webView, webView.url != nil {
             webView.reload()
         } else {
@@ -29,6 +44,7 @@ final class WebViewModel: ObservableObject {
     func goHome() {
         lastError = nil
         isLoading = true
+        startLoadWatchdog()
         webView?.load(URLRequest(url: startURL))
     }
 
@@ -38,6 +54,16 @@ final class WebViewModel: ObservableObject {
 
     func goForward() {
         webView?.goForward()
+    }
+
+    fileprivate func markLoaded(webView: WKWebView) {
+        watchdog?.invalidate()
+        watchdog = nil
+        isLoading = false
+        hasLoadedOnce = true
+        lastError = nil
+        canGoBack = webView.canGoBack
+        canGoForward = webView.canGoForward
     }
 }
 
@@ -88,12 +114,14 @@ struct SiteWebView: UIViewRepresentable {
             webView.underPageBackgroundColor = UIColor(red: 0.949, green: 0.949, blue: 0.949, alpha: 1)
         }
 
-        // Mark as native app so sajt uključi kt-native-app (kao Android Capacitor).
         let baseUA = webView.value(forKey: "userAgent") as? String ?? ""
         webView.customUserAgent = baseUA + " KupiTelefonApp/1.0 (ios)"
 
         model.webView = webView
-        webView.load(URLRequest(url: model.startURL))
+        var request = URLRequest(url: model.startURL)
+        request.cachePolicy = .reloadIgnoringLocalCacheData
+        request.timeoutInterval = 30
+        webView.load(request)
         return webView
     }
 
@@ -127,12 +155,13 @@ struct SiteWebView: UIViewRepresentable {
         func webView(_ webView: WKWebView, didStartProvisionalNavigation navigation: WKNavigation!) {
             DispatchQueue.main.async {
                 self.model.isLoading = true
-                self.model.lastError = nil
+                if self.model.hasLoadedOnce {
+                    self.model.lastError = nil
+                }
             }
         }
 
         func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
-            // Reinforce native class after SPA/full navigations.
             webView.evaluateJavaScript(
                 """
                 window.KtNativeApp = true;
@@ -142,10 +171,7 @@ struct SiteWebView: UIViewRepresentable {
             , completionHandler: nil)
 
             DispatchQueue.main.async {
-                self.model.isLoading = false
-                self.model.hasLoadedOnce = true
-                self.model.canGoBack = webView.canGoBack
-                self.model.canGoForward = webView.canGoForward
+                self.model.markLoaded(webView: webView)
             }
         }
 
@@ -158,7 +184,6 @@ struct SiteWebView: UIViewRepresentable {
 
         func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
             let ns = error as NSError
-            // Ignore cancelled navigations (npr. redirect / external open).
             if ns.domain == NSURLErrorDomain && ns.code == NSURLErrorCancelled {
                 return
             }

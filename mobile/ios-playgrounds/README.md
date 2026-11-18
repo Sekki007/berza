@@ -51,6 +51,8 @@ Posle izmena: commit + push na `https://github.com/Sekki007/berza.git`.
 3. Tapni **Run** (▶).
 4. Treba da se učita sajt `kupitelefon.rs`.
 
+**Beli ekran / nema mreže:** u Swift Playgrounds → App Settings uključi **Outgoing Connections / Network**. Manifest već ima `.outgoingNetworkConnections()`.
+
 **Važno:** otvaraj tačno folder `KupiTelefon.swiftpm` (ne parent `ios-playgrounds`). Posle `git pull` zatvori projekat u Playgrounds pa ga otvori ponovo.
 
 Ako i dalje crashuje: u Playgrounds napravi **New App**, pa zameni `ContentView.swift` / dodaj `WebView.swift` sadržajem iz ovog repoa.

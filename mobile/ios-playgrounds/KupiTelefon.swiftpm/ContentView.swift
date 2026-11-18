@@ -2,7 +2,6 @@ import SwiftUI
 
 private enum Brand {
     static let green = Color(red: 0.239, green: 0.604, blue: 0.314)
-    static let yellow = Color(red: 0.961, green: 0.773, blue: 0.094)
     static let bg = Color(red: 0.949, green: 0.949, blue: 0.949)
 }
 
@@ -15,13 +14,22 @@ struct ContentView: View {
         ZStack {
             Brand.bg.ignoresSafeArea()
 
+            // WebView uvek vidljiv — ne sakrivati opacity-jem (beli ekran).
             SiteWebView(model: model)
-                .opacity(model.hasLoadedOnce && model.lastError == nil ? 1 : 0)
                 .ignoresSafeArea(edges: .bottom)
 
-            if !model.hasLoadedOnce || model.isLoading {
-                loadingChrome
-                    .allowsHitTesting(!model.hasLoadedOnce)
+            if !model.hasLoadedOnce && model.lastError == nil {
+                splash
+            }
+
+            if model.hasLoadedOnce && model.isLoading {
+                VStack {
+                    ProgressView()
+                        .progressViewStyle(.linear)
+                        .tint(Brand.green)
+                    Spacer()
+                }
+                .allowsHitTesting(false)
             }
 
             if model.lastError != nil {
@@ -29,42 +37,31 @@ struct ContentView: View {
             }
         }
         .preferredColorScheme(.light)
+        .onAppear {
+            model.startLoadWatchdog()
+        }
     }
 
-    private var loadingChrome: some View {
-        VStack(spacing: 16) {
-            if !model.hasLoadedOnce {
-                Text(brandTitle)
-                    .font(.system(size: 28, weight: .heavy, design: .rounded))
-                    .tracking(-0.5)
-
-                Text("Učitavanje…")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-
-                ProgressView()
-                    .tint(Brand.green)
-                    .padding(.top, 4)
-            } else {
-                VStack(spacing: 0) {
-                    ProgressView()
-                        .progressViewStyle(.linear)
-                        .tint(Brand.green)
-                    Spacer()
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    private var splash: some View {
+        VStack(spacing: 14) {
+            HStack(spacing: 0) {
+                Text("Kupi")
+                    .foregroundColor(Brand.green)
+                Text("Telefon")
+                    .foregroundColor(Color(red: 0.2, green: 0.2, blue: 0.2))
             }
+            .font(.system(size: 28, weight: .heavy, design: .rounded))
+
+            Text("Učitavanje…")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            ProgressView()
+                .tint(Brand.green)
+                .padding(.top, 2)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(model.hasLoadedOnce ? Color.clear : Brand.bg)
-    }
-
-    private var brandTitle: AttributedString {
-        var kupi = AttributedString("Kupi")
-        kupi.foregroundColor = Brand.green
-        var telefon = AttributedString("Telefon")
-        telefon.foregroundColor = Color(red: 0.2, green: 0.2, blue: 0.2)
-        return kupi + telefon
+        .background(Brand.bg)
     }
 
     private var errorChrome: some View {
@@ -83,6 +80,6 @@ struct ContentView: View {
             .tint(Brand.green)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Brand.bg.opacity(0.96))
+        .background(Brand.bg)
     }
 }
