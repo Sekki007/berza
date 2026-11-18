@@ -15,20 +15,28 @@ struct AdDetailView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            topBar
             ScrollView {
-                VStack(alignment: .leading, spacing: 16) {
+                VStack(alignment: .leading, spacing: 14) {
                     gallery
                     titleBlock
-                    chips
+                    factsGrid
+                    chipsRow
                     sellerBlock
                     descriptionBlock
+                    extraActions
+
                     if loader.isLoading {
-                        ProgressView()
-                            .tint(Brand.green)
-                            .frame(maxWidth: .infinity)
-                            .padding(.top, 8)
+                        HStack {
+                            Spacer()
+                            ProgressView().tint(Brand.green)
+                            Text("Ucitavanje detalja...")
+                                .font(.footnote)
+                                .foregroundColor(Brand.muted)
+                            Spacer()
+                        }
+                        .padding(.top, 6)
                     }
+
                     if let err = loader.errorMessage {
                         Text(err)
                             .font(.footnote)
@@ -36,11 +44,22 @@ struct AdDetailView: View {
                     }
                 }
                 .padding(16)
-                .padding(.bottom, 90)
+                .padding(.bottom, 100)
             }
             ctaBar
         }
         .background(Brand.bg.ignoresSafeArea())
+        .navigationTitle("Detalji oglasa")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    openLink = SiteLink("Omiljeni", path: "/favorite.php?id=\(listing.id)")
+                } label: {
+                    Image(systemName: "heart")
+                }
+            }
+        }
         .task { await loader.load() }
         .sheet(item: $openLink) { link in
             SiteBrowserSheet(link: link)
@@ -48,76 +67,40 @@ struct AdDetailView: View {
     }
 
     private var detail: AdDetail {
-        loader.detail ?? AdDetail(
-            id: listing.id,
-            title: listing.title,
-            price: listing.price,
-            location: listing.location,
-            description: "",
-            sellerName: "",
-            imageURLs: listing.imageURL.map { [$0] } ?? [],
-            chips: [],
-            callURL: nil,
-            messageURL: nil,
-            favoriteURL: nil,
-            reportURL: nil,
-            pageURL: listing.detailURL
-        )
-    }
-
-    private var topBar: some View {
-        HStack {
-            Button { dismiss() } label: {
-                Image(systemName: "chevron.left")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(Brand.text)
-                    .frame(width: 40, height: 40)
-                    .background(Brand.bg)
-                    .clipShape(Circle())
-            }
-            BrandLogo(size: 18)
-            Spacer()
-            Button {
-                openLink = SiteLink("Omiljeni", path: "/favorite.php?id=\(listing.id)")
-            } label: {
-                Image(systemName: "heart")
-                    .font(.system(size: 17, weight: .semibold))
-                    .foregroundColor(Brand.text)
-                    .frame(width: 40, height: 40)
-                    .background(Brand.bg)
-                    .clipShape(Circle())
-            }
-        }
-        .padding(.horizontal, 14)
-        .padding(.vertical, 10)
-        .background(Color.white)
-        .overlay(alignment: .bottom) {
-            Rectangle().fill(Brand.yellow).frame(height: 2)
-        }
+        loader.detail ?? AdDetailLoader.placeholder(from: listing)
     }
 
     private var gallery: some View {
-        TabView(selection: $imageIndex) {
-            ForEach(Array(detail.imageURLs.enumerated()), id: \.offset) { idx, url in
-                AsyncImage(url: url) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image.resizable().scaledToFill()
-                    case .failure:
-                        Color(red: 0.93, green: 0.93, blue: 0.93)
-                            .overlay(Image(systemName: "iphone").font(.largeTitle).foregroundColor(.secondary))
-                    default:
-                        ProgressView().tint(Brand.green)
+        Group {
+            if detail.imageURLs.isEmpty {
+                Color(red: 0.93, green: 0.93, blue: 0.93)
+                    .frame(height: 300)
+                    .overlay(Image(systemName: "iphone").font(.largeTitle).foregroundColor(.secondary))
+                    .cornerRadius(18)
+            } else {
+                TabView(selection: $imageIndex) {
+                    ForEach(Array(detail.imageURLs.enumerated()), id: \.offset) { idx, url in
+                        AsyncImage(url: url) { phase in
+                            switch phase {
+                            case .success(let image):
+                                image.resizable().scaledToFill()
+                            case .failure:
+                                Color(red: 0.93, green: 0.93, blue: 0.93)
+                                    .overlay(Image(systemName: "iphone").font(.largeTitle).foregroundColor(.secondary))
+                            default:
+                                ProgressView().tint(Brand.green)
+                            }
+                        }
+                        .tag(idx)
                     }
                 }
-                .tag(idx)
+                .tabViewStyle(.page(indexDisplayMode: .automatic))
+                .frame(height: 320)
+                .background(Color.white)
+                .cornerRadius(18)
+                .clipped()
             }
         }
-        .tabViewStyle(.page(indexDisplayMode: .automatic))
-        .frame(height: 320)
-        .background(Color.white)
-        .cornerRadius(18)
-        .clipped()
     }
 
     private var titleBlock: some View {
@@ -125,19 +108,28 @@ struct AdDetailView: View {
             Text(detail.title)
                 .font(.system(size: 22, weight: .bold))
                 .foregroundColor(Brand.text)
+
             if !detail.price.isEmpty {
                 Text(detail.price)
-                    .font(.system(size: 26, weight: .heavy))
+                    .font(.system(size: 28, weight: .heavy))
                     .foregroundColor(Brand.price)
             }
-            if !detail.location.isEmpty {
-                HStack(spacing: 4) {
-                    Image(systemName: "mappin")
-                    Text(detail.location)
-                }
-                .font(.system(size: 14, weight: .medium))
-                .foregroundColor(Brand.muted)
+            if !detail.priceNote.isEmpty {
+                Text(detail.priceNote)
+                    .font(.system(size: 13, weight: .medium))
+                    .foregroundColor(Brand.muted)
             }
+
+            HStack(spacing: 12) {
+                if !detail.location.isEmpty {
+                    Label(detail.location, systemImage: "mappin")
+                }
+                if !detail.views.isEmpty {
+                    Label(detail.views + " pregleda", systemImage: "eye")
+                }
+            }
+            .font(.system(size: 13, weight: .medium))
+            .foregroundColor(Brand.muted)
         }
         .padding(16)
         .frame(maxWidth: .infinity, alignment: .leading)
@@ -145,7 +137,39 @@ struct AdDetailView: View {
         .cornerRadius(18)
     }
 
-    private var chips: some View {
+    private var factsGrid: some View {
+        Group {
+            if !detail.facts.isEmpty {
+                VStack(alignment: .leading, spacing: 10) {
+                    Text("Kljucne informacije")
+                        .font(.system(size: 16, weight: .bold))
+                        .foregroundColor(Brand.text)
+
+                    LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 10) {
+                        ForEach(detail.facts) { fact in
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(fact.label)
+                                    .font(.system(size: 11, weight: .medium))
+                                    .foregroundColor(Brand.muted)
+                                Text(fact.value)
+                                    .font(.system(size: 15, weight: .bold))
+                                    .foregroundColor(Brand.text)
+                            }
+                            .frame(maxWidth: .infinity, minHeight: 58, alignment: .leading)
+                            .padding(12)
+                            .background(Brand.bg)
+                            .cornerRadius(12)
+                        }
+                    }
+                }
+                .padding(14)
+                .background(Color.white)
+                .cornerRadius(18)
+            }
+        }
+    }
+
+    private var chipsRow: some View {
         Group {
             if !detail.chips.isEmpty {
                 ScrollView(.horizontal, showsIndicators: false) {
@@ -168,27 +192,35 @@ struct AdDetailView: View {
     private var sellerBlock: some View {
         Group {
             if !detail.sellerName.isEmpty {
-                HStack(spacing: 12) {
-                    ZStack {
-                        Circle().fill(Brand.green.opacity(0.15)).frame(width: 44, height: 44)
-                        Image(systemName: "bag.fill")
-                            .foregroundColor(Brand.green)
+                Button {
+                    if let shop = detail.shopURL {
+                        openLink = SiteLink(detail.sellerName, path: shop.absoluteString)
                     }
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(detail.sellerName)
-                            .font(.system(size: 15, weight: .bold))
-                            .foregroundColor(Brand.text)
-                        Text("Prodavac")
-                            .font(.caption)
-                            .foregroundColor(Brand.muted)
+                } label: {
+                    HStack(spacing: 12) {
+                        ZStack {
+                            Circle().fill(Brand.green.opacity(0.15)).frame(width: 46, height: 46)
+                            Image(systemName: "bag.fill").foregroundColor(Brand.green)
+                        }
+                        VStack(alignment: .leading, spacing: 3) {
+                            Text(detail.sellerName)
+                                .font(.system(size: 15, weight: .bold))
+                                .foregroundColor(Brand.text)
+                            Text(detail.sellerMeta.isEmpty ? "Prodavac" : detail.sellerMeta)
+                                .font(.caption)
+                                .foregroundColor(Brand.muted)
+                                .lineLimit(2)
+                        }
+                        Spacer()
+                        if detail.shopURL != nil {
+                            Image(systemName: "chevron.right").foregroundColor(Brand.muted)
+                        }
                     }
-                    Spacer()
-                    Image(systemName: "chevron.right")
-                        .foregroundColor(Brand.muted)
+                    .padding(14)
+                    .background(Color.white)
+                    .cornerRadius(16)
                 }
-                .padding(14)
-                .background(Color.white)
-                .cornerRadius(16)
+                .buttonStyle(.plain)
             }
         }
     }
@@ -197,7 +229,7 @@ struct AdDetailView: View {
         Group {
             if !detail.description.isEmpty {
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("Opis")
+                    Text("Opis oglasa")
                         .font(.system(size: 16, weight: .bold))
                     Text(detail.description)
                         .font(.system(size: 14))
@@ -208,6 +240,48 @@ struct AdDetailView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .background(Color.white)
                 .cornerRadius(18)
+            }
+        }
+    }
+
+    private var extraActions: some View {
+        HStack(spacing: 10) {
+            if let viber = detail.viberURL {
+                Button {
+                    UIApplication.shared.open(viber)
+                } label: {
+                    Text("Viber")
+                        .font(.system(size: 13, weight: .bold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(Color.white)
+                        .foregroundColor(Brand.text)
+                        .cornerRadius(12)
+                }
+            }
+            if let wa = detail.whatsappURL {
+                Button {
+                    UIApplication.shared.open(wa)
+                } label: {
+                    Text("WhatsApp")
+                        .font(.system(size: 13, weight: .bold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 12)
+                        .background(Color.white)
+                        .foregroundColor(Brand.text)
+                        .cornerRadius(12)
+                }
+            }
+            Button {
+                openLink = SiteLink("Prijavi", path: "/report.php?ad=\(listing.id)")
+            } label: {
+                Text("Prijavi")
+                    .font(.system(size: 13, weight: .bold))
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(Color.white)
+                    .foregroundColor(Brand.muted)
+                    .cornerRadius(12)
             }
         }
     }
@@ -241,16 +315,13 @@ struct AdDetailView: View {
                     .padding(.vertical, 14)
                     .background(Color.white)
                     .foregroundColor(Brand.green)
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 14)
-                            .stroke(Brand.green, lineWidth: 2)
-                    )
+                    .overlay(RoundedRectangle(cornerRadius: 14).stroke(Brand.green, lineWidth: 2))
                     .cornerRadius(14)
             }
         }
         .padding(.horizontal, 16)
         .padding(.top, 10)
         .padding(.bottom, 12)
-        .background(Color.white.shadow(color: Color.black.opacity(0.06), radius: 8, y: -2))
+        .background(Color.white)
     }
 }

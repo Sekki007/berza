@@ -2,26 +2,28 @@ import SwiftUI
 
 struct HomeFeedView: View {
     @StateObject private var loader = HomeFeedLoader()
-    @State private var selectedAd: AdListing?
     @State private var openLink: SiteLink?
     @State private var searchDraft = ""
 
     var body: some View {
-        VStack(spacing: 0) {
-            headerBlock
-            categoryBar
-            feedBody
-        }
-        .background(Brand.bg.ignoresSafeArea())
-        .sheet(item: $selectedAd) { ad in
-            AdDetailView(listing: ad)
-        }
-        .sheet(item: $openLink) { link in
-            SiteBrowserSheet(link: link)
-        }
-        .task {
-            if loader.ads.isEmpty {
-                await loader.refresh()
+        NavigationStack {
+            VStack(spacing: 0) {
+                headerBlock
+                categoryBar
+                feedBody
+            }
+            .background(Brand.bg.ignoresSafeArea())
+            .navigationBarHidden(true)
+            .navigationDestination(for: AdListing.self) { ad in
+                AdDetailView(listing: ad)
+            }
+            .sheet(item: $openLink) { link in
+                SiteBrowserSheet(link: link)
+            }
+            .task {
+                if loader.ads.isEmpty {
+                    await loader.refresh()
+                }
             }
         }
     }
@@ -153,9 +155,7 @@ struct HomeFeedView: View {
             ScrollView {
                 LazyVStack(spacing: 12) {
                     ForEach(loader.ads) { ad in
-                        Button {
-                            selectedAd = ad
-                        } label: {
+                        NavigationLink(value: ad) {
                             AdCardView(ad: ad)
                         }
                         .buttonStyle(.plain)

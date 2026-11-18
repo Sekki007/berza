@@ -10,21 +10,7 @@ final class AdDetailLoader: ObservableObject {
 
     init(listing: AdListing) {
         self.listing = listing
-        self.detail = AdDetail(
-            id: listing.id,
-            title: listing.title,
-            price: listing.price,
-            location: listing.location,
-            description: "",
-            sellerName: "",
-            imageURLs: listing.imageURL.map { [$0] } ?? [],
-            chips: [listing.categoryLabel].filter { !$0.isEmpty },
-            callURL: nil,
-            messageURL: URL(string: "https://kupitelefon.rs/poruke.php"),
-            favoriteURL: URL(string: "https://kupitelefon.rs/favorite.php?id=\(listing.id)"),
-            reportURL: URL(string: "https://kupitelefon.rs/report.php?ad=\(listing.id)"),
-            pageURL: listing.detailURL
-        )
+        self.detail = Self.placeholder(from: listing)
     }
 
     func load() async {
@@ -48,6 +34,31 @@ final class AdDetailLoader: ObservableObject {
             errorMessage = error.localizedDescription
         }
     }
+
+    static func placeholder(from listing: AdListing) -> AdDetail {
+        AdDetail(
+            id: listing.id,
+            title: listing.title,
+            price: listing.price,
+            priceNote: "",
+            location: listing.location,
+            description: "",
+            sellerName: "",
+            sellerMeta: "",
+            imageURLs: listing.imageURL.map { [$0] } ?? [],
+            facts: [],
+            chips: [listing.categoryLabel].filter { !$0.isEmpty },
+            views: "",
+            callURL: nil,
+            viberURL: nil,
+            whatsappURL: nil,
+            messageURL: URL(string: "https://kupitelefon.rs/poruke.php"),
+            shopURL: nil,
+            favoriteURL: URL(string: "https://kupitelefon.rs/favorite.php?id=\(listing.id)"),
+            reportURL: URL(string: "https://kupitelefon.rs/report.php?ad=\(listing.id)"),
+            pageURL: listing.detailURL
+        )
+    }
 }
 
 enum AdDetailParser {
@@ -67,6 +78,12 @@ enum AdDetailParser {
             price = HomeFeedParser.decodeHTML(HomeFeedParser.firstMatch(in: html, pattern: #"(\d+[\d.,]*\s*€)"#) ?? "")
         }
 
+        let priceNote = HomeFeedParser.decodeHTML(
+            HomeFeedParser.firstMatch(in: html, pattern: #"kp-price-rsd">([\s\S]*?)</span>"#)
+                ?? HomeFeedParser.firstMatch(in: html, pattern: #"kp-price-note">([\s\S]*?)</span>"#)
+                ?? ""
+        )
+
         let location = HomeFeedParser.decodeHTML(
             HomeFeedParser.firstMatch(in: html, pattern: #"oglasi\?location=([^"&]+)"#)
                 .map { $0.removingPercentEncoding ?? $0 }
@@ -79,6 +96,13 @@ enum AdDetailParser {
                 ?? ""
         )
 
+        let sellerMeta = HomeFeedParser.decodeHTML(
+            HomeFeedParser.firstMatch(in: html, pattern: #"kp-seller-meta-line">([\s\S]*?)</p>"#) ?? ""
+        )
+
+        let shopPath = HomeFeedParser.firstMatch(in: html, pattern: #"kp-seller-name-link"[^>]*href="([^"]+)""#)
+            ?? HomeFeedParser.firstMatch(in: html, pattern: #"kp-seller-link"[^>]*href="([^"]+)""#)
+
         var description = HomeFeedParser.decodeHTML(
             HomeFeedParser.firstMatch(in: html, pattern: #"kp-desc-body">([\s\S]*?)</div>"#)
                 ?? HomeFeedParser.firstMatch(in: html, pattern: #"kp-desc-preview">([\s\S]*?)</span>"#)
@@ -87,7 +111,7 @@ enum AdDetailParser {
         description = description.replacingOccurrences(of: "\n\n+", with: "\n\n", options: .regularExpression)
 
         var images: [URL] = []
-        if let imgRegex = try? NSRegularExpression(pattern: #"kp-gallery-slide[\s\S]{0,800}?src="([^"]+)""#, options: []) {
+        if let imgRegex = try? NSRegularExpression(pattern: #"kp-gallery-slide[\s\S]{0,900}?src="([^"]+)""#, options: []) {
             let range = NSRange(html.startIndex..<html.endIndex, in: html)
             for match in imgRegex.matches(in: html, options: [], range: range) {
                 if match.numberOfRanges > 1, let r = Range(match.range(at: 1), in: html) {
@@ -101,18 +125,32 @@ enum AdDetailParser {
             images = [u]
         }
 
-        var chips: [String] = []
-        if let chipRegex = try? NSRegularExpression(pattern: #"kp-keyfact">[\s\S]*?<small>([\s\S]*?)</small>[\s\S]*?<b>([\s\S]*?)</b>"#, options: []) {
+        var facts: [AdFact] = []
+        if let chipRegex = try? NSRegularExpression(
+            pattern: #"kp-keyfact">[\s\S]*?<small>([\s\S]*?)</small>[\s\S]*?<b>([\s\S]*?)</b>"#,
+            options: []
+        ) {
             let range = NSRange(html.startIndex..<html.endIndex, in: html)
-            for match in chipRegex.matches(in: html, options: [], range: range).prefix(6) {
+            for match in chipRegex.matches(in: html, options: [], range: range).prefix(8) {
                 if match.numberOfRanges > 2,
                    let lr = Range(match.range(at: 1), in: html),
                    let vr = Range(match.range(at: 2), in: html) {
                     let label = HomeFeedParser.decodeHTML(String(html[lr]))
                     let value = HomeFeedParser.decodeHTML(String(html[vr]))
                     if !value.isEmpty {
-                        chips.append(label.isEmpty ? value : "\(label) \(value)")
+                        facts.append(AdFact(label: label, value: value))
                     }
+                }
+            }
+        }
+
+        var chips: [String] = []
+        if let kwRegex = try? NSRegularExpression(pattern: #"kp-chip-kw[^>]*>[\s\S]*?<a[^>]*>([\s\S]*?)</a>"#, options: []) {
+            let range = NSRange(html.startIndex..<html.endIndex, in: html)
+            for match in kwRegex.matches(in: html, options: [], range: range).prefix(8) {
+                if match.numberOfRanges > 1, let r = Range(match.range(at: 1), in: html) {
+                    let t = HomeFeedParser.decodeHTML(String(html[r]))
+                    if !t.isEmpty { chips.append(t) }
                 }
             }
         }
@@ -120,8 +158,16 @@ enum AdDetailParser {
             chips = [fallback.categoryLabel]
         }
 
+        let views = HomeFeedParser.decodeHTML(
+            HomeFeedParser.firstMatch(in: html, pattern: #"kp-head-stats">[\s\S]*?(\d+)[\s\S]*?</span>"#) ?? ""
+        )
+
         let callHref = HomeFeedParser.firstMatch(in: html, pattern: #"href="(tel:[^"]+)""#)
-        let msgHref = HomeFeedParser.firstMatch(in: html, pattern: #"kp-platform-msg"[^>]*href="([^"]+)""#)
+        let viberHref = HomeFeedParser.firstMatch(in: html, pattern: #"href="((?:viber|https):[^"]*viber[^"]*)""#)
+            ?? HomeFeedParser.firstMatch(in: html, pattern: #"data-contact-channel="viber"[\s\S]{0,120}?href="([^"]+)""#)
+        let waHref = HomeFeedParser.firstMatch(in: html, pattern: #"href="(https://wa\.me/[^"]+)""#)
+            ?? HomeFeedParser.firstMatch(in: html, pattern: #"data-contact-channel="whatsapp"[\s\S]{0,120}?href="([^"]+)""#)
+        let msgHref = HomeFeedParser.firstMatch(in: html, pattern: #"class="kp-platform-msg"[^>]*href="([^"]+)""#)
             ?? HomeFeedParser.firstMatch(in: html, pattern: #"href="(/poruke\.php[^"]*)""#)
             ?? "/poruke.php"
 
@@ -129,13 +175,20 @@ enum AdDetailParser {
             id: fallback.id,
             title: title,
             price: price,
+            priceNote: priceNote,
             location: location,
             description: description,
             sellerName: seller,
+            sellerMeta: sellerMeta,
             imageURLs: images,
+            facts: facts,
             chips: chips,
-            callURL: callHref.flatMap { URL(string: $0) },
+            views: views,
+            callURL: callHref.flatMap { URL(string: $0.replacingOccurrences(of: " ", with: "")) },
+            viberURL: viberHref.flatMap { AdListing.makeURL($0) },
+            whatsappURL: waHref.flatMap { AdListing.makeURL($0) },
             messageURL: AdListing.makeURL(msgHref),
+            shopURL: AdListing.makeURL(shopPath),
             favoriteURL: URL(string: "https://kupitelefon.rs/favorite.php?id=\(fallback.id)"),
             reportURL: URL(string: "https://kupitelefon.rs/report.php?ad=\(fallback.id)"),
             pageURL: fallback.detailURL

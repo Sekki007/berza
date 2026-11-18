@@ -29,24 +29,37 @@ struct AdListing: Identifiable, Hashable {
 
     static func makeURL(_ path: String?) -> URL? {
         guard let path = path, !path.isEmpty else { return nil }
-        if path.hasPrefix("http") {
+        if path.hasPrefix("http") || path.hasPrefix("tel:") || path.hasPrefix("mailto:") {
             return URL(string: path)
         }
         return URL(string: "https://kupitelefon.rs" + path)
     }
 }
 
+struct AdFact: Identifiable, Hashable {
+    var id: String { label + "|" + value }
+    let label: String
+    let value: String
+}
+
 struct AdDetail: Identifiable {
     let id: Int
     var title: String
     var price: String
+    var priceNote: String
     var location: String
     var description: String
     var sellerName: String
+    var sellerMeta: String
     var imageURLs: [URL]
+    var facts: [AdFact]
     var chips: [String]
+    var views: String
     var callURL: URL?
+    var viberURL: URL?
+    var whatsappURL: URL?
     var messageURL: URL?
+    var shopURL: URL?
     var favoriteURL: URL?
     var reportURL: URL?
     var pageURL: URL
