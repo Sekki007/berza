@@ -4,38 +4,21 @@ struct ContentView: View {
     @State private var tab = 0
 
     var body: some View {
-        TabView(selection: $tab) {
-            HomeFeedView()
-                .tabItem {
-                    Label("Oglasi", systemImage: "house.fill")
+        VStack(spacing: 0) {
+            Group {
+                switch tab {
+                case 0: HomeFeedView()
+                case 1: SearchHubView()
+                case 2: PostAdHubView()
+                case 3: MessagesHubView()
+                default: AccountHubView()
                 }
-                .tag(0)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
 
-            SearchHubView()
-                .tabItem {
-                    Label("Pretraga", systemImage: "magnifyingglass")
-                }
-                .tag(1)
-
-            PostAdHubView()
-                .tabItem {
-                    Label("Besplatno", systemImage: "plus.circle.fill")
-                }
-                .tag(2)
-
-            MessagesHubView()
-                .tabItem {
-                    Label("Poruke", systemImage: "bubble.left.and.bubble.right.fill")
-                }
-                .tag(3)
-
-            AccountHubView()
-                .tabItem {
-                    Label("Nalog", systemImage: "person.fill")
-                }
-                .tag(4)
+            MainTabBar(tab: $tab, messagesBadge: 0)
         }
-        .tint(Brand.green)
+        .background(Brand.bg.ignoresSafeArea())
         .preferredColorScheme(.light)
     }
 }

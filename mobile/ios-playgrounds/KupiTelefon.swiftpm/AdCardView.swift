@@ -5,35 +5,36 @@ struct AdCardView: View {
     let ad: AdListing
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .top, spacing: 14) {
             ZStack(alignment: .topLeading) {
                 thumb
-                    .frame(width: 100, height: 100)
+                    .frame(width: 108, height: 108)
                     .clipped()
-                    .cornerRadius(12)
+                    .cornerRadius(14)
 
                 if ad.isTop {
                     Text("TOP")
-                        .font(.system(size: 9, weight: .bold))
+                        .font(.system(size: 10, weight: .heavy))
                         .foregroundColor(.white)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 3)
+                        .padding(.horizontal, 7)
+                        .padding(.vertical, 4)
                         .background(Brand.green)
-                        .cornerRadius(6, corners: [.topLeft, .bottomRight])
+                        .cornerRadius(8, corners: [.topLeft, .bottomRight])
                 }
             }
 
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 8) {
                 HStack(alignment: .top, spacing: 8) {
                     Text(ad.title)
-                        .font(.system(size: 15, weight: .semibold))
+                        .font(.system(size: 16, weight: .semibold))
                         .foregroundColor(Brand.text)
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
-                    Spacer(minLength: 4)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
                     if !ad.price.isEmpty {
                         Text(ad.price)
-                            .font(.system(size: 15, weight: .bold))
+                            .font(.system(size: 17, weight: .bold))
                             .foregroundColor(Brand.price)
                             .lineLimit(1)
                     }
@@ -41,54 +42,56 @@ struct AdCardView: View {
 
                 HStack(spacing: 8) {
                     Text(ad.categoryLabel)
-                        .font(.system(size: 11, weight: .semibold))
+                        .font(.system(size: 11, weight: .bold))
                         .foregroundColor(Brand.greenDark)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
+                        .padding(.horizontal, 9)
+                        .padding(.vertical, 5)
                         .background(Color(red: 0.91, green: 0.96, blue: 0.91))
                         .cornerRadius(8)
 
                     if !ad.location.isEmpty {
-                        HStack(spacing: 3) {
-                            Image(systemName: "mappin.and.ellipse")
-                                .font(.system(size: 10))
+                        HStack(spacing: 4) {
+                            Image(systemName: "mappin")
+                                .font(.system(size: 11, weight: .semibold))
                             Text(ad.location)
-                                .font(.caption)
+                                .font(.system(size: 12, weight: .medium))
                                 .lineLimit(1)
                         }
                         .foregroundColor(Brand.muted)
                     }
                 }
             }
+            .padding(.top, 2)
         }
-        .padding(12)
+        .padding(14)
         .background(Color.white)
-        .cornerRadius(14)
-        .overlay(
-            RoundedRectangle(cornerRadius: 14)
-                .stroke(Brand.border, lineWidth: 1)
-        )
+        .cornerRadius(18)
+        .shadow(color: Color.black.opacity(0.06), radius: 10, y: 3)
     }
 
     @ViewBuilder
     private var thumb: some View {
         ZStack {
-            Color(red: 0.93, green: 0.93, blue: 0.93)
+            Color(red: 0.94, green: 0.94, blue: 0.94)
             if let url = ad.imageURL {
                 AsyncImage(url: url) { phase in
                     switch phase {
                     case .success(let image):
                         image.resizable().scaledToFill()
                     case .failure:
-                        Image(systemName: "iphone").foregroundColor(.secondary)
+                        Image(systemName: "iphone")
+                            .font(.system(size: 28))
+                            .foregroundColor(.secondary)
                     case .empty:
-                        ProgressView()
+                        ProgressView().tint(Brand.green)
                     @unknown default:
                         EmptyView()
                     }
                 }
             } else {
-                Image(systemName: "iphone").foregroundColor(.secondary)
+                Image(systemName: "iphone")
+                    .font(.system(size: 28))
+                    .foregroundColor(.secondary)
             }
         }
     }

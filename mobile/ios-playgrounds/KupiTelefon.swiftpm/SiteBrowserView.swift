@@ -4,21 +4,22 @@ struct SiteBrowserView: View {
     let title: String
     let url: URL
     var showsClose: Bool = false
+    var embedMode: Bool = false
 
     @Environment(\.dismiss) private var dismiss
     @StateObject private var model: WebViewModel
 
-    init(title: String, url: URL, showsClose: Bool = false) {
+    init(title: String, url: URL, showsClose: Bool = false, embedMode: Bool = false) {
         self.title = title
         self.url = url
         self.showsClose = showsClose
+        self.embedMode = embedMode
         _model = StateObject(wrappedValue: WebViewModel(startURL: url))
     }
 
     var body: some View {
         ZStack {
             SiteWebView(model: model)
-                .ignoresSafeArea(edges: .bottom)
 
             if model.isLoading && !model.hasLoadedOnce {
                 ProgressView()
@@ -40,19 +41,22 @@ struct SiteBrowserView: View {
                 .background(Brand.bg)
             }
         }
-        .navigationTitle(title)
+        .navigationTitle(embedMode ? "" : title)
         .navigationBarTitleDisplayMode(.inline)
+        .navigationBarHidden(embedMode)
         .toolbar {
-            if showsClose {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Zatvori") { dismiss() }
+            if !embedMode {
+                if showsClose {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Zatvori") { dismiss() }
+                    }
                 }
-            }
-            ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    model.reload()
-                } label: {
-                    Image(systemName: "arrow.clockwise")
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button {
+                        model.reload()
+                    } label: {
+                        Image(systemName: "arrow.clockwise")
+                    }
                 }
             }
         }
