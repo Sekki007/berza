@@ -72,148 +72,68 @@ function adReelImageFiles(array $ad): array
     return [];
 }
 
-/** Broj 0–9999 → srpski (za jasan TTS). */
-function adReelSpeakInt(int $n): string
-{
-    $n = max(0, min(9999, $n));
-    $ones = ['nula', 'jedan', 'dva', 'tri', 'četiri', 'pet', 'šest', 'sedam', 'osam', 'devet'];
-    $teens = ['deset', 'jedanaest', 'dvanaest', 'trinaest', 'četrnaest', 'petnaest', 'šesnaest', 'sedamnaest', 'osamnaest', 'devetnaest'];
-    $tens = ['', '', 'dvadeset', 'trideset', 'četrdeset', 'pedeset', 'šezdeset', 'sedamdeset', 'osamdeset', 'devedeset'];
-    $hundreds = ['', 'sto', 'dvesta', 'trista', 'četiristo', 'petsto', 'šesto', 'sedamsto', 'osamsto', 'devetsto'];
-
-    if ($n < 10) {
-        return $ones[$n];
-    }
-    if ($n < 20) {
-        return $teens[$n - 10];
-    }
-    if ($n < 100) {
-        $t = intdiv($n, 10);
-        $o = $n % 10;
-        return $o === 0 ? $tens[$t] : ($tens[$t] . ' ' . $ones[$o]);
-    }
-    if ($n < 1000) {
-        $h = intdiv($n, 100);
-        $rest = $n % 100;
-        return $rest === 0 ? $hundreds[$h] : ($hundreds[$h] . ' ' . adReelSpeakInt($rest));
-    }
-    $th = intdiv($n, 1000);
-    $rest = $n % 1000;
-    $head = match ($th) {
-        1 => 'hiljadu',
-        2 => 'dve hiljade',
-        3, 4 => adReelSpeakInt($th) . ' hiljade',
-        default => adReelSpeakInt($th) . ' hiljada',
-    };
-    return $rest === 0 ? $head : ($head . ' ' . adReelSpeakInt($rest));
-}
-
-function adReelSpeakPriceAmount(array $ad): string
-{
-    $raw = function_exists('adCardPriceMainLabel') ? adCardPriceMainLabel($ad) : formatAdPrice($ad);
-    if ($raw === '' || stripos($raw, 'dogovor') !== false) {
-        return 'po dogovoru';
-    }
-    if (preg_match('/(\d[\d\s\.]*)/', $raw, $m)) {
-        $num = (int)preg_replace('/[^\d]/', '', $m[1]);
-        if ($num > 0) {
-            return adReelSpeakInt($num) . ' evra';
-        }
-    }
-    return 'po dogovoru';
-}
-
-function adReelSpeakStorage(?string $storage): string
-{
-    $storage = trim((string)$storage);
-    if ($storage === '') {
-        return '';
-    }
-    if (preg_match('/(\d+)\s*(gb|tb)/i', $storage, $m)) {
-        $n = (int)$m[1];
-        $unit = strtolower($m[2]) === 'tb' ? 'terabajta' : 'gigabajta';
-        return adReelSpeakInt($n) . ' ' . $unit;
-    }
-    return mb_strtolower($storage);
-}
-
-function adReelSpeakModel(string $brand, string $model): string
-{
-    $full = trim($brand . ' ' . $model);
-    $s = mb_strtolower($full);
-    $map = [
-        'iphone' => 'ajfon',
-        'apple' => '',
-        'samsung' => 'samsung',
-        'galaxy' => 'galaksi',
-        'xiaomi' => 'sjaomi',
-        'huawei' => 'huavej',
-        'google' => 'google',
-        'pixel' => 'piksel',
-        'honor' => 'honor',
-        'oneplus' => 'van plas',
-        'motorola' => 'motorola',
-        'nokia' => 'nokija',
-        'pro' => 'pro',
-        'max' => 'maks',
-        'ultra' => 'ultra',
-        'plus' => 'plus',
-        'mini' => 'mini',
-        'fe' => 'ef e',
-    ];
-    foreach ($map as $from => $to) {
-        $s = preg_replace('/\b' . preg_quote($from, '/') . '\b/ui', $to, $s) ?? $s;
-    }
-    $s = preg_replace_callback('/\b(\d{1,4})\b/u', static fn($m) => adReelSpeakInt((int)$m[1]), $s) ?? $s;
-    $s = trim(preg_replace('/\s+/u', ' ', $s) ?? $s);
-    return $s !== '' ? $s : 'telefon';
-}
-
-/** Fonetski srpski tekst za TTS (bez engleskih skraćenica). */
+/**
+ * Marketinški voiceover u prirodnom srpskom (AutoPijac stil).
+ * Brojeve i cene pišemo arapski — pro TTS (ElevenLabs/Azure) ih čita prirodno.
+ */
 function adReelNarration(array $ad): string
 {
     $brand = trim((string)($ad['brand'] ?? ''));
     $model = trim((string)($ad['model'] ?? ''));
     $loc = trim((string)($ad['location'] ?? ''));
     $condition = trim((string)($ad['condition_state'] ?? ''));
+    $storage = trim((string)($ad['storage'] ?? ''));
     $type = function_exists('getAdType') ? getAdType($ad) : (string)($ad['ad_type'] ?? 'telefon');
-    $spokenModel = adReelSpeakModel($brand, $model);
-    $spokenPrice = adReelSpeakPriceAmount($ad);
-    $spokenStorage = adReelSpeakStorage((string)($ad['storage'] ?? ''));
-
-    $parts = [];
-    if ($type === 'telefon') {
-        $parts[] = 'Na Kupi telefonu je nov oglas.';
-        $parts[] = 'U pitanju je ' . $spokenModel . '.';
-    } elseif ($type === 'delovi') {
-        $parts[] = 'Na Kupi telefonu je oglas za deo.';
-        $parts[] = $spokenModel . '.';
-    } else {
-        $parts[] = 'Na Kupi telefonu je oglas za servis.';
-        $parts[] = $spokenModel . '.';
+    $title = trim(function_exists('adDisplayTitle') ? adDisplayTitle($ad) : (string)($ad['title'] ?? ''));
+    $name = trim($brand . ' ' . $model);
+    if ($name === '') {
+        $name = $title !== '' ? $title : 'telefon';
     }
 
-    $facts = [];
-    if ($spokenStorage !== '') {
-        $facts[] = 'memoriju ' . $spokenStorage;
+    // iPhone → ajfon za balkanski glas; ostalo ostaje čitljivo.
+    $nameSpeak = preg_replace('/\biphone\b/iu', 'ajfon', $name) ?? $name;
+    $nameSpeak = preg_replace('/\bApple\b/u', '', $nameSpeak) ?? $nameSpeak;
+    $nameSpeak = trim(preg_replace('/\s+/u', ' ', $nameSpeak) ?? $nameSpeak);
+
+    $priceLabel = function_exists('adCardPriceMainLabel') ? adCardPriceMainLabel($ad) : formatAdPrice($ad);
+    $priceSpeak = 'po dogovoru';
+    if ($priceLabel !== '' && stripos($priceLabel, 'dogovor') === false && preg_match('/(\d[\d\s\.]*)/', $priceLabel, $m)) {
+        $num = (int)preg_replace('/[^\d]/', '', $m[1]);
+        if ($num > 0) {
+            $priceSpeak = $num . ' evra';
+        }
+    }
+
+    $lines = [];
+    if ($type === 'telefon') {
+        $lines[] = $nameSpeak . '.';
+    } elseif ($type === 'delovi') {
+        $lines[] = 'Deo: ' . $nameSpeak . '.';
+    } else {
+        $lines[] = 'Servis: ' . $nameSpeak . '.';
+    }
+
+    $bits = [];
+    if ($storage !== '') {
+        $bits[] = $storage;
     }
     if (isset($ad['battery_health']) && $ad['battery_health'] !== '' && $ad['battery_health'] !== null) {
-        $facts[] = 'baterija ' . adReelSpeakInt((int)$ad['battery_health']) . ' posto';
+        $bits[] = 'baterija ' . (int)$ad['battery_health'] . ' posto';
     }
     if ($condition !== '') {
-        $facts[] = 'stanje ' . mb_strtolower($condition);
+        $bits[] = 'stanje ' . mb_strtolower($condition);
     }
-    if ($facts !== []) {
-        $parts[] = 'Ima ' . implode(', ', $facts) . '.';
+    if ($bits !== []) {
+        $lines[] = implode(', ', $bits) . '.';
     }
 
-    $parts[] = 'Cena je ' . $spokenPrice . '.';
+    $lines[] = 'Cena ' . $priceSpeak . '.';
     if ($loc !== '') {
-        $parts[] = 'Nalazi se u mestu ' . $loc . '.';
+        $lines[] = $loc . '.';
     }
-    $parts[] = 'Otvori oglas na sajtu Kupi telefon, i javi se prodavcu.';
+    $lines[] = 'Detalje i kontakt na KupiTelefon tačka er es.';
 
-    return trim(preg_replace('/\s+/u', ' ', implode(' ', $parts)) ?? '');
+    return trim(preg_replace('/\s+/u', ' ', implode(' ', $lines)) ?? '');
 }
 
 function adReelLoadImage(string $path): ?\GdImage
@@ -453,19 +373,29 @@ function generateAdReel(array $ad, bool $force = false): array
         return ['ok' => false, 'error' => 'overlay_failed'];
     }
 
+    require_once __DIR__ . '/ad_reel_tts.php';
+
     $script = adReelNarration($ad);
     file_put_contents($scriptPath, $script);
 
-    $ttsPy = dirname(__DIR__) . '/tools/ad_reel_tts.py';
-    $voiceName = getenv('AD_REEL_VOICE') ?: 'sr-RS-NicholasNeural';
-    $code = adReelRun(
-        [adReelPythonBinary(), $ttsPy, $scriptPath, $voice, $voiceName, '-12%'],
-        $out,
-        $err
-    );
-    if ($code !== 0 || !is_file($voice) || filesize($voice) < 1000) {
-        return ['ok' => false, 'error' => 'tts_failed: ' . trim($err . ' ' . $out)];
+    // Free Edge TTS nije "pro" (robotski / ne zvuči kao AutoPijac). Traži pravi API.
+    if (adReelTtsProvider() === 'edge' && trim((string)envValue('AD_REEL_ALLOW_EDGE', '')) !== '1') {
+        return [
+            'ok' => false,
+            'error' => 'Pro voiceover: dodaj ELEVENLABS_API_KEY u .env (preporuka — glas Ivan j96cp162VcYdsYfSp1nc), '
+                . 'ili AZURE_SPEECH_KEY + AZURE_SPEECH_REGION. '
+                . 'Privremeno edge: AD_REEL_ALLOW_EDGE=1',
+            'provider' => 'edge',
+        ];
     }
+
+    $tts = adReelSynthesizeVoice($script, $voice);
+    if (empty($tts['ok']) || !is_file($voice) || filesize($voice) < 1000) {
+        $provider = (string)($tts['provider'] ?? adReelTtsProvider());
+        $err = (string)($tts['error'] ?? 'unknown');
+        return ['ok' => false, 'error' => 'tts_failed[' . $provider . ']: ' . $err, 'provider' => $provider];
+    }
+    file_put_contents($dir . '/tts_provider.txt', (string)($tts['provider'] ?? ''));
 
     $durOut = '';
     adReelRun([
@@ -529,5 +459,6 @@ function generateAdReel(array $ad, bool $force = false): array
         'public' => $outPub,
         'script' => $script,
         'duration' => $duration,
+        'provider' => (string)($tts['provider'] ?? ''),
     ];
 }
