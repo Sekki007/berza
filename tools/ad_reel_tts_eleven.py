@@ -34,6 +34,8 @@ def main() -> int:
         return 1
 
     url = f"https://api.elevenlabs.io/v1/text-to-speech/{voice_id}?output_format=mp3_44100_128"
+    speed = float(os.environ.get("ELEVENLABS_SPEED", "1.12"))
+    speed = max(0.7, min(1.2, speed))
     payload = {
         "text": text,
         "model_id": model_id,
@@ -42,6 +44,7 @@ def main() -> int:
             "similarity_boost": float(os.environ.get("ELEVENLABS_SIMILARITY", "0.85")),
             "style": float(os.environ.get("ELEVENLABS_STYLE", "0.45")),
             "use_speaker_boost": True,
+            "speed": speed,
         },
     }
     req = urllib.request.Request(

@@ -74,6 +74,7 @@ function adReelTtsElevenLabs(string $script, string $outMp3): array
     putenv('ELEVENLABS_STABILITY=' . trim((string)envValue('ELEVENLABS_STABILITY', '0.48')));
     putenv('ELEVENLABS_SIMILARITY=' . trim((string)envValue('ELEVENLABS_SIMILARITY', '0.80')));
     putenv('ELEVENLABS_STYLE=' . trim((string)envValue('ELEVENLABS_STYLE', '0.62')));
+    putenv('ELEVENLABS_SPEED=' . trim((string)envValue('ELEVENLABS_SPEED', '1.12')));
 
     $tmp = sys_get_temp_dir() . '/kt_el_' . bin2hex(random_bytes(4));
     $outFile = $tmp . '.out';

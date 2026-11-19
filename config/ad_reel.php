@@ -195,7 +195,7 @@ function adReelNarration(array $ad): string
     if ($loc !== '') {
         $parts[] = 'Lokacija ' . $loc . '.';
     }
-    $parts[] = 'Otvori oglas na Kupi telefonu, i javi se odmah.';
+    $parts[] = 'Otvori oglas na Kupitelefon.rs i javi se odmah.';
 
     return trim(preg_replace('/\s+/u', ' ', implode(' ', $parts)) ?? '');
 }
