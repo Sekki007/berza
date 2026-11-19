@@ -69,10 +69,11 @@ function adReelTtsElevenLabs(string $script, string $outMp3): array
     file_put_contents($scriptPath, $script);
 
     // Put settings into env for the Python helper.
+    // Jasnije + ubedljivije: malo više stability, izraženiji style.
     putenv('ELEVENLABS_MODEL_ID=' . trim((string)envValue('ELEVENLABS_MODEL_ID', 'eleven_multilingual_v2')));
-    putenv('ELEVENLABS_STABILITY=' . trim((string)envValue('ELEVENLABS_STABILITY', '0.35')));
-    putenv('ELEVENLABS_SIMILARITY=' . trim((string)envValue('ELEVENLABS_SIMILARITY', '0.85')));
-    putenv('ELEVENLABS_STYLE=' . trim((string)envValue('ELEVENLABS_STYLE', '0.45')));
+    putenv('ELEVENLABS_STABILITY=' . trim((string)envValue('ELEVENLABS_STABILITY', '0.48')));
+    putenv('ELEVENLABS_SIMILARITY=' . trim((string)envValue('ELEVENLABS_SIMILARITY', '0.80')));
+    putenv('ELEVENLABS_STYLE=' . trim((string)envValue('ELEVENLABS_STYLE', '0.62')));
 
     $tmp = sys_get_temp_dir() . '/kt_el_' . bin2hex(random_bytes(4));
     $outFile = $tmp . '.out';

@@ -72,9 +72,69 @@ function adReelImageFiles(array $ad): array
     return [];
 }
 
+/** Broj 0–9999 → srpski (jasnije za voiceover). */
+function adReelSpeakInt(int $n): string
+{
+    $n = max(0, min(9999, $n));
+    $ones = ['nula', 'jedan', 'dva', 'tri', 'četiri', 'pet', 'šest', 'sedam', 'osam', 'devet'];
+    $teens = ['deset', 'jedanaest', 'dvanaest', 'trinaest', 'četrnaest', 'petnaest', 'šesnaest', 'sedamnaest', 'osamnaest', 'devetnaest'];
+    $tens = ['', '', 'dvadeset', 'trideset', 'četrdeset', 'pedeset', 'šezdeset', 'sedamdeset', 'osamdeset', 'devedeset'];
+    $hundreds = ['', 'sto', 'dvesta', 'trista', 'četiristo', 'petsto', 'šesto', 'sedamsto', 'osamsto', 'devetsto'];
+
+    if ($n < 10) {
+        return $ones[$n];
+    }
+    if ($n < 20) {
+        return $teens[$n - 10];
+    }
+    if ($n < 100) {
+        $t = intdiv($n, 10);
+        $o = $n % 10;
+        return $o === 0 ? $tens[$t] : ($tens[$t] . ' ' . $ones[$o]);
+    }
+    if ($n < 1000) {
+        $h = intdiv($n, 100);
+        $rest = $n % 100;
+        return $rest === 0 ? $hundreds[$h] : ($hundreds[$h] . ' ' . adReelSpeakInt($rest));
+    }
+    $th = intdiv($n, 1000);
+    $rest = $n % 1000;
+    $head = match ($th) {
+        1 => 'hiljadu',
+        2 => 'dve hiljade',
+        3, 4 => adReelSpeakInt($th) . ' hiljade',
+        default => adReelSpeakInt($th) . ' hiljada',
+    };
+    return $rest === 0 ? $head : ($head . ' ' . adReelSpeakInt($rest));
+}
+
+function adReelSpeakProductName(string $brand, string $model, string $fallbackTitle): string
+{
+    $name = trim($brand . ' ' . $model);
+    if ($name === '') {
+        $name = $fallbackTitle !== '' ? $fallbackTitle : 'telefon';
+    }
+    $s = $name;
+    $s = preg_replace('/\bApple\b/iu', '', $s) ?? $s;
+    $s = preg_replace('/\biPhone\b/iu', 'ajfon', $s) ?? $s;
+    $s = preg_replace('/\bGalaxy\b/iu', 'Galaksi', $s) ?? $s;
+    $s = preg_replace('/\bXiaomi\b/iu', 'Sjaomi', $s) ?? $s;
+    $s = preg_replace('/\bHuawei\b/iu', 'Huavej', $s) ?? $s;
+    $s = preg_replace('/\bPixel\b/iu', 'Piksel', $s) ?? $s;
+    // Model brojeve čitaj kao reči kad su kratki (14, 15, 23…)
+    $s = preg_replace_callback('/\b(\d{1,2})\b/u', static function ($m) {
+        $n = (int)$m[1];
+        return ($n >= 10 && $n <= 99) ? adReelSpeakInt($n) : $m[1];
+    }, $s) ?? $s;
+    $s = trim(preg_replace('/\s+/u', ' ', $s) ?? $s);
+    if ($s !== '') {
+        $s = mb_strtoupper(mb_substr($s, 0, 1)) . mb_substr($s, 1);
+    }
+    return $s;
+}
+
 /**
- * Marketinški voiceover u prirodnom srpskom (AutoPijac stil).
- * Brojeve i cene pišemo arapski — pro TTS (ElevenLabs/Azure) ih čita prirodno.
+ * Ubedljiv marketplace voiceover (AutoPijac stil): hook → model → činjenice → cena → CTA.
  */
 function adReelNarration(array $ad): string
 {
@@ -85,55 +145,59 @@ function adReelNarration(array $ad): string
     $storage = trim((string)($ad['storage'] ?? ''));
     $type = function_exists('getAdType') ? getAdType($ad) : (string)($ad['ad_type'] ?? 'telefon');
     $title = trim(function_exists('adDisplayTitle') ? adDisplayTitle($ad) : (string)($ad['title'] ?? ''));
-    $name = trim($brand . ' ' . $model);
-    if ($name === '') {
-        $name = $title !== '' ? $title : 'telefon';
-    }
+    $nameSpeak = adReelSpeakProductName($brand, $model, $title);
 
-    // iPhone → ajfon za balkanski glas; ostalo ostaje čitljivo.
-    $nameSpeak = preg_replace('/\biphone\b/iu', 'ajfon', $name) ?? $name;
-    $nameSpeak = preg_replace('/\bApple\b/u', '', $nameSpeak) ?? $nameSpeak;
-    $nameSpeak = trim(preg_replace('/\s+/u', ' ', $nameSpeak) ?? $nameSpeak);
-
-    $priceLabel = function_exists('adCardPriceMainLabel') ? adCardPriceMainLabel($ad) : formatAdPrice($ad);
     $priceSpeak = 'po dogovoru';
+    $priceLabel = function_exists('adCardPriceMainLabel') ? adCardPriceMainLabel($ad) : formatAdPrice($ad);
     if ($priceLabel !== '' && stripos($priceLabel, 'dogovor') === false && preg_match('/(\d[\d\s\.]*)/', $priceLabel, $m)) {
         $num = (int)preg_replace('/[^\d]/', '', $m[1]);
         if ($num > 0) {
-            $priceSpeak = $num . ' evra';
+            $priceSpeak = adReelSpeakInt($num) . ' evra';
         }
     }
 
-    $lines = [];
-    if ($type === 'telefon') {
-        $lines[] = $nameSpeak . '.';
-    } elseif ($type === 'delovi') {
-        $lines[] = 'Deo: ' . $nameSpeak . '.';
-    } else {
-        $lines[] = 'Servis: ' . $nameSpeak . '.';
+    $storageSpeak = '';
+    if ($storage !== '' && preg_match('/(\d+)\s*(gb|tb)/i', $storage, $sm)) {
+        $n = (int)$sm[1];
+        $unit = strtolower($sm[2]) === 'tb' ? 'terabajta' : 'gigabajta';
+        $storageSpeak = adReelSpeakInt($n) . ' ' . $unit;
+    } elseif ($storage !== '') {
+        $storageSpeak = mb_strtolower($storage);
     }
 
-    $bits = [];
-    if ($storage !== '') {
-        $bits[] = $storage;
+    // Kratke rečenice + zarezi = jasniji tempo kod ElevenLabs.
+    $parts = [];
+    if ($type === 'telefon') {
+        $parts[] = 'Pogledaj ovaj telefon.';
+        $parts[] = $nameSpeak . '.';
+    } elseif ($type === 'delovi') {
+        $parts[] = 'Pogledaj ovaj deo.';
+        $parts[] = $nameSpeak . '.';
+    } else {
+        $parts[] = 'Pogledaj ovu uslugu.';
+        $parts[] = $nameSpeak . '.';
+    }
+
+    if ($storageSpeak !== '') {
+        $parts[] = 'Memorija ' . $storageSpeak . '.';
     }
     if (isset($ad['battery_health']) && $ad['battery_health'] !== '' && $ad['battery_health'] !== null) {
-        $bits[] = 'baterija ' . (int)$ad['battery_health'] . ' posto';
+        $bh = (int)$ad['battery_health'];
+        if ($bh > 0) {
+            $parts[] = 'Baterija ' . adReelSpeakInt($bh) . ' posto.';
+        }
     }
     if ($condition !== '') {
-        $bits[] = 'stanje ' . mb_strtolower($condition);
-    }
-    if ($bits !== []) {
-        $lines[] = implode(', ', $bits) . '.';
+        $parts[] = 'Stanje ' . mb_strtolower($condition) . '.';
     }
 
-    $lines[] = 'Cena ' . $priceSpeak . '.';
+    $parts[] = 'Cena: ' . $priceSpeak . '.';
     if ($loc !== '') {
-        $lines[] = $loc . '.';
+        $parts[] = 'Lokacija ' . $loc . '.';
     }
-    $lines[] = 'Detalje i kontakt na KupiTelefon tačka er es.';
+    $parts[] = 'Otvori oglas na Kupi telefonu, i javi se odmah.';
 
-    return trim(preg_replace('/\s+/u', ' ', implode(' ', $lines)) ?? '');
+    return trim(preg_replace('/\s+/u', ' ', implode(' ', $parts)) ?? '');
 }
 
 function adReelLoadImage(string $path): ?\GdImage
