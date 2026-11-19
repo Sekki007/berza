@@ -59,50 +59,46 @@ function adReelTtsElevenLabs(string $script, string $outMp3): array
 
     // Ivan — Deep Serbian & Croatian (Balkan)
     $voiceId = trim((string)envValue('ELEVENLABS_VOICE_ID', 'j96cp162VcYdsYfSp1nc'));
-    $model = trim((string)envValue('ELEVENLABS_MODEL_ID', 'eleven_multilingual_v2'));
-    $url = 'https://api.elevenlabs.io/v1/text-to-speech/' . rawurlencode($voiceId)
-        . '?output_format=mp3_44100_128';
-
-    $payload = [
-        'text' => $script,
-        'model_id' => $model,
-        'voice_settings' => [
-            'stability' => (float)envValue('ELEVENLABS_STABILITY', '0.35'),
-            'similarity_boost' => (float)envValue('ELEVENLABS_SIMILARITY', '0.85'),
-            'style' => (float)envValue('ELEVENLABS_STYLE', '0.45'),
-            'use_speaker_boost' => true,
-        ],
-    ];
-
-    $ch = curl_init($url);
-    if ($ch === false) {
-        return ['ok' => false, 'provider' => 'elevenlabs', 'error' => 'curl_init_failed'];
+    $py = PHP_OS_FAMILY === 'Windows' ? 'python' : 'python3';
+    $envPy = trim((string)(getenv('PYTHON_PATH') ?: ''));
+    if ($envPy !== '') {
+        $py = $envPy;
     }
-    curl_setopt_array($ch, [
-        CURLOPT_POST => true,
-        CURLOPT_HTTPHEADER => [
-            'Accept: audio/mpeg',
-            'Content-Type: application/json',
-            'xi-api-key: ' . $apiKey,
-        ],
-        CURLOPT_POSTFIELDS => json_encode($payload, JSON_UNESCAPED_UNICODE),
-        CURLOPT_RETURNTRANSFER => true,
-        CURLOPT_TIMEOUT => 90,
-    ]);
-    $body = curl_exec($ch);
-    $code = (int)curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $err = curl_error($ch);
-    curl_close($ch);
+    $ttsPy = dirname(__DIR__) . '/tools/ad_reel_tts_eleven.py';
+    $scriptPath = $outMp3 . '.txt';
+    file_put_contents($scriptPath, $script);
 
-    if ($body === false || $code < 200 || $code >= 300) {
-        $hint = is_string($body) ? mb_substr($body, 0, 300) : $err;
-        return ['ok' => false, 'provider' => 'elevenlabs', 'error' => 'http_' . $code . ': ' . $hint];
+    // Put settings into env for the Python helper.
+    putenv('ELEVENLABS_MODEL_ID=' . trim((string)envValue('ELEVENLABS_MODEL_ID', 'eleven_multilingual_v2')));
+    putenv('ELEVENLABS_STABILITY=' . trim((string)envValue('ELEVENLABS_STABILITY', '0.35')));
+    putenv('ELEVENLABS_SIMILARITY=' . trim((string)envValue('ELEVENLABS_SIMILARITY', '0.85')));
+    putenv('ELEVENLABS_STYLE=' . trim((string)envValue('ELEVENLABS_STYLE', '0.45')));
+
+    $tmp = sys_get_temp_dir() . '/kt_el_' . bin2hex(random_bytes(4));
+    $outFile = $tmp . '.out';
+    $errFile = $tmp . '.err';
+    $cmd = [$py, $ttsPy, $scriptPath, $outMp3, $voiceId, $apiKey];
+    $proc = proc_open($cmd, [
+        0 => ['pipe', 'r'],
+        1 => ['file', $outFile, 'w'],
+        2 => ['file', $errFile, 'w'],
+    ], $pipes, null, null, ['bypass_shell' => true]);
+    if (!is_resource($proc)) {
+        @unlink($scriptPath);
+        return ['ok' => false, 'provider' => 'elevenlabs', 'error' => 'proc_open_failed'];
     }
-    if (strlen($body) < 1000) {
-        return ['ok' => false, 'provider' => 'elevenlabs', 'error' => 'short_audio'];
+    fclose($pipes[0]);
+    $code = proc_close($proc);
+    $err = is_file($errFile) ? (string)file_get_contents($errFile) : '';
+    $out = is_file($outFile) ? (string)file_get_contents($outFile) : '';
+    @unlink($outFile);
+    @unlink($errFile);
+    @unlink($scriptPath);
+
+    if ($code !== 0 || !is_file($outMp3) || filesize($outMp3) < 1000) {
+        return ['ok' => false, 'provider' => 'elevenlabs', 'error' => trim($err . ' ' . $out)];
     }
-    file_put_contents($outMp3, $body);
-    return ['ok' => true, 'provider' => 'elevenlabs', 'bytes' => strlen($body)];
+    return ['ok' => true, 'provider' => 'elevenlabs', 'bytes' => (int)filesize($outMp3)];
 }
 
 /**
