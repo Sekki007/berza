@@ -8,6 +8,9 @@ USE berza;
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
+DROP TABLE IF EXISTS ad_counter_daily;
+DROP TABLE IF EXISTS ad_counter;
+DROP TABLE IF EXISTS ad_counter_meta;
 DROP TABLE IF EXISTS ad_stats_daily;
 DROP TABLE IF EXISTS ad_stats;
 DROP TABLE IF EXISTS saved_searches;
@@ -252,6 +255,29 @@ CREATE TABLE ad_stats_daily (
     PRIMARY KEY (ad_id, day),
     CONSTRAINT fk_stats_daily_ad FOREIGN KEY (ad_id) REFERENCES ads(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
+
+-- Živi brojači (STORAGE_DRIVER=mysql). Bez FK ka ads: oglasi su u json_documents.
+-- Aplikacija pravi iste tabele i sama prepisuje postojeće JSON brojače.
+CREATE TABLE ad_counter (
+    ad_id INT UNSIGNED NOT NULL PRIMARY KEY,
+    views INT UNSIGNED NOT NULL DEFAULT 0,
+    phone_reveals INT UNSIGNED NOT NULL DEFAULT 0,
+    messages_started INT UNSIGNED NOT NULL DEFAULT 0
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE ad_counter_daily (
+    ad_id INT UNSIGNED NOT NULL,
+    day DATE NOT NULL,
+    views INT UNSIGNED NOT NULL DEFAULT 0,
+    phone_reveals INT UNSIGNED NOT NULL DEFAULT 0,
+    messages_started INT UNSIGNED NOT NULL DEFAULT 0,
+    PRIMARY KEY (ad_id, day)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE ad_counter_meta (
+    meta_key VARCHAR(64) NOT NULL PRIMARY KEY,
+    meta_value VARCHAR(255) NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 CREATE TABLE settings (
     setting_key VARCHAR(80) PRIMARY KEY,

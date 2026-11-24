@@ -345,6 +345,39 @@ function jsonStorageEncode(array $payload): string
     return json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) ?: '[]';
 }
 
+/** Isto značenje, bez obzira na razmake i redosled ključeva u sačuvanom tekstu. */
+function jsonPayloadsEqual(array $payload, string $stored): bool
+{
+    $decoded = json_decode($stored, true);
+    if (!is_array($decoded)) {
+        return false;
+    }
+    $flags = JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES;
+    $left = json_encode(jsonPayloadCanonical($decoded), $flags);
+    $right = json_encode(jsonPayloadCanonical($payload), $flags);
+    return is_string($left) && is_string($right) && $left === $right;
+}
+
+/**
+ * Stabilan oblik za poređenje: redosled ključeva ne sme sam da izazove UPDATE.
+ *
+ * @return mixed
+ */
+function jsonPayloadCanonical(mixed $value): mixed
+{
+    if (!is_array($value)) {
+        return $value;
+    }
+    $isList = array_is_list($value);
+    if (!$isList) {
+        ksort($value);
+    }
+    foreach ($value as $key => $item) {
+        $value[$key] = jsonPayloadCanonical($item);
+    }
+    return $value;
+}
+
 function ensureMySqlStorageTable(): void
 {
     static $ready = false;
@@ -377,6 +410,12 @@ function readJsonFromMySql(string $filename): array
 function writeJsonToMySql(string $filename, array $payload): void
 {
     ensureMySqlStorageTable();
+    $existingStmt = db()->prepare('SELECT payload FROM json_documents WHERE filename = :filename LIMIT 1');
+    $existingStmt->execute([':filename' => $filename]);
+    $existing = $existingStmt->fetchColumn();
+    if (is_string($existing) && jsonPayloadsEqual($payload, $existing)) {
+        return;
+    }
     $stmt = db()->prepare(
         'INSERT INTO json_documents (filename, payload, updated_at)
          VALUES (:filename, :payload, NOW())
@@ -422,16 +461,26 @@ function ensureJsonDataFiles(): void
     $defaults = jsonStorageDefaults();
     if (usesMySqlStorage()) {
         ensureMySqlStorageTable();
-        $stmt = db()->prepare(
+        $check = db()->prepare('SELECT 1 FROM json_documents WHERE filename = :filename LIMIT 1');
+        $insert = db()->prepare(
             'INSERT INTO json_documents (filename, payload, updated_at)
-             VALUES (:filename, :payload, NOW())
-             ON DUPLICATE KEY UPDATE filename = filename'
+             VALUES (:filename, :payload, NOW())'
         );
         foreach ($defaults as $filename => $payload) {
-            $stmt->execute([
-                ':filename' => $filename,
-                ':payload' => jsonStorageEncode(is_array($payload) ? $payload : []),
-            ]);
+            $check->execute([':filename' => $filename]);
+            if ($check->fetchColumn()) {
+                continue;
+            }
+            try {
+                $insert->execute([
+                    ':filename' => $filename,
+                    ':payload' => jsonStorageEncode(is_array($payload) ? $payload : []),
+                ]);
+            } catch (PDOException $e) {
+                if ((string)$e->getCode() !== '23000') {
+                    throw $e;
+                }
+            }
         }
         return;
     }
@@ -1028,7 +1077,13 @@ function validateAdPrice(float $amount, string $currency, string $adType, bool $
 
 function getAllAds(): array
 {
+    if (function_exists('ensureAdCountersMigrated') && function_exists('usesMySqlStorage') && usesMySqlStorage()) {
+        ensureAdCountersMigrated();
+    }
     $ads = readJsonFile('ads.json');
+    if (function_exists('overlayAdCounterViews')) {
+        $ads = overlayAdCounterViews($ads);
+    }
     usort($ads, static fn($a, $b) => strcmp((string)($b['created_at'] ?? ''), (string)($a['created_at'] ?? '')));
     return $ads;
 }
@@ -1158,7 +1213,11 @@ function deleteAdById(int $adId): bool
     $before = count($ads);
     $ads = array_values(array_filter($ads, static fn($ad) => (int)($ad['id'] ?? 0) !== $adId));
     writeJsonFile('ads.json', $ads);
-    return count($ads) < $before;
+    $removed = count($ads) < $before;
+    if ($removed && function_exists('deleteAdCounters')) {
+        deleteAdCounters($adId);
+    }
+    return $removed;
 }
 
 function getPublicAds(array $filters = []): array
