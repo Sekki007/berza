@@ -22,11 +22,16 @@ if ($cleanListingRedirect !== null) {
 }
 
 // Radi i bez nginx rewrite pravila: nepoznate putanje stižu ovde preko try_files.
-if (preg_match('#^/(?:vodici|blog)/?$#', $requestPath) === 1) {
+$blogTarget = guideLegacyBlogTarget(rtrim($requestPath, '/') ?: '/');
+if ($blogTarget !== null && in_array($_SERVER['REQUEST_METHOD'] ?? 'GET', ['GET', 'HEAD'], true)) {
+    header('Location: ' . $blogTarget, true, 301);
+    exit;
+}
+if (preg_match('#^/vodici/?$#', $requestPath) === 1) {
     require __DIR__ . '/vodici.php';
     exit;
 }
-if (preg_match('#^/(?:vodic|blog)/([^/]+)/?$#', $requestPath, $guideMatch) === 1) {
+if (preg_match('#^/vodic/([^/]+)/?$#', $requestPath, $guideMatch) === 1) {
     $_GET['slug'] = rawurldecode((string)$guideMatch[1]);
     require __DIR__ . '/vodic.php';
     exit;

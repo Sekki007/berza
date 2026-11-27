@@ -13,8 +13,75 @@ function getAllGuides(): array
     } else {
         $rows = upgradeDefaultGuides($rows);
     }
+    $have = [];
+    foreach ($rows as $row) {
+        $have[(string)($row['slug'] ?? '')] = true;
+    }
+    foreach (draftGuideTopics() as $draft) {
+        if (!isset($have[(string)$draft['slug']])) {
+            $rows[] = $draft;
+        }
+    }
     usort($rows, static fn($a, $b) => strcmp((string)($b['updated_at'] ?? $b['created_at'] ?? ''), (string)($a['updated_at'] ?? $a['created_at'] ?? '')));
     return $rows;
+}
+
+/** Nacrti tema. Nisu objavljeni i nemaju napisan tekst. */
+function draftGuideTopics(): array
+{
+    $topics = [
+        ['Kako proveriti polovni Samsung pre kupovine', 'provera-polovnog-samsunga', 'provera', 'provera polovnog samsunga'],
+        ['iCloud lock: kako da proverim da li je iPhone zaključan', 'icloud-lock-provera', 'provera', 'icloud lock provera'],
+        ['Zdravlje baterije iPhone: koliko procenata je u redu', 'zdravlje-baterije-iphone', 'provera', 'battery health iphone koliko je dobro'],
+        ['Najčešće prevare pri kupovini telefona preko oglasa', 'prevare-kupovina-telefona', 'prevare', 'prevara telefon oglas'],
+        ['Kako bezbedno prodati telefon', 'kako-bezbedno-prodati-telefon', 'kupovina', 'kako prodati telefon'],
+        ['Koliko vredi moj telefon: kako odrediti cenu oglasa', 'kako-odrediti-cenu-oglasa', 'kupovina', 'koliko vredi moj telefon'],
+        ['Polovni iPhone 13 vs iPhone 14', 'iphone-13-vs-14-polovan', 'poredjenje', 'iphone 13 ili 14 polovan'],
+        ['Polovni Samsung S23 vs S24', 'samsung-s23-vs-s24', 'poredjenje', 's23 ili s24'],
+        ['Šta znači sim free, dual sim i eSIM', 'sim-free-dual-sim-esim', 'kupovina', 'sim free značenje'],
+        ['Originalan ili kopija ekrana', 'original-ili-kopija-ekrana', 'servis', 'original ekran iphone provera'],
+        ['Zamena baterije iPhone: kada se isplati', 'zamena-baterije-iphone', 'servis', 'zamena baterije iphone cena'],
+        ['Telefon pao u vodu: šta odmah uraditi', 'telefon-pao-u-vodu', 'servis', 'telefon pao u vodu'],
+        ['FRP i Google lock na Samsungu', 'frp-lock-samsung', 'provera', 'frp lock samsung'],
+        ['Refabrikovan ili polovan telefon', 'refabrikovan-ili-polovan', 'kupovina', 'refabrikovan telefon'],
+        ['Koje telefone kupiti do 200 evra polovno', 'polovni-telefon-do-200-evra', 'kupovina', 'najbolji polovni telefon do 200 eura'],
+        ['Kako proveriti IMEI i prijavu krađe', 'provera-imei-srbija', 'provera', 'provera imei srbija'],
+        ['Garancija na polovan telefon', 'garancija-polovan-telefon', 'kupovina', 'garancija polovan telefon'],
+        ['Xiaomi i Redmi polovan: na šta obratiti pažnju', 'polovan-xiaomi-provera', 'provera', 'polovan xiaomi provera'],
+        ['Kako slikati telefon za oglas', 'kako-slikati-telefon-za-oglas', 'kupovina', 'kako prodati telefon brzo'],
+        ['Kada pada cena iPhone-a posle novog modela', 'kada-pojeftini-iphone', 'kupovina', 'kada pojeftini iphone'],
+    ];
+    $out = [];
+    $id = 1000;
+    foreach ($topics as [$title, $slug, $category, $query]) {
+        $out[] = [
+            'id' => $id++,
+            'title' => $title,
+            'slug' => $slug,
+            'excerpt' => 'Nacrt. Ciljani upit: ' . $query,
+            'body_html' => '<p>Nacrt teme. Tekst još nije napisan.</p>',
+            'status' => 'draft',
+            'category' => $category,
+            'target_query' => $query,
+            'author_id' => 1,
+            'created_at' => '',
+            'updated_at' => '',
+            'published_at' => '',
+        ];
+    }
+    return $out;
+}
+
+function guideLegacyBlogTarget(string $path): ?string
+{
+    $path = rtrim($path, '/') ?: '/';
+    if ($path === '/blog') {
+        return '/vodici';
+    }
+    if (preg_match('#^/blog/([^/]+)$#', $path, $m) === 1) {
+        return '/vodic/' . rawurlencode(rawurldecode($m[1]));
+    }
+    return null;
 }
 
 function defaultGuideContent(): array
