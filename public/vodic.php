@@ -55,6 +55,10 @@ require __DIR__ . '/partials/layout-start.php';
     <div class="breadcrumb">
         <a href="/">Početna</a> › <a href="/vodici">Vodiči</a> › <?= h((string)($guide['title'] ?? '')) ?>
     </div>
+    <aside class="form-card">
+        <p><strong>Sead Škrijelj</strong></p>
+        <p>Servis mobilnih telefona od 2013. Tekst je praktičan savet iz rada servisa. Nema ličnog telefona ni adrese u ovom okviru.</p>
+    </aside>
 
     <article class="guide-article">
         <?php if ((string)($guide['status'] ?? 'draft') !== 'published'): ?>

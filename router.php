@@ -100,7 +100,16 @@ if (preg_match('#^/servisi/([^/]+)/?$#', $uri, $m)) {
     exit;
 }
 
-if ($uri === '/vodici' || $uri === '/vodici/' || $uri === '/blog' || $uri === '/blog/') {
+if ($uri === '/blog' || $uri === '/blog/') {
+    header('Location: /vodici', true, 301);
+    exit;
+}
+if (preg_match('#^/blog/([^/]+)/?$#', $uri, $m)) {
+    header('Location: /vodic/' . rawurlencode(rawurldecode($m[1])), true, 301);
+    exit;
+}
+
+if ($uri === '/vodici' || $uri === '/vodici/') {
     require __DIR__ . '/public/vodici.php';
     exit;
 }
@@ -149,8 +158,8 @@ if ($uri === '/uslovi' || $uri === '/uslovi/') {
     exit;
 }
 
-if (preg_match('#^/(vodic|blog)/([^/]+)/?$#', $uri, $m)) {
-    $_GET['slug'] = rawurldecode($m[2]);
+if (preg_match('#^/vodic/([^/]+)/?$#', $uri, $m)) {
+    $_GET['slug'] = rawurldecode($m[1]);
     require __DIR__ . '/public/vodic.php';
     exit;
 }
