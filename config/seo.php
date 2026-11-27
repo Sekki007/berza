@@ -336,7 +336,7 @@ function seoListingCollectionJsonLd(array $filters, array $ads, string $url, str
             '@type' => 'ListItem',
             'position' => $position,
             'url' => absoluteUrl(adUrl($ad)),
-            'name' => (string)($ad['title'] ?? 'Oglas'),
+            'name' => function_exists('seoAdHeadline') ? seoAdHeadline($ad) : (string)($ad['title'] ?? 'Oglas'),
         ];
     }
 
@@ -402,14 +402,36 @@ function seoOrganizationJsonLd(): array
         'name' => $name,
         'url' => appBaseUrl() . '/',
         'description' => siteTagline(),
+        'logo' => absoluteUrl('/assets/img/pwa-192.png'),
     ];
+    $sameAs = [];
+    foreach (['social_facebook_url', 'social_instagram_url', 'social_tiktok_url', 'telegram_channel_url', 'viber_community_url'] as $key) {
+        $url = trim((string)($site[$key] ?? ''));
+        if ($url !== '' && preg_match('#^https://#i', $url) === 1 && !str_contains($url, '?')) {
+            $sameAs[] = $url;
+        }
+    }
+    if ($sameAs !== []) {
+        $data['sameAs'] = array_values(array_unique($sameAs));
+    }
     $email = trim((string)($site['contact_email'] ?? ''));
     $phone = trim((string)($site['contact_phone'] ?? ''));
-    if ($email !== '') {
-        $data['email'] = $email;
-    }
-    if ($phone !== '') {
-        $data['telephone'] = $phone;
+    if ($email !== '' || $phone !== '') {
+        $contact = [
+            '@type' => 'ContactPoint',
+            'contactType' => 'customer support',
+            'areaServed' => 'RS',
+            'availableLanguage' => 'sr',
+        ];
+        if ($email !== '') {
+            $contact['email'] = $email;
+            $data['email'] = $email;
+        }
+        if ($phone !== '') {
+            $contact['telephone'] = $phone;
+            $data['telephone'] = $phone;
+        }
+        $data['contactPoint'] = $contact;
     }
     return $data;
 }
@@ -429,6 +451,75 @@ function seoWebsiteJsonLd(): array
     ];
 }
 
+function seoItemConditionUrl(array $ad): string
+{
+    $state = mb_strtolower(trim((string)($ad['condition_state'] ?? '')));
+    if ($state === 'kao novo' || str_contains($state, 'polov')) {
+        return 'https://schema.org/UsedCondition';
+    }
+    if ($state === 'novo' || str_starts_with($state, 'novo ')) {
+        return 'https://schema.org/NewCondition';
+    }
+    if ($state === '') {
+        return 'https://schema.org/UsedCondition';
+    }
+    if (str_contains($state, 'neisprav') || str_contains($state, 'delov') || str_contains($state, 'ostec') || str_contains($state, 'ošteć')) {
+        return 'https://schema.org/DamagedCondition';
+    }
+    return 'https://schema.org/UsedCondition';
+}
+
+function seoSellerIsOrganization(array $seller): bool
+{
+    if (function_exists('userBusinessKind')) {
+        $kind = (string)userBusinessKind($seller);
+        if (in_array($kind, ['service', 'shop', 'both'], true)) {
+            return true;
+        }
+    }
+    return function_exists('storefrontIsActive') && storefrontIsActive($seller);
+}
+
+/** @return array<string,mixed>|null */
+function seoOfferSellerNode(?array $seller, array $ad): ?array
+{
+    if ($seller === null) {
+        return null;
+    }
+    $name = function_exists('getSellerShopName') ? getSellerShopName($seller, [$ad]) : trim((string)($seller['full_name'] ?? ''));
+    if ($name === '') {
+        return null;
+    }
+    return [
+        '@type' => seoSellerIsOrganization($seller) ? 'Organization' : 'Person',
+        'name' => $name,
+        'url' => absoluteUrl(shopUrlForUser($seller)),
+    ];
+}
+
+/**
+ * Privatna prodaja na oglasniku: sajt nije prodavac i ne organizuje povrat,
+ * zato je hasMerchantReturnPolicy = MerchantReturnNotPermitted.
+ * Kad nema cene kurira, shippingDetails opisuje lično preuzimanje (rate 0, RS).
+ *
+ * @return array<string,mixed>
+ */
+function seoOfferShippingDetails(array $ad): array
+{
+    return [
+        '@type' => 'OfferShippingDetails',
+        'shippingRate' => [
+            '@type' => 'MonetaryAmount',
+            'value' => '0',
+            'currency' => 'EUR',
+        ],
+        'shippingDestination' => [
+            '@type' => 'DefinedRegion',
+            'addressCountry' => 'RS',
+        ],
+    ];
+}
+
 function seoAdJsonLd(array $ad, ?array $seller = null): array
 {
     $url = absoluteUrl(adUrl($ad));
@@ -438,7 +529,7 @@ function seoAdJsonLd(array $ad, ?array $seller = null): array
             $images[] = absoluteUrl($img);
         }
     }
-    $price = (float)($ad['price'] ?? 0);
+    $price = function_exists('adPriceEur') ? adPriceEur($ad) : (float)($ad['price'] ?? 0);
     $availability = !empty($ad['is_sold'])
         ? 'https://schema.org/SoldOut'
         : 'https://schema.org/InStock';
@@ -446,37 +537,220 @@ function seoAdJsonLd(array $ad, ?array $seller = null): array
     $data = [
         '@context' => 'https://schema.org',
         '@type' => 'Product',
-        'name' => (string)($ad['title'] ?? 'Oglas'),
+        'name' => seoAdHeadline($ad),
         'description' => seoTruncate((string)($ad['description'] ?? $ad['title'] ?? ''), 300),
         'url' => $url,
         'sku' => (string)((int)($ad['id'] ?? 0)),
         'category' => (string)($ad['category'] ?? getAdType($ad)),
+        'itemCondition' => seoItemConditionUrl($ad),
     ];
     if ($images !== []) {
         $data['image'] = $images;
     }
     $brand = trim((string)($ad['brand'] ?? ''));
-    if ($brand !== '') {
+    if ($brand !== '' && $brand !== 'Ostalo') {
         $data['brand'] = ['@type' => 'Brand', 'name' => $brand];
     }
+    $modelName = trim((string)($ad['model'] ?? ''));
+    if ($modelName !== '') {
+        $data['model'] = $modelName;
+    }
+    $catalogUrl = function_exists('phoneCatalogUrlForAd') ? phoneCatalogUrlForAd($ad) : '';
+    if ($catalogUrl !== '') {
+        $data['isRelatedTo'] = [
+            '@type' => 'Product',
+            'name' => $modelName !== '' ? $modelName : seoAdHeadline($ad),
+            'url' => absoluteUrl($catalogUrl),
+        ];
+    }
     if ($price > 0 && !isAdPriceOpen($ad)) {
-        $data['offers'] = [
+        $offer = [
             '@type' => 'Offer',
             'url' => $url,
             'priceCurrency' => 'EUR',
             'price' => number_format($price, 2, '.', ''),
             'availability' => $availability,
-            'itemCondition' => 'https://schema.org/UsedCondition',
+            'itemCondition' => seoItemConditionUrl($ad),
+            'shippingDetails' => seoOfferShippingDetails($ad),
         ];
-    }
-    if ($seller) {
-        $data['seller'] = [
-            '@type' => 'Person',
-            'name' => getSellerShopName($seller, [$ad]),
-            'url' => absoluteUrl(shopUrlForUser($seller)),
-        ];
+        $city = trim((string)($ad['location'] ?? ''));
+        if ($city !== '') {
+            $offer['availableAtOrFrom'] = [
+                '@type' => 'Place',
+                'address' => [
+                    '@type' => 'PostalAddress',
+                    'addressLocality' => $city,
+                    'addressCountry' => 'RS',
+                ],
+            ];
+            $offer['areaServed'] = $city;
+        }
+        $validUntil = seoLastmodDate(trim((string)($ad['expires_at'] ?? '')));
+        if ($validUntil !== '') {
+            $offer['priceValidUntil'] = $validUntil;
+        }
+        $sellerNode = seoOfferSellerNode($seller, $ad);
+        if ($sellerNode !== null) {
+            $offer['seller'] = $sellerNode;
+        }
+        $privateSale = $seller === null || !seoSellerIsOrganization($seller);
+        if ($privateSale) {
+            $offer['hasMerchantReturnPolicy'] = [
+                '@type' => 'MerchantReturnPolicy',
+                'applicableCountry' => 'RS',
+                'returnPolicyCategory' => 'https://schema.org/MerchantReturnNotPermitted',
+            ];
+        }
+        $data['offers'] = $offer;
     }
     return $data;
+}
+
+/**
+ * @param list<array{name:string,url:string}> $crumbs
+ * @return array<string,mixed>
+ */
+function seoBreadcrumbJsonLd(array $crumbs): array
+{
+    $items = [];
+    $position = 1;
+    foreach ($crumbs as $crumb) {
+        $url = (string)($crumb['url'] ?? '');
+        $name = trim((string)($crumb['name'] ?? ''));
+        if ($name === '' || $url === '') {
+            continue;
+        }
+        if (!preg_match('#^https?://#i', $url)) {
+            $url = absoluteUrl($url);
+        }
+        $items[] = [
+            '@type' => 'ListItem',
+            'position' => $position,
+            'name' => $name,
+            'item' => $url,
+        ];
+        $position++;
+    }
+    return [
+        '@context' => 'https://schema.org',
+        '@type' => 'BreadcrumbList',
+        'itemListElement' => $items,
+    ];
+}
+
+/** @return list<array{name:string,url:string}> */
+function seoAdBreadcrumbCrumbs(array $ad): array
+{
+    $crumbs = [['name' => 'Početna', 'url' => '/']];
+    $type = function_exists('getAdType') ? getAdType($ad) : 'telefon';
+    $typeLabel = function_exists('adCategoryLabel') ? adCategoryLabel($ad) : 'Telefoni';
+    if ($typeLabel === '') {
+        $typeLabel = 'Oglasi';
+    }
+    $crumbs[] = [
+        'name' => $typeLabel,
+        'url' => listingLandingPath([
+            'type' => $type !== '' ? $type : 'telefon',
+            'equipment_group' => function_exists('adEquipmentGroup') ? adEquipmentGroup($ad) : '',
+        ]),
+    ];
+    $brand = trim((string)($ad['brand'] ?? ''));
+    if ($brand !== '' && $brand !== 'Ostalo') {
+        $crumbs[] = ['name' => $brand, 'url' => listingLandingPath(['brand' => $brand])];
+    }
+    $catalogUrl = function_exists('phoneCatalogUrlForAd') ? phoneCatalogUrlForAd($ad) : '';
+    $model = trim((string)($ad['model'] ?? ''));
+    if ($catalogUrl !== '' && $model !== '') {
+        $crumbs[] = ['name' => $model, 'url' => $catalogUrl];
+    }
+    $crumbs[] = ['name' => seoAdHeadline($ad), 'url' => adUrl($ad)];
+    return $crumbs;
+}
+
+/**
+ * @param list<array{q:string,a:string}> $pairs
+ * @return array<string,mixed>
+ */
+function seoFaqJsonLd(array $pairs): array
+{
+    $entities = [];
+    foreach ($pairs as $pair) {
+        $q = trim((string)($pair['q'] ?? ''));
+        $a = trim((string)($pair['a'] ?? ''));
+        if ($q === '' || $a === '') {
+            continue;
+        }
+        $entities[] = [
+            '@type' => 'Question',
+            'name' => $q,
+            'acceptedAnswer' => [
+                '@type' => 'Answer',
+                'text' => $a,
+            ],
+        ];
+    }
+    return [
+        '@context' => 'https://schema.org',
+        '@type' => 'FAQPage',
+        'mainEntity' => $entities,
+    ];
+}
+
+/** Google FAQ rich rezultate od 2023. prikazuje ograničeno. Isti tekst je u HTML-u i u JSON-LD-u. */
+function seoRenderFaq(array $pairs, string $heading = 'Česta pitanja'): void
+{
+    $clean = [];
+    foreach ($pairs as $pair) {
+        $q = trim((string)($pair['q'] ?? ''));
+        $a = trim((string)($pair['a'] ?? ''));
+        if ($q === '' || $a === '') {
+            continue;
+        }
+        $clean[] = ['q' => $q, 'a' => $a];
+    }
+    if ($clean === []) {
+        return;
+    }
+    echo '<section class="seo-faq" aria-labelledby="seo-faq-title"><h2 id="seo-faq-title">' . h($heading) . '</h2>';
+    foreach ($clean as $pair) {
+        echo '<details class="seo-faq-item"><summary>' . h($pair['q']) . '</summary><p>' . h($pair['a']) . '</p></details>';
+    }
+    echo '</section>';
+}
+
+/** @return list<array{q:string,a:string}> */
+function seoImeiFaq(): array
+{
+    return [
+        ['q' => 'Šta je IMEI?', 'a' => 'IMEI je jedinstveni broj uređaja od 15 cifara. Služi da se telefon razlikuje od drugih i da se uporedi sa onim što piše u oglasu.'],
+        ['q' => 'Kako da nađem IMEI?', 'a' => 'Ukucaj *#06# na telefonu. Broj je i u Podešavanjima, u odeljku O telefonu, i na kutiji ako je imaš.'],
+        ['q' => 'Šta znači da je telefon blokiran?', 'a' => 'Blokiran telefon može biti prijavljen kao izgubljen ili ukraden, ili vezan za operatera. Takav uređaj ne uzimaj dok se status ne razjasni sa prodavcem.'],
+        ['q' => 'Da li je provera IMEI na KupiTelefon.rs besplatna?', 'a' => 'Osnovna provera brenda i modela je besplatna. Prošireni izveštaji troše kredite i prikazani su u listi servisa na ovoj strani.'],
+        ['q' => 'Da li IMEI dokazuje da je telefon ispravan?', 'a' => 'Ne. IMEI potvrđuje identitet uređaja, ne stanje baterije, Face ID ili da li je nalog odjavljen. To proveri uživo pre plaćanja.'],
+    ];
+}
+
+/** @return list<array{q:string,a:string}> */
+function seoModelFaq(array $model, array $stats): array
+{
+    $name = trim((string)($model['name'] ?? 'model'));
+    $brand = trim((string)($model['brand'] ?? ''));
+    $active = (int)($stats['active'] ?? $stats['fixed'] ?? 0);
+    if (($stats['fixed'] ?? 0) > 0 && isset($stats['min'], $stats['max'])) {
+        $priceAnswer = 'Na KupiTelefon.rs trenutno ima ' . (int)$stats['fixed'] . ' oglasa sa fiksnom cenom, od '
+            . seoMoneyEur((float)$stats['min']) . ' do ' . seoMoneyEur((float)$stats['max']) . '. To je raspon oglasa, ne zvanična cena proizvođača.';
+    } elseif ($active > 0) {
+        $priceAnswer = 'Ima aktivnih oglasa, ali bez dovoljno fiksnih cena da navedemo raspon. Otvori oglase na ovoj strani.';
+    } else {
+        $priceAnswer = 'Trenutno nema aktivnih oglasa sa cenom za ' . $name . '. Kad se pojavi oglas, raspon će biti izračunat iz njega.';
+    }
+    $guide = ($brand === 'Apple') ? '/vodic/provera-polovnog-iphone-a' : '/vodic/bezbedna-kupovina-telefona';
+    $guideLabel = $brand === 'Apple' ? 'vodič za proveru polovnog iPhone-a' : 'vodič za bezbednu kupovinu';
+    return [
+        ['q' => 'Koliko košta polovan ' . $name . '?', 'a' => $priceAnswer],
+        ['q' => 'Na šta da pazim pri kupovini polovnog ' . $name . '?', 'a' => 'Uporedi IMEI, stanje baterije i da li je nalog odjavljen. Detalje ima ' . $guideLabel . ' na ' . absoluteUrl($guide) . '.'],
+        ['q' => 'Gde da vidim oglase za ' . $name . '?', 'a' => 'Aktivni oglasi su na ovoj strani kataloga. Besplatnu proveru IMEI možeš da pokreneš na ' . absoluteUrl('/provera-imei') . '.'],
+    ];
 }
 
 function seoStorefrontJsonLd(array $user, string $shopName): array

@@ -45,7 +45,15 @@ if ($cityParam !== '' && $slugParam !== '') {
     $pageTitle = $seo['title'];
     $pageDescription = $seo['description'];
     $canonicalUrl = absoluteUrl($canonicalPath);
-    $jsonLd = seoDirectoryServiceJsonLd($user, $cityName);
+    $jsonLd = [
+        seoDirectoryServiceJsonLd($user, $cityName),
+        seoBreadcrumbJsonLd([
+            ['name' => 'Početna', 'url' => '/'],
+            ['name' => 'Servisi', 'url' => '/servisi'],
+            ['name' => $cityName, 'url' => directoryCityUrl($cityName)],
+            ['name' => $shopName, 'url' => $canonicalPath],
+        ]),
+    ];
     $logoUrl = userShopLogoUrl($user);
     if ($logoUrl !== '') {
         $pageImage = absoluteUrl($logoUrl);
@@ -195,11 +203,18 @@ if ($cityParam !== '') {
         default => 'Servisi i prodavnice telefona u gradu ' . $cityName . ': adrese, telefoni i kontakt.',
     };
     $jsonLd = [
-        '@context' => 'https://schema.org',
-        '@type' => 'CollectionPage',
-        'name' => $cityHeading,
-        'url' => $canonicalUrl,
-        'description' => $pageDescription,
+        [
+            '@context' => 'https://schema.org',
+            '@type' => 'CollectionPage',
+            'name' => $cityHeading,
+            'url' => $canonicalUrl,
+            'description' => $pageDescription,
+        ],
+        seoBreadcrumbJsonLd([
+            ['name' => 'Početna', 'url' => '/'],
+            ['name' => 'Servisi', 'url' => '/servisi'],
+            ['name' => $cityName, 'url' => directoryCityUrl($cityName)],
+        ]),
     ];
 
     require __DIR__ . '/partials/layout-start.php';

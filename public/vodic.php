@@ -26,7 +26,14 @@ $pageDescription = $seo['description'];
 $canonicalUrl = absoluteUrl(guideUrl($guide));
 $activePage = 'oglasi';
 $showSearch = false;
-$jsonLd = seoGuideJsonLd($guide);
+$jsonLd = [
+    seoGuideJsonLd($guide),
+    seoBreadcrumbJsonLd([
+        ['name' => 'Početna', 'url' => '/'],
+        ['name' => 'Vodiči', 'url' => '/vodici'],
+        ['name' => (string)($guide['title'] ?? 'Vodič'), 'url' => guideUrl($guide)],
+    ]),
+];
 $og = trim((string)($guide['og_image'] ?? ''));
 if ($og !== '') {
     $pageImage = absoluteUrl($og);

@@ -315,12 +315,26 @@ if (is_array($landing)) {
     if ($robotsMeta === '') {
         $listingIntro = seoListingIntro($headingFilters, $seoSourceAds);
     }
-    $jsonLd = seoListingCollectionJsonLd(
-        $headingFilters,
-        $allAds,
-        $canonicalUrl,
-        $pageDescription
-    );
+    $crumbs = [['name' => 'Početna', 'url' => '/']];
+    if ($type !== '' || $brand !== '' || $location !== '') {
+        $crumbs[] = ['name' => 'Telefoni', 'url' => '/oglasi/telefoni'];
+    }
+    if ($brand !== '') {
+        $crumbs[] = ['name' => $brand, 'url' => listingLandingPath(['brand' => $brand])];
+    }
+    if ($location !== '') {
+        $cityFilters = $brand !== '' ? ['brand' => $brand, 'location' => $location] : ['location' => $location];
+        $crumbs[] = ['name' => $location, 'url' => listingLandingPath($cityFilters)];
+    }
+    $jsonLd = [
+        seoListingCollectionJsonLd(
+            $headingFilters,
+            $allAds,
+            $canonicalUrl,
+            $pageDescription
+        ),
+        seoBreadcrumbJsonLd($crumbs),
+    ];
 }
 if (!is_array($landing) && $queryBase === [] && $page === 1 && $sort === 'newest') {
     $jsonLd = [seoOrganizationJsonLd(), seoWebsiteJsonLd()];

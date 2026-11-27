@@ -72,18 +72,26 @@ $pageDescription = 'Besplatno proveri brend i model telefona pomoću IMEI broja 
 $canonicalUrl = absoluteUrl('/provera-imei');
 $activePage = 'imei';
 $showSearch = false;
+$imeiFaq = seoImeiFaq();
 $jsonLd = [
-    '@context' => 'https://schema.org',
-    '@type' => 'WebApplication',
-    'name' => 'KupiTelefon IMEI provera',
-    'url' => $canonicalUrl,
-    'applicationCategory' => 'UtilitiesApplication',
-    'operatingSystem' => 'Web',
-    'offers' => [
-        '@type' => 'Offer',
-        'price' => '0',
-        'priceCurrency' => 'RSD',
+    [
+        '@context' => 'https://schema.org',
+        '@type' => 'WebApplication',
+        'name' => 'KupiTelefon IMEI provera',
+        'url' => $canonicalUrl,
+        'applicationCategory' => 'UtilitiesApplication',
+        'operatingSystem' => 'Web',
+        'offers' => [
+            '@type' => 'Offer',
+            'price' => '0',
+            'priceCurrency' => 'RSD',
+        ],
     ],
+    seoBreadcrumbJsonLd([
+        ['name' => 'Početna', 'url' => '/'],
+        ['name' => 'Provera IMEI', 'url' => '/provera-imei'],
+    ]),
+    seoFaqJsonLd($imeiFaq),
 ];
 
 require __DIR__ . '/partials/layout-start.php';
@@ -282,4 +290,5 @@ require __DIR__ . '/partials/layout-start.php';
         </p>
     </main>
 </div>
+<?php seoRenderFaq($imeiFaq); ?>
 <?php require __DIR__ . '/partials/layout-end.php'; ?>
