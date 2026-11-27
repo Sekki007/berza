@@ -105,6 +105,15 @@ if ($uri === '/vodici' || $uri === '/vodici/' || $uri === '/blog' || $uri === '/
     exit;
 }
 
+if ($uri === '/cene-polovnih-telefona' || $uri === '/cene-polovnih-telefona/') {
+    require __DIR__ . '/public/cene.php';
+    exit;
+}
+if ($uri === '/koliko-vredi-moj-telefon' || $uri === '/koliko-vredi-moj-telefon/') {
+    require __DIR__ . '/public/koliko-vredi.php';
+    exit;
+}
+
 if ($uri === '/provera-imei' || $uri === '/provera-imei/') {
     require __DIR__ . '/public/provera-imei.php';
     exit;

@@ -121,7 +121,7 @@ function seoSitemapBuckets(): array
     };
 
     $pages = [];
-    foreach (['/', '/kako-radi', '/privatnost', '/uslovi', '/oglasi', '/katalog', '/vodici', '/servisi', '/provera-imei'] as $path) {
+    foreach (['/', '/kako-radi', '/privatnost', '/uslovi', '/oglasi', '/katalog', '/vodici', '/servisi', '/provera-imei', '/cene-polovnih-telefona', '/koliko-vredi-moj-telefon'] as $path) {
         $add($pages, $path);
     }
     foreach (getPublishedGuides() as $guide) {
