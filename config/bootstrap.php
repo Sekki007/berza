@@ -1661,6 +1661,7 @@ require_once __DIR__ . '/city_normalize.php';
 require_once __DIR__ . '/ad_classifier.php';
 require_once __DIR__ . '/catalog_redirects.php';
 require_once __DIR__ . '/sold_listing.php';
+require_once __DIR__ . '/model_hub.php';
 require_once __DIR__ . '/sitemap_seo.php';
 require_once __DIR__ . '/facebook_pixel.php';
 require_once __DIR__ . '/google_tag.php';

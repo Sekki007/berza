@@ -5,6 +5,24 @@ declare(strict_types=1);
 /** @var array $model */
 
 $offers = phoneCatalogOffersByModel()[$model['id']] ?? [];
+$citySlugFilter = strtolower(trim((string)($_GET['city_slug'] ?? '')));
+if ($citySlugFilter !== '') {
+    $cityNameFilter = function_exists('listingFindCityBySlug') ? listingFindCityBySlug($citySlugFilter) : null;
+    $cityOffers = [];
+    if ($cityNameFilter !== null) {
+        foreach ($offers as $offerAd) {
+            $offerCity = function_exists('normalizeCity') ? normalizeCity((string)($offerAd['location'] ?? ''))['city'] : trim((string)($offerAd['location'] ?? ''));
+            if (function_exists('citySlug') && citySlug($offerCity) === $citySlugFilter) {
+                $cityOffers[] = $offerAd;
+            }
+        }
+    }
+    if ($cityNameFilter === null || count($cityOffers) < 3) {
+        header('Location: ' . phoneCatalogUrl($model), true, 301);
+        exit;
+    }
+    $offers = $cityOffers;
+}
 usort($offers, static function (array $a, array $b): int {
     return strcmp((string)($b['created_at'] ?? ''), (string)($a['created_at'] ?? ''));
 });
@@ -97,7 +115,8 @@ require __DIR__ . '/layout-start.php';
         </div>
         <div class="pcat-model-info">
             <p class="pcat-kicker"><?= h($model['brand']) ?></p>
-            <h1><?= h($model['name']) ?></h1>
+            <h1><?= h($model['name']) ?> – polovni i novi, cene i oglasi</h1>
+            <p class="listing-intro"><?= (int)($stats['active'] ?? 0) ?> aktivnih oglasa<?php if (($stats['fixed'] ?? 0) > 0): ?>, cene od <?= h(phoneCatalogFormatEur((float)$stats['min'])) ?> do <?= h(phoneCatalogFormatEur((float)$stats['max'])) ?><?php endif; ?>.</p>
             <?php if ($model['official_name'] !== '' && $model['official_name'] !== $model['name']): ?>
                 <p class="pcat-official">Naziv izvora: <?= h($model['official_name']) ?></p>
             <?php endif; ?>
@@ -300,6 +319,53 @@ require __DIR__ . '/layout-start.php';
                 </ul>
             <?php endif; ?>
         </section>
+        <?php
+        $hubRows = modelHubCache('prices-' . (string)$model['id'], static fn() => modelHubPriceRows($offers));
+        $hubCities = modelHubCityLinks($model, $offers);
+        $hubRelated = modelHubRelated($model);
+        $hubTips = modelHubBuyingTips((string)$model['brand']);
+        $postPrefill = '/postavi-oglas?' . http_build_query(['brand' => $model['brand'], 'model' => $model['name']]);
+        if (!isLoggedIn()) {
+            $postPrefill = '/prijava?next=' . rawurlencode($postPrefill);
+        }
+        ?>
+        <section class="pcat-spec" aria-labelledby="pcat-price-title">
+            <h2 id="pcat-price-title">Cene po memoriji</h2>
+            <p>Računa se iz oglasa na KupiTelefon.rs. Uzorak manji od 3 oglasa nije prikazan kao raspon.</p>
+            <?php if ($hubRows === []): ?>
+                <p>Premalo podataka.</p>
+            <?php else: ?>
+                <ul>
+                    <?php foreach ($hubRows as $row): ?>
+                        <li>
+                            <?= h($row['storage']) ?> · <?= h($row['condition']) ?> · <?= (int)$row['count'] ?> oglasa
+                            <?php if ($row['min'] === null): ?>
+                                — premalo podataka
+                            <?php else: ?>
+                                — od <?= h(number_format((float)$row['min'], 0, ',', '.')) ?> € do <?= h(number_format((float)$row['max'], 0, ',', '.')) ?> €, medijana <?= h(number_format((float)$row['median'], 0, ',', '.')) ?> €
+                            <?php endif; ?>
+                        </li>
+                    <?php endforeach; ?>
+                </ul>
+            <?php endif; ?>
+        </section>
+        <?php if ($hubCities !== []): ?>
+            <section class="pcat-spec"><h2>Gradovi</h2><ul>
+                <?php foreach ($hubCities as $cityLink): ?>
+                    <li><a href="<?= h($cityLink['url']) ?>"><?= h($cityLink['name']) ?></a> (<?= (int)$cityLink['count'] ?>)</li>
+                <?php endforeach; ?>
+            </ul></section>
+        <?php endif; ?>
+        <section class="pcat-spec"><h2>Na šta da pazim pri kupovini polovnog <?= h((string)$model['name']) ?></h2>
+            <ul><?php foreach ($hubTips as $tip): ?><li><?= h($tip) ?></li><?php endforeach; ?></ul>
+            <p><a href="/provera-imei">Provera IMEI</a></p>
+        </section>
+        <?php if ($hubRelated !== []): ?>
+            <section class="pcat-spec"><h2>Povezani modeli</h2><ul>
+                <?php foreach ($hubRelated as $rel): ?><li><a href="<?= h($rel['url']) ?>"><?= h($rel['name']) ?></a></li><?php endforeach; ?>
+            </ul></section>
+        <?php endif; ?>
+        <p><a class="btn-sm btn-sm-primary" href="<?= h($postPrefill) ?>">Prodaješ <?= h((string)$model['name']) ?>? Postavi oglas besplatno</a></p>
         <?php seoRenderFaq($modelFaq, 'Pitanja o modelu ' . (string)$model['name']); ?>
     </div>
 </div>

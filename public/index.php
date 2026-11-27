@@ -341,6 +341,17 @@ if (!is_array($landing) && $queryBase === [] && $page === 1 && $sort === 'newest
     $pageTitle = seoHomeMeta()['title'];
     $pageDescription = seoHomeMeta()['description'];
 }
+$catalogRedirect = '';
+$onlyBrandModel = $brand !== '' && $model !== '' && $search === '' && $location === '' && $type === ''
+    && $deviceType === '' && $condition === '' && $minPrice === '' && $maxPrice === ''
+    && $sort === 'newest' && $page === 1;
+if ($onlyBrandModel) {
+    $catalogRedirect = listingCatalogRedirectTarget($brand, $model);
+}
+if ($catalogRedirect !== '' && ($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+    header('Location: ' . $catalogRedirect, true, 301);
+    exit;
+}
 $showHomeIntro = $queryBase === [] && !is_array($landing);
 $listBasePath = '/oglasi';
 if (is_array($landing) && !empty($landing['path'])) {

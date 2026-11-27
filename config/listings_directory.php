@@ -226,17 +226,6 @@ function listingLandingIndexable(array $filters, array $ads): bool
         return false;
     }
 
-    // Bazni grad i brend sa bar jednim oglasom ostaju indeksabilni.
-    if ($location !== '' && $brand === '' && $model === '' && !$hasNarrowType) {
-        return true;
-    }
-    if ($brand !== '' && $model === '' && $location === '' && !$hasNarrowType) {
-        return true;
-    }
-
-    if ($count < 3) {
-        return false;
-    }
     $sellerIds = [];
     foreach ($ads as $ad) {
         $uid = (int)($ad['created_by'] ?? 0);
@@ -245,6 +234,18 @@ function listingLandingIndexable(array $filters, array $ads): bool
         }
     }
     $uniqueSellers = count($sellerIds);
+
+    // Grad i brend+grad: bar 3 oglasa od bar 2 prodavca. Inače noindex.
+    if ($location !== '' && $model === '' && !$hasNarrowType) {
+        return $count >= LISTING_SITEMAP_MIN_ADS && $uniqueSellers >= 2;
+    }
+    if ($brand !== '' && $model === '' && $location === '' && !$hasNarrowType) {
+        return true;
+    }
+
+    if ($count < 3) {
+        return false;
+    }
 
     if (!empty($filters['brand']) && !empty($filters['model'])) {
         return $count >= 5 && $uniqueSellers >= 2;

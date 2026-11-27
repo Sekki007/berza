@@ -241,7 +241,7 @@ check(!str_contains($withAds, 'iPhone 11'), 'filter samo modeli sa oglasima skla
 check(str_contains($withAds, 'noindex,follow'), 'filter kataloga je noindex');
 
 $modelPage = catalogPage('/katalog/apple/iphone-15');
-check(str_contains($modelPage, '<h1>iPhone 15</h1>') && str_contains($modelPage, 'A16 Bionic'), 'stranica modela ima naziv i proverenu specifikaciju');
+check(str_contains($modelPage, '<h1>iPhone 15 – polovni i novi, cene i oglasi</h1>') && str_contains($modelPage, 'A16 Bionic'), 'stranica modela ima naziv i proverenu specifikaciju');
 check(str_contains($modelPage, 'support.apple.com/en-us/111831'), 'stranica modela navodi Apple izvor');
 check(str_contains($modelPage, 'Po dogovoru') && str_contains($modelPage, phoneCatalogPriceMethodology()), 'vidi se po dogovoru i metodologija');
 check(str_contains($modelPage, 'iPhone 15 128GB crni') && !str_contains($modelPage, 'iPhone 15 Pro 256GB'), 'na modelu su samo njegovi aktivni oglasi');
