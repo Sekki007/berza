@@ -522,6 +522,9 @@ function seoOfferShippingDetails(array $ad): array
 
 function seoAdJsonLd(array $ad, ?array $seller = null): array
 {
+    if (function_exists('isBuyListing') && isBuyListing($ad)) {
+        return [];
+    }
     $url = absoluteUrl(adUrl($ad));
     $images = [];
     foreach ((array)($ad['images'] ?? []) as $img) {

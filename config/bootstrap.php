@@ -1055,6 +1055,10 @@ function saveAd(array $payload, ?int $adId = null): int
     $ads = readJsonFile('ads.json');
     $adType = (string)($payload['ad_type'] ?? 'telefon');
     $payload['ad_type'] = $adType;
+    if (function_exists('applyObviousAdClassification')) {
+        $payload = applyObviousAdClassification($payload);
+        $adType = (string)($payload['ad_type'] ?? $adType);
+    }
     $payload['category'] = categoryFromAdType($adType);
     $payload = normalizeAdDefaults($payload);
 
@@ -1294,7 +1298,17 @@ function getPublicAds(array $filters = []): array
 
     if ($location !== '') {
         $loc = mb_strtolower($location);
-        $ads = array_filter($ads, static fn($ad) => mb_strtolower((string)($ad['location'] ?? '')) === $loc);
+        $wantedCity = function_exists('normalizeCity') ? mb_strtolower(normalizeCity($location)['city']) : $loc;
+        $ads = array_filter($ads, static function ($ad) use ($loc, $wantedCity) {
+            $raw = (string)($ad['location'] ?? '');
+            if (mb_strtolower($raw) === $loc) {
+                return true;
+            }
+            if ($wantedCity === '' || !function_exists('normalizeCity')) {
+                return false;
+            }
+            return mb_strtolower(normalizeCity($raw)['city']) === $wantedCity;
+        });
     }
 
     if ($condition !== '') {
@@ -1643,6 +1657,9 @@ require_once __DIR__ . '/kp_import.php';
 require_once __DIR__ . '/ads_cleanup.php';
 require_once __DIR__ . '/services_directory.php';
 require_once __DIR__ . '/listings_directory.php';
+require_once __DIR__ . '/city_normalize.php';
+require_once __DIR__ . '/ad_classifier.php';
+require_once __DIR__ . '/catalog_redirects.php';
 require_once __DIR__ . '/sitemap_seo.php';
 require_once __DIR__ . '/facebook_pixel.php';
 require_once __DIR__ . '/google_tag.php';

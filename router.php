@@ -136,6 +136,10 @@ if ($uri === '/katalog' || $uri === '/katalog/' || $uri === '/katalog.php') {
 if (preg_match('#^/katalog/([^/]+)/([^/]+)/?$#', $uri, $m)) {
     $_GET['brand_slug'] = rawurldecode($m[1]);
     $_GET['model_slug'] = rawurldecode($m[2]);
+    require_once __DIR__ . '/config/bootstrap.php';
+    if (catalogApplyRedirect((string)$_GET['brand_slug'], (string)$_GET['model_slug'])) {
+        exit;
+    }
     require __DIR__ . '/public/katalog.php';
     exit;
 }

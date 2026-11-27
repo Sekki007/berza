@@ -813,10 +813,24 @@ function phoneCatalogUrlForAd(array $ad): string
 }
 
 /** @return list<string> */
+function phoneCatalogModelIsVerified(array $model): bool
+{
+    $sources = array_map('strval', (array)($model['source_ids'] ?? []));
+    foreach ($sources as $source) {
+        if ($source !== '' && $source !== 'site-ads') {
+            return true;
+        }
+    }
+    return $sources === [] && ($model['specs'] ?? []) !== [];
+}
+
 function phoneCatalogSitemapPaths(): array
 {
     $paths = [phoneCatalogIndexUrl()];
     foreach (phoneCatalogModels() as $model) {
+        if (!phoneCatalogModelIsVerified($model)) {
+            continue;
+        }
         $paths[] = phoneCatalogUrl($model);
     }
     return $paths;
@@ -1963,6 +1977,12 @@ function phoneCatalogAddModelsFromAds(array $keys = [], bool $apply = false, boo
     if (!$apply) {
         return ['ok' => true, 'summary' => $summary];
     }
+
+    return [
+        'ok' => false,
+        'error' => 'Pravljenje modela iz naslova oglasa je isključeno. Katalog se puni iz seed-a ili Wikidata sync-a.',
+        'summary' => $summary,
+    ];
 
     phoneCatalogWriteBundle($normalized);
 

@@ -76,6 +76,8 @@ function defaultSiteSettings(): array
         'social_facebook_url' => '',
         'social_instagram_url' => '',
         'social_tiktok_url' => '',
+        'stale_import_reminder_enabled' => false,
+        'stale_import_reminder_days' => 90,
         'items_per_page' => 20,
         'max_promoted_ads' => 3,
         'max_ads_per_user_homepage' => 2,
