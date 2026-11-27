@@ -160,7 +160,7 @@ foreach (adKeyFactCards($withPickup) as $fact) {
 check(is_array($loc) && ($loc['note'] ?? '') === 'Lično preuzimanje', 'lično preuzimanje samo kad je sačuvano');
 check(adPickupLabels(['ad_type' => 'telefon']) === [], 'nedostajući način preuzimanja ostaje prazan');
 
-check(adHighlightChips($phoneAd) === ['Kao novo', '256 GB', 'BH 90%', 'SIM Free'], 'čipovi dolaze iz polja oglasa');
+check(adHighlightChips($phoneAd) === ['Kao novo', 'BH 90%', 'SIM Free'], 'čipovi stanja dolaze iz polja oglasa');
 check(adAccessoryLabels(['ad_type' => 'telefon', 'accessories' => ['cable', 'nepoznato', 'case']]) === ['Kabl', 'Maska'], 'oprema ignoriše nepoznate ključeve');
 check(adDescriptionIsLong(str_repeat('a', 421)) === true && adDescriptionIsLong('kratak opis') === false, 'dugačak opis se sklapa');
 
@@ -186,7 +186,8 @@ if (is_array($ad6)) {
 function renderAd(int $adId): string
 {
     $_GET['id'] = (string)$adId;
-    $_SERVER['REQUEST_URI'] = '/oglas/' . $adId;
+    $ad = getAdById($adId);
+    $_SERVER['REQUEST_URI'] = is_array($ad) ? adUrl($ad) : ('/oglas/' . $adId);
     $_SERVER['REQUEST_METHOD'] = 'GET';
     $_SERVER['HTTP_USER_AGENT'] = '';
     ob_start();

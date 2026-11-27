@@ -516,6 +516,7 @@ if (!$isEdit) {
 }
 
 $pageTitle = ($isEdit ? 'Izmena oglasa' : 'Postavi oglas') . ' — KupiTelefon';
+$robotsMeta = 'noindex,follow';
 $activePage = 'dodaj';
 $bodyClass = 'page-ad-form';
 $showSearch = false;

@@ -26,7 +26,8 @@ server {
     error_log  /var/log/nginx/kupitelefon-error.log;
 
     # Pretty URL: /oglas/123-slug, /izlog/slug, /izlog/slug/kategorija, /usluge/..., /servisi/...
-    rewrite ^/oglas/(\d+)(?:-.*)?/?$ /oglas.php?id=$1 last;
+    # Slug ide u query da PHP može 301 na tačan slug bez petlje.
+    rewrite ^/oglas/(\d+)(?:-(.*))?/?$ /oglas.php?id=$1&slug=$2 last;
     rewrite ^/izlog/([^/]+)/ocene/?$ /izlog_ocene.php?$args&u=$1 last;
     rewrite ^/izlog/([^/]+)/([^/]+)/?$ /izlog.php?$args&u=$1&cat=$2&cat_from_path=1 last;
     rewrite ^/izlog/([^/]+)/?$ /izlog.php?$args&u=$1 last;
@@ -34,7 +35,8 @@ server {
     rewrite ^/servisi/([^/]+)/([^/]+)/?$ /servisi.php?city=$1&slug=$2&$args last;
     rewrite ^/servisi/([^/]+)/?$ /servisi.php?city=$1&$args last;
     rewrite ^/servisi/?$ /servisi.php?$args last;
-    rewrite ^/index\.php$ / permanent;
+    # /index.php NE preusmeravati ovde na /. PHP (public/index.php) mapira filtere
+    # na kanonski landing, npr. /index.php?brand=Apple → /oglasi/apple.
     rewrite ^/(prijava|login)/?$ /login.php?$args last;
     rewrite ^/(registracija|registracij|register)/?$ /register.php?$args last;
     rewrite ^/(postavi-oglas|dodaj-oglas)/?$ /ad_form.php?$args last;
@@ -46,7 +48,9 @@ server {
     rewrite ^/vodici/?$ /vodici.php last;
     rewrite ^/blog/?$ /vodici.php last;
     rewrite ^/(vodic|blog)/([^/]+)/?$ /vodic.php?slug=$2&$args last;
+    rewrite ^/sitemap-(pages|oglasi|landing|katalog|servisi|izlozi)\.xml$ /sitemap.php?part=$1 last;
     rewrite ^/sitemap\.xml$ /sitemap.php last;
+    rewrite ^/sitemap\.php$ /sitemap.xml permanent;
 
     location / {
         try_files $uri $uri/ /index.php?$query_string;

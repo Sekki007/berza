@@ -1249,7 +1249,7 @@ function adKeywordChips(array $ad): array
         $chips[] = [
             'kind' => 'brand',
             'label' => $brand,
-            'href' => $listUrl(['brand' => $brand]),
+            'href' => function_exists('listingLandingPath') ? listingLandingPath(['brand' => $brand]) : $listUrl(['brand' => $brand]),
         ];
     }
 
@@ -1270,10 +1270,12 @@ function adKeywordChips(array $ad): array
             }
         }
         if ($href === '') {
-            $href = $listUrl(array_filter([
-                'brand' => $brand,
-                'model' => $model,
-            ]));
+            $href = ($brand !== '' && function_exists('listingLandingPath'))
+                ? listingLandingPath(['brand' => $brand, 'model' => $model])
+                : $listUrl(array_filter([
+                    'brand' => $brand,
+                    'model' => $model,
+                ]));
         }
         $chips[] = [
             'kind' => 'model',
@@ -1286,11 +1288,13 @@ function adKeywordChips(array $ad): array
         $chips[] = [
             'kind' => 'storage',
             'label' => $storage,
-            'href' => $listUrl(array_filter([
-                'brand' => $brand,
-                'model' => $model,
-                'q' => $storage,
-            ])),
+            'href' => ($brand !== '' && function_exists('listingLandingPath'))
+                ? listingLandingPath(array_filter(['brand' => $brand, 'model' => $model]))
+                : $listUrl(array_filter([
+                    'brand' => $brand,
+                    'model' => $model,
+                    'q' => $storage,
+                ])),
         ];
     }
 

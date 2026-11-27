@@ -6,7 +6,7 @@ require_once dirname(__DIR__) . '/config/bootstrap.php';
 
 $adId = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 if ($adId <= 0) {
-    header('Location: /index.php');
+    header('Location: /');
     exit;
 }
 

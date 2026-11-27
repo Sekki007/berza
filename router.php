@@ -4,6 +4,28 @@ declare(strict_types=1);
 
 $uri = urldecode(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH) ?? '/');
 $filePath = __DIR__ . '/public' . $uri;
+$method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
+
+if (preg_match('#^/sitemap(?:-(pages|oglasi|landing|katalog|servisi|izlozi))?\.xml$#', $uri, $sm)) {
+    $_GET['part'] = $sm[1] ?? 'index';
+    require __DIR__ . '/public/sitemap.php';
+    exit;
+}
+
+$legacyPath = rtrim($uri, '/') ?: '/';
+if (
+    in_array($legacyPath, ['/index.php', '/oglas.php', '/izlog_ocene.php', '/sitemap.php'], true)
+    || preg_match('#^/oglas/\d+#', $legacyPath) === 1
+) {
+    require_once __DIR__ . '/config/bootstrap.php';
+    if ($legacyPath === '/sitemap.php' && in_array(strtoupper($method), ['GET', 'HEAD'], true)) {
+        header('Location: /sitemap.xml', true, 301);
+        exit;
+    }
+    if (seoTryLegacyRedirect($legacyPath, $method)) {
+        exit;
+    }
+}
 
 if (preg_match('#^/oglas/(\d+)(?:-.*)?/?$#', $uri, $m)) {
     $_GET['id'] = $m[1];

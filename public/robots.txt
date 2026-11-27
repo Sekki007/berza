@@ -13,9 +13,6 @@ Allow: /
 User-agent: Facebot
 Allow: /
 
-User-agent: meta-externalagent
-Allow: /
-
 User-agent: Meta-ExternalFetcher
 Allow: /
 
@@ -92,26 +89,31 @@ Disallow: /admin_
 Disallow: /api/
 Disallow: /partials/
 
-# --- Nalog, auth, privatne stranice ---
+# --- Nalog, poruke, privatne stranice ---
+# /prijava, /registracija i /postavi-oglas imaju noindex i Google mora da ih vidi.
+# Zato nisu na Disallow listi.
 Disallow: /dashboard.php
 Disallow: /ads.php
 Disallow: /ad_form.php
 Disallow: /ad_delete.php
 Disallow: /ad_toggle.php
+Disallow: /nalog
 Disallow: /nalog.php
-Disallow: /login.php
-Disallow: /logout.php
-Disallow: /register.php
+Disallow: /poruke
 Disallow: /poruke.php
+Disallow: /favorites
 Disallow: /favorites.php
 Disallow: /favorite.php
+Disallow: /logout.php
+Disallow: /login.php
+Disallow: /register.php
 Disallow: /report.php
 Disallow: /forgot-password.php
 Disallow: /reset-password.php
 Disallow: /verify-phone.php
 Disallow: /verify-email.php
+Disallow: /*?*sort=
 
-# Javno (dozvoljeno preko Allow: / iznad — ne dirati):
-# /  /oglas  /oglas.php  /izlog  /usluge  /kako-radi  /sitemap.php  /uploads/  /assets/
+# Javno: /  /oglas  /oglasi  /katalog  /izlog  /servisi  /vodic  /uploads  /assets
 
 Sitemap: https://kupitelefon.rs/sitemap.xml

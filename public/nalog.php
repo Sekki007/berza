@@ -274,7 +274,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             header('Location: /nalog.php?tab=pretrage');
         } else {
             setFlash('danger', 'Pretraga nije sačuvana. Izaberi bar jedan filter (max 20 pretraga).');
-            header('Location: /index.php?' . buildFilterQuery(savedSearchFiltersFromInput($_POST)));
+            header('Location: ' . listingLegacyIndexTarget(savedSearchFiltersFromInput($_POST)));
         }
         exit;
     }
@@ -486,6 +486,7 @@ if ($tab === 'mini_sajt' && !$storefrontOn) {
 }
 
 $pageTitle = 'Moj nalog — KupiTelefon';
+$robotsMeta = 'noindex,follow';
 $activePage = 'nalog';
 $showSearch = false;
 $bodyClass = 'page-account';
@@ -495,7 +496,7 @@ require __DIR__ . '/partials/layout-start.php';
 
 <div class="main-wrap">
     <main class="content account-page">
-        <div class="breadcrumb"><a href="/index.php">Početna</a> › Moj nalog</div>
+        <div class="breadcrumb"><a href="/">Početna</a> › Moj nalog</div>
 
         <?php
         $statActive = count($activeAds);
@@ -1039,7 +1040,7 @@ require __DIR__ . '/partials/layout-start.php';
                                     </div>
                                 </div>
                                 <div class="account-ad-actions">
-                                    <a class="btn-sm btn-sm-primary" href="/index.php<?= $q !== '' ? '?' . h($q) : '' ?>">Pokreni</a>
+                                    <a class="btn-sm btn-sm-primary" href="<?= h(listingLegacyIndexTarget(is_array($ss['filters'] ?? null) ? $ss['filters'] : [])) ?>">Pokreni</a>
                                     <form method="POST" style="display:inline;">
                                         <?= csrfField() ?>
                                         <input type="hidden" name="action" value="toggle_search_alert">

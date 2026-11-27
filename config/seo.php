@@ -39,13 +39,68 @@ function seoStripRepeatedSiteName(string $text, string $siteName): string
     return $text;
 }
 
+function seoTitleBrand(): string
+{
+    $name = trim(seoSiteName());
+    if ($name === '') {
+        return 'KupiTelefon.rs';
+    }
+    if (preg_match('/kupitelefon/iu', $name) === 1 && !str_contains(mb_strtolower($name), '.rs')) {
+        return 'KupiTelefon.rs';
+    }
+    return $name;
+}
+
+/** Naslov do $max znakova, sa sufiksom „ | brend” kad stane. */
+function seoFitTitle(string $lead, int $max = 60): string
+{
+    $lead = trim(preg_replace('/\s+/u', ' ', $lead) ?? $lead);
+    $suffix = ' | ' . seoTitleBrand();
+    $full = $lead . $suffix;
+    if (mb_strlen($full) <= $max) {
+        return $full;
+    }
+    $room = $max - mb_strlen($suffix);
+    if ($room < 12) {
+        return seoTruncate($full, $max);
+    }
+    return rtrim(mb_substr($lead, 0, $room - 1)) . '…' . $suffix;
+}
+
+function seoFitDescription(string $text, int $max = 160): string
+{
+    $text = trim(preg_replace('/\s+/u', ' ', $text) ?? $text);
+    if (mb_strlen($text) <= $max) {
+        return $text;
+    }
+    return seoTruncate($text, $max);
+}
+
+function seoAppendPageSuffix(string $title, int $page, int $max = 60): string
+{
+    if ($page <= 1) {
+        return $title;
+    }
+    $pageSuffix = ' — strana ' . $page;
+    if (preg_match('/^(.*)( \| .+)$/u', $title, $m) === 1) {
+        $full = $m[1] . $pageSuffix . $m[2];
+        if (mb_strlen($full) <= $max) {
+            return $full;
+        }
+        $room = $max - mb_strlen($m[2]) - mb_strlen($pageSuffix);
+        if ($room < 8) {
+            return seoTruncate($full, $max);
+        }
+        return rtrim(mb_substr($m[1], 0, $room - 1)) . '…' . $pageSuffix . $m[2];
+    }
+    return seoTruncate($title . $pageSuffix, $max);
+}
+
 function seoHomeMeta(): array
 {
-    $name = seoSiteName();
-    $tag = seoStripRepeatedSiteName(siteTagline(), $name);
     return [
-        'title' => $name . ($tag !== '' ? ' — ' . $tag : ''),
-        'description' => 'Kupi i prodaj telefone, tablete i pametne satove, ili pronađi servis u Srbiji. Oglasi, provereni prodavci i mini sajtovi radnji na ' . $name . '.',
+        'title' => seoFitTitle('Polovni telefoni – kupi i prodaj besplatno'),
+        'description' => seoFitDescription('Besplatno postavi oglas za polovni iPhone, Samsung ili Xiaomi. Kupovina i prodaja u Beogradu, Novom Sadu i drugim gradovima, uz imenik servisa telefona.'),
         'h1' => 'Polovni telefoni, tableti i servis u Srbiji',
     ];
 }
@@ -72,7 +127,10 @@ function seoLastmodDate(string $raw): string
     return date('Y-m-d', $ts);
 }
 
-function seoListingMeta(array $filters = []): array
+/**
+ * @param array{count?:int,min?:float|null,max?:float|null} $context
+ */
+function seoListingMeta(array $filters = [], array $context = []): array
 {
     $name = seoSiteName();
     $parts = [];
@@ -83,17 +141,42 @@ function seoListingMeta(array $filters = []): array
     $location = trim((string)($filters['location'] ?? ''));
     $deviceType = trim((string)($filters['device_type'] ?? ''));
     $q = trim((string)($filters['q'] ?? ''));
+    $count = (int)($context['count'] ?? 0);
+    $countLabel = $count === 1 ? '1 oglas' : ($count . ' oglasa');
 
-    if ($location !== '' && $brand === '' && $model === '' && $q === '' && $type === '' && $deviceType === '' && $equipmentGroup === '') {
+    if ($type === 'telefon' && $brand === '' && $model === '' && $location === '' && $q === '' && $deviceType === '' && $equipmentGroup === '') {
+        $countBit = $count > 0 ? ($countLabel . ' za polovne mobilne telefone. ') : '';
         return [
-            'title' => 'Polovni telefoni ' . $location . ' | ' . $name,
-            'description' => seoTruncate('Polovni telefoni ' . $location . ': aktuelni oglasi, cene i prodavci. Kupovina i prodaja telefona na ' . $name . '.'),
+            'title' => seoFitTitle('Polovni mobilni telefoni – oglasi i cene'),
+            'description' => seoFitDescription($countBit . 'iPhone, Samsung, Xiaomi i drugi brendovi, sa cenama i gradovima. Oglas se postavlja besplatno na ' . seoTitleBrand() . '.'),
+            'h1' => 'Polovni mobilni telefoni',
+        ];
+    }
+    if ($location !== '' && $brand === '' && $model === '' && $q === '' && $type === '' && $deviceType === '' && $equipmentGroup === '') {
+        $lead = $count > 0
+            ? ('Polovni telefoni ' . $location . ' – ' . $countLabel)
+            : ('Polovni telefoni ' . $location);
+        return [
+            'title' => seoFitTitle($lead),
+            'description' => seoFitDescription('Polovni telefoni ' . $location . ($count > 0 ? ': ' . $countLabel : '') . '. Aktuelne cene, prodavci i besplatno postavljanje oglasa na ' . seoTitleBrand() . '.'),
+            'h1' => 'Polovni telefoni ' . $location,
+        ];
+    }
+    if ($brand !== '' && $location !== '' && $model === '' && $q === '' && $type === '' && $deviceType === '' && $equipmentGroup === '') {
+        return [
+            'title' => seoFitTitle('Polovni ' . $brand . ' telefoni ' . $location),
+            'description' => seoFitDescription('Polovni ' . $brand . ' telefoni u gradu ' . $location . ($count > 0 ? ' — ' . $countLabel : '') . '. Cene, modeli i oglasi na ' . seoTitleBrand() . '.'),
+            'h1' => 'Polovni ' . $brand . ' telefoni ' . $location,
         ];
     }
     if ($brand !== '' && $model === '' && $location === '' && $q === '' && $type === '' && $deviceType === '' && $equipmentGroup === '') {
+        $lead = $count > 0
+            ? ('Polovni ' . $brand . ' telefoni – ' . $countLabel . ' i cene')
+            : ('Polovni ' . $brand . ' telefoni');
         return [
-            'title' => 'Polovni telefoni ' . $brand . ' | ' . $name,
-            'description' => seoTruncate('Polovni telefoni ' . $brand . ': modeli, memorija, cene i oglasi po gradovima Srbije na ' . $name . '.'),
+            'title' => seoFitTitle($lead),
+            'description' => seoFitDescription('Polovni ' . $brand . ' telefoni' . ($count > 0 ? ': ' . $countLabel : '') . '. Modeli, memorija i cene po gradovima Srbije na ' . seoTitleBrand() . '.'),
+            'h1' => 'Polovni ' . $brand . ' telefoni',
         ];
     }
 
@@ -212,11 +295,17 @@ function seoListingHeading(array $filters = []): string
     $model = trim((string)($filters['model'] ?? ''));
     $location = trim((string)($filters['location'] ?? ''));
 
+    if ($type === 'telefon' && $brand === '' && $model === '' && $location === '' && $equipmentGroup === '') {
+        return 'Polovni mobilni telefoni';
+    }
     if ($location !== '' && $brand === '' && $model === '' && $type === '' && $equipmentGroup === '') {
         return 'Polovni telefoni ' . $location;
     }
+    if ($brand !== '' && $location !== '' && $model === '' && $type === '' && $equipmentGroup === '') {
+        return 'Polovni ' . $brand . ' telefoni ' . $location;
+    }
     if ($brand !== '' && $model === '' && $location === '' && $type === '' && $equipmentGroup === '') {
-        return 'Polovni telefoni ' . $brand;
+        return 'Polovni ' . $brand . ' telefoni';
     }
 
     $subject = match ($type) {
@@ -334,7 +423,7 @@ function seoWebsiteJsonLd(): array
         'url' => appBaseUrl() . '/',
         'potentialAction' => [
             '@type' => 'SearchAction',
-            'target' => appBaseUrl() . '/index.php?q={search_term_string}',
+            'target' => appBaseUrl() . '/oglasi?q={search_term_string}',
             'query-input' => 'required name=search_term_string',
         ],
     ];
@@ -519,4 +608,231 @@ function seoJsonLdScript(array $payload): string
         return '';
     }
     return '<script type="application/ld+json">' . $json . '</script>';
+}
+
+function seoJoinList(array $items): string
+{
+    $items = array_values(array_filter(array_map(static fn($v) => trim((string)$v), $items), static fn($v) => $v !== ''));
+    $n = count($items);
+    if ($n === 0) {
+        return '';
+    }
+    if ($n === 1) {
+        return $items[0];
+    }
+    if ($n === 2) {
+        return $items[0] . ' i ' . $items[1];
+    }
+    $last = array_pop($items);
+    return implode(', ', $items) . ' i ' . $last;
+}
+
+/** @return array{min:?float,max:?float} */
+function seoAdsPriceExtent(array $ads): array
+{
+    $prices = [];
+    foreach ($ads as $ad) {
+        if (!is_array($ad)) {
+            continue;
+        }
+        if (function_exists('isAdPriceOpen') && isAdPriceOpen($ad)) {
+            continue;
+        }
+        $currency = strtolower(trim((string)($ad['currency'] ?? 'eur')));
+        if ($currency !== '' && $currency !== 'eur' && $currency !== '€') {
+            continue;
+        }
+        $price = (float)($ad['price'] ?? 0);
+        if ($price <= 0) {
+            continue;
+        }
+        $prices[] = $price;
+    }
+    if ($prices === []) {
+        return ['min' => null, 'max' => null];
+    }
+    return ['min' => min($prices), 'max' => max($prices)];
+}
+
+/** @return list<string> */
+function seoTopAdValues(array $ads, string $field, int $limit = 3): array
+{
+    $counts = [];
+    foreach ($ads as $ad) {
+        if (!is_array($ad)) {
+            continue;
+        }
+        $value = trim((string)($ad[$field] ?? ''));
+        if ($value === '' || $value === 'Ostalo') {
+            continue;
+        }
+        $counts[$value] = ($counts[$value] ?? 0) + 1;
+    }
+    arsort($counts);
+    return array_slice(array_keys($counts), 0, $limit);
+}
+
+function seoMoneyEur(?float $amount): string
+{
+    if ($amount === null) {
+        return '';
+    }
+    $rounded = abs($amount - round($amount)) < 0.05 ? (string)(int)round($amount) : number_format($amount, 0, ',', '.');
+    return $rounded . ' €';
+}
+
+/**
+ * 2–3 rečenice iz stvarnih oglasa, za brend, grad i brend+grad.
+ */
+function seoListingIntro(array $filters, array $ads): string
+{
+    $brand = trim((string)($filters['brand'] ?? ''));
+    $model = trim((string)($filters['model'] ?? ''));
+    $location = trim((string)($filters['location'] ?? ''));
+    $type = trim((string)($filters['type'] ?? ''));
+    if ($model !== '' || $type !== '' || ($brand === '' && $location === '')) {
+        return '';
+    }
+    $count = count($ads);
+    if ($count < 1) {
+        return '';
+    }
+    $countLabel = $count === 1 ? '1 aktivan oglas' : ($count . ' aktivnih oglasa');
+    $extent = seoAdsPriceExtent($ads);
+    $priceSentence = '';
+    if ($extent['min'] !== null && $extent['max'] !== null) {
+        $priceSentence = $extent['min'] === $extent['max']
+            ? ('Cena u oglasima je ' . seoMoneyEur($extent['min']) . '.')
+            : ('Cene se kreću od ' . seoMoneyEur($extent['min']) . ' do ' . seoMoneyEur($extent['max']) . '.');
+    }
+    if ($brand !== '' && $location !== '') {
+        $models = seoJoinList(seoTopAdValues($ads, 'model', 3));
+        $text = 'Polovni ' . $brand . ' telefoni u gradu ' . $location . ': ' . $countLabel . '.';
+        if ($models !== '') {
+            $text .= ' Najčešći modeli su ' . $models . '.';
+        }
+        if ($priceSentence !== '') {
+            $text .= ' ' . $priceSentence;
+        }
+        return $text;
+    }
+    if ($brand !== '') {
+        $models = seoJoinList(seoTopAdValues($ads, 'model', 3));
+        $cities = seoJoinList(seoTopAdValues($ads, 'location', 3));
+        $text = $brand . ' ima ' . $countLabel . ' na ' . seoTitleBrand() . '.';
+        if ($priceSentence !== '') {
+            $text .= ' ' . $priceSentence;
+        }
+        if ($models !== '') {
+            $text .= ' Najčešći modeli su ' . $models . '.';
+        }
+        if ($cities !== '') {
+            $text .= ' Najviše oglasa je u gradovima: ' . $cities . '.';
+        }
+        return $text;
+    }
+    $brands = seoJoinList(seoTopAdValues($ads, 'brand', 3));
+    $text = 'U gradu ' . $location . ' trenutno ima ' . $countLabel . ' za polovne telefone.';
+    if ($brands !== '') {
+        $text .= ' Najzastupljeniji brendovi su ' . $brands . '.';
+    }
+    if ($priceSentence !== '') {
+        $text .= ' ' . $priceSentence;
+    }
+    return $text;
+}
+
+function seoListingSectionHeading(array $filters): string
+{
+    $brand = trim((string)($filters['brand'] ?? ''));
+    $location = trim((string)($filters['location'] ?? ''));
+    $model = trim((string)($filters['model'] ?? ''));
+    $type = trim((string)($filters['type'] ?? ''));
+    if ($brand !== '' && $model !== '') {
+        return trim($brand . ' ' . $model) . ' oglasi';
+    }
+    if ($brand !== '') {
+        return $brand . ' oglasi';
+    }
+    if ($location !== '') {
+        return 'Oglasi u gradu ' . $location;
+    }
+    if ($type === 'delovi') {
+        return 'Oglasi delova i opreme';
+    }
+    if ($type === 'servis') {
+        return 'Oglasi servisa';
+    }
+    return 'Najnoviji oglasi';
+}
+
+/**
+ * 301 za stare URL-ove. Vraća true ako je redirekcija poslata.
+ * POST na oglas se ne preusmerava (poruka prodavcu).
+ *
+ * @param array<string,mixed> $query
+ */
+function seoTryLegacyRedirect(string $path, string $method = 'GET', ?array $query = null): bool
+{
+    $path = rawurldecode($path);
+    $path = rtrim($path, '/') ?: '/';
+    $method = strtoupper($method);
+    $query ??= $_GET;
+    $safe = $method === 'GET' || $method === 'HEAD';
+
+    if (!$safe && ($path === '/oglas.php' || str_starts_with($path, '/oglas/'))) {
+        return false;
+    }
+    if ($path === '/index.php' && $safe) {
+        header('Location: ' . listingLegacyIndexTarget($query), true, 301);
+        return true;
+    }
+    if ($path === '/oglas.php' && $safe) {
+        $id = (int)($query['id'] ?? 0);
+        if ($id <= 0) {
+            return false;
+        }
+        $ad = getAdById($id);
+        if (!is_array($ad)) {
+            return false;
+        }
+        $canonical = adUrl($ad);
+        $expectedSlug = '';
+        if (preg_match('#^/oglas/\d+-(.*)$#', $canonical, $slugMatch) === 1) {
+            $expectedSlug = (string)$slugMatch[1];
+        }
+        // Nginx rewrite šalje tačan slug u query. Tada je URL već kanonski i ne sme 301 (petlja).
+        if (array_key_exists('slug', $query) && (string)$query['slug'] === $expectedSlug) {
+            return false;
+        }
+        header('Location: ' . $canonical, true, 301);
+        return true;
+    }
+    if ($safe && preg_match('#^/oglas/(\d+)(?:-.*)?$#', $path, $m) === 1) {
+        $ad = getAdById((int)$m[1]);
+        if (!is_array($ad)) {
+            return false;
+        }
+        $canonical = adUrl($ad);
+        if ($path !== $canonical) {
+            header('Location: ' . $canonical, true, 301);
+            return true;
+        }
+        return false;
+    }
+    if ($path === '/izlog_ocene.php' && $safe) {
+        $user = trim((string)($query['u'] ?? ''));
+        if ($user === '') {
+            return false;
+        }
+        $rest = $query;
+        unset($rest['u']);
+        $target = '/izlog/' . rawurlencode($user) . '/ocene';
+        if ($rest !== []) {
+            $target .= '?' . http_build_query($rest);
+        }
+        header('Location: ' . $target, true, 301);
+        return true;
+    }
+    return false;
 }

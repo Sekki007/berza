@@ -71,7 +71,7 @@ function requireCsrf(?string $redirectTo = null): void
     setFlash('danger', 'Sesija je istekla ili zahtev nije važeći. Pokušaj ponovo.');
     $target = $redirectTo;
     if ($target === null || $target === '') {
-        $target = (string)($_SERVER['HTTP_REFERER'] ?? '/index.php');
+        $target = (string)($_SERVER['HTTP_REFERER'] ?? '/');
         if ($target === '' || !str_starts_with($target, '/')) {
             // allow same-host referer
             $host = (string)($_SERVER['HTTP_HOST'] ?? '');
@@ -79,7 +79,7 @@ function requireCsrf(?string $redirectTo = null): void
             if ($host !== '' && $ref !== '' && str_contains($ref, $host)) {
                 $target = $ref;
             } else {
-                $target = '/index.php';
+                $target = '/';
             }
         }
     }

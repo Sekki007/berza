@@ -155,7 +155,7 @@ require __DIR__ . '/partials/layout-start.php';
     <?php require __DIR__ . '/partials/admin-sidebar.php'; ?>
 
     <main class="content">
-        <div class="breadcrumb"><a href="/index.php">Početna</a> › <a href="/dashboard.php">Admin</a> › Katalog telefona</div>
+        <div class="breadcrumb"><a href="/">Početna</a> › <a href="/dashboard.php">Admin</a> › Katalog telefona</div>
         <h2 style="font-size:18px;margin-bottom:12px;">Katalog telefona</h2>
 
         <div class="stats-grid" style="margin-bottom:12px;">

@@ -16,7 +16,7 @@ if ($ad && !$targetUser) {
 
 if (!$ad && !$targetUser) {
     setFlash('danger', 'Prijava nije validna — nedostaje oglas ili korisnik.');
-    header('Location: /index.php');
+    header('Location: /');
     exit;
 }
 
@@ -49,7 +49,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     } elseif ($targetUser) {
         header('Location: ' . shopUrlForUser($targetUser));
     } else {
-        header('Location: /index.php');
+        header('Location: /');
     }
     exit;
 }
@@ -63,7 +63,7 @@ require __DIR__ . '/partials/layout-start.php';
 
 <div class="main-wrap">
     <main class="content">
-        <div class="breadcrumb"><a href="/index.php">Početna</a> › Prijava</div>
+        <div class="breadcrumb"><a href="/">Početna</a> › Prijava</div>
         <div class="form-card">
             <h2>Prijavi <?= $ad ? 'oglas' : 'korisnika' ?></h2>
             <?php if ($ad): ?>
@@ -93,7 +93,7 @@ require __DIR__ . '/partials/layout-start.php';
                     <textarea name="details" rows="4" maxlength="1000" placeholder="Objasni ukratko zašto prijavljuješ..."></textarea>
                 </div>
                 <button class="btn-call" type="submit">Pošalji prijavu</button>
-                <a class="btn-message" style="display:inline-block;margin-top:10px;" href="<?= $ad ? '/oglas.php?id=' . (int)$ad['id'] : ($targetUser ? h(shopUrlForUser($targetUser)) : '/index.php') ?>">Otkaži</a>
+                <a class="btn-message" style="display:inline-block;margin-top:10px;" href="<?= $ad ? h(adUrl($ad)) : ($targetUser ? h(shopUrlForUser($targetUser)) : '/') ?>">Otkaži</a>
             </form>
         </div>
     </main>

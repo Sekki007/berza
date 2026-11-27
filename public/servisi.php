@@ -66,7 +66,7 @@ if ($cityParam !== '' && $slugParam !== '') {
     <div class="main-wrap">
         <main class="content dir-page">
             <div class="breadcrumb">
-                <a href="/index.php">Početna</a> ›
+                <a href="/">Početna</a> ›
                 <a href="/servisi">Firme</a> ›
                 <a href="<?= h(directoryCityUrl($cityName)) ?>"><?= h($cityName) ?></a> ›
                 <?= h($shopName) ?>
@@ -207,7 +207,7 @@ if ($cityParam !== '') {
     <div class="main-wrap">
         <main class="content dir-page">
             <div class="breadcrumb">
-                <a href="/index.php">Početna</a> ›
+                <a href="/">Početna</a> ›
                 <a href="<?= h(directoryHubUrl($kindFilter)) ?>">Firme</a> ›
                 <?= h($cityName) ?>
             </div>
@@ -225,7 +225,7 @@ if ($cityParam !== '') {
 
             <?php if ($services === []): ?>
                 <div class="form-card">
-                    <p class="dir-empty">Još nema verifikovanih firmi za <?= h($cityName) ?> u ovom filteru. Pogledaj <a href="<?= h(directoryHubUrl()) ?>">druge gradove</a> ili <a href="/index.php?type=servis&amp;location=<?= h(rawurlencode($cityName)) ?>">oglase</a>.</p>
+                    <p class="dir-empty">Još nema verifikovanih firmi za <?= h($cityName) ?> u ovom filteru. Pogledaj <a href="<?= h(directoryHubUrl()) ?>">druge gradove</a> ili <a href="<?= h(listingLegacyIndexTarget(['type' => 'servis', 'location' => $cityName])) ?>">oglase</a>.</p>
                 </div>
             <?php else: ?>
                 <div class="dir-card-grid dir-card-grid-lg">
@@ -306,7 +306,7 @@ require __DIR__ . '/partials/layout-start.php';
 ?>
 <div class="main-wrap">
     <main class="content dir-page">
-        <div class="breadcrumb"><a href="/index.php">Početna</a> › Firme</div>
+        <div class="breadcrumb"><a href="/">Početna</a> › Firme</div>
 
         <header class="dir-hub-head form-card">
             <h1><?= h($hubHeading) ?></h1>
@@ -349,7 +349,7 @@ require __DIR__ . '/partials/layout-start.php';
         <?php if ($allServices === []): ?>
             <div class="form-card">
                 <p class="dir-empty">Još nema javnih verifikovanih firmi u ovom filteru. Probaj drugi tip ili potraži grad iznad.</p>
-                <p style="margin-top:10px;"><a href="/index.php?type=servis">Pogledaj oglase usluga →</a> · <a href="/index.php?type=telefon">Oglasi telefona →</a></p>
+                <p style="margin-top:10px;"><a href="<?= h(listingLandingPath(['type' => 'servis'])) ?>">Pogledaj oglase usluga →</a> · <a href="<?= h(listingLandingPath(['type' => 'telefon'])) ?>">Oglasi telefona →</a></p>
             </div>
         <?php else: ?>
             <section class="dir-section">

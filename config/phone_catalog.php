@@ -1487,9 +1487,16 @@ function phoneCatalogModelMeta(array $model, array $stats): array
     } else {
         $description .= ' Specifikacije su iz navedenog proizvođačkog izvora.';
     }
+    $modelTitle = trim((string)($model['name'] ?? ''));
+    if ($modelTitle === '') {
+        $modelTitle = $label;
+    }
+    $title = function_exists('seoFitTitle')
+        ? seoFitTitle($modelTitle . ' cena i polovni oglasi')
+        : ($modelTitle . ' cena i polovni oglasi | ' . $name);
     return [
-        'title' => $label . ' — katalog telefona — ' . $name,
-        'description' => function_exists('seoTruncate') ? seoTruncate($description, 180) : $description,
+        'title' => $title,
+        'description' => function_exists('seoFitDescription') ? seoFitDescription($description) : $description,
     ];
 }
 

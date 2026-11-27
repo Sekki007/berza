@@ -105,6 +105,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $pageTitle = 'Registracija — KupiTelefon';
 $canonicalUrl = absoluteUrl('/registracija');
+$robotsMeta = 'noindex,follow';
 $activePage = 'nalog';
 $minimalHeader = true;
 $showSearch = false;

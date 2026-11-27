@@ -108,7 +108,7 @@ require __DIR__ . '/partials/layout-start.php';
 
 <div class="main-wrap">
     <main class="content">
-        <div class="breadcrumb"><a href="/index.php">Početna</a> › Nova lozinka</div>
+        <div class="breadcrumb"><a href="/">Početna</a> › Nova lozinka</div>
         <div class="form-card">
             <?php if (!$codeVerified): ?>
                 <h2>Unesi kod</h2>

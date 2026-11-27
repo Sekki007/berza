@@ -13,7 +13,7 @@ if (!$seller) {
     $activePage = 'oglasi';
     $showSearch = true;
     require __DIR__ . '/partials/layout-start.php';
-    echo '<div class="main-wrap"><main class="content"><div class="form-card"><h2>Izlog nije pronađen</h2><p style="margin-top:10px;color:var(--text-muted);">Proveri link ili se vrati na <a href="/index.php">početnu</a>.</p></div></main></div>';
+    echo '<div class="main-wrap"><main class="content"><div class="form-card"><h2>Izlog nije pronađen</h2><p style="margin-top:10px;color:var(--text-muted);">Proveri link ili se vrati na <a href="/">početnu</a>.</p></div></main></div>';
     require __DIR__ . '/partials/layout-end.php';
     exit;
 }
@@ -223,7 +223,7 @@ require __DIR__ . '/partials/layout-start.php';
 <div class="main-wrap">
     <main class="content">
         <div class="breadcrumb">
-            <a href="/index.php">Početna</a> › Izlog ›
+            <a href="/">Početna</a> › Izlog ›
             <?php if ($activeCategory): ?>
                 <a href="<?= h($shopLink) ?>"><?= h($shopName) ?></a> › <?= h($activeCategory['name']) ?>
             <?php else: ?>
