@@ -108,7 +108,7 @@ $showPriceConfirm = $priceEurNow > $priceWarnEur && $priceEurNow <= maxAdPriceEu
 ?>
 <div class="main-wrap">
     <main class="content ad-form-page ad-form-page--v2">
-        <div class="breadcrumb"><a href="/index.php">Početna</a> › <?= $isEdit ? 'Izmena oglasa' : 'Postavi oglas' ?></div>
+        <div class="breadcrumb"><a href="/">Početna</a> › <?= $isEdit ? 'Izmena oglasa' : 'Postavi oglas' ?></div>
 
         <form method="POST" enctype="multipart/form-data" class="form-card ad-form-card" data-ad-form data-is-edit="<?= $isEdit ? '1' : '0' ?>" data-draft-key="kt-ad-draft-v1">
             <?= csrfField() ?>

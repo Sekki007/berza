@@ -257,8 +257,10 @@ $missing = catalogPage('/katalog/apple/iphone-17-pro-max');
 check(str_contains($missing, 'Model nije u katalogu'), 'nepoznat model je 404, bez izmišljenog unosa');
 
 $sitemap = catalogPage('/sitemap.xml');
-check(str_contains($sitemap, '/katalog</loc>') && str_contains($sitemap, '/katalog/apple/iphone-15</loc>'), 'sitemap ima katalog i model');
-check(!str_contains($sitemap, '/katalog?'), 'sitemap nema filtrirane URL-ove kataloga');
+check(str_contains($sitemap, '<sitemapindex') && str_contains($sitemap, '/sitemap-katalog.xml'), 'sitemap index ima deo kataloga');
+$catalogSitemap = catalogPage('/sitemap-katalog.xml');
+check(str_contains($catalogSitemap, '/katalog/apple/iphone-15</loc>'), 'sitemap kataloga ima model');
+check(!str_contains($sitemap . $catalogSitemap, '/katalog?'), 'sitemap nema filtrirane URL-ove kataloga');
 
 $before = md5((string)file_get_contents($dataDir . '/ads.json'));
 shell_exec(escapeshellarg(PHP_BINARY) . ' ' . escapeshellarg(dirname(__DIR__) . '/tools/link_phone_models.php') . ' 2>&1');

@@ -62,6 +62,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
 $pageTitle = 'Prijava — KupiTelefon';
 $canonicalUrl = absoluteUrl('/prijava');
+$robotsMeta = 'noindex,follow';
 $activePage = 'nalog';
 $minimalHeader = true;
 $showSearch = false;

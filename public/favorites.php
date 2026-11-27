@@ -7,6 +7,7 @@ require_once dirname(__DIR__) . '/config/bootstrap.php';
 $ads = getFavoriteAds();
 
 $pageTitle = 'Omiljeni oglasi — KupiTelefon';
+$robotsMeta = 'noindex,follow';
 $activePage = 'nalog';
 $showSearch = false;
 
@@ -15,7 +16,7 @@ require __DIR__ . '/partials/layout-start.php';
 
 <div class="main-wrap">
     <main class="content">
-        <div class="breadcrumb"><a href="/index.php">Početna</a> › Omiljeni oglasi</div>
+        <div class="breadcrumb"><a href="/">Početna</a> › Omiljeni oglasi</div>
         <div class="form-card">
             <h2>Omiljeni oglasi (<?= count($ads) ?>)</h2>
             <?php if (!$ads): ?>

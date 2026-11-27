@@ -101,7 +101,7 @@ require __DIR__ . '/partials/layout-start.php';
 
 <div class="main-wrap">
     <main class="content">
-        <div class="breadcrumb"><a href="/index.php">Početna</a> › Verifikacija telefona</div>
+        <div class="breadcrumb"><a href="/">Početna</a> › Verifikacija telefona</div>
         <div class="form-card">
             <h2>Verifikacija telefona</h2>
             <p style="font-size:14px;color:var(--text-muted);margin-bottom:16px;">

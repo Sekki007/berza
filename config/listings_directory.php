@@ -209,6 +209,9 @@ function resolveListingLandingFromPath(string $path): ?array
     return ['invalid' => true];
 }
 
+/** Grad i brend+grad ulaze u sitemap tek od ovog broja aktivnih oglasa. */
+const LISTING_SITEMAP_MIN_ADS = 3;
+
 function listingLandingIndexable(array $filters, array $ads): bool
 {
     $brand = trim((string)($filters['brand'] ?? ''));
@@ -217,7 +220,13 @@ function listingLandingIndexable(array $filters, array $ads): bool
     $hasNarrowType = trim((string)($filters['type'] ?? '')) !== ''
         || trim((string)($filters['equipment_group'] ?? '')) !== '';
 
-    // Bazni grad i brend (bez modela, kombinacije i sort upita) ostaju indeksabilni.
+    $count = count($ads);
+    // Prazan grad ili brend (0 oglasa) ostaje stranica za ljude, ali noindex.
+    if ($count < 1) {
+        return false;
+    }
+
+    // Bazni grad i brend sa bar jednim oglasom ostaju indeksabilni.
     if ($location !== '' && $brand === '' && $model === '' && !$hasNarrowType) {
         return true;
     }
@@ -225,7 +234,6 @@ function listingLandingIndexable(array $filters, array $ads): bool
         return true;
     }
 
-    $count = count($ads);
     if ($count < 3) {
         return false;
     }
@@ -296,20 +304,273 @@ function listingLandingCandidatesForSitemap(?array $ads = null): array
         $out[] = listingLandingPath(['type' => 'delovi', 'equipment_group' => 'oprema']);
     }
 
-    foreach ((array)(categoriesConfig()['brands'] ?? []) as $brand) {
-        $brand = trim((string)$brand);
-        if ($brand === '') {
+    $byBrand = [];
+    $byCity = [];
+    $byBrandCity = [];
+    foreach ($ads as $ad) {
+        if (!is_array($ad)) {
             continue;
         }
-        $out[] = listingLandingPath(['brand' => $brand]);
+        $brand = trim((string)($ad['brand'] ?? ''));
+        $city = trim((string)($ad['location'] ?? ''));
+        if ($brand !== '' && $brand !== 'Ostalo') {
+            $byBrand[$brand][] = $ad;
+        }
+        if ($city !== '') {
+            $byCity[$city][] = $ad;
+        }
+        if ($brand !== '' && $brand !== 'Ostalo' && $city !== '') {
+            $byBrandCity[$brand . "\0" . $city][] = $ad;
+        }
+    }
+
+    foreach ((array)(categoriesConfig()['brands'] ?? []) as $brand) {
+        $brand = trim((string)$brand);
+        if ($brand === '' || $brand === 'Ostalo') {
+            continue;
+        }
+        $brandAds = $byBrand[$brand] ?? [];
+        if (listingLandingIndexable(['brand' => $brand], $brandAds)) {
+            $out[] = listingLandingPath(['brand' => $brand]);
+        }
     }
     foreach ((array)(categoriesConfig()['cities'] ?? []) as $city) {
         $city = trim((string)$city);
         if ($city === '') {
             continue;
         }
-        $out[] = listingLandingPath(['location' => $city]);
+        $cityAds = $byCity[$city] ?? [];
+        if (count($cityAds) >= LISTING_SITEMAP_MIN_ADS && listingLandingIndexable(['location' => $city], $cityAds)) {
+            $out[] = listingLandingPath(['location' => $city]);
+        }
+    }
+    foreach ((array)(categoriesConfig()['brands'] ?? []) as $brand) {
+        $brand = trim((string)$brand);
+        if ($brand === '' || $brand === 'Ostalo') {
+            continue;
+        }
+        foreach ((array)(categoriesConfig()['cities'] ?? []) as $city) {
+            $city = trim((string)$city);
+            if ($city === '') {
+                continue;
+            }
+            $combo = $byBrandCity[$brand . "\0" . $city] ?? [];
+            if (count($combo) < LISTING_SITEMAP_MIN_ADS) {
+                continue;
+            }
+            if (!listingLandingIndexable(['brand' => $brand, 'location' => $city], $combo)) {
+                continue;
+            }
+            $out[] = listingLandingPath(['brand' => $brand, 'location' => $city]);
+        }
     }
 
     return array_values(array_unique($out));
+}
+
+/**
+ * Čist URL za filtere sa starog /index.php (i sačuvanih pretraga).
+ * Poznati tip, brend, model i grad idu na landing. Ostali parametri ostaju u query-ju.
+ *
+ * @param array<string,mixed> $query
+ */
+function listingLegacyIndexTarget(array $query): string
+{
+    $type = trim((string)($query['type'] ?? ''));
+    $brandRaw = trim((string)($query['brand'] ?? ''));
+    $model = trim((string)($query['model'] ?? ''));
+    $locationRaw = trim((string)($query['location'] ?? ''));
+    $equipment = trim((string)($query['equipment_group'] ?? ''));
+
+    if (array_key_exists('browse_cat', $query) && function_exists('browseCategoryToFilters')) {
+        $mapped = browseCategoryToFilters(trim((string)$query['browse_cat']));
+        if ($type === '') {
+            $type = (string)($mapped['type'] ?? '');
+        }
+        if ($equipment === '') {
+            $equipment = (string)($mapped['equipment_group'] ?? '');
+        }
+    }
+
+    $filters = [];
+    if (in_array($type, ['telefon', 'delovi', 'servis'], true)) {
+        $filters['type'] = $type;
+    }
+    $brand = '';
+    if ($brandRaw !== '') {
+        $found = listingFindBrandBySlug(listingFacetSlug($brandRaw));
+        if ($found !== null) {
+            $brand = $found;
+            $filters['brand'] = $found;
+        }
+    }
+    $city = '';
+    if ($locationRaw !== '') {
+        $foundCity = listingFindCityBySlug(citySlug($locationRaw));
+        if ($foundCity !== null) {
+            $city = $foundCity;
+            $filters['location'] = $foundCity;
+        }
+    }
+    if ($model !== '' && $brand !== '') {
+        $filters['model'] = $model;
+    }
+    if ($equipment !== '' && ($filters['type'] ?? '') === 'delovi') {
+        $filters['equipment_group'] = $equipment;
+    }
+
+    $rest = [];
+    foreach ($query as $key => $value) {
+        if ($value === '' || $value === null || is_array($value)) {
+            continue;
+        }
+        $key = (string)$key;
+        if ($key === 'type' && isset($filters['type'])) {
+            continue;
+        }
+        if ($key === 'equipment_group' && isset($filters['equipment_group'])) {
+            continue;
+        }
+        if ($key === 'browse_cat' && (isset($filters['type']) || isset($filters['equipment_group']))) {
+            continue;
+        }
+        if ($key === 'brand' && isset($filters['brand'])) {
+            continue;
+        }
+        if ($key === 'location' && isset($filters['location'])) {
+            continue;
+        }
+        if ($key === 'model' && isset($filters['model'])) {
+            continue;
+        }
+        if ($key === 'sort' && (string)$value === 'newest') {
+            continue;
+        }
+        if ($key === 'page' && (int)$value <= 1) {
+            continue;
+        }
+        $rest[$key] = (string)$value;
+    }
+
+    $unmapped = ($brandRaw !== '' && $brand === '')
+        || ($locationRaw !== '' && $city === '')
+        || ($model !== '' && !isset($filters['model']));
+
+    if ($filters === [] && $rest === [] && !$unmapped) {
+        return '/';
+    }
+    if ($filters === [] && array_keys($rest) === ['page']) {
+        return '/?page=' . max(2, (int)$rest['page']);
+    }
+
+    $path = $filters === [] ? '/oglasi' : listingLandingPath($filters);
+    if ($filters === [] && $unmapped) {
+        $path = '/oglasi';
+    }
+    if ($rest === []) {
+        return $path;
+    }
+    return $path . '?' . http_build_query($rest);
+}
+
+/** Paginacija koja sme da bude indeksabilna sa self-canonical URL-om. */
+function listingPageIsSelfCanonical(string $path): bool
+{
+    $path = rtrim($path, '/') ?: '/';
+    if ($path === '/' || $path === '/oglasi/telefoni') {
+        return true;
+    }
+    if (preg_match('#^/oglasi/grad/([^/]+)$#', $path) === 1) {
+        return true;
+    }
+    if (preg_match('#^/oglasi/([^/]+)$#', $path, $m) === 1) {
+        return listingFindBrandBySlug(rawurldecode($m[1])) !== null;
+    }
+    return false;
+}
+
+/**
+ * Robots i canonical za listu oglasa.
+ *
+ * @param array{
+ *   landing:?array,
+ *   filters:array<string,mixed>,
+ *   ads:list<array>,
+ *   page:int,
+ *   sort:string,
+ *   has_extra:bool
+ * } $opts
+ * @return array{robots:string,canonical_path:string,title_suffix:string,indexable:bool}
+ */
+function listingSeoDecision(array $opts): array
+{
+    $landing = $opts['landing'] ?? null;
+    $filters = (array)($opts['filters'] ?? []);
+    $ads = (array)($opts['ads'] ?? []);
+    $page = max(1, (int)($opts['page'] ?? 1));
+    $sort = (string)($opts['sort'] ?? 'newest');
+    $hasExtra = (bool)($opts['has_extra'] ?? false) || $sort !== 'newest';
+    $isHome = !is_array($landing);
+
+    $path = '/';
+    if (is_array($landing) && !empty($landing['path'])) {
+        $path = (string)$landing['path'];
+    }
+
+    $bare = trim((string)($filters['type'] ?? '')) === ''
+        && trim((string)($filters['brand'] ?? '')) === ''
+        && trim((string)($filters['model'] ?? '')) === ''
+        && trim((string)($filters['location'] ?? '')) === ''
+        && trim((string)($filters['equipment_group'] ?? '')) === '';
+    if ($isHome && $bare) {
+        $facetPath = '/';
+    } elseif (is_array($landing) && !empty($landing['path']) && !$hasExtra) {
+        $facetPath = (string)$landing['path'];
+    } else {
+        $facetPath = listingLandingPath($filters);
+        if ($facetPath === '/' && !$bare) {
+            $facetPath = '/oglasi';
+        }
+    }
+
+    $indexable = true;
+    if (is_array($landing) && empty($landing['invalid'])) {
+        $indexable = listingLandingIndexable((array)($landing['filters'] ?? []), $ads);
+    }
+
+    $robots = '';
+    $canonical = $facetPath;
+    $suffix = '';
+
+    if (is_array($landing) && !$indexable) {
+        $parent = (array)($landing['filters'] ?? []);
+        unset($parent['model'], $parent['location']);
+        if ($parent === [] && !empty($landing['filters']['location'])) {
+            $parent = ['type' => 'telefon'];
+        }
+        if ($parent === [] && !empty($landing['filters']['brand'])) {
+            $parent = ['brand' => (string)$landing['filters']['brand']];
+        }
+        $canonical = listingLandingPath($parent === [] ? ['type' => 'telefon'] : $parent);
+        $robots = 'noindex,follow';
+    } elseif ($hasExtra) {
+        $robots = 'noindex,follow';
+        $canonical = $facetPath === '/' && !$isHome ? (string)$path : $facetPath;
+        if (!$isHome && $canonical === '/') {
+            $canonical = (string)$path;
+        }
+    } elseif ($page > 1 && listingPageIsSelfCanonical($isHome ? '/' : $path) && ($isHome || $indexable)) {
+        $canonical = ($isHome ? '/' : $path) . '?page=' . $page;
+        $suffix = ' — strana ' . $page;
+    } elseif ($page > 1) {
+        $robots = 'noindex,follow';
+        $canonical = $isHome ? '/' : $path;
+    }
+
+    return [
+        'robots' => $robots,
+        'canonical_path' => $canonical,
+        'title_suffix' => $suffix,
+        'indexable' => $indexable,
+    ];
 }

@@ -56,13 +56,26 @@ $renderPlatformMessage = static function () use ($site, $isOwnAd, $msgHref): voi
 ?>
 
 <div class="main-wrap kp-detail-wrap" data-ad-id="<?= (int)$id ?>">
+    <?php
+    $crumbModelUrl = function_exists('phoneCatalogUrlForAd') ? phoneCatalogUrlForAd($ad) : '';
+    $crumbModelLabel = trim((string)($ad['model'] ?? ''));
+    if ($crumbModelUrl !== '' && function_exists('phoneCatalogModel')) {
+        $crumbCatalog = phoneCatalogModel(trim((string)($ad['phone_model_id'] ?? '')));
+        if (is_array($crumbCatalog) && trim((string)($crumbCatalog['name'] ?? '')) !== '') {
+            $crumbModelLabel = (string)$crumbCatalog['name'];
+        }
+    }
+    ?>
     <div class="breadcrumb kp-detail-breadcrumb">
-        <a href="/index.php">Početna</a>
+        <a href="/">Početna</a>
         <?php if ($adCategory !== ''): ?>
-            › <a href="/index.php?type=<?= urlencode($type) ?>"><?= h($adCategory) ?></a>
+            › <a href="<?= h(listingLandingPath(['type' => $type !== '' ? $type : 'telefon', 'equipment_group' => function_exists('adEquipmentGroup') ? adEquipmentGroup($ad) : ''])) ?>"><?= h($adCategory) ?></a>
         <?php endif; ?>
         <?php if ($adBrand !== '' && $adBrand !== 'Ostalo'): ?>
-            › <a href="/index.php?brand=<?= urlencode($adBrand) ?>"><?= h($adBrand) ?></a>
+            › <a href="<?= h(listingLandingPath(['brand' => $adBrand])) ?>"><?= h($adBrand) ?></a>
+        <?php endif; ?>
+        <?php if ($crumbModelLabel !== '' && $crumbModelUrl !== ''): ?>
+            › <a href="<?= h($crumbModelUrl) ?>"><?= h($crumbModelLabel) ?></a>
         <?php endif; ?>
     </div>
 
@@ -268,10 +281,16 @@ $renderPlatformMessage = static function () use ($site, $isOwnAd, $msgHref): voi
                 ?>
                 <a class="kp-browse-link" href="<?= h($browseTypeHref) ?>"><?= h(adCategoryLabel($ad)) ?></a>
                 <?php if ($adBrand !== '' && $adBrand !== 'Ostalo'): ?>
-                    <a class="kp-browse-link" href="<?= h($type === 'telefon' ? ('/oglasi/telefoni?brand=' . rawurlencode($adBrand)) : ('/oglasi?brand=' . rawurlencode($adBrand))) ?>"><?= h($adBrand) ?></a>
+                    <a class="kp-browse-link" href="<?= h(listingLandingPath(['brand' => $adBrand])) ?>"><?= h($adBrand) ?></a>
                 <?php endif; ?>
                 <?php if (trim($sellerLocation) !== ''): ?>
-                    <a class="kp-browse-link" href="/oglasi?location=<?= urlencode($sellerLocation) ?>"><?= h($sellerLocation) ?></a>
+                    <?php
+                    $cityCanonical = listingFindCityBySlug(citySlug($sellerLocation));
+                    $cityHref = $cityCanonical !== null
+                        ? listingLandingPath(['location' => $cityCanonical])
+                        : ('/oglasi?' . http_build_query(['location' => $sellerLocation]));
+                    ?>
+                    <a class="kp-browse-link" href="<?= h($cityHref) ?>"><?= h($sellerLocation) ?></a>
                 <?php endif; ?>
                 <?php if ($sellerShopUrl !== ''): ?>
                     <a class="kp-browse-link" href="<?= h($sellerShopUrl) ?>">Svi oglasi prodavca</a>
@@ -379,7 +398,7 @@ $renderPlatformMessage = static function () use ($site, $isOwnAd, $msgHref): voi
 
             <details class="kp-card kp-detail-filters">
                 <summary>Filteri</summary>
-                <form method="GET" action="/index.php" class="filter-box">
+                <form method="GET" action="/oglasi" class="filter-box">
                     <div class="filter-body">
                         <select class="filter-select" name="browse_cat" aria-label="Kategorija">
                             <option value="">Sve kategorije</option>

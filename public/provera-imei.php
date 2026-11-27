@@ -90,7 +90,7 @@ require __DIR__ . '/partials/layout-start.php';
 ?>
 <div class="main-wrap imei-page">
     <main class="content">
-        <div class="breadcrumb"><a href="/index.php">Početna</a> › Provera IMEI-ja</div>
+        <div class="breadcrumb"><a href="/">Početna</a> › Provera IMEI-ja</div>
 
         <section class="imei-hero">
             <div class="imei-hero-icon" aria-hidden="true">#</div>
@@ -198,7 +198,7 @@ require __DIR__ . '/partials/layout-start.php';
                         <?php endif; ?>
                     </dl>
                     <?php if ($brand !== ''): ?>
-                        <a class="btn-sm btn-sm-primary" href="/index.php?brand=<?= rawurlencode($brand) ?>">Pogledaj <?= h($brand) ?> oglase</a>
+                        <a class="btn-sm btn-sm-primary" href="<?= h(listingLandingPath(['brand' => $brand])) ?>">Pogledaj <?= h($brand) ?> oglase</a>
                     <?php endif; ?>
                 </div>
 

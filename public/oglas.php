@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/config/bootstrap.php';
 
+$oglasRequestPath = rtrim((string)(parse_url((string)($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH) ?? ''), '/') ?: '/';
+if (seoTryLegacyRedirect($oglasRequestPath, $_SERVER['REQUEST_METHOD'] ?? 'GET')) {
+    exit;
+}
+
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $ad = $id > 0 ? getAdById($id) : null;
 $adIsPublic = is_array($ad)
@@ -37,11 +42,18 @@ if (!$adIsPublic) {
         $goneModel = trim((string)($ad['model'] ?? ''));
         $goneLocation = trim((string)($ad['location'] ?? ''));
         if ($goneModel !== '') {
-            $goneLinks[] = [
-                'href' => '/oglasi?' . http_build_query(array_filter([
+            $sameModelHref = function_exists('phoneCatalogUrlForAd') ? phoneCatalogUrlForAd($ad) : '';
+            if ($sameModelHref === '' && $goneBrand !== '') {
+                $sameModelHref = listingLandingPath(['brand' => $goneBrand, 'model' => $goneModel]);
+            }
+            if ($sameModelHref === '') {
+                $sameModelHref = '/oglasi?' . http_build_query(array_filter([
                     'brand' => $goneBrand,
                     'model' => $goneModel,
-                ])),
+                ]));
+            }
+            $goneLinks[] = [
+                'href' => $sameModelHref,
                 'label' => 'Isti model: ' . trim($goneBrand . ' ' . $goneModel),
             ];
         } elseif ($goneBrand !== '') {

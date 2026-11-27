@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__) . '/config/bootstrap.php';
 
+$reviewsRequestPath = rtrim((string)(parse_url((string)($_SERVER['REQUEST_URI'] ?? ''), PHP_URL_PATH) ?? ''), '/') ?: '/';
+if (seoTryLegacyRedirect($reviewsRequestPath, $_SERVER['REQUEST_METHOD'] ?? 'GET')) {
+    exit;
+}
+
 $param = trim((string)($_GET['u'] ?? ''));
 $seller = resolveShopUserFromParam($param);
 
@@ -79,7 +84,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'rate'
 $filterLabel = $filter === 'positive' ? 'Pozitivne ocene' : ($filter === 'negative' ? 'Negativne ocene' : 'Ocene');
 $pageTitle = $filterLabel . ' — ' . $shopName . ' — KupiTelefon';
 $pageDescription = 'Ocene kupaca za ' . $shopName . ' na KupiTelefon.rs. Pozitivne: ' . (int)$summary['positive'] . ', negativne: ' . (int)$summary['negative'] . '.';
-$canonicalUrl = absoluteUrl(shopReviewsUrl($seller, $filter));
+$canonicalUrl = absoluteUrl(shopReviewsUrl($seller));
+if ($filter !== '') {
+    $robotsMeta = 'noindex,follow';
+}
 $activePage = 'oglasi';
 $showSearch = true;
 

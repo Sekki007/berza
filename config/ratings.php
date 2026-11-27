@@ -146,19 +146,18 @@ function shopUrlForUser(array $user): string
 }
 
 /**
- * Stranica sa ocenama.
- * Koristi /izlog_ocene.php?u=slug jer pretty /izlog/slug/ocene zahteva poseban Nginx rewrite
- * koji često „proguta“ kategorija-pravilo.
+ * Stranica sa ocenama. Kanonski URL je /izlog/{slug}/ocene.
+ * Stari /izlog_ocene.php?u= radi 301 na ovu adresu.
  */
 function shopReviewsUrl(array $user, string $filter = ''): string
 {
     $slug = userShopSlug($user);
     if ($slug === '') {
-        return '/izlog_ocene.php';
+        return '/servisi';
     }
-    $url = '/izlog_ocene.php?u=' . rawurlencode($slug);
+    $url = '/izlog/' . rawurlencode($slug) . '/ocene';
     if ($filter === 'positive' || $filter === 'negative') {
-        $url .= '&filter=' . $filter;
+        $url .= '?filter=' . rawurlencode($filter);
     }
     return $url;
 }
@@ -210,7 +209,7 @@ function adUrl(array $ad): string
 {
     $id = (int)($ad['id'] ?? 0);
     if ($id <= 0) {
-        return '/index.php';
+        return '/';
     }
     $slug = slugifyTitle((string)($ad['title'] ?? ''));
     return '/oglas/' . $id . ($slug !== '' ? '-' . $slug : '');
@@ -728,18 +727,18 @@ function renderReputation(array $summary, ?string $reviewsBaseUrl = null): strin
     $negUrl = null;
 
     if ($reviewsBaseUrl !== null && $reviewsBaseUrl !== '') {
-        if (str_contains($reviewsBaseUrl, 'izlog_ocene.php')) {
+        if (preg_match('~/izlog/([^/?#]+)~', $reviewsBaseUrl, $m)) {
+            $slug = rawurldecode($m[1]);
+            $allUrl = '/izlog/' . rawurlencode($slug) . '/ocene';
+            $posUrl = $allUrl . '?filter=positive';
+            $negUrl = $allUrl . '?filter=negative';
+        } elseif (str_contains($reviewsBaseUrl, 'izlog_ocene.php')) {
             $allUrl = preg_replace('/([?&])filter=[^&]*/', '$1', $reviewsBaseUrl) ?? $reviewsBaseUrl;
             $allUrl = preg_replace('/\?&/', '?', $allUrl) ?? $allUrl;
             $allUrl = rtrim($allUrl, '?&');
             $sep = str_contains($allUrl, '?') ? '&' : '?';
             $posUrl = $allUrl . $sep . 'filter=positive';
             $negUrl = $allUrl . $sep . 'filter=negative';
-        } elseif (preg_match('#/izlog/([^/?#]+)#', $reviewsBaseUrl, $m)) {
-            $slug = rawurldecode($m[1]);
-            $allUrl = '/izlog_ocene.php?u=' . rawurlencode($slug);
-            $posUrl = $allUrl . '&filter=positive';
-            $negUrl = $allUrl . '&filter=negative';
         } else {
             $allUrl = $reviewsBaseUrl;
             $sep = str_contains($allUrl, '?') ? '&' : '?';

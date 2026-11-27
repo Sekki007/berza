@@ -24,7 +24,7 @@ require __DIR__ . '/partials/layout-start.php';
     <?php require __DIR__ . '/partials/admin-sidebar.php'; ?>
 
     <main class="content">
-        <div class="breadcrumb"><a href="/index.php">Početna</a> › Admin panel</div>
+        <div class="breadcrumb"><a href="/">Početna</a> › Admin panel</div>
 
         <h2 style="font-size:18px;margin-bottom:12px;">Dashboard</h2>
 

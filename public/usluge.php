@@ -103,7 +103,7 @@ require __DIR__ . '/partials/layout-start.php';
 
 <div class="main-wrap storefront-page">
     <main class="content">
-        <div class="breadcrumb"><a href="/index.php">Početna</a> › <a href="<?= h($shopLink) ?>">Izlog</a> › Usluge</div>
+        <div class="breadcrumb"><a href="/">Početna</a> › <a href="<?= h($shopLink) ?>">Izlog</a> › Usluge</div>
 
         <section class="form-card storefront-hero">
             <?php if (!empty($seller['shop_page_cover'])): ?>

@@ -5,11 +5,12 @@ declare(strict_types=1);
 require_once dirname(__DIR__) . '/config/bootstrap.php';
 
 $requestPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
-
-if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET' && $requestPath === '/index.php') {
-    $query = (string)(parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_QUERY) ?? '');
-    if ($query === '') {
-        header('Location: /', true, 301);
+$legacyPath = rtrim($requestPath, '/') ?: '/';
+if (
+    in_array($legacyPath, ['/index.php', '/oglas.php', '/izlog_ocene.php'], true)
+    || preg_match('#^/oglas/\d+#', $legacyPath) === 1
+) {
+    if (seoTryLegacyRedirect($legacyPath, $_SERVER['REQUEST_METHOD'] ?? 'GET')) {
         exit;
     }
 }
@@ -205,6 +206,7 @@ $filters = [
 
 $allAds = getPublicAds($filters);
 $resultsTotal = count($allAds);
+$seoSourceAds = $allAds;
 $maxPerUser = (int)($settings['max_ads_per_user_homepage'] ?? 0);
 if ($maxPerUser > 0) {
     $allAds = limitAdsPerUser($allAds, $maxPerUser);
@@ -247,7 +249,7 @@ if (is_array($landing) && !empty($landing['filters'])) {
     }
 }
 
-$seoMeta = seoListingMeta([
+$seoFacetFilters = [
     'q' => $search,
     'brand' => $brand,
     'model' => $model,
@@ -255,61 +257,75 @@ $seoMeta = seoListingMeta([
     'type' => $type,
     'device_type' => $deviceType,
     'equipment_group' => $equipmentGroup,
+];
+$seoMeta = seoListingMeta($seoFacetFilters, [
+    'count' => $resultsTotal,
 ]);
 $pageTitle = $seoMeta['title'];
 $pageDescription = $seoMeta['description'];
-$canonicalBasePath = is_array($landing) && !empty($landing['path']) ? (string)$landing['path'] : '/';
-$canonicalUrl = absoluteUrl($canonicalBasePath === '/' ? '/' : $canonicalBasePath);
-$landingHeading = '';
-$indexableLanding = true;
-if (is_array($landing)) {
-    $landingFacets = (array)($landing['filters'] ?? []);
-    $landingHeading = seoListingHeading($landingFacets !== [] ? $landingFacets : ['type' => $type]);
-    $jsonLd = seoListingCollectionJsonLd(
-        $landingFacets !== [] ? $landingFacets : ['type' => $type],
-        $allAds,
-        absoluteUrl($canonicalBasePath === '/' ? '/oglasi' : $canonicalBasePath),
-        $pageDescription
-    );
-    $indexableLanding = listingLandingIndexable((array)($landing['filters'] ?? []), $allAds);
-    if (!$indexableLanding) {
-        $parentFilters = (array)($landing['filters'] ?? []);
-        unset($parentFilters['model'], $parentFilters['location']);
-        if ($parentFilters === [] && !empty($landing['filters']['location'])) {
-            $parentFilters = ['type' => 'telefon'];
+$listingHasExtra = $search !== '' || $minPrice !== '' || $maxPrice !== '' || $condition !== '' || $categoryGroup !== '' || $deviceType !== '' || $equipmentType !== '' || $minBattery !== '' || $listingType !== '';
+if (!$listingHasExtra && is_array($landing)) {
+    foreach (['q', 'min_price', 'max_price', 'condition', 'category_group', 'device_type', 'equipment_type', 'min_battery', 'listing_type', 'browse_cat'] as $variantKey) {
+        if (trim((string)($_GET[$variantKey] ?? '')) !== '') {
+            $listingHasExtra = true;
+            break;
         }
-        $canonicalUrl = absoluteUrl(listingLandingPath($parentFilters));
-        $robotsMeta = 'noindex,follow';
     }
+    foreach (['type', 'brand', 'model', 'location', 'equipment_group'] as $facetKey) {
+        if (trim((string)($_GET[$facetKey] ?? '')) !== '' && empty($landing['filters'][$facetKey])) {
+            $listingHasExtra = true;
+            break;
+        }
+    }
+} elseif (!$listingHasExtra && !is_array($landing)) {
+    $listingHasExtra = $queryBase !== [];
 }
-if (!is_array($landing) && $queryBase !== []) {
-    $canonicalUrl = absoluteUrl(listingLandingPath([
+$seoDecision = listingSeoDecision([
+    'landing' => is_array($landing) ? $landing : null,
+    'filters' => [
         'type' => $type,
         'brand' => $brand,
         'model' => $model,
         'location' => $location,
-    ]));
-    if ($search !== '' || $minPrice !== '' || $maxPrice !== '' || $condition !== '' || $categoryGroup !== '' || $deviceType !== '' || $equipmentGroup !== '' || $sort !== 'newest' || $page > 1) {
-        $robotsMeta = 'noindex,follow';
-    }
+        'equipment_group' => $equipmentGroup,
+    ],
+    'ads' => $seoSourceAds,
+    'page' => $page,
+    'sort' => $sort,
+    'has_extra' => $listingHasExtra,
+]);
+$canonicalUrl = absoluteUrl((string)$seoDecision['canonical_path']);
+$robotsMeta = (string)$seoDecision['robots'];
+if ((string)$seoDecision['title_suffix'] !== '') {
+    $pageTitle = seoAppendPageSuffix($pageTitle, $page);
 }
-if ($queryBase === [] && !is_array($landing)) {
-    $canonicalUrl = absoluteUrl('/');
-    $jsonLd = [seoOrganizationJsonLd(), seoWebsiteJsonLd()];
-}
+$landingHeading = '';
+$listingIntro = '';
+$listingSectionHeading = seoListingSectionHeading([
+    'type' => $type,
+    'brand' => $brand,
+    'model' => $model,
+    'location' => $location,
+    'equipment_group' => $equipmentGroup,
+]);
 if (is_array($landing)) {
-    $listingQueryVariant = $sort !== 'newest' || $page > 1;
-    if (!$listingQueryVariant) {
-        foreach (['q', 'min_price', 'max_price', 'condition', 'category_group', 'device_type', 'equipment_type', 'equipment_group', 'min_battery', 'listing_type', 'browse_cat', 'type', 'brand', 'model', 'location'] as $variantKey) {
-            if (trim((string)($_GET[$variantKey] ?? '')) !== '') {
-                $listingQueryVariant = true;
-                break;
-            }
-        }
+    $landingFacets = (array)($landing['filters'] ?? []);
+    $headingFilters = $landingFacets !== [] ? $landingFacets : ['type' => $type];
+    $landingHeading = seoListingHeading($headingFilters);
+    if ($robotsMeta === '') {
+        $listingIntro = seoListingIntro($headingFilters, $seoSourceAds);
     }
-    if ($listingQueryVariant) {
-        $robotsMeta = 'noindex,follow';
-    }
+    $jsonLd = seoListingCollectionJsonLd(
+        $headingFilters,
+        $allAds,
+        $canonicalUrl,
+        $pageDescription
+    );
+}
+if (!is_array($landing) && $queryBase === [] && $page === 1 && $sort === 'newest') {
+    $jsonLd = [seoOrganizationJsonLd(), seoWebsiteJsonLd()];
+    $pageTitle = seoHomeMeta()['title'];
+    $pageDescription = seoHomeMeta()['description'];
 }
 $showHomeIntro = $queryBase === [] && !is_array($landing);
 $listBasePath = '/oglasi';
@@ -540,6 +556,9 @@ $homeCats = [
             <header class="listing-landing-head">
                 <h1 class="listing-landing-title"><?= h($landingHeading) ?></h1>
                 <p class="listing-landing-sub"><?= h($pageDescription) ?></p>
+                <?php if ($listingIntro !== ''): ?>
+                    <p class="listing-intro"><?= h($listingIntro) ?></p>
+                <?php endif; ?>
             </header>
         <?php endif; ?>
         <div class="listing-controls">
@@ -625,6 +644,7 @@ $homeCats = [
             </div>
         <?php endif; ?>
 
+        <h2 class="listing-section-title"><?= h($listingSectionHeading) ?></h2>
         <div class="listings view-list" data-listings>
             <?php foreach ($ads as $ai => $ad): ?>
                 <?php $cardImgPriority = $ai < 3 && $promotedAds === []; require __DIR__ . '/partials/ad-card.php'; $cardImgPriority = false; ?>
@@ -634,14 +654,23 @@ $homeCats = [
         <div class="empty-state">Nema oglasa za izabranu kombinaciju filtera.</div>
 
         <?php if ($pagination['pages'] > 1): ?>
-            <div class="pagination">
+            <nav class="pagination" aria-label="Stranice">
                 <?php if ($pagination['page'] > 1): ?>
-                    <a class="btn-sm" href="<?= h($listBasePath) ?>?<?= h(buildFilterQuery(array_merge($queryBase, ['page' => $pagination['page'] - 1]))) ?>">← Prethodna</a>
+                    <?php
+                    $prevPage = (int)$pagination['page'] - 1;
+                    $prevQuery = $queryBase;
+                    if ($prevPage > 1) {
+                        $prevQuery['page'] = $prevPage;
+                    }
+                    $prevHref = $listBasePath . ($prevQuery !== [] ? ('?' . buildFilterQuery($prevQuery)) : '');
+                    ?>
+                    <a class="btn-sm" href="<?= h($prevHref) ?>">← Prethodna</a>
                 <?php endif; ?>
                 <?php if ($pagination['page'] < $pagination['pages']): ?>
-                    <a class="btn-sm btn-sm-primary" href="<?= h($listBasePath) ?>?<?= h(buildFilterQuery(array_merge($queryBase, ['page' => $pagination['page'] + 1]))) ?>">Učitaj još</a>
+                    <?php $nextHref = $listBasePath . '?' . buildFilterQuery(array_merge($queryBase, ['page' => (int)$pagination['page'] + 1])); ?>
+                    <a class="btn-sm btn-sm-primary" href="<?= h($nextHref) ?>">Sledeća</a>
                 <?php endif; ?>
-            </div>
+            </nav>
         <?php endif; ?>
     </main>
 </div>

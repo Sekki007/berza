@@ -81,7 +81,7 @@ $hasOrderBar = $shopCatalogMode && $messagesOn && !$isSold && !$shopCatalogOwn;
             </div>
             <div class="listing-body kp-list-body">
                 <div class="kp-list-main">
-                    <h2 class="listing-title kp-list-title"><?= h($displayTitle) ?></h2>
+                    <h3 class="listing-title kp-list-title"><?= h($displayTitle) ?></h3>
 
                     <?php if ($cardShop !== ''): ?>
                         <div class="listing-shop kp-list-shop">

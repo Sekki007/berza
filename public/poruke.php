@@ -98,7 +98,7 @@ if ($viewThread) {
     <div class="main-wrap">
         <main class="content">
             <div class="breadcrumb">
-                <a href="/index.php">Početna</a> ›
+                <a href="/">Početna</a> ›
                 <a href="/poruke.php">Poruke</a> ›
                 <?= h($partnerName) ?>
             </div>
@@ -165,7 +165,7 @@ require __DIR__ . '/partials/layout-start.php';
 
 <div class="main-wrap">
     <main class="content">
-        <div class="breadcrumb"><a href="/index.php">Početna</a> › Poruke</div>
+        <div class="breadcrumb"><a href="/">Početna</a> › Poruke</div>
 
         <div class="form-card">
             <div class="inbox-head">

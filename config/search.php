@@ -264,7 +264,7 @@ function searchSuggestions(string $query, int $limit = 8): array
             'type' => 'model',
             'label' => $model,
             'sub' => 'Model u oglasima',
-            'url' => '/index.php?' . http_build_query(['model' => $model]),
+            'url' => '/oglasi?' . http_build_query(['model' => $model]),
         ])) {
             return $out;
         }
@@ -287,7 +287,7 @@ function searchSuggestions(string $query, int $limit = 8): array
             'type' => 'search',
             'label' => 'Pretraži: ' . $query,
             'sub' => count($ads) . ' rezultat' . (count($ads) === 1 ? '' : 'a'),
-            'url' => '/index.php?' . http_build_query(['q' => $query]),
+            'url' => '/oglasi?' . http_build_query(['q' => $query]),
         ]);
     }
 
