@@ -159,9 +159,13 @@ function seoSitemapBuckets(): array
     }
 
     $servisi = [];
-    foreach (directoryCityStats() as $cityRow) {
-        $add($servisi, (string)($cityRow['url'] ?? ''));
+    foreach (['', 'service', 'shop'] as $kind) {
+        foreach (directoryCityStats($kind) as $cityRow) {
+            $add($servisi, directoryCityUrl((string)$cityRow['city'], $kind));
+        }
     }
+    $add($servisi, '/servis-telefona');
+    $add($servisi, '/prodavnice-telefona');
     foreach (listDirectoryServices(null) as $svcUser) {
         $svcUpdated = trim((string)($svcUser['verified_seller_at'] ?? ''));
         if ($svcUpdated === '') {
