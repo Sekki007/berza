@@ -1126,8 +1126,13 @@ function saveAd(array $payload, ?int $adId = null): int
                 if (adExpiryEnabled() && empty($payload['expires_at']) && (int)($payload['is_active'] ?? 0) === 1) {
                     $payload['expires_at'] = computeAdExpiresAt((string)$payload['created_at']);
                 }
+                $oldPrice = function_exists('adPriceEur') ? adPriceEur($ad) : (float)($ad['price'] ?? 0);
                 $ad = $payload;
                 writeJsonFile('ads.json', $ads);
+                $newPrice = function_exists('adPriceEur') ? adPriceEur($payload) : (float)($payload['price'] ?? 0);
+                if (abs($newPrice - $oldPrice) > 0.5 && function_exists('recordAdPriceEvent')) {
+                    recordAdPriceEvent($payload, 'price_change', $newPrice);
+                }
                 $isActiveNow = (int)($payload['is_active'] ?? 0) === 1;
                 if (!$wasActive && $isActiveNow && function_exists('notifySavedSearchesForAd')) {
                     notifySavedSearchesForAd($adId);
@@ -1188,6 +1193,9 @@ function saveAd(array $payload, ?int $adId = null): int
 
     $ads[] = $payload;
     writeJsonFile('ads.json', $ads);
+    if (function_exists('recordAdPriceEvent')) {
+        recordAdPriceEvent($payload, 'created');
+    }
     if ((int)($payload['is_active'] ?? 0) === 1 && function_exists('notifySavedSearchesForAd')) {
         notifySavedSearchesForAd($newId);
     }
@@ -1706,6 +1714,7 @@ require_once __DIR__ . '/ad_classifier.php';
 require_once __DIR__ . '/catalog_redirects.php';
 require_once __DIR__ . '/sold_listing.php';
 require_once __DIR__ . '/model_hub.php';
+require_once __DIR__ . '/price_stats.php';
 require_once __DIR__ . '/sitemap_seo.php';
 require_once __DIR__ . '/facebook_pixel.php';
 require_once __DIR__ . '/google_tag.php';

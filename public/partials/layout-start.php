@@ -98,6 +98,7 @@ $unreadNotifications = $user ? getUnreadNotificationCount((int)$user['id']) : 0;
                 <?php endif; ?>
                 <a href="/servisi">Firme</a>
                 <a href="/vodici">Vodiči</a>
+                <a href="/cene-polovnih-telefona">Cene</a>
                 <a href="/provera-imei">Provera IMEI</a>
                 <a href="/kako-radi">Kako radi</a>
                 <?php if (!empty($site['enable_favorites'])): ?><a href="/favorites.php">Omiljeni</a><?php endif; ?>

@@ -877,8 +877,12 @@ function toggleAdSold(int $adId, int $userId): ?bool
             $row['is_promoted'] = 0;
         }
         $row['updated_at'] = date('Y-m-d H:i:s');
+        $soldNow = !empty($row['is_sold']);
         writeJsonFile('ads.json', $ads);
-        return !empty($row['is_sold']);
+        if ($soldNow && function_exists('recordAdPriceEvent')) {
+            recordAdPriceEvent($row, 'sold');
+        }
+        return $soldNow;
     }
     return null;
 }
