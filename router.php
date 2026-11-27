@@ -59,6 +59,29 @@ if (preg_match('#^/usluge/([^/]+)/?$#', $uri, $m)) {
     exit;
 }
 
+if ($uri === '/servis-telefona' || $uri === '/servis-telefona/') {
+    $_GET['tip'] = 'service';
+    require __DIR__ . '/public/servisi.php';
+    exit;
+}
+if (preg_match('#^/servis-telefona/([^/]+)/?$#', $uri, $m)) {
+    $_GET['city'] = rawurldecode($m[1]);
+    $_GET['tip'] = 'service';
+    require __DIR__ . '/public/servisi.php';
+    exit;
+}
+if ($uri === '/prodavnice-telefona' || $uri === '/prodavnice-telefona/') {
+    $_GET['tip'] = 'shop';
+    require __DIR__ . '/public/servisi.php';
+    exit;
+}
+if (preg_match('#^/prodavnice-telefona/([^/]+)/?$#', $uri, $m)) {
+    $_GET['city'] = rawurldecode($m[1]);
+    $_GET['tip'] = 'shop';
+    require __DIR__ . '/public/servisi.php';
+    exit;
+}
+
 if ($uri === '/servisi' || $uri === '/servisi/') {
     require __DIR__ . '/public/servisi.php';
     exit;

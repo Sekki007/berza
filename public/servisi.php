@@ -192,6 +192,9 @@ if ($cityParam !== '') {
     $pageTitle = $seo['title'];
     $pageDescription = $seo['description'];
     $canonicalUrl = absoluteUrl(directoryCityUrl($cityName, $kindFilter));
+    if (count($services) < 1) {
+        $robotsMeta = 'noindex,follow';
+    }
     $cityHeading = match ($kindFilter) {
         'shop' => 'Prodavnice mobilnih telefona ' . $cityName,
         'service' => 'Servis mobilnih telefona ' . $cityName,
@@ -202,6 +205,10 @@ if ($cityParam !== '') {
         'service' => 'Servis mobilnih telefona u gradu ' . $cityName . ': adrese, telefoni i radno vreme.',
         default => 'Servisi i prodavnice telefona u gradu ' . $cityName . ': adrese, telefoni i kontakt.',
     };
+    $serviceFaq = [
+        ['q' => 'Koliko traje popravka telefona u gradu ' . $cityName . '?', 'a' => 'Zavisi od kvara i delova. Tačan rok daje servis kad pregleda telefon. Zamena ekrana često stane u isti dan, a složeniji kvar traje duže.'],
+        ['q' => 'Da li servis radi subotom?', 'a' => 'Radno vreme piše na profilu firme kad ga je servis uneo. Ako nije navedeno, pozovi broj sa profila pre nego što kreneš.'],
+    ];
     $jsonLd = [
         [
             '@context' => 'https://schema.org',
@@ -212,9 +219,10 @@ if ($cityParam !== '') {
         ],
         seoBreadcrumbJsonLd([
             ['name' => 'Početna', 'url' => '/'],
-            ['name' => 'Servisi', 'url' => '/servisi'],
-            ['name' => $cityName, 'url' => directoryCityUrl($cityName)],
+            ['name' => 'Servisi', 'url' => directoryHubUrl($kindFilter)],
+            ['name' => $cityName, 'url' => directoryCityUrl($cityName, $kindFilter)],
         ]),
+        seoFaqJsonLd($serviceFaq),
     ];
 
     require __DIR__ . '/partials/layout-start.php';
@@ -236,6 +244,7 @@ if ($cityParam !== '') {
                     <?php endforeach; ?>
                 </nav>
                 <p style="margin-top:10px;"><a href="<?= h(directoryHubUrl($kindFilter)) ?>">← Svi gradovi / pretraga</a></p>
+                <?php seoRenderFaq($serviceFaq); ?>
             </header>
 
             <?php if ($services === []): ?>

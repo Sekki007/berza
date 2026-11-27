@@ -143,19 +143,22 @@ function directoryServiceUrl(array $user, ?string $city = null): string
 function directoryCityUrl(string $city, string $kindFilter = ''): string
 {
     $slug = citySlug($city);
-    $base = $slug === '' ? '/servisi' : '/servisi/' . rawurlencode($slug);
-    if ($kindFilter !== '' && in_array($kindFilter, ['service', 'shop'], true)) {
-        return $base . '?tip=' . rawurlencode($kindFilter);
+    if ($kindFilter === 'service') {
+        return $slug === '' ? '/servis-telefona' : '/servis-telefona/' . rawurlencode($slug);
     }
-    return $base;
+    if ($kindFilter === 'shop') {
+        return $slug === '' ? '/prodavnice-telefona' : '/prodavnice-telefona/' . rawurlencode($slug);
+    }
+    return $slug === '' ? '/servisi' : '/servisi/' . rawurlencode($slug);
 }
 
 function directoryHubUrl(string $kindFilter = ''): string
 {
-    if ($kindFilter !== '' && in_array($kindFilter, ['service', 'shop'], true)) {
-        return '/servisi?tip=' . rawurlencode($kindFilter);
-    }
-    return '/servisi';
+    return match ($kindFilter) {
+        'service' => '/servis-telefona',
+        'shop' => '/prodavnice-telefona',
+        default => '/servisi',
+    };
 }
 
 /**
@@ -363,18 +366,14 @@ function seoDirectoryCityMeta(string $city, int $count, string $kindFilter = '')
     $name = seoSiteName();
     if ($kindFilter === 'shop') {
         return [
-            'title' => 'Prodavnice mobilnih telefona ' . $city . ' – adrese, telefoni | ' . $name,
-            'description' => seoTruncate(
-                'Prodavnice mobilnih telefona u gradu ' . $city . ': adrese, telefoni i kontakt verifikovanih firmi na ' . $name . '.'
-            ),
+            'title' => seoFitTitle($count . ' prodavnica telefona ' . $city),
+            'description' => seoFitDescription($count . ' prodavnica telefona u gradu ' . $city . '. Adrese, telefoni i kontakt verifikovanih radnji na ' . seoTitleBrand() . '.'),
         ];
     }
     if ($kindFilter === 'service') {
         return [
-            'title' => 'Servis mobilnih telefona ' . $city . ' – adrese, telefoni, radno vreme | ' . $name,
-            'description' => seoTruncate(
-                'Servis mobilnih telefona u gradu ' . $city . ': adrese, telefoni i radno vreme. Pronađi proveren servis za popravku na ' . $name . '.'
-            ),
+            'title' => seoFitTitle('Servis telefona ' . $city . ' – ' . $count . ' servisa'),
+            'description' => seoFitDescription($count . ' servisa telefona u gradu ' . $city . '. Zamena ekrana, baterije, popravka iPhone i Samsung. Adrese, telefoni i radno vreme.'),
         ];
     }
     return [
