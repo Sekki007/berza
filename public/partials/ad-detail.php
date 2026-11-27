@@ -141,7 +141,7 @@ $renderPlatformMessage = static function () use ($site, $isOwnAd, $msgHref): voi
                                     data-gallery-thumb-index="<?= (int)$i ?>"
                                     aria-label="Prikaži sliku <?= (int)($i + 1) ?>"
                                 >
-                                    <img src="<?= h($thumbSrc) ?>" alt="" width="72" height="72" loading="lazy" decoding="async">
+                                    <img src="<?= h($thumbSrc) ?>" alt="<?= h(seoAdImageAlt($ad, $i + 1)) ?>" width="72" height="72" loading="lazy" decoding="async">
                                 </button>
                             <?php endforeach; ?>
                         </div>
