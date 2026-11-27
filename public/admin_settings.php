@@ -111,6 +111,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'social_facebook_url' => trim((string)($_POST['social_facebook_url'] ?? ($current['social_facebook_url'] ?? ''))),
         'social_instagram_url' => trim((string)($_POST['social_instagram_url'] ?? ($current['social_instagram_url'] ?? ''))),
         'social_tiktok_url' => trim((string)($_POST['social_tiktok_url'] ?? ($current['social_tiktok_url'] ?? ''))),
+        'sold_redirect_to_model' => (string)($_POST['sold_redirect_to_model'] ?? (!empty($current['sold_redirect_to_model']) ? '1' : '0')) === '1',
+        'sold_grace_days' => max(0, (int)($_POST['sold_grace_days'] ?? ($current['sold_grace_days'] ?? 7))),
         'items_per_page' => (int)($_POST['items_per_page'] ?? $current['items_per_page']),
         'max_promoted_ads' => (int)($_POST['max_promoted_ads'] ?? $current['max_promoted_ads']),
         'max_ads_per_user_homepage' => (int)($_POST['max_ads_per_user_homepage'] ?? ($current['max_ads_per_user_homepage'] ?? 2)),
@@ -287,6 +289,17 @@ require __DIR__ . '/partials/layout-start.php';
                     <div class="form-group">
                         <label>TikTok</label>
                         <input type="url" name="social_tiktok_url" placeholder="https://www.tiktok.com/..." value="<?= h((string)($settings['social_tiktok_url'] ?? '')) ?>">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Prodati oglas sa modelom vodi na katalog (301)</label>
+                        <input type="hidden" name="sold_redirect_to_model" value="0">
+                        <label><input type="checkbox" name="sold_redirect_to_model" value="1" <?= !isset($settings['sold_redirect_to_model']) || !empty($settings['sold_redirect_to_model']) ? 'checked' : '' ?>> Uključeno</label>
+                    </div>
+                    <div class="form-group">
+                        <label>Dana prikaza PRODATO pre redirekcije</label>
+                        <input type="number" min="0" name="sold_grace_days" value="<?= (int)($settings['sold_grace_days'] ?? 7) ?>">
                     </div>
                 </div>
             </div>

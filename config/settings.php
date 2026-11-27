@@ -76,6 +76,8 @@ function defaultSiteSettings(): array
         'social_facebook_url' => '',
         'social_instagram_url' => '',
         'social_tiktok_url' => '',
+        'sold_redirect_to_model' => true,
+        'sold_grace_days' => 7,
         'stale_import_reminder_enabled' => false,
         'stale_import_reminder_days' => 90,
         'items_per_page' => 20,
