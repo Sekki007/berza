@@ -17,6 +17,9 @@ $pageTitle = $meta['title'];
 $pageDescription = $meta['description'];
 $canonicalUrl = absoluteUrl(phoneCatalogUrl($model));
 $robotsMeta = $filtersOn ? 'noindex,follow' : '';
+if (!$filtersOn && (int)($stats['active'] ?? 0) < 1 && ($model['specs'] ?? []) === []) {
+    $robotsMeta = 'noindex,follow';
+}
 $activePage = 'katalog';
 $bodyClass = 'page-phone-catalog page-phone-model';
 $showSearch = true;

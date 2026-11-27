@@ -28,6 +28,9 @@ $brandSlug = strtolower(trim((string)($_GET['brand_slug'] ?? '')));
 $modelSlug = strtolower(trim((string)($_GET['model_slug'] ?? '')));
 $isModel = $brandSlug !== '' || $modelSlug !== '';
 if ($isModel) {
+    if (catalogApplyRedirect($brandSlug, $modelSlug)) {
+        exit;
+    }
     $model = phoneCatalogFindBySlug($brandSlug, $modelSlug);
     if ($model === null) {
         renderPublicStatusPage(
