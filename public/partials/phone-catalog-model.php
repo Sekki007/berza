@@ -46,6 +46,17 @@ if ($stats['fixed'] > 0) {
         'availability' => 'https://schema.org/InStock',
     ];
 }
+$modelFaq = seoModelFaq($model, $stats);
+$jsonLd = [
+    $jsonLd,
+    seoBreadcrumbJsonLd([
+        ['name' => 'Početna', 'url' => '/'],
+        ['name' => 'Katalog', 'url' => '/katalog'],
+        ['name' => (string)$model['brand'], 'url' => listingLandingPath(['brand' => (string)$model['brand']])],
+        ['name' => (string)$model['name'], 'url' => phoneCatalogUrl($model)],
+    ]),
+    seoFaqJsonLd($modelFaq),
+];
 
 $thumb = '';
 $thumbAlt = $label;
@@ -283,6 +294,7 @@ require __DIR__ . '/layout-start.php';
                 </ul>
             <?php endif; ?>
         </section>
+        <?php seoRenderFaq($modelFaq, 'Pitanja o modelu ' . (string)$model['name']); ?>
     </div>
 </div>
 <?php require __DIR__ . '/layout-end.php'; ?>

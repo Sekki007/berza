@@ -229,7 +229,10 @@ if ($galleryDisplay !== []) {
 }
 $canonicalUrl = absoluteUrl(adUrl($ad));
 $ogType = 'product';
-$jsonLd = seoAdJsonLd($ad, $seller);
+$jsonLd = [
+    seoAdJsonLd($ad, $seller),
+    seoBreadcrumbJsonLd(seoAdBreadcrumbCrumbs($ad)),
+];
 $adBrand = (string)($ad['brand'] ?? '');
 $adCategory = (string)($ad['category'] ?? '');
 

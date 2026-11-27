@@ -108,6 +108,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'contact_phone' => trim((string)($_POST['contact_phone'] ?? $current['contact_phone'])),
         'telegram_channel_url' => trim((string)($_POST['telegram_channel_url'] ?? ($current['telegram_channel_url'] ?? ''))),
         'viber_community_url' => trim((string)($_POST['viber_community_url'] ?? ($current['viber_community_url'] ?? ''))),
+        'social_facebook_url' => trim((string)($_POST['social_facebook_url'] ?? ($current['social_facebook_url'] ?? ''))),
+        'social_instagram_url' => trim((string)($_POST['social_instagram_url'] ?? ($current['social_instagram_url'] ?? ''))),
+        'social_tiktok_url' => trim((string)($_POST['social_tiktok_url'] ?? ($current['social_tiktok_url'] ?? ''))),
         'items_per_page' => (int)($_POST['items_per_page'] ?? $current['items_per_page']),
         'max_promoted_ads' => (int)($_POST['max_promoted_ads'] ?? $current['max_promoted_ads']),
         'max_ads_per_user_homepage' => (int)($_POST['max_ads_per_user_homepage'] ?? ($current['max_ads_per_user_homepage'] ?? 2)),
@@ -270,6 +273,20 @@ require __DIR__ . '/partials/layout-start.php';
                     <div class="form-group">
                         <label>Viber zajednica (invite URL)</label>
                         <input type="url" name="viber_community_url" placeholder="https://invite.viber.com/..." value="<?= h((string)($settings['viber_community_url'] ?? '')) ?>">
+                    </div>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label>Facebook stranica ili grupa</label>
+                        <input type="url" name="social_facebook_url" placeholder="https://facebook.com/..." value="<?= h((string)($settings['social_facebook_url'] ?? '')) ?>">
+                    </div>
+                    <div class="form-group">
+                        <label>Instagram</label>
+                        <input type="url" name="social_instagram_url" placeholder="https://instagram.com/..." value="<?= h((string)($settings['social_instagram_url'] ?? '')) ?>">
+                    </div>
+                    <div class="form-group">
+                        <label>TikTok</label>
+                        <input type="url" name="social_tiktok_url" placeholder="https://www.tiktok.com/..." value="<?= h((string)($settings['social_tiktok_url'] ?? '')) ?>">
                     </div>
                 </div>
             </div>
