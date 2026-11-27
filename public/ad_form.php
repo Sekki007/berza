@@ -251,6 +251,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if (!empty($payload['is_sold'])) {
         $payload['is_promoted'] = 0;
     }
+    $payload = stampSoldAt($payload, !empty($payload['is_sold']));
 
     $ad = array_merge($ad, $payload);
 

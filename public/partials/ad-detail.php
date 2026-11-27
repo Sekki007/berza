@@ -79,6 +79,9 @@ $renderPlatformMessage = static function () use ($site, $isOwnAd, $msgHref): voi
         <?php endif; ?>
     </div>
 
+    <?php if (!empty($soldGraceView)): ?>
+        <p class="listing-intro" role="status"><strong>PRODATO.</strong> Kontakt prodavca više nije dostupan. Ispod su slični oglasi.</p>
+    <?php endif; ?>
     <div class="kp-detail-layout" data-detail-layout>
         <div class="kp-slot-gallery">
             <div class="detail-gallery kp-gallery">
@@ -243,8 +246,10 @@ $renderPlatformMessage = static function () use ($site, $isOwnAd, $msgHref): voi
                 <?php endif; ?>
 
                 <div id="kontakt">
-                    <?php $renderContactActions(); ?>
-                    <?php $renderPlatformMessage(); ?>
+                    <?php if (empty($soldGraceView)): ?>
+                        <?php $renderContactActions(); ?>
+                        <?php $renderPlatformMessage(); ?>
+                    <?php endif; ?>
                 </div>
 
                 <div class="kp-action-links">

@@ -11,9 +11,15 @@ if (seoTryLegacyRedirect($oglasRequestPath, $_SERVER['REQUEST_METHOD'] ?? 'GET')
 
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
 $ad = $id > 0 ? getAdById($id) : null;
+$soldOutcome = is_array($ad) ? soldAdOutcome($ad) : ['action' => 'missing', 'url' => ''];
+$soldGraceView = ($soldOutcome['action'] ?? '') === 'grace';
+if (($soldOutcome['action'] ?? '') === 'redirect' && ($_SERVER['REQUEST_METHOD'] ?? 'GET') !== 'POST') {
+    header('Location: ' . $soldOutcome['url'], true, 301);
+    exit;
+}
+
 $adIsPublic = is_array($ad)
-    && (int)($ad['is_active'] ?? 0) === 1
-    && empty($ad['is_sold']);
+    && ((int)($ad['is_active'] ?? 0) === 1 && empty($ad['is_sold']) || $soldGraceView);
 
 if (!$adIsPublic) {
     $goneTitle = is_array($ad) ? trim((string)($ad['title'] ?? '')) : '';
@@ -256,6 +262,10 @@ googleTagPageEvent('view_item', [
 ]);
 
 $contactLinks = adContactActionLinks($ad, !empty($site['enable_whatsapp']), $waMsg);
+if (!empty($soldGraceView)) {
+    $contactLinks = [];
+    $robotsMeta = 'noindex,follow';
+}
 $highlightChips = adHighlightChips($ad);
 $keyFacts = adKeyFactCards($ad);
 $accessoryLabels = adAccessoryLabels($ad);

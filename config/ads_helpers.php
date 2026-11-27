@@ -872,6 +872,7 @@ function toggleAdSold(int $adId, int $userId): ?bool
             continue;
         }
         $row['is_sold'] = empty($row['is_sold']) ? 1 : 0;
+        $row = stampSoldAt($row, !empty($row['is_sold']));
         if (!empty($row['is_sold'])) {
             $row['is_promoted'] = 0;
         }

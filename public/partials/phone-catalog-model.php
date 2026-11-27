@@ -82,6 +82,9 @@ require __DIR__ . '/layout-start.php';
 <div class="pcat pcat-model">
     <p class="pcat-bc"><a href="/">Početna</a> · <a href="/katalog">Katalog telefona</a> · <a href="/katalog?<?= h(http_build_query(['brand' => [$model['brand']]])) ?>"><?= h($model['brand']) ?></a> · <?= h($model['name']) ?></p>
 
+    <?php if ((int)($_GET['prodat'] ?? 0) > 0): ?>
+        <p class="listing-intro" role="status">Oglas koji si tražio je prodat. Evo sličnih.</p>
+    <?php endif; ?>
     <header class="pcat-model-head">
         <div class="pcat-model-photo">
             <?php if ($thumb !== ''): ?>
