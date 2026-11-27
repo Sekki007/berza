@@ -18,18 +18,62 @@ function sessionCookieSecure(): bool
     return $fwd === 'https';
 }
 
+function requestNeedsSession(): bool
+{
+    $method = strtoupper((string)($_SERVER['REQUEST_METHOD'] ?? 'GET'));
+    if (!in_array($method, ['GET', 'HEAD'], true)) {
+        return true;
+    }
+    $name = session_name();
+    if ($name !== '' && !empty($_COOKIE[$name])) {
+        return true;
+    }
+    $path = rtrim((string)(parse_url((string)($_SERVER['REQUEST_URI'] ?? '/'), PHP_URL_PATH) ?? '/'), '/') ?: '/';
+    $prefixes = [
+        '/prijava', '/registracija', '/login', '/register', '/nalog', '/poruke',
+        '/postavi-oglas', '/dodaj-oglas', '/favorites', '/favorite', '/logout',
+        '/forgot-password', '/reset-password', '/verify-phone', '/verify-email',
+        '/dashboard', '/admin', '/ads.php', '/ad_form', '/provera-imei',
+    ];
+    foreach ($prefixes as $prefix) {
+        if ($path === $prefix || str_starts_with($path, $prefix . '/') || str_starts_with($path, $prefix . '.php')) {
+            return true;
+        }
+    }
+    if (str_starts_with($path, '/api/')) {
+        return true;
+    }
+    return false;
+}
+
 if (session_status() !== PHP_SESSION_ACTIVE) {
-    $lifetime = 60 * 60 * 24 * 30; // 30 dana
-    ini_set('session.gc_maxlifetime', (string)$lifetime);
-    ini_set('session.cookie_lifetime', (string)$lifetime);
-    session_set_cookie_params([
-        'lifetime' => $lifetime,
-        'path' => '/',
-        'secure' => sessionCookieSecure(),
-        'httponly' => true,
-        'samesite' => 'Lax',
-    ]);
-    session_start();
+    if (!requestNeedsSession()) {
+        $_SESSION = [];
+    } else {
+        $lifetime = 60 * 60 * 24 * 30; // 30 dana
+        ini_set('session.gc_maxlifetime', (string)$lifetime);
+        ini_set('session.cookie_lifetime', (string)$lifetime);
+        session_set_cookie_params([
+            'lifetime' => $lifetime,
+            'path' => '/',
+            'secure' => sessionCookieSecure(),
+            'httponly' => true,
+            'samesite' => 'Lax',
+        ]);
+        session_start();
+    }
+}
+
+function sendPublicCacheHeaders(): void
+{
+    if (headers_sent()) {
+        return;
+    }
+    if (session_status() === PHP_SESSION_ACTIVE) {
+        header('Cache-Control: private, no-store');
+        return;
+    }
+    header('Cache-Control: public, max-age=0, s-maxage=300, stale-while-revalidate=600');
 }
 
 function isLoggedIn(): bool

@@ -27,6 +27,7 @@ $canonicalUrl = $canonicalUrl ?? absoluteUrl(parse_url($_SERVER['REQUEST_URI'] ?
 $unreadMessages = ($user && !empty($site['enable_messages'])) ? getUnreadMessageCount((int)$user['id']) : 0;
 $unreadNotifications = $user ? getUnreadNotificationCount((int)$user['id']) : 0;
 ?>
+<?php sendPublicCacheHeaders(); ?>
 <!DOCTYPE html>
 <html lang="sr">
 <head>
@@ -117,7 +118,7 @@ $unreadNotifications = $user ? getUnreadNotificationCount((int)$user['id']) : 0;
         <div class="header-inner">
             <div class="header-row">
                 <a href="/" class="logo" aria-label="<?= h((string)($site['site_name'] ?? 'KupiTelefon')) ?>">
-                    <img class="logo-mark" src="/assets/img/logo-mark.png" alt="" width="36" height="36" decoding="async">
+                    <img class="logo-mark" src="/assets/img/logo-mark.png" alt="KupiTelefon.rs" width="36" height="36" decoding="async">
                     <span class="logo-text">
                         <span class="logo-telefon"><?= h((string)$site['logo_telefon']) ?></span><span class="logo-berza"><?= h((string)$site['logo_berza']) ?></span>
                     </span>
@@ -197,7 +198,7 @@ $unreadNotifications = $user ? getUnreadNotificationCount((int)$user['id']) : 0;
         <div class="header-inner">
             <div class="header-row">
                 <a href="/" class="logo" aria-label="<?= h((string)($site['site_name'] ?? 'KupiTelefon')) ?>">
-                    <img class="logo-mark" src="/assets/img/logo-mark.png" alt="" width="36" height="36" decoding="async">
+                    <img class="logo-mark" src="/assets/img/logo-mark.png" alt="KupiTelefon.rs" width="36" height="36" decoding="async">
                     <span class="logo-text">
                         <span class="logo-telefon"><?= h((string)$site['logo_telefon']) ?></span><span class="logo-berza"><?= h((string)$site['logo_berza']) ?></span>
                     </span>
